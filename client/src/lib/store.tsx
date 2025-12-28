@@ -36,12 +36,15 @@ export interface Attempt {
 export interface GameState {
   teams: Team[];
   questions: Question[];
+  categories: string[];
+  selectedCategory: string;
   currentQuestionIndex: number;
   phase: Phase;
   countryBias: "US" | "CA" | "Mix";
   activeTeamId: string | null;
   typedAnswer: string;
   currentAttempt: Attempt | null;
+  numRounds: number;
 }
 
 interface GameContextType {
@@ -49,6 +52,8 @@ interface GameContextType {
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
   setCountryBias: (bias: "US" | "CA" | "Mix") => void;
+  setCategory: (category: string) => void;
+  setNumRounds: (rounds: number) => void;
   startGame: () => void;
   setTypedAnswer: (text: string) => void;
   submitAnswer: () => void;
@@ -77,12 +82,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GameState>({
     teams: [],
     questions: [],
+    categories: [],
+    selectedCategory: "All",
     currentQuestionIndex: 0,
     phase: "SETUP",
     countryBias: "Mix",
     activeTeamId: null,
     typedAnswer: "",
     currentAttempt: null,
+    numRounds: 10,
   });
 
   // Helper to get questions
@@ -91,6 +99,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const customQuestions = stored ? JSON.parse(stored) : [];
     return [...initialQuestions, ...customQuestions] as Question[];
   };
+
+  const loadCategories = useCallback(() => {
+    const allQuestions = getQuestionPool();
+    const categories = Array.from(new Set(allQuestions.map((q) => q.category))).sort();
+    setState((prev) => ({
+      ...prev,
+      categories,
+      selectedCategory:
+        prev.selectedCategory === "All" || categories.includes(prev.selectedCategory)
+          ? prev.selectedCategory
+          : "All",
+    }));
+  }, []);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   const addTeam = (name: string) => {
     const newTeam: Team = {
@@ -111,11 +136,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, countryBias: bias }));
   };
 
+  const setCategory = (category: string) => {
+    setState((prev) => ({ ...prev, selectedCategory: category }));
+  };
+
+  const setNumRounds = (rounds: number) => {
+    setState((prev) => ({ ...prev, numRounds: rounds }));
+  };
+
   const addQuestion = (q: Question) => {
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     const current = stored ? JSON.parse(stored) : [];
     const updated = [...current, q];
     localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(updated));
+    loadCategories();
   };
 
   const shuffleArray = <T,>(array: T[]): T[] => {
@@ -135,13 +169,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         (q) => q.tags.includes("Global") || q.tags.includes(state.countryBias)
       );
     }
+    if (state.selectedCategory !== "All") {
+      filtered = filtered.filter((q) => q.category === state.selectedCategory);
+    }
     const shuffled = shuffleArray(filtered);
+    const limited = shuffled.slice(0, state.numRounds);
 
     if (state.teams.length === 0) return;
 
     setState((prev) => ({
       ...prev,
-      questions: shuffled,
+      questions: limited,
+      categories: prev.categories,
+      selectedCategory: prev.selectedCategory,
       currentQuestionIndex: 0,
       phase: "QUESTION",
       activeTeamId: prev.teams[0].id, // Start with first team
@@ -289,10 +329,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       phase: "SETUP",
       teams: [],
       questions: [],
+      selectedCategory: "All",
       currentQuestionIndex: 0,
       activeTeamId: null,
       typedAnswer: "",
-      currentAttempt: null
+      currentAttempt: null,
+      numRounds: 10
     }));
   };
 
@@ -303,6 +345,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         addTeam,
         removeTeam,
         setCountryBias,
+        setCategory,
+        setNumRounds,
         startGame,
         setTypedAnswer,
         submitAnswer,

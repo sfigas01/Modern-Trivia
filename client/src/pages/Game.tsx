@@ -15,7 +15,8 @@ export default function Game() {
     setTypedAnswer, 
     submitAnswer, 
     passQuestion, 
-    advanceToScoreUpdate 
+    advanceToScoreUpdate,
+    resetGame
   } = useGame();
   
   // Redirect if invalid state
@@ -27,11 +28,48 @@ export default function Game() {
 
   if (state.phase === "GAME_OVER" || !state.questions.length) {
       // Could render a nice game over screen here
+      const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
+      const winner = rankedTeams[0];
       return (
           <div className="min-h-screen flex items-center justify-center bg-background">
-              <div className="text-center space-y-4">
-                  <h1 className="text-4xl font-bold">Game Over</h1>
-                  <Button onClick={() => setLocation("/")}>Back to Home</Button>
+              <div className="text-center space-y-6 max-w-2xl w-full px-4">
+                  <div className="space-y-2">
+                      <Badge variant="outline" className="border-primary/40 text-primary">
+                        Completed
+                      </Badge>
+                      <h1 className="text-4xl font-bold">Game Over</h1>
+                      {winner && (
+                        <p className="text-muted-foreground">
+                          Winner: <span className="text-primary font-semibold">{winner.name}</span>
+                        </p>
+                      )}
+                  </div>
+                  <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+                    <CardContent className="p-6 space-y-3">
+                      {rankedTeams.map((team, index) => (
+                        <div
+                          key={team.id}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">#{index + 1}</span>
+                            <span className="font-semibold">{team.name}</span>
+                          </div>
+                          <span className="font-mono text-lg">{team.score}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                  <div className="flex justify-center">
+                      <Button
+                        onClick={() => {
+                          resetGame();
+                          setLocation("/");
+                        }}
+                      >
+                        Start New Game
+                      </Button>
+                  </div>
               </div>
           </div>
       )
@@ -49,6 +87,7 @@ export default function Game() {
 
   const activeTeam = state.teams.find(t => t.id === state.activeTeamId);
   const isReveal = state.phase === "REVEAL";
+  const statusLabel = state.phase === "GAME_OVER" ? "Completed" : "In Progress";
 
   const getDifficultyColor = (d: string) => {
     switch(d) {
@@ -95,6 +134,9 @@ export default function Game() {
                     </Badge>
                     <Badge className={`text-lg px-4 py-2 ${getDifficultyColor(currentQ.difficulty)} border-none shadow-lg`}>
                     {currentQ.difficulty}
+                    </Badge>
+                    <Badge variant="outline" className="text-lg px-4 py-2 border-primary/40 text-primary">
+                      {statusLabel}
                     </Badge>
                 </div>
                 {activeTeam && (
