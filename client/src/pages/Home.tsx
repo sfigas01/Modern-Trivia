@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCountryBias, startGame } = useGame();
+  const { state, addTeam, removeTeam, setCountryBias, setCategory, startGame } = useGame();
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleAddTeam = (e: React.FormEvent) => {
@@ -25,6 +25,9 @@ export default function Home() {
     startGame();
     setLocation("/game");
   };
+
+  const statusLabel =
+    state.phase === "SETUP" ? "Not Started" : state.phase === "GAME_OVER" ? "Completed" : "In Progress";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
@@ -45,6 +48,11 @@ export default function Home() {
           <p className="text-muted-foreground font-medium tracking-wide">
             THE PARTY GAME
           </p>
+          <div className="flex justify-center">
+            <Badge variant="outline" className="border-primary/40 text-primary">
+              {statusLabel}
+            </Badge>
+          </div>
         </div>
 
         <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
@@ -121,6 +129,44 @@ export default function Home() {
                   className={`border-white/10 hover:bg-white/10 ${state.countryBias === bias ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                 >
                   {bias === "Mix" ? "Global Mix" : bias}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              Category
+            </CardTitle>
+            <CardDescription>
+              Choose a topic for this round.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+              <Button
+                variant={state.selectedCategory === "All" ? "default" : "outline"}
+                onClick={() => setCategory("All")}
+                className={`border-white/10 hover:bg-white/10 ${
+                  state.selectedCategory === "All" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+                }`}
+              >
+                All Categories
+              </Button>
+              {state.categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={state.selectedCategory === category ? "default" : "outline"}
+                  onClick={() => setCategory(category)}
+                  className={`border-white/10 hover:bg-white/10 ${
+                    state.selectedCategory === category
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                      : ""
+                  }`}
+                >
+                  {category}
                 </Button>
               ))}
             </div>
