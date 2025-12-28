@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGame, Team } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -11,9 +12,8 @@ import confetti from "canvas-confetti";
 
 export default function Game() {
   const [_, setLocation] = useLocation();
-  const { state, handleAnswer, nextQuestion, endGame } = useGame();
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-
+  const { state, handleAnswer, nextQuestion, endGame, setActiveTeam, setTypedAnswer, submitTypedAnswer } = useGame();
+  
   // Redirect if invalid state
   useEffect(() => {
     if (state.teams.length < 2 || !state.questions.length) {
@@ -25,6 +25,7 @@ export default function Game() {
 
   const currentQ = state.questions[state.currentQuestionIndex];
   const isSummary = state.phase === "summary";
+  const selectedTeam = state.teams.find(t => t.id === state.activeTeamId);
 
   const getDifficultyColor = (d: string) => {
     switch(d) {
@@ -45,7 +46,12 @@ export default function Game() {
         });
       }
       handleAnswer(selectedTeam.id, result);
-      setSelectedTeam(null);
+    }
+  };
+
+  const handleSubmitAnswer = () => {
+    if (state.currentTypedAnswer.trim()) {
+      submitTypedAnswer();
     }
   };
 
@@ -73,11 +79,22 @@ export default function Game() {
               Round Complete
             </Badge>
             
-            <div className="space-y-2">
-              <h2 className="text-2xl text-muted-foreground font-medium">The answer was</h2>
-              <h1 className="text-4xl md:text-6xl font-bold text-primary filter drop-shadow-lg">
-                {currentQ.answer}
-              </h1>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-xl text-muted-foreground font-medium">The correct answer is</h2>
+                <h1 className="text-4xl md:text-5xl font-bold text-primary filter drop-shadow-lg">
+                  {currentQ.answer}
+                </h1>
+              </div>
+
+              {state.currentTypedAnswer && swingTeam && (
+                <div className="pt-2 pb-2">
+                  <h3 className="text-sm text-muted-foreground mb-1">{swingTeam.name} answered:</h3>
+                  <div className={`text-2xl font-bold ${wasCorrect ? 'text-green-400' : 'text-red-400'}`}>
+                    "{state.currentTypedAnswer}"
+                  </div>
+                </div>
+              )}
             </div>
 
             <Card className="bg-white/5 border-white/10 max-w-2xl mx-auto backdrop-blur-sm">
@@ -90,7 +107,7 @@ export default function Game() {
           </motion.div>
 
           {/* Scoreboard */}
-          <div className="grid md:grid-cols-2 gap-6 mt-12">
+          <div className="grid md:grid-cols-2 gap-6 mt-8">
             <div className="space-y-4">
                <div className="flex items-center justify-between text-sm uppercase tracking-wider text-muted-foreground border-b border-white/10 pb-2">
                  <span>Team</span>
@@ -130,19 +147,6 @@ export default function Game() {
             </div>
 
             <div className="flex flex-col justify-center space-y-4">
-               {swingTeam && (
-                 <Card className="bg-gradient-to-br from-white/5 to-transparent border-white/10 overflow-hidden">
-                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-                   <CardContent className="p-6 text-center space-y-2">
-                     <div className="text-sm uppercase tracking-widest text-muted-foreground">Round Impact</div>
-                     <div className="text-3xl font-bold truncate">{swingTeam.name}</div>
-                     <div className={`text-5xl font-black font-mono tracking-tighter ${wasCorrect ? 'text-green-400' : (wasPass ? 'text-muted-foreground' : 'text-red-400')}`}>
-                        {wasCorrect ? '+' : ''}{swingTeam.lastRoundDelta}
-                     </div>
-                   </CardContent>
-                 </Card>
-               )}
-               
                <Button 
                  onClick={nextQuestion} 
                  className="h-20 text-xl font-bold shadow-lg hover:shadow-primary/20 transition-all mt-auto"
@@ -201,7 +205,7 @@ export default function Game() {
         {/* Controls */}
         <div className="mt-12 w-full max-w-4xl">
           <div className="text-center mb-6 text-muted-foreground font-medium uppercase tracking-widest text-sm">
-            {selectedTeam ? `Action for ${selectedTeam.name}` : "Who is answering?"}
+            {selectedTeam ? `Answering: ${selectedTeam.name}` : "Who is answering?"}
           </div>
 
           {!selectedTeam ? (
@@ -210,7 +214,7 @@ export default function Game() {
                 <Button
                   key={team.id}
                   variant="outline"
-                  onClick={() => setSelectedTeam(team)}
+                  onClick={() => setActiveTeam(team.id)}
                   className="h-20 text-lg md:text-xl font-bold border-white/10 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   {team.name}
@@ -226,38 +230,75 @@ export default function Game() {
               </Button>
             </div>
           ) : (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="grid grid-cols-3 gap-4"
-            >
-              <Button
-                onClick={() => handleAction("incorrect")}
-                className="h-24 bg-red-500/20 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
-              >
-                <X className="w-8 h-8 mr-2" /> Incorrect
-              </Button>
-              <Button
-                onClick={() => handleAction("pass")}
-                className="h-24 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500 hover:text-black text-xl md:text-2xl font-bold transition-all"
-              >
-                <Minus className="w-8 h-8 mr-2" /> Pass
-              </Button>
-              <Button
-                onClick={() => handleAction("correct")}
-                className="h-24 bg-green-500/20 text-green-500 border border-green-500/50 hover:bg-green-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
-              >
-                <Check className="w-8 h-8 mr-2" /> Correct
-              </Button>
-            </motion.div>
-          )}
-          
-          {selectedTeam && (
-             <div className="mt-4 text-center">
-               <Button variant="ghost" size="sm" onClick={() => setSelectedTeam(null)} className="text-muted-foreground">
-                 Cancel Selection
-               </Button>
-             </div>
+            <div className="space-y-8">
+              {!state.isAnswerSubmitted ? (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="space-y-4 max-w-2xl mx-auto"
+                 >
+                   <Input
+                     value={state.currentTypedAnswer}
+                     onChange={(e) => setTypedAnswer(e.target.value)}
+                     placeholder="Type your answer here..."
+                     className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
+                     autoFocus
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter') handleSubmitAnswer();
+                     }}
+                   />
+                   <div className="flex gap-4">
+                     <Button 
+                       variant="secondary" 
+                       onClick={() => setActiveTeam(null)}
+                       className="flex-1 h-16 text-lg"
+                     >
+                       Cancel
+                     </Button>
+                     <Button 
+                       onClick={handleSubmitAnswer}
+                       disabled={!state.currentTypedAnswer.trim()}
+                       className="flex-[2] h-16 text-lg font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
+                     >
+                       Submit Answer
+                     </Button>
+                   </div>
+                 </motion.div>
+              ) : (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="space-y-6"
+                >
+                  <div className="text-center space-y-2">
+                    <p className="text-muted-foreground">Answer Submitted:</p>
+                    <div className="text-3xl font-bold text-primary">"{state.currentTypedAnswer}"</div>
+                    <p className="text-sm text-muted-foreground animate-pulse">Waiting for host to verify...</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <Button
+                      onClick={() => handleAction("incorrect")}
+                      className="h-24 bg-red-500/20 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
+                    >
+                      <X className="w-8 h-8 mr-2" /> Incorrect
+                    </Button>
+                    <Button
+                      onClick={() => handleAction("pass")}
+                      className="h-24 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500 hover:text-black text-xl md:text-2xl font-bold transition-all"
+                    >
+                      <Minus className="w-8 h-8 mr-2" /> Pass
+                    </Button>
+                    <Button
+                      onClick={() => handleAction("correct")}
+                      className="h-24 bg-green-500/20 text-green-500 border border-green-500/50 hover:bg-green-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
+                    >
+                      <Check className="w-8 h-8 mr-2" /> Correct
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+            </div>
           )}
         </div>
       </div>
