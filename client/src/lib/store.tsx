@@ -175,6 +175,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const shuffled = shuffleArray(filtered);
     const limited = shuffled.slice(0, state.numRounds);
 
+    console.log(`[START_GAME] Loaded ${limited.length} questions (requested ${state.numRounds}). Total available: ${allQuestions.length}. After filters: ${filtered.length}. Bias: ${state.countryBias}, Category: ${state.selectedCategory}`);
+
     if (state.teams.length === 0) return;
 
     setState((prev) => ({
@@ -302,13 +304,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         const currentTeamIndex = updatedTeams.findIndex(t => t.id === prev.activeTeamId);
         const nextTeamIndex = (currentTeamIndex + 1) % updatedTeams.length;
         nextActiveTeamId = updatedTeams[nextTeamIndex].id;
+        console.log(`[ROTATION] Team rotated. New active team index: ${nextTeamIndex}`);
       }
 
       const nextIndex = prev.currentQuestionIndex + 1;
       let nextPhase: Phase = "QUESTION";
 
+      console.log(`[ADVANCE] Question ${prev.currentQuestionIndex} → ${nextIndex}. Total questions: ${prev.questions.length}`);
+
       if (nextIndex >= prev.questions.length) {
         nextPhase = "GAME_OVER";
+        console.log(`[GAME_OVER] Ending game. nextIndex (${nextIndex}) >= questions.length (${prev.questions.length})`);
       }
 
       return {
