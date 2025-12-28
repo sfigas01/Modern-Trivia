@@ -14,6 +14,7 @@
     "difficulty": "Easy",
     "question": "Which US state is known as the 'Sunshine State'?",
     "answer": "Florida",
+    "acceptableAnswers": ["FL", "The Sunshine State"],
     "explanation": "Florida adopted this nickname effectively in 1970.",
     "tags": ["US", "Geography"]
   },
@@ -23,6 +24,7 @@
     "difficulty": "Medium",
     "question": "What represents the 'K' in the periodic table?",
     "answer": "Potassium",
+    "acceptableAnswers": ["K"],
     "explanation": "The symbol K comes from the Latin word 'Kalium'.",
     "tags": ["Global", "Science"]
   },
@@ -32,6 +34,7 @@
     "difficulty": "Hard",
     "question": "Who was the first Prime Minister of Canada?",
     "answer": "Sir John A. Macdonald",
+    "acceptableAnswers": ["John A Macdonald", "Macdonald", "John Macdonald"],
     "explanation": "He served as the first Prime Minister of Canada from 1867 to 1873.",
     "tags": ["CA", "History"]
   },

@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import initialQuestions from "./questions.json";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
+export type Phase = "SETUP" | "QUESTION" | "VERIFYING" | "REVEAL" | "SCORE_UPDATE" | "GAME_OVER";
+export type Verdict = "CORRECT" | "INCORRECT" | "PASS" | "PENDING";
 
 export interface Question {
   id: string;
@@ -9,6 +11,7 @@ export interface Question {
   difficulty: Difficulty;
   question: string;
   answer: string;
+  acceptableAnswers?: string[];
   explanation: string;
   tags: string[];
 }
@@ -17,19 +20,28 @@ export interface Team {
   id: string;
   name: string;
   score: number;
+  questionCount: number;
   lastRoundDelta: number;
+}
+
+export interface Attempt {
+  questionId: string;
+  teamId: string;
+  submittedAnswer: string | null;
+  verdict: Verdict;
+  pointsDelta: number;
+  processed: boolean;
 }
 
 export interface GameState {
   teams: Team[];
   questions: Question[];
   currentQuestionIndex: number;
-  phase: "setup" | "playing" | "summary";
+  phase: Phase;
   countryBias: "US" | "CA" | "Mix";
-  recentSwingTeamId: string | null;
   activeTeamId: string | null;
-  currentTypedAnswer: string;
-  isAnswerSubmitted: boolean;
+  typedAnswer: string;
+  currentAttempt: Attempt | null;
 }
 
 interface GameContextType {
@@ -38,47 +50,54 @@ interface GameContextType {
   removeTeam: (id: string) => void;
   setCountryBias: (bias: "US" | "CA" | "Mix") => void;
   startGame: () => void;
-  handleAnswer: (teamId: string, result: "correct" | "incorrect" | "pass") => void;
-  nextQuestion: () => void;
-  endGame: () => void;
-  addQuestion: (q: Question) => void;
-  resetGame: () => void;
-  setActiveTeam: (id: string | null) => void;
   setTypedAnswer: (text: string) => void;
-  submitTypedAnswer: () => void;
+  submitAnswer: () => void;
+  passQuestion: () => void;
+  advanceToScoreUpdate: () => void;
+  resetGame: () => void;
+  addQuestion: (q: Question) => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// Local Storage Keys
 const STORAGE_KEY_QUESTIONS = "modern_trivia_questions";
+const QUESTIONS_PER_TEAM_ROTATION = 4;
+
+const normalize = (str: string): string => {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[.,!?'"]/g, "") // Remove punctuation
+    .replace(/\b(a|an|the)\b/g, "") // Remove articles (simple regex)
+    .replace(/\s+/g, " ") // Collapse whitespace
+    .trim();
+};
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GameState>({
     teams: [],
     questions: [],
     currentQuestionIndex: 0,
-    phase: "setup",
+    phase: "SETUP",
     countryBias: "Mix",
-    recentSwingTeamId: null,
     activeTeamId: null,
-    currentTypedAnswer: "",
-    isAnswerSubmitted: false,
+    typedAnswer: "",
+    currentAttempt: null,
   });
 
-  // Load questions on mount (merge default with local storage)
-  useEffect(() => {
+  // Helper to get questions
+  const getQuestionPool = () => {
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     const customQuestions = stored ? JSON.parse(stored) : [];
-    // We don't set state here immediately to avoid overwrite if we want to filter later
-    // But for simplicity, we'll just have a "pool" available.
-  }, []);
+    return [...initialQuestions, ...customQuestions] as Question[];
+  };
 
   const addTeam = (name: string) => {
     const newTeam: Team = {
       id: crypto.randomUUID(),
       name,
       score: 0,
+      questionCount: 0,
       lastRoundDelta: 0,
     };
     setState((prev) => ({ ...prev, teams: [...prev.teams, newTeam] }));
@@ -109,117 +128,173 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   };
 
   const startGame = () => {
-    // 1. Gather all questions
-    const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
-    const customQuestions = stored ? JSON.parse(stored) : [];
-    const allQuestions = [...initialQuestions, ...customQuestions] as Question[];
-
-    // 2. Filter by bias
+    const allQuestions = getQuestionPool();
     let filtered = allQuestions;
     if (state.countryBias !== "Mix") {
-      // Keep Global + Specific Country
       filtered = allQuestions.filter(
         (q) => q.tags.includes("Global") || q.tags.includes(state.countryBias)
       );
     }
-
-    // 3. Shuffle
     const shuffled = shuffleArray(filtered);
+
+    if (state.teams.length === 0) return;
 
     setState((prev) => ({
       ...prev,
       questions: shuffled,
       currentQuestionIndex: 0,
-      phase: "playing",
-      recentSwingTeamId: null,
-      activeTeamId: null,
-      currentTypedAnswer: "",
-      isAnswerSubmitted: false,
-      teams: prev.teams.map(t => ({ ...t, score: 0, lastRoundDelta: 0 })) // Reset scores
+      phase: "QUESTION",
+      activeTeamId: prev.teams[0].id, // Start with first team
+      typedAnswer: "",
+      currentAttempt: null,
+      teams: prev.teams.map(t => ({ ...t, score: 0, questionCount: 0, lastRoundDelta: 0 }))
     }));
-  };
-
-  const setActiveTeam = (id: string | null) => {
-    setState(prev => ({ ...prev, activeTeamId: id }));
   };
 
   const setTypedAnswer = (text: string) => {
-    setState(prev => ({ ...prev, currentTypedAnswer: text }));
+    setState((prev) => ({ ...prev, typedAnswer: text }));
   };
 
-  const submitTypedAnswer = () => {
-    setState(prev => ({ ...prev, isAnswerSubmitted: true }));
+  const calculatePoints = (difficulty: Difficulty): number => {
+    switch (difficulty) {
+      case "Easy": return 1;
+      case "Medium": return 2;
+      case "Hard": return 3;
+      default: return 1;
+    }
   };
 
-  const handleAnswer = (teamId: string, result: "correct" | "incorrect" | "pass") => {
-    const currentQ = state.questions[state.currentQuestionIndex];
-    let points = 0;
-
-    switch (currentQ.difficulty) {
-      case "Easy": points = 1; break;
-      case "Medium": points = 2; break;
-      case "Hard": points = 3; break;
+  const verifyAttempt = (
+    submittedAnswer: string | null,
+    question: Question
+  ): { verdict: Verdict; points: number } => {
+    if (submittedAnswer === null) {
+      return { verdict: "PASS", points: 0 };
     }
 
-    let delta = 0;
-    if (result === "correct") delta = points;
-    if (result === "incorrect") delta = -points;
-    if (result === "pass") delta = 0;
+    const normalizedInput = normalize(submittedAnswer);
+    const possibleAnswers = [question.answer, ...(question.acceptableAnswers || [])];
+    
+    const isCorrect = possibleAnswers.some(ans => normalize(ans) === normalizedInput);
+    const points = calculatePoints(question.difficulty);
 
+    return {
+      verdict: isCorrect ? "CORRECT" : "INCORRECT",
+      points: isCorrect ? points : -points
+    };
+  };
+
+  const submitAnswer = () => {
     setState((prev) => {
-      const updatedTeams = prev.teams.map((t) => {
-        if (t.id === teamId) {
-          return { ...t, score: t.score + delta, lastRoundDelta: delta };
+      if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
+      
+      const currentQ = prev.questions[prev.currentQuestionIndex];
+      const { verdict, points } = verifyAttempt(prev.typedAnswer, currentQ);
+      
+      const attempt: Attempt = {
+        questionId: currentQ.id,
+        teamId: prev.activeTeamId,
+        submittedAnswer: prev.typedAnswer,
+        verdict,
+        pointsDelta: points,
+        processed: false
+      };
+
+      return {
+        ...prev,
+        phase: "REVEAL", // Skip VERIFYING visual state, do logic immediately
+        currentAttempt: attempt
+      };
+    });
+  };
+
+  const passQuestion = () => {
+    setState((prev) => {
+      if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
+      
+      const currentQ = prev.questions[prev.currentQuestionIndex];
+      
+      const attempt: Attempt = {
+        questionId: currentQ.id,
+        teamId: prev.activeTeamId,
+        submittedAnswer: null,
+        verdict: "PASS",
+        pointsDelta: 0,
+        processed: false
+      };
+
+      return {
+        ...prev,
+        phase: "REVEAL",
+        currentAttempt: attempt,
+        typedAnswer: "" // Clear typed answer on pass? Or keep it? keeping it empty makes sense.
+      };
+    });
+  };
+
+  const advanceToScoreUpdate = () => {
+    setState((prev) => {
+      if (prev.phase !== "REVEAL" || !prev.currentAttempt || prev.currentAttempt.processed) return prev;
+
+      // Apply Score
+      const attempt = prev.currentAttempt;
+      const updatedTeams = prev.teams.map(t => {
+        if (t.id === attempt.teamId) {
+          return {
+            ...t,
+            score: t.score + attempt.pointsDelta,
+            questionCount: t.questionCount + 1,
+            lastRoundDelta: attempt.pointsDelta
+          };
         }
-        return { ...t, lastRoundDelta: 0 }; // Reset others
+        return { ...t, lastRoundDelta: 0 }; // Reset others last delta
       });
 
-      // Find biggest swing (absolute value? or just who gained/lost most?)
-      // Prompt says "highlighting ... biggest swing". Let's assume magnitude.
-      // Since only one team answers per "turn" in this logic (implied), they are the swing.
-      
+      // Mark processed
+      const processedAttempt = { ...attempt, processed: true };
+
+      // Determine next phase logic (rotate team? next question?)
+      const activeTeam = updatedTeams.find(t => t.id === prev.activeTeamId);
+      let nextActiveTeamId = prev.activeTeamId;
+
+      if (activeTeam && activeTeam.questionCount % QUESTIONS_PER_TEAM_ROTATION === 0) {
+        // Rotate
+        const currentTeamIndex = updatedTeams.findIndex(t => t.id === prev.activeTeamId);
+        const nextTeamIndex = (currentTeamIndex + 1) % updatedTeams.length;
+        nextActiveTeamId = updatedTeams[nextTeamIndex].id;
+      }
+
+      const nextIndex = prev.currentQuestionIndex + 1;
+      let nextPhase: Phase = "QUESTION";
+
+      if (nextIndex >= prev.questions.length) {
+        nextPhase = "GAME_OVER";
+      }
+
       return {
         ...prev,
         teams: updatedTeams,
-        recentSwingTeamId: teamId,
-        phase: "summary", // Go to summary after an action
-      };
-    });
-  };
-
-  const nextQuestion = () => {
-    setState((prev) => {
-      const nextIndex = prev.currentQuestionIndex + 1;
-      if (nextIndex >= prev.questions.length) {
-        // Game Over or Restart? Loop?
-        // Let's just Loop for now or End
-        return { ...prev, phase: "setup" }; // End game loop
-      }
-      return {
-        ...prev,
+        currentAttempt: processedAttempt,
         currentQuestionIndex: nextIndex,
-        phase: "playing",
-        recentSwingTeamId: null,
-        activeTeamId: null,
-        currentTypedAnswer: "",
-        isAnswerSubmitted: false,
+        activeTeamId: nextActiveTeamId,
+        phase: nextPhase,
+        typedAnswer: "", // Clear for next question
       };
     });
   };
 
-  const endGame = () => {
-    setState((prev) => ({ ...prev, phase: "setup" }));
-  };
-  
   const resetGame = () => {
     setState((prev) => ({
       ...prev,
-      phase: "setup",
+      phase: "SETUP",
       teams: [],
       questions: [],
-      currentQuestionIndex: 0
+      currentQuestionIndex: 0,
+      activeTeamId: null,
+      typedAnswer: "",
+      currentAttempt: null
     }));
-  }
+  };
 
   return (
     <GameContext.Provider
@@ -229,14 +304,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         removeTeam,
         setCountryBias,
         startGame,
-        handleAnswer,
-        nextQuestion,
-        endGame,
-        addQuestion,
-        resetGame,
-        setActiveTeam,
         setTypedAnswer,
-        submitTypedAnswer
+        submitAnswer,
+        passQuestion,
+        advanceToScoreUpdate,
+        resetGame,
+        addQuestion
       }}
     >
       {children}

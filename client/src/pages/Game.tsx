@@ -1,169 +1,73 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useGame, Team } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, Trophy, ArrowRight, HelpCircle } from "lucide-react";
-import confetti from "canvas-confetti";
+import { Check, X, Minus, ArrowRight } from "lucide-react";
 
 export default function Game() {
   const [_, setLocation] = useLocation();
-  const { state, handleAnswer, nextQuestion, endGame, setActiveTeam, setTypedAnswer, submitTypedAnswer } = useGame();
+  const { 
+    state, 
+    setTypedAnswer, 
+    submitAnswer, 
+    passQuestion, 
+    advanceToScoreUpdate 
+  } = useGame();
   
   // Redirect if invalid state
   useEffect(() => {
-    if (state.teams.length < 2 || !state.questions.length) {
+    if (state.phase === "SETUP" || state.teams.length === 0) {
       setLocation("/");
     }
-  }, [state.teams, state.questions, setLocation]);
+  }, [state.phase, state.teams.length, setLocation]);
 
-  if (!state.questions.length) return null;
+  if (state.phase === "GAME_OVER" || !state.questions.length) {
+      // Could render a nice game over screen here
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+              <div className="text-center space-y-4">
+                  <h1 className="text-4xl font-bold">Game Over</h1>
+                  <Button onClick={() => setLocation("/")}>Back to Home</Button>
+              </div>
+          </div>
+      )
+  }
 
   const currentQ = state.questions[state.currentQuestionIndex];
-  const isSummary = state.phase === "summary";
-  const selectedTeam = state.teams.find(t => t.id === state.activeTeamId);
+  // If we are in REVEAL state, we might be 'between' indices effectively if we handled it differently,
+  // but here index increments AFTER reveal. So currentQ is still the one we just answered.
+  // Wait, advanceToScoreUpdate increments index. So in REVEAL, index is correct.
+  
+  // Actually, if we are in REVEAL, currentQ should be valid.
+  // If we are in GAME_OVER, we returned early.
+  
+  if (!currentQ) return null;
+
+  const activeTeam = state.teams.find(t => t.id === state.activeTeamId);
+  const isReveal = state.phase === "REVEAL";
 
   const getDifficultyColor = (d: string) => {
     switch(d) {
-      case "Easy": return "bg-[var(--color-difficulty-easy)] text-white hover:bg-[var(--color-difficulty-easy)]/90";
-      case "Medium": return "bg-[var(--color-difficulty-medium)] text-black hover:bg-[var(--color-difficulty-medium)]/90";
-      case "Hard": return "bg-[var(--color-difficulty-hard)] text-white hover:bg-[var(--color-difficulty-hard)]/90";
+      case "Easy": return "bg-[var(--color-difficulty-easy)] text-white";
+      case "Medium": return "bg-[var(--color-difficulty-medium)] text-black";
+      case "Hard": return "bg-[var(--color-difficulty-hard)] text-white";
       default: return "bg-primary";
     }
   };
 
-  const handleAction = (result: "correct" | "incorrect" | "pass") => {
-    if (selectedTeam) {
-      if (result === "correct") {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !isReveal && state.typedAnswer.trim()) {
+          submitAnswer();
       }
-      handleAnswer(selectedTeam.id, result);
-    }
   };
 
-  const handleSubmitAnswer = () => {
-    if (state.currentTypedAnswer.trim()) {
-      submitTypedAnswer();
-    }
-  };
-
-  // Summary View
-  if (isSummary) {
-    // Sort teams by score
-    const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
-    const swingTeam = state.teams.find(t => t.id === state.recentSwingTeamId);
-    const wasCorrect = swingTeam && swingTeam.lastRoundDelta > 0;
-    const wasPass = swingTeam && swingTeam.lastRoundDelta === 0;
-
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background overflow-hidden relative">
-        {/* Background elements */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-        
-        <div className="w-full max-w-4xl space-y-8 relative z-10">
-          {/* Result Banner */}
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-center space-y-6"
-          >
-            <Badge variant="outline" className="px-4 py-1 text-sm uppercase tracking-widest border-white/20">
-              Round Complete
-            </Badge>
-            
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-xl text-muted-foreground font-medium">The correct answer is</h2>
-                <h1 className="text-4xl md:text-5xl font-bold text-primary filter drop-shadow-lg">
-                  {currentQ.answer}
-                </h1>
-              </div>
-
-              {state.currentTypedAnswer && swingTeam && (
-                <div className="pt-2 pb-2">
-                  <h3 className="text-sm text-muted-foreground mb-1">{swingTeam.name} answered:</h3>
-                  <div className={`text-2xl font-bold ${wasCorrect ? 'text-green-400' : 'text-red-400'}`}>
-                    "{state.currentTypedAnswer}"
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <Card className="bg-white/5 border-white/10 max-w-2xl mx-auto backdrop-blur-sm">
-              <CardContent className="p-6 text-center">
-                <p className="text-lg md:text-xl leading-relaxed opacity-90">
-                  {currentQ.explanation}
-                </p>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Scoreboard */}
-          <div className="grid md:grid-cols-2 gap-6 mt-8">
-            <div className="space-y-4">
-               <div className="flex items-center justify-between text-sm uppercase tracking-wider text-muted-foreground border-b border-white/10 pb-2">
-                 <span>Team</span>
-                 <span>Score</span>
-               </div>
-               <div className="space-y-3">
-                 {sortedTeams.map((team, index) => (
-                   <motion.div 
-                     key={team.id}
-                     layout
-                     className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
-                       team.id === state.recentSwingTeamId 
-                         ? (wasCorrect ? 'bg-green-500/10 border-green-500/50' : (wasPass ? 'bg-white/5 border-white/20' : 'bg-red-500/10 border-red-500/50'))
-                         : 'bg-white/5 border-white/5'
-                     }`}
-                   >
-                     <div className="flex items-center gap-3">
-                       <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 text-xs font-bold font-mono">
-                         {index + 1}
-                       </span>
-                       <span className="font-bold text-lg">{team.name}</span>
-                       {team.id === state.recentSwingTeamId && (
-                         <Badge variant="secondary" className="text-[10px] h-5">
-                           {wasPass ? "PASSED" : (wasCorrect ? "HIT" : "MISS")}
-                         </Badge>
-                       )}
-                     </div>
-                     <div className="flex items-center gap-2">
-                        <span className={`text-sm font-mono ${team.lastRoundDelta > 0 ? 'text-green-400' : team.lastRoundDelta < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
-                          {team.lastRoundDelta > 0 ? '+' : ''}{team.lastRoundDelta !== 0 ? team.lastRoundDelta : '-'}
-                        </span>
-                        <span className="text-2xl font-bold font-mono">{team.score}</span>
-                     </div>
-                   </motion.div>
-                 ))}
-               </div>
-            </div>
-
-            <div className="flex flex-col justify-center space-y-4">
-               <Button 
-                 onClick={nextQuestion} 
-                 className="h-20 text-xl font-bold shadow-lg hover:shadow-primary/20 transition-all mt-auto"
-               >
-                 NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
-               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Question View
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
-      {/* Top Bar */}
+      {/* Top Bar - Progress */}
       <div className="w-full h-2 bg-white/5">
         <motion.div 
           className="h-full bg-primary"
@@ -174,133 +78,141 @@ export default function Game() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-6xl mx-auto w-full relative z-10">
         
-        {/* Question Card */}
+        {/* Question Area */}
         <AnimatePresence mode="wait">
            <motion.div
              key={currentQ.id}
-             initial={{ opacity: 0, y: 50, rotateX: -10 }}
-             animate={{ opacity: 1, y: 0, rotateX: 0 }}
-             exit={{ opacity: 0, y: -50, rotateX: 10 }}
-             transition={{ duration: 0.5, type: "spring" }}
-             className="w-full max-w-4xl"
+             initial={{ opacity: 0, y: 20 }}
+             animate={{ opacity: 1, y: 0 }}
+             exit={{ opacity: 0, y: -20 }}
+             className="w-full max-w-4xl space-y-6"
            >
-             <div className="flex justify-between items-center mb-6">
-                <Badge variant="outline" className="text-lg px-4 py-2 border-white/20 bg-white/5">
-                  {currentQ.category}
-                </Badge>
-                <Badge className={`text-lg px-4 py-2 ${getDifficultyColor(currentQ.difficulty)} border-none shadow-lg`}>
-                  {currentQ.difficulty}
-                </Badge>
+             {/* Metadata */}
+             <div className="flex justify-between items-center">
+                <div className="flex gap-2">
+                    <Badge variant="outline" className="text-lg px-4 py-2 border-white/20 bg-white/5">
+                    {currentQ.category}
+                    </Badge>
+                    <Badge className={`text-lg px-4 py-2 ${getDifficultyColor(currentQ.difficulty)} border-none shadow-lg`}>
+                    {currentQ.difficulty}
+                    </Badge>
+                </div>
+                {activeTeam && (
+                    <div className="text-right">
+                        <div className="text-sm text-muted-foreground uppercase tracking-widest">Active Team</div>
+                        <div className="text-xl font-bold text-primary">{activeTeam.name}</div>
+                        <div className="text-xs text-muted-foreground">Question {activeTeam.questionCount % 4 + 1}/4</div>
+                    </div>
+                )}
              </div>
 
-             <div className="min-h-[300px] flex items-center justify-center text-center p-8 md:p-12 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl relative overflow-hidden group">
-               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-               <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold leading-tight font-display tracking-tight drop-shadow-sm relative z-10">
+             {/* The Question */}
+             <div className="min-h-[200px] flex items-center justify-center text-center p-8 md:p-12 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
+               <h1 className="text-3xl md:text-5xl font-bold leading-tight font-display tracking-tight">
                  {currentQ.question}
                </h1>
              </div>
+
+             {/* REVEAL STATE UI */}
+             {isReveal && state.currentAttempt && (
+                 <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="space-y-6"
+                 >
+                     <div className="grid md:grid-cols-2 gap-4">
+                        <Card className={`border-2 ${
+                            state.currentAttempt.verdict === 'CORRECT' ? 'border-green-500/50 bg-green-500/10' : 
+                            state.currentAttempt.verdict === 'PASS' ? 'border-yellow-500/50 bg-yellow-500/10' : 
+                            'border-red-500/50 bg-red-500/10'
+                        }`}>
+                            <CardContent className="p-4 text-center">
+                                <div className="text-sm uppercase tracking-widest opacity-70 mb-1">They Answered</div>
+                                <div className="text-2xl font-bold">
+                                    {state.currentAttempt.submittedAnswer || "(Passed)"}
+                                </div>
+                                <div className="mt-2 font-mono font-bold text-lg">
+                                    {state.currentAttempt.verdict} ({state.currentAttempt.pointsDelta > 0 ? '+' : ''}{state.currentAttempt.pointsDelta})
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <Card className="bg-primary/10 border-primary/20">
+                            <CardContent className="p-4 text-center">
+                                <div className="text-sm uppercase tracking-widest opacity-70 mb-1">Correct Answer</div>
+                                <div className="text-2xl font-bold text-primary">
+                                    {currentQ.answer}
+                                </div>
+                            </CardContent>
+                        </Card>
+                     </div>
+                     
+                     <div className="bg-white/5 p-4 rounded-lg text-center text-muted-foreground italic">
+                         {currentQ.explanation}
+                     </div>
+
+                     <Button 
+                        onClick={advanceToScoreUpdate}
+                        className="w-full h-16 text-xl font-bold shadow-lg mt-4"
+                     >
+                        NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
+                     </Button>
+                 </motion.div>
+             )}
+
+             {/* QUESTION STATE UI */}
+             {!isReveal && (
+                 <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="space-y-4 max-w-2xl mx-auto pt-4"
+                 >
+                    <Input
+                        value={state.typedAnswer}
+                        onChange={(e) => setTypedAnswer(e.target.value)}
+                        placeholder="Type answer here..."
+                        className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
+                        autoFocus
+                        onKeyDown={handleKeyDown}
+                    />
+                    <div className="grid grid-cols-3 gap-4">
+                        <Button 
+                            variant="secondary" 
+                            onClick={passQuestion}
+                            className="h-14 text-lg"
+                        >
+                            Pass
+                        </Button>
+                        <Button 
+                            onClick={submitAnswer}
+                            disabled={!state.typedAnswer.trim()}
+                            className="col-span-2 h-14 text-lg font-bold"
+                        >
+                            Submit Answer
+                        </Button>
+                    </div>
+                 </motion.div>
+             )}
+
            </motion.div>
         </AnimatePresence>
+      </div>
 
-        {/* Controls */}
-        <div className="mt-12 w-full max-w-4xl">
-          <div className="text-center mb-6 text-muted-foreground font-medium uppercase tracking-widest text-sm">
-            {selectedTeam ? `Answering: ${selectedTeam.name}` : "Who is answering?"}
-          </div>
-
-          {!selectedTeam ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {state.teams.map((team) => (
-                <Button
-                  key={team.id}
-                  variant="outline"
-                  onClick={() => setActiveTeam(team.id)}
-                  className="h-20 text-lg md:text-xl font-bold border-white/10 hover:bg-primary hover:text-white hover:border-primary transition-all duration-300 hover:scale-105 active:scale-95"
-                >
-                  {team.name}
-                  <Badge variant="secondary" className="ml-2 bg-white/20 text-current">{team.score}</Badge>
-                </Button>
+      {/* Scoreboard Preview (Bottom) */}
+      <div className="w-full bg-white/5 border-t border-white/10 p-4 z-20 backdrop-blur-md">
+          <div className="max-w-6xl mx-auto flex items-center gap-4 overflow-x-auto pb-2">
+              {state.teams.map((t) => (
+                  <div 
+                    key={t.id} 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border ${
+                        t.id === state.activeTeamId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-white/10'
+                    }`}
+                  >
+                      <span className="font-bold">{t.name}</span>
+                      <span className="font-mono bg-black/20 px-2 rounded">{t.score}</span>
+                  </div>
               ))}
-              <Button
-                variant="ghost"
-                onClick={nextQuestion}
-                className="h-20 text-muted-foreground hover:text-foreground border border-transparent hover:border-white/10"
-              >
-                Skip / No One Knows
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {!state.isAnswerSubmitted ? (
-                 <motion.div 
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   className="space-y-4 max-w-2xl mx-auto"
-                 >
-                   <Input
-                     value={state.currentTypedAnswer}
-                     onChange={(e) => setTypedAnswer(e.target.value)}
-                     placeholder="Type your answer here..."
-                     className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
-                     autoFocus
-                     onKeyDown={(e) => {
-                       if (e.key === 'Enter') handleSubmitAnswer();
-                     }}
-                   />
-                   <div className="flex gap-4">
-                     <Button 
-                       variant="secondary" 
-                       onClick={() => setActiveTeam(null)}
-                       className="flex-1 h-16 text-lg"
-                     >
-                       Cancel
-                     </Button>
-                     <Button 
-                       onClick={handleSubmitAnswer}
-                       disabled={!state.currentTypedAnswer.trim()}
-                       className="flex-[2] h-16 text-lg font-bold shadow-[0_0_20px_-5px_var(--color-primary)]"
-                     >
-                       Submit Answer
-                     </Button>
-                   </div>
-                 </motion.div>
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="space-y-6"
-                >
-                  <div className="text-center space-y-2">
-                    <p className="text-muted-foreground">Answer Submitted:</p>
-                    <div className="text-3xl font-bold text-primary">"{state.currentTypedAnswer}"</div>
-                    <p className="text-sm text-muted-foreground animate-pulse">Waiting for host to verify...</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-4">
-                    <Button
-                      onClick={() => handleAction("incorrect")}
-                      className="h-24 bg-red-500/20 text-red-500 border border-red-500/50 hover:bg-red-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
-                    >
-                      <X className="w-8 h-8 mr-2" /> Incorrect
-                    </Button>
-                    <Button
-                      onClick={() => handleAction("pass")}
-                      className="h-24 bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 hover:bg-yellow-500 hover:text-black text-xl md:text-2xl font-bold transition-all"
-                    >
-                      <Minus className="w-8 h-8 mr-2" /> Pass
-                    </Button>
-                    <Button
-                      onClick={() => handleAction("correct")}
-                      className="h-24 bg-green-500/20 text-green-500 border border-green-500/50 hover:bg-green-500 hover:text-white text-xl md:text-2xl font-bold transition-all"
-                    >
-                      <Check className="w-8 h-8 mr-2" /> Correct
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          )}
-        </div>
+          </div>
       </div>
       
       {/* Background decoration */}
