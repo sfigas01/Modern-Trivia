@@ -26,7 +26,10 @@ export interface GameState {
   currentQuestionIndex: number;
   phase: "setup" | "playing" | "summary";
   countryBias: "US" | "CA" | "Mix";
-  recentSwingTeamId: string | null; // Team with the biggest swing last round
+  recentSwingTeamId: string | null;
+  activeTeamId: string | null;
+  currentTypedAnswer: string;
+  isAnswerSubmitted: boolean;
 }
 
 interface GameContextType {
@@ -40,6 +43,9 @@ interface GameContextType {
   endGame: () => void;
   addQuestion: (q: Question) => void;
   resetGame: () => void;
+  setActiveTeam: (id: string | null) => void;
+  setTypedAnswer: (text: string) => void;
+  submitTypedAnswer: () => void;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -55,6 +61,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     phase: "setup",
     countryBias: "Mix",
     recentSwingTeamId: null,
+    activeTeamId: null,
+    currentTypedAnswer: "",
+    isAnswerSubmitted: false,
   });
 
   // Load questions on mount (merge default with local storage)
@@ -123,8 +132,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       currentQuestionIndex: 0,
       phase: "playing",
       recentSwingTeamId: null,
+      activeTeamId: null,
+      currentTypedAnswer: "",
+      isAnswerSubmitted: false,
       teams: prev.teams.map(t => ({ ...t, score: 0, lastRoundDelta: 0 })) // Reset scores
     }));
+  };
+
+  const setActiveTeam = (id: string | null) => {
+    setState(prev => ({ ...prev, activeTeamId: id }));
+  };
+
+  const setTypedAnswer = (text: string) => {
+    setState(prev => ({ ...prev, currentTypedAnswer: text }));
+  };
+
+  const submitTypedAnswer = () => {
+    setState(prev => ({ ...prev, isAnswerSubmitted: true }));
   };
 
   const handleAnswer = (teamId: string, result: "correct" | "incorrect" | "pass") => {
@@ -176,6 +200,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         currentQuestionIndex: nextIndex,
         phase: "playing",
         recentSwingTeamId: null,
+        activeTeamId: null,
+        currentTypedAnswer: "",
+        isAnswerSubmitted: false,
       };
     });
   };
@@ -206,7 +233,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         nextQuestion,
         endGame,
         addQuestion,
-        resetGame
+        resetGame,
+        setActiveTeam,
+        setTypedAnswer,
+        submitTypedAnswer
       }}
     >
       {children}
