@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Users, Globe } from "lucide-react";
+import { X, Plus, Settings, Users, Globe, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCountryBias, setCategory, startGame } = useGame();
+  const { state, addTeam, removeTeam, setCountryBias, setCategory, setNumRounds, startGame } = useGame();
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleAddTeam = (e: React.FormEvent) => {
@@ -167,6 +167,32 @@ export default function Home() {
                   }`}
                 >
                   {category}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Zap className="w-4 h-4 text-primary" />
+              Number of Rounds
+            </CardTitle>
+            <CardDescription>
+              How many questions to play.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-2">
+              {[5, 10, 15, 20].map((rounds) => (
+                <Button
+                  key={rounds}
+                  variant={state.numRounds === rounds ? "default" : "outline"}
+                  onClick={() => setNumRounds(rounds)}
+                  className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                >
+                  {rounds}
                 </Button>
               ))}
             </div>

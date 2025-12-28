@@ -44,6 +44,7 @@ export interface GameState {
   activeTeamId: string | null;
   typedAnswer: string;
   currentAttempt: Attempt | null;
+  numRounds: number;
 }
 
 interface GameContextType {
@@ -52,6 +53,7 @@ interface GameContextType {
   removeTeam: (id: string) => void;
   setCountryBias: (bias: "US" | "CA" | "Mix") => void;
   setCategory: (category: string) => void;
+  setNumRounds: (rounds: number) => void;
   startGame: () => void;
   setTypedAnswer: (text: string) => void;
   submitAnswer: () => void;
@@ -88,6 +90,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     activeTeamId: null,
     typedAnswer: "",
     currentAttempt: null,
+    numRounds: 10,
   });
 
   // Helper to get questions
@@ -137,6 +140,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, selectedCategory: category }));
   };
 
+  const setNumRounds = (rounds: number) => {
+    setState((prev) => ({ ...prev, numRounds: rounds }));
+  };
+
   const addQuestion = (q: Question) => {
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     const current = stored ? JSON.parse(stored) : [];
@@ -166,12 +173,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       filtered = filtered.filter((q) => q.category === state.selectedCategory);
     }
     const shuffled = shuffleArray(filtered);
+    const limited = shuffled.slice(0, state.numRounds);
 
     if (state.teams.length === 0) return;
 
     setState((prev) => ({
       ...prev,
-      questions: shuffled,
+      questions: limited,
       categories: prev.categories,
       selectedCategory: prev.selectedCategory,
       currentQuestionIndex: 0,
@@ -325,7 +333,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       currentQuestionIndex: 0,
       activeTeamId: null,
       typedAnswer: "",
-      currentAttempt: null
+      currentAttempt: null,
+      numRounds: 10
     }));
   };
 
@@ -337,6 +346,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         removeTeam,
         setCountryBias,
         setCategory,
+        setNumRounds,
         startGame,
         setTypedAnswer,
         submitAnswer,
