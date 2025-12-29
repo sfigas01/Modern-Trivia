@@ -174,9 +174,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
     const shuffled = shuffleArray(filtered);
     
-    // Ensure we load enough questions so each team gets at least 4 questions (one full rotation)
-    const minQuestionsNeeded = state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-    const questionsToLoad = Math.max(state.numRounds, minQuestionsNeeded);
+    // Load questions: numRounds = complete rotations through all teams
+    // With 2 teams and 5 rounds: 5 * 2 * 4 = 40 questions
+    const questionsToLoad = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
     const limited = shuffled.slice(0, questionsToLoad);
 
 
