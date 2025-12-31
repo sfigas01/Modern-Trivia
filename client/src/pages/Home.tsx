@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Users, Globe, Zap } from "lucide-react";
+import { X, Plus, Settings, Users, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCountryBias, setCategory, setNumRounds, startGame } = useGame();
+  const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleAddTeam = (e: React.FormEvent) => {
@@ -108,29 +108,6 @@ export default function Home() {
                   No teams added yet
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-             <CardTitle className="flex items-center gap-2 text-lg">
-              <Globe className="w-4 h-4 text-primary" />
-              Region Bias
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2">
-              {(["Mix", "US", "CA"] as const).map((bias) => (
-                <Button
-                  key={bias}
-                  variant={state.countryBias === bias ? "default" : "outline"}
-                  onClick={() => setCountryBias(bias)}
-                  className={`border-white/10 hover:bg-white/10 ${state.countryBias === bias ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                >
-                  {bias === "Mix" ? "Global Mix" : bias}
-                </Button>
-              ))}
             </div>
           </CardContent>
         </Card>

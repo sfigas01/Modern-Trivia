@@ -40,7 +40,6 @@ export interface GameState {
   selectedCategory: string;
   currentQuestionIndex: number;
   phase: Phase;
-  countryBias: "US" | "CA" | "Mix";
   activeTeamId: string | null;
   typedAnswer: string;
   currentAttempt: Attempt | null;
@@ -51,7 +50,6 @@ interface GameContextType {
   state: GameState;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
-  setCountryBias: (bias: "US" | "CA" | "Mix") => void;
   setCategory: (category: string) => void;
   setNumRounds: (rounds: number) => void;
   startGame: () => void;
@@ -87,7 +85,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     selectedCategory: "All",
     currentQuestionIndex: 0,
     phase: "SETUP",
-    countryBias: "Mix",
     activeTeamId: null,
     typedAnswer: "",
     currentAttempt: null,
@@ -133,10 +130,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, teams: prev.teams.filter((t) => t.id !== id) }));
   };
 
-  const setCountryBias = (bias: "US" | "CA" | "Mix") => {
-    setState((prev) => ({ ...prev, countryBias: bias }));
-  };
-
   const setCategory = (category: string) => {
     setState((prev) => ({ ...prev, selectedCategory: category }));
   };
@@ -164,12 +157,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const startGame = () => {
     const allQuestions = getQuestionPool();
-    let filtered = allQuestions;
-    if (state.countryBias !== "Mix") {
-      filtered = allQuestions.filter(
-        (q) => q.tags.includes("Global") || q.tags.includes(state.countryBias)
-      );
-    }
+    let filtered = allQuestions.filter(
+      (q) => q.tags.includes("Global") || q.tags.includes("CA")
+    );
     if (state.selectedCategory !== "All") {
       filtered = filtered.filter((q) => q.category === state.selectedCategory);
     }
@@ -363,7 +353,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         state,
         addTeam,
         removeTeam,
-        setCountryBias,
         setCategory,
         setNumRounds,
         startGame,
