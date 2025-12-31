@@ -6,7 +6,7 @@
     "question": "What is the capital city of Canada?",
     "answer": "Ottawa",
     "explanation": "Ottawa was chosen as the capital in 1857 by Queen Victoria.",
-    "tags": ["CA", "Geography"]
+    "tags": ["CA", "Geography", "GlobalEh"]
   },
   {
     "id": "q2",
@@ -16,7 +16,7 @@
     "answer": "Florida",
     "acceptableAnswers": ["FL", "The Sunshine State"],
     "explanation": "Florida adopted this nickname effectively in 1970.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q3",
@@ -26,7 +26,7 @@
     "answer": "Potassium",
     "acceptableAnswers": ["K"],
     "explanation": "The symbol K comes from the Latin word 'Kalium'.",
-    "tags": ["Global", "Science"]
+    "tags": ["Global", "Science", "GlobalEh"]
   },
   {
     "id": "q4",
@@ -36,7 +36,7 @@
     "answer": "Sir John A. Macdonald",
     "acceptableAnswers": ["John A Macdonald", "Macdonald", "John Macdonald"],
     "explanation": "He served as the first Prime Minister of Canada from 1867 to 1873.",
-    "tags": ["CA", "History"]
+    "tags": ["CA", "History", "TimeCapsule"]
   },
   {
     "id": "q5",
@@ -45,7 +45,7 @@
     "question": "In which year was the Declaration of Independence signed?",
     "answer": "1776",
     "explanation": "It was signed on July 4, 1776, declaring the 13 colonies independent from Britain.",
-    "tags": ["US", "History"]
+    "tags": ["US", "History", "GlobalEh"]
   },
   {
     "id": "q6",
@@ -54,7 +54,7 @@
     "question": "Which Canadian rapper released the album 'Views'?",
     "answer": "Drake",
     "explanation": "Drake released Views in 2016, featuring hits like Hotline Bling.",
-    "tags": ["CA", "Music"]
+    "tags": ["CA", "Music", "FreshPrints"]
   },
   {
     "id": "q7",
@@ -63,7 +63,7 @@
     "question": "Which city hosted the 2010 Winter Olympics?",
     "answer": "Vancouver",
     "explanation": "Vancouver, Canada hosted the XXI Olympic Winter Games.",
-    "tags": ["CA", "Sports"]
+    "tags": ["CA", "Sports", "TimeCapsule"]
   },
   {
     "id": "q8",
@@ -72,7 +72,7 @@
     "question": "What is the national summer sport of Canada?",
     "answer": "Lacrosse",
     "explanation": "While Hockey is the winter sport, Lacrosse is the official summer sport.",
-    "tags": ["CA", "Sports"]
+    "tags": ["CA", "Sports", "GreatOutdoors"]
   },
   {
     "id": "q9",
@@ -81,7 +81,7 @@
     "question": "What is the longest river in the United States?",
     "answer": "Missouri River",
     "explanation": "The Missouri River is slightly longer than the Mississippi River.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q10",
@@ -90,7 +90,7 @@
     "question": "Which TV show is set in the fictional city of Springfield?",
     "answer": "The Simpsons",
     "explanation": "The Simpsons is the longest-running American animated series.",
-    "tags": ["US", "Entertainment"]
+    "tags": ["US", "Entertainment", "TimeCapsule"]
   },
   {
     "id": "q11",
@@ -99,7 +99,7 @@
     "question": "What is the currency of Japan?",
     "answer": "Yen",
     "explanation": "The Japanese Yen is the third most traded currency in the foreign exchange market.",
-    "tags": ["Global", "Economics"]
+    "tags": ["Global", "Economics", "GlobalEh"]
   },
   {
     "id": "q12",
@@ -108,7 +108,7 @@
     "question": "What is the hardest natural substance on Earth?",
     "answer": "Diamond",
     "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure.",
-    "tags": ["Global", "Science"]
+    "tags": ["Global", "Science", "GlobalEh"]
   },
   {
     "id": "q13",
@@ -117,7 +117,7 @@
     "question": "Which province joined Canada last?",
     "answer": "Newfoundland and Labrador",
     "explanation": "They joined Confederation on March 31, 1949.",
-    "tags": ["CA", "History"]
+    "tags": ["CA", "History", "TimeCapsule"]
   },
   {
     "id": "q14",
@@ -126,7 +126,7 @@
     "question": "Mount Rushmore features the heads of four US presidents. Who is NOT one of them: Washington, Jefferson, Lincoln, or Franklin?",
     "answer": "Franklin",
     "explanation": "The four presidents are Washington, Jefferson, T. Roosevelt, and Lincoln.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q15",
@@ -135,7 +135,7 @@
     "question": "Poutine originated in which Canadian province?",
     "answer": "Quebec",
     "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
-    "tags": ["CA", "Food"]
+    "tags": ["CA", "Food", "GreatOutdoors"]
   },
   {
     "id": "q16",
@@ -144,7 +144,7 @@
     "question": "What year was the first iPhone released?",
     "answer": "2007",
     "explanation": "Steve Jobs announced the first iPhone on January 9, 2007.",
-    "tags": ["Global", "Tech"]
+    "tags": ["Global", "Tech", "TimeCapsule"]
   },
   {
     "id": "q17",
@@ -153,7 +153,7 @@
     "question": "How many time zones does Canada have?",
     "answer": "Six",
     "explanation": "Pacific, Mountain, Central, Eastern, Atlantic, and Newfoundland.",
-    "tags": ["CA", "Geography"]
+    "tags": ["CA", "Geography", "GlobalEh"]
   },
   {
     "id": "q18",
@@ -162,7 +162,7 @@
     "question": "Who was the 16th President of the United States?",
     "answer": "Abraham Lincoln",
     "explanation": "He served during the American Civil War.",
-    "tags": ["US", "History"]
+    "tags": ["US", "History", "GlobalEh"]
   },
   {
     "id": "q19",
@@ -171,7 +171,7 @@
     "question": "What is the national animal of the United States?",
     "answer": "Bald Eagle",
     "explanation": "The Bald Eagle was adopted as the national bird in 1782.",
-    "tags": ["US", "Nature"]
+    "tags": ["US", "Nature", "GlobalEh"]
   },
   {
     "id": "q20",
@@ -180,7 +180,7 @@
     "question": "What is the national animal of Canada?",
     "answer": "Beaver",
     "explanation": "The North American Beaver became an official symbol of Canada in 1975.",
-    "tags": ["CA", "Nature"]
+    "tags": ["CA", "Nature", "GreatOutdoors"]
   },
   {
     "id": "q21",
@@ -189,7 +189,7 @@
     "question": "Which planet is known as the Red Planet?",
     "answer": "Mars",
     "explanation": "Iron oxide prevalent on its surface gives it a reddish appearance.",
-    "tags": ["Global", "Space"]
+    "tags": ["Global", "Space", "GlobalEh"]
   },
   {
     "id": "q22",
@@ -198,7 +198,7 @@
     "question": "Who wrote 'The Handmaid's Tale'?",
     "answer": "Margaret Atwood",
     "explanation": "Margaret Atwood is a celebrated Canadian author.",
-    "tags": ["CA", "Literature"]
+    "tags": ["CA", "Literature", "TimeCapsule"]
   },
   {
     "id": "q23",
@@ -207,7 +207,7 @@
     "question": "Which city is known as the 'Big Apple'?",
     "answer": "New York City",
     "explanation": "The nickname was popularized in the 1920s by sports writer John J. Fitz Gerald.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q24",
@@ -216,7 +216,7 @@
     "question": "In which sport would you perform a 'slam dunk'?",
     "answer": "Basketball",
     "explanation": "Basketball was invented by Canadian James Naismith.",
-    "tags": ["US", "Sports"]
+    "tags": ["US", "Sports", "TimeCapsule"]
   },
   {
     "id": "q25",
@@ -225,7 +225,7 @@
     "question": "Ryan Reynolds was born in which Canadian city?",
     "answer": "Vancouver",
     "explanation": "He was born in Vancouver, British Columbia.",
-    "tags": ["CA", "Entertainment"]
+    "tags": ["CA", "Entertainment", "FreshPrints"]
   },
   {
     "id": "q26",
@@ -234,7 +234,7 @@
     "question": "What is the smallest US state by area?",
     "answer": "Rhode Island",
     "explanation": "Despite its name, it is not an island.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q27",
@@ -243,7 +243,7 @@
     "question": "H2O is the chemical formula for what?",
     "answer": "Water",
     "explanation": "Two hydrogen atoms and one oxygen atom.",
-    "tags": ["Global", "Science"]
+    "tags": ["Global", "Science", "GlobalEh"]
   },
   {
     "id": "q28",
@@ -252,7 +252,7 @@
     "question": "Which American singer is known as the 'King of Pop'?",
     "answer": "Michael Jackson",
     "explanation": "He is regarded as one of the most significant cultural figures of the 20th century.",
-    "tags": ["US", "Music"]
+    "tags": ["US", "Music", "TimeCapsule"]
   },
   {
     "id": "q29",
@@ -261,7 +261,7 @@
     "question": "What is the largest province in Canada by area?",
     "answer": "Quebec",
     "explanation": "Nunavut is larger, but it is a territory, not a province.",
-    "tags": ["CA", "Geography"]
+    "tags": ["CA", "Geography", "GlobalEh"]
   },
   {
     "id": "q30",
@@ -270,7 +270,7 @@
     "question": "In which year did the War of 1812 end?",
     "answer": "1815",
     "explanation": "The Treaty of Ghent was signed in 1814, but fighting continued into early 1815.",
-    "tags": ["US", "History", "CA"]
+    "tags": ["US", "History", "CA", "TimeCapsule"]
   },
   {
     "id": "q31",
@@ -279,7 +279,7 @@
     "question": "Which company was founded by Bill Gates and Paul Allen?",
     "answer": "Microsoft",
     "explanation": "Founded in 1975 in Albuquerque, New Mexico.",
-    "tags": ["US", "Tech"]
+    "tags": ["US", "Tech", "TimeCapsule"]
   },
   {
     "id": "q32",
@@ -288,7 +288,7 @@
     "question": "Celine Dion is from which Canadian province?",
     "answer": "Quebec",
     "explanation": "She was born in Charlemagne, Quebec.",
-    "tags": ["CA", "Music"]
+    "tags": ["CA", "Music", "TimeCapsule"]
   },
   {
     "id": "q33",
@@ -297,7 +297,7 @@
     "question": "What is the capital of California?",
     "answer": "Sacramento",
     "explanation": "It's not Los Angeles or San Francisco!",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q34",
@@ -306,7 +306,7 @@
     "question": "How many sides does a hexagon have?",
     "answer": "Six",
     "explanation": "From the Greek 'hex' meaning six.",
-    "tags": ["Global", "General"]
+    "tags": ["Global", "General", "GlobalEh"]
   },
   {
     "id": "q35",
@@ -315,7 +315,7 @@
     "question": "What is the main ingredient in Guacamole?",
     "answer": "Avocado",
     "explanation": "It's an avocado-based dip, spread, or salad.",
-    "tags": ["Global", "Food"]
+    "tags": ["Global", "Food", "GreatOutdoors"]
   },
   {
     "id": "q36",
@@ -324,7 +324,7 @@
     "question": "The CN Tower is located in which city?",
     "answer": "Toronto",
     "explanation": "It held the record for the world's tallest free-standing structure for 32 years.",
-    "tags": ["CA", "Geography"]
+    "tags": ["CA", "Geography", "GreatOutdoors"]
   },
   {
     "id": "q37",
@@ -333,7 +333,7 @@
     "question": "Which ocean is on the West Coast of the US and Canada?",
     "answer": "Pacific Ocean",
     "explanation": "It is the largest and deepest of Earth's oceanic divisions.",
-    "tags": ["Global", "Geography"]
+    "tags": ["Global", "Geography", "GlobalEh"]
   },
   {
     "id": "q38",
@@ -342,7 +342,7 @@
     "question": "Which team won the first ever Super Bowl?",
     "answer": "Green Bay Packers",
     "explanation": "They defeated the Kansas City Chiefs in 1967.",
-    "tags": ["US", "Sports"]
+    "tags": ["US", "Sports", "TimeCapsule"]
   },
   {
     "id": "q39",
@@ -351,7 +351,7 @@
     "question": "What is the largest mammal in the world?",
     "answer": "Blue Whale",
     "explanation": "They can grow up to 100 feet long and weigh as much as 200 tons.",
-    "tags": ["Global", "Nature"]
+    "tags": ["Global", "Nature", "GlobalEh"]
   },
   {
     "id": "q40",
@@ -360,7 +360,7 @@
     "question": "Tim Hortons is famous for what two items?",
     "answer": "Coffee and Donuts",
     "explanation": "Founded in 1964 by Canadian hockey player Tim Horton.",
-    "tags": ["CA", "Culture"]
+    "tags": ["CA", "Culture", "GreatOutdoors"]
   },
   {
     "id": "q41",
@@ -369,7 +369,7 @@
     "question": "How many senators are in the US Senate?",
     "answer": "100",
     "explanation": "Two for each of the 50 states.",
-    "tags": ["US", "Government"]
+    "tags": ["US", "Government", "GlobalEh"]
   },
   {
     "id": "q42",
@@ -378,7 +378,7 @@
     "question": "What is the speed of light approximately?",
     "answer": "299,792 km/s",
     "explanation": "Often approximated as 300,000 km/s.",
-    "tags": ["Global", "Science"]
+    "tags": ["Global", "Science", "GlobalEh"]
   },
   {
     "id": "q43",
@@ -387,7 +387,7 @@
     "question": "What are the two official languages of Canada?",
     "answer": "English and French",
     "explanation": "Canada is officially bilingual at the federal level.",
-    "tags": ["CA", "History"]
+    "tags": ["CA", "History", "TimeCapsule"]
   },
   {
     "id": "q44",
@@ -396,7 +396,7 @@
     "question": "Which Great Lake is the only one located entirely within the US?",
     "answer": "Lake Michigan",
     "explanation": "The other four are shared with Canada.",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q45",
@@ -405,7 +405,7 @@
     "question": "Who played Iron Man in the Marvel Cinematic Universe?",
     "answer": "Robert Downey Jr.",
     "explanation": "He kicked off the MCU in 2008.",
-    "tags": ["US", "Entertainment"]
+    "tags": ["US", "Entertainment", "FreshPrints"]
   },
   {
     "id": "q46",
@@ -414,7 +414,7 @@
     "question": "Which Canadian hockey player is known as 'The Great One'?",
     "answer": "Wayne Gretzky",
     "explanation": "He holds many records in the NHL.",
-    "tags": ["CA", "Sports"]
+    "tags": ["CA", "Sports", "TimeCapsule"]
   },
   {
     "id": "q47",
@@ -423,7 +423,7 @@
     "question": "What is the powerhouse of the cell?",
     "answer": "Mitochondria",
     "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP).",
-    "tags": ["Global", "Science"]
+    "tags": ["Global", "Science", "GlobalEh"]
   },
   {
     "id": "q48",
@@ -432,7 +432,7 @@
     "question": "What is the capital of Texas?",
     "answer": "Austin",
     "explanation": "Keep Austin Weird!",
-    "tags": ["US", "Geography"]
+    "tags": ["US", "Geography", "GlobalEh"]
   },
   {
     "id": "q49",
@@ -441,7 +441,7 @@
     "question": "What color do you get when you mix Red and Blue?",
     "answer": "Purple",
     "explanation": "It is a secondary color.",
-    "tags": ["Global", "Art"]
+    "tags": ["Global", "Art", "GlobalEh"]
   },
   {
     "id": "q50",
@@ -450,6 +450,6 @@
     "question": "What is the northernmost permanent settlement in the world?",
     "answer": "Alert, Nunavut",
     "explanation": "It is located in the Qikiqtaaluk Region of Nunavut, Canada.",
-    "tags": ["CA", "Geography"]
+    "tags": ["CA", "Geography", "GreatOutdoors"]
   }
 ]

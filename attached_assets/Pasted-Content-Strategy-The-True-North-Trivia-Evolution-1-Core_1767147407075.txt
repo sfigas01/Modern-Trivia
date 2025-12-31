@@ -1,0 +1,43 @@
+Content Strategy: The "True North" Trivia Evolution
+
+## 1. Core Philosophy: "Freshly Squeezed & Globally Smart"
+**Value Proposition:** A trivia game that feels alive and intelligent. It avoids the "US-Defaultism" of other apps, offering a mix of hyper-local Canadiana and globally relevant general knowledge, all kept fresh by AI.
+
+**Target Audience:** Canadians aged 18-50.
+-   **The "Nostalgics" (30-50):** Here for the retro CanCon and shared history.
+-   **The "Vibes" (18-30):** Here for the viral moments, meme culture, and social party play.
+
+---
+
+## 2. Content Pillars (The "Mix")
+
+To serve the broader 18-50 demographic and the "Not US-Centric" promise, we use a 4-part mix:
+
+### Pillar A: "The Time Capsule" (30%)
+*Target: Gen X / Elder Millennials*
+*   **Focus:** Shared nostalgia (80s/90s/00s).
+*   **Examples:** *Degrassi* plot points, *MuchMusic* VJs, The Heritage Minutes ("Dr. Penfield, I smell burnt toast").
+
+### Pillar B: "Global, Eh?" (30%)
+*Target: Everyone (The "Smart" Pillar)*
+*   **Focus:** General Knowledge (Science, History, Lit) that is **NOT** US-centric.
+*   **The Rule:** If a question is about geography, it won't be about Iowa. If it's about history, it won't be the US Civil War (unless Canada was involved).
+*   **Examples:** World Cup history, Euro-Can pop culture crossover, Nobel Prize winners (excluding US presidents).
+
+### Pillar C: "Fresh Prints" (25%)
+*Target: Gen Z / Younger Millennials + News Junkies*
+*   **Focus:** Viral moments, current Billboard hits, and trends from the last 3 months.
+*   **AI Role:** This is where the AI Engine shines, ingesting daily trends to create "News of the Week" rounds.
+
+### Pillar D: "The Great Outdoors" (15%)
+*Target: The "Hoser" Lifestyle*
+*   **Focus:** Culinary, Travel, Slang ("Bunnyhugs"), and Cottage Life.
+
+### *Dynamic Pillar: "Themes on Demand"*
+*   **Feature:** Players can request niche topics (e.g., "1990s Toronto Raves" or "Organic Chemistry"). The AI generates these on the fly, outside the standard percentage mix.
+
+---
+
+## 3. Game Modes & Mechanics
+
+The content ada
