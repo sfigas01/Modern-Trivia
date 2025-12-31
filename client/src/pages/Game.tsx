@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGame, Team } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight, Trophy } from "lucide-react";
+import { Check, X, Minus, ArrowRight, Trophy, Flag } from "lucide-react";
+import { DisputeModal } from "@/components/DisputeModal";
 
 export default function Game() {
   const [_, setLocation] = useLocation();
+  const [disputeOpen, setDisputeOpen] = useState(false);
   const { 
     state, 
     setTypedAnswer, 
@@ -241,12 +243,32 @@ export default function Game() {
                          {currentQ.explanation}
                      </div>
 
-                     <Button 
-                        onClick={advanceToScoreUpdate}
-                        className="w-full h-16 text-xl font-bold shadow-lg mt-4"
-                     >
-                        NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
-                     </Button>
+                     <div className="flex gap-4 mt-4">
+                       <Button 
+                          onClick={advanceToScoreUpdate}
+                          className="flex-1 h-16 text-xl font-bold shadow-lg"
+                       >
+                          NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
+                       </Button>
+                       <Button 
+                          onClick={() => setDisputeOpen(true)}
+                          variant="outline"
+                          className="h-16 px-6 border-white/20 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                       >
+                          <Flag className="w-5 h-5" />
+                          <span className="hidden sm:inline ml-2">Dispute</span>
+                       </Button>
+                     </div>
+
+                     <DisputeModal
+                       open={disputeOpen}
+                       onOpenChange={setDisputeOpen}
+                       questionId={currentQ.id}
+                       questionText={currentQ.question}
+                       correctAnswer={currentQ.answer}
+                       teamName={activeTeam?.name || "Unknown"}
+                       submittedAnswer={state.currentAttempt.submittedAnswer}
+                     />
                  </motion.div>
              )}
 
