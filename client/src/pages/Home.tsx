@@ -43,10 +43,10 @@ export default function Home() {
       >
         <div className="text-center space-y-2">
           <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            MODERN<br/>TRIVIA
+            TRIVIA<br/>CLASH
           </h1>
           <p className="text-muted-foreground font-medium tracking-wide">
-            THE PARTY GAME
+            THE COMPETITIVE PARTY GAME
           </p>
           <div className="flex justify-center">
             <Badge variant="outline" className="border-primary/40 text-primary">
