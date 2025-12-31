@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight } from "lucide-react";
+import { Check, X, Minus, ArrowRight, Trophy } from "lucide-react";
 
 export default function Game() {
   const [_, setLocation] = useLocation();
@@ -16,6 +16,7 @@ export default function Game() {
     submitAnswer, 
     passQuestion, 
     advanceToScoreUpdate,
+    continueToNextRound,
     resetGame
   } = useGame();
   
@@ -25,6 +26,53 @@ export default function Game() {
       setLocation("/");
     }
   }, [state.phase, state.teams.length, setLocation]);
+
+  if (state.phase === "ROUND_SCORE") {
+      const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
+      const currentRound = Math.floor(state.currentQuestionIndex / (state.teams.length * 4));
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-background p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 max-w-2xl w-full"
+              >
+                  <div className="space-y-2">
+                      <Badge variant="outline" className="border-primary/40 text-primary flex items-center justify-center gap-2 mx-auto">
+                        <Trophy className="w-4 h-4" />
+                        Round {currentRound} Complete
+                      </Badge>
+                      <h1 className="text-5xl font-bold">Round Scores</h1>
+                  </div>
+                  <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+                    <CardContent className="p-6 space-y-3">
+                      {sortedTeams.map((team, index) => (
+                        <motion.div
+                          key={team.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                            <span className="font-semibold">{team.name}</span>
+                          </div>
+                          <span className="font-mono text-xl font-bold">{team.score}</span>
+                        </motion.div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                  <Button 
+                    onClick={continueToNextRound}
+                    className="w-full h-14 text-lg font-bold"
+                  >
+                    NEXT ROUND <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+              </motion.div>
+          </div>
+      );
+  }
 
   if (state.phase === "GAME_OVER" || !state.questions.length) {
       // Could render a nice game over screen here
