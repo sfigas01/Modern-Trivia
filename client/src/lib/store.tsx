@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import initialQuestions from "./questions.json";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
-export type Phase = "SETUP" | "QUESTION" | "VERIFYING" | "REVEAL" | "SCORE_UPDATE" | "GAME_OVER";
+export type Phase = "SETUP" | "QUESTION" | "VERIFYING" | "REVEAL" | "SCORE_UPDATE" | "ROUND_SCORE" | "GAME_OVER";
 export type Verdict = "CORRECT" | "INCORRECT" | "PASS" | "PENDING";
 
 export interface Question {
@@ -59,6 +59,7 @@ interface GameContextType {
   submitAnswer: () => void;
   passQuestion: () => void;
   advanceToScoreUpdate: () => void;
+  continueToNextRound: () => void;
   resetGame: () => void;
   addQuestion: (q: Question) => void;
 }
@@ -312,8 +313,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       const nextIndex = prev.currentQuestionIndex + 1;
       let nextPhase: Phase = "QUESTION";
 
+      // Check if a complete round is done
+      const questionsPerRound = prev.teams.length * QUESTIONS_PER_TEAM_ROTATION;
+      const isRoundComplete = nextIndex % questionsPerRound === 0;
+
       if (nextIndex >= prev.questions.length) {
         nextPhase = "GAME_OVER";
+      } else if (isRoundComplete) {
+        nextPhase = "ROUND_SCORE";
       }
 
       return {
@@ -326,6 +333,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         typedAnswer: "", // Clear for next question
       };
     });
+  };
+
+  const continueToNextRound = () => {
+    setState((prev) => ({
+      ...prev,
+      phase: "QUESTION"
+    }));
   };
 
   const resetGame = () => {
@@ -357,6 +371,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         submitAnswer,
         passQuestion,
         advanceToScoreUpdate,
+        continueToNextRound,
         resetGame,
         addQuestion
       }}
