@@ -22,8 +22,10 @@ export function saveDispute(dispute: Omit<Dispute, "id" | "timestamp">): Dispute
   };
   
   disputes.push(newDispute);
+  // Persist to localStorage immediately
   localStorage.setItem(STORAGE_KEY, JSON.stringify(disputes));
   
+  console.log("QA Dispute Logged:", newDispute);
   return newDispute;
 }
 
