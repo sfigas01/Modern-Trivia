@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import initialQuestions from "./questions.json";
+// @ts-ignore
+import stringSimilarity from "string-similarity";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
 export type Phase = "SETUP" | "QUESTION" | "VERIFYING" | "REVEAL" | "SCORE_UPDATE" | "ROUND_SCORE" | "GAME_OVER";
@@ -74,6 +76,16 @@ const normalize = (str: string): string => {
     .trim()
     .replace(/[.,!?'"]/g, "") // Remove punctuation
     .replace(/\b(a|an|the)\b/g, "") // Remove articles (simple regex)
+    .replace(/\b(zero|0)\b/g, "0")
+    .replace(/\b(one|1)\b/g, "1")
+    .replace(/\b(two|2)\b/g, "2")
+    .replace(/\b(three|3)\b/g, "3")
+    .replace(/\b(four|4)\b/g, "4")
+    .replace(/\b(five|5)\b/g, "5")
+    .replace(/\b(six|6)\b/g, "6")
+    .replace(/\b(seven|7)\b/g, "7")
+    .replace(/\b(eight|8)\b/g, "8")
+    .replace(/\b(nine|9)\b/g, "9")
     .replace(/\s+/g, " "); // Collapse whitespace
 };
 
@@ -82,7 +94,25 @@ const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: 
   const normCorrect = normalize(q.answer);
   const acceptable = (q.acceptableAnswers || []).map(normalize);
   
-  const isCorrect = normInput === normCorrect || acceptable.includes(normInput);
+  // Exact match first
+  let isCorrect = normInput === normCorrect || acceptable.includes(normInput);
+  
+  // Fuzzy match if not exact
+  if (!isCorrect && normInput.length > 2) {
+    const similarity = stringSimilarity.compareTwoStrings(normInput, normCorrect);
+    // 0.8 is a good threshold for typos but enough to prevent wild guesses
+    if (similarity > 0.8) isCorrect = true;
+    
+    // Check acceptable variants with fuzzy logic too
+    if (!isCorrect) {
+      for (const variant of acceptable) {
+        if (stringSimilarity.compareTwoStrings(normInput, variant) > 0.8) {
+          isCorrect = true;
+          break;
+        }
+      }
+    }
+  }
   
   if (isCorrect) {
     const p = q.difficulty === "Easy" ? 1 : q.difficulty === "Medium" ? 2 : 3;
