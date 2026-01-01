@@ -7,15 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Edit2, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAllDisputes, clearDisputes, type Dispute } from "@/lib/disputes";
+import { motion } from "framer-motion";
 
 export default function Admin() {
   const [_, setLocation] = useLocation();
-  const { addQuestion } = useGame();
+  const { state, addQuestion, updateQuestion } = useGame();
   const { toast } = useToast();
   const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
   useEffect(() => {
     setDisputes(getAllDisputes());
@@ -69,6 +71,36 @@ export default function Admin() {
       title: "Disputes Cleared",
       description: "All disputes have been deleted.",
     });
+  };
+
+  const startEditing = (dispute: Dispute) => {
+    const question = state.questions.find(q => q.id === dispute.questionId);
+    if (question) {
+      setEditingQuestion({ ...question });
+    } else {
+      setEditingQuestion({
+        id: dispute.questionId,
+        question: dispute.questionText,
+        answer: dispute.correctAnswer,
+        category: "Disputed",
+        difficulty: "Medium",
+        explanation: "",
+        tags: []
+      });
+    }
+  };
+
+  const saveEdit = () => {
+    if (!editingQuestion) return;
+    
+    updateQuestion(editingQuestion);
+    
+    toast({
+      title: "Question Updated",
+      description: "Changes have been saved to the local library.",
+    });
+    
+    setEditingQuestion(null);
   };
 
   return (
@@ -209,26 +241,75 @@ export default function Admin() {
                   {disputes.map((dispute) => (
                     <Card key={dispute.id} className="bg-white/5 border-white/10 border-red-500/30">
                       <CardContent className="p-4 space-y-3">
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Question</div>
-                          <div className="font-semibold">{dispute.questionText}</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Game's Answer</div>
-                            <div className="font-semibold text-primary">{dispute.correctAnswer}</div>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="text-xs text-muted-foreground mb-1">Question</div>
+                            <div className="font-semibold">{dispute.questionText}</div>
                           </div>
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">Team's Answer</div>
-                            <div className="font-semibold">{dispute.submittedAnswer || "(Passed)"}</div>
-                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => startEditing(dispute)}
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Team: {dispute.teamName} — {new Date(dispute.timestamp).toLocaleDateString()}</div>
-                          <div className="text-sm bg-red-500/10 rounded p-2 italic text-red-400/80">
-                            "{dispute.teamExplanation}"
-                          </div>
-                        </div>
+                        
+                        {editingQuestion?.id === dispute.questionId ? (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 border border-primary/30 bg-primary/5 rounded-lg space-y-4"
+                          >
+                            <div className="text-sm font-bold text-primary flex items-center gap-2">
+                              <Edit2 className="w-3 h-3" /> EDITING QUESTION
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-medium uppercase text-muted-foreground">Correct Answer</label>
+                              <Input 
+                                value={editingQuestion.answer}
+                                onChange={(e) => setEditingQuestion({...editingQuestion, answer: e.target.value})}
+                                className="bg-background border-white/20"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-xs font-medium uppercase text-muted-foreground">Question Text</label>
+                              <Textarea 
+                                value={editingQuestion.question}
+                                onChange={(e) => setEditingQuestion({...editingQuestion, question: e.target.value})}
+                                className="bg-background border-white/20 min-h-[80px]"
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="ghost" size="sm" onClick={() => setEditingQuestion(null)}>
+                                <X className="w-4 h-4 mr-1" /> Cancel
+                              </Button>
+                              <Button size="sm" onClick={saveEdit}>
+                                <Check className="w-4 h-4 mr-1" /> Update Question
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Game's Answer</div>
+                                <div className="font-semibold text-primary">{dispute.correctAnswer}</div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-muted-foreground mb-1">Team's Answer</div>
+                                <div className="font-semibold">{dispute.submittedAnswer || "(Passed)"}</div>
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-muted-foreground mb-1">Team: {dispute.teamName} — {new Date(dispute.timestamp).toLocaleDateString()}</div>
+                              <div className="text-sm bg-red-500/10 rounded p-2 italic text-red-400/80">
+                                "{dispute.teamExplanation}"
+                              </div>
+                            </div>
+                          </>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
