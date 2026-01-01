@@ -1,39 +1,29 @@
-export interface Dispute {
-  id: string;
+// Re-export types from shared schema
+export type { Dispute, InsertDispute } from "@shared/schema";
+
+// Save dispute to database via API
+export async function saveDispute(dispute: {
   questionId: string;
   questionText: string;
   correctAnswer: string;
   teamName: string;
   submittedAnswer: string | null;
   teamExplanation: string;
-  timestamp: string;
-}
+}): Promise<void> {
+  try {
+    const response = await fetch("/api/disputes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(dispute),
+    });
 
-const STORAGE_KEY = "trivia_disputes";
-
-export function saveDispute(dispute: Omit<Dispute, "id" | "timestamp">): Dispute {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const disputes = stored ? JSON.parse(stored) : [];
-  
-  const newDispute: Dispute = {
-    ...dispute,
-    id: crypto.randomUUID(),
-    timestamp: new Date().toISOString()
-  };
-  
-  disputes.push(newDispute);
-  // Persist to localStorage immediately
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(disputes));
-  
-  console.log("QA Dispute Logged:", newDispute);
-  return newDispute;
-}
-
-export function getAllDisputes(): Dispute[] {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
-}
-
-export function clearDisputes(): void {
-  localStorage.removeItem(STORAGE_KEY);
+    if (!response.ok) {
+      console.error("Failed to save dispute:", response.statusText);
+    } else {
+      console.log("QA Dispute saved to database");
+    }
+  } catch (error) {
+    console.error("Error saving dispute:", error);
+  }
 }

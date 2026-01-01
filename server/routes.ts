@@ -71,7 +71,7 @@ export async function registerRoutes(
   });
 
   // Admin management routes
-  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req, res) => {
+  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const { userId } = req.body;
       const grantedBy = req.user?.claims?.sub;
@@ -103,7 +103,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/check", isAuthenticated, async (req, res) => {
+  app.get("/api/admin/check", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
       const [admin] = await db

@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useGame } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
+import { useAdmin } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Users, Zap } from "lucide-react";
+import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
   const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleAddTeam = (e: React.FormEvent) => {
@@ -181,15 +185,45 @@ export default function Home() {
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
             disabled={state.teams.length < 2}
             onClick={handleStart}
+            data-testid="button-start-game"
           >
             START GAME
           </Button>
           
-          <div className="flex justify-center">
-            <Button variant="link" className="text-muted-foreground text-xs" onClick={() => setLocation("/admin")}>
-              <Settings className="w-3 h-3 mr-1" />
-              Game Settings & Admin
-            </Button>
+          <div className="flex justify-center gap-4 items-center flex-wrap">
+            {isAuthenticated && isAdmin && (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => setLocation("/admin")}
+                data-testid="link-admin"
+              >
+                <Shield className="w-3 h-3 mr-1" />
+                Admin Panel
+              </Button>
+            )}
+            
+            {isAuthenticated ? (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => logout()}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-3 h-3 mr-1" />
+                Sign Out ({user?.email?.split('@')[0]})
+              </Button>
+            ) : (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => window.location.href = "/api/login"}
+                data-testid="button-login"
+              >
+                <LogIn className="w-3 h-3 mr-1" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
