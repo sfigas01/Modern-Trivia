@@ -37,7 +37,7 @@ export function DisputeModal({
   const [explanation, setExplanation] = useState("");
   const { toast } = useToast();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!explanation.trim()) {
       toast({
         title: "Error",
@@ -47,7 +47,7 @@ export function DisputeModal({
       return;
     }
 
-    saveDispute({
+    const result = await saveDispute({
       questionId,
       questionText,
       correctAnswer,
@@ -55,6 +55,27 @@ export function DisputeModal({
       submittedAnswer,
       teamExplanation: explanation
     });
+
+    if (result.needsAuth) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to submit disputes. Redirecting to login...",
+        variant: "destructive"
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 1500);
+      return;
+    }
+
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.message || "Failed to submit dispute. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     toast({
       title: "Dispute Submitted",

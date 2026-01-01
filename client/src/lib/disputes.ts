@@ -9,7 +9,7 @@ export async function saveDispute(dispute: {
   teamName: string;
   submittedAnswer: string | null;
   teamExplanation: string;
-}): Promise<void> {
+}): Promise<{ success: boolean; needsAuth: boolean; message?: string }> {
   try {
     const response = await fetch("/api/disputes", {
       method: "POST",
@@ -18,12 +18,20 @@ export async function saveDispute(dispute: {
       body: JSON.stringify(dispute),
     });
 
+    if (response.status === 401) {
+      console.warn("User not authenticated - dispute not saved");
+      return { success: false, needsAuth: true, message: "Please sign in to submit disputes" };
+    }
+
     if (!response.ok) {
       console.error("Failed to save dispute:", response.statusText);
-    } else {
-      console.log("QA Dispute saved to database");
+      return { success: false, needsAuth: false, message: "Failed to save dispute" };
     }
+
+    console.log("QA Dispute saved to database");
+    return { success: true, needsAuth: false };
   } catch (error) {
     console.error("Error saving dispute:", error);
+    return { success: false, needsAuth: false, message: "Network error" };
   }
 }

@@ -49,14 +49,15 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/disputes", async (req, res) => {
+  app.post("/api/disputes", isAuthenticated, async (req, res) => {
     try {
       const parsed = insertDisputeSchema.parse(req.body);
       const [newDispute] = await db.insert(disputes).values(parsed).returning();
       res.status(201).json(newDispute);
     } catch (error) {
       console.error("Error creating dispute:", error);
-      res.status(400).json({ message: "Invalid dispute data" });
+      const statusCode = error instanceof Error && error.message.includes("validation") ? 422 : 400;
+      res.status(statusCode).json({ message: "Invalid dispute data" });
     }
   });
 
