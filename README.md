@@ -1,6 +1,6 @@
 # Modern Trivia
 
-Modern Trivia is a browser-based multiplayer trivia party game designed for local teams (2-6 teams) playing together. It features automatic answer verification with fuzzy matching, a comprehensive scoring system, and 600+ built-in trivia questions with Canadian-focused content and global general knowledge.
+Modern Trivia is a browser-based multiplayer trivia party game designed for local teams (2-6 teams) playing together. It features automatic answer verification with fuzzy matching, a comprehensive scoring system, and 200 built-in trivia questions with Canadian-focused content and global general knowledge.
 
 ## Project Origins
 
@@ -10,7 +10,7 @@ This project was created using ChatGPT, Replit, and Codex. The original prototyp
 
 ### Game Features
 - **Team-Based Gameplay**: 2-6 teams with custom names
-- **600+ Trivia Questions**: Organized by category, difficulty, and regional focus
+- **200 Trivia Questions**: Organized by category, difficulty, and regional focus
 - **Category Selection**: Filter by Geography, Science, History, Music, and more, or select "All"
 - **Intelligent Answer Verification**: Fuzzy matching with 80% similarity threshold
   - Handles punctuation, articles, number words, and case-insensitivity
@@ -137,7 +137,7 @@ Modern-Trivia/
 │   └── src/
 │       ├── components/  # UI components (including shadcn/ui library)
 │       ├── hooks/       # Custom React hooks (auth, admin, disputes)
-│       ├── lib/         # Utilities, store, questions.json (600+ questions)
+│       ├── lib/         # Utilities, store, questions.json (200 questions)
 │       └── pages/       # Route pages (Home, Game, Admin)
 ├── server/              # Express backend
 │   ├── index.ts         # Main server setup
@@ -198,7 +198,7 @@ To grant admin access to users:
 
 ## Questions Database
 
-The game includes 600+ built-in trivia questions organized by:
+The game includes 200 built-in trivia questions organized by:
 
 - **Categories**: Geography, Science, History, Music, Sports, Pop Culture, and more
 - **Difficulty Levels**: Easy, Medium, Hard
