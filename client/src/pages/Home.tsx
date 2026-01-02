@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useGame } from "@/lib/store";
+import { useAuth } from "@/hooks/use-auth";
+import { useAdmin } from "@/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Users, Globe, Zap } from "lucide-react";
+import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCountryBias, setCategory, setNumRounds, startGame } = useGame();
+  const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState("");
 
   const handleAddTeam = (e: React.FormEvent) => {
@@ -43,10 +47,10 @@ export default function Home() {
       >
         <div className="text-center space-y-2">
           <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            MODERN<br/>TRIVIA
+            TRIVIA<br/>CLASH
           </h1>
           <p className="text-muted-foreground font-medium tracking-wide">
-            THE PARTY GAME
+            THE COMPETITIVE PARTY GAME
           </p>
           <div className="flex justify-center">
             <Badge variant="outline" className="border-primary/40 text-primary">
@@ -108,29 +112,6 @@ export default function Home() {
                   No teams added yet
                 </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-             <CardTitle className="flex items-center gap-2 text-lg">
-              <Globe className="w-4 h-4 text-primary" />
-              Region Bias
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-2">
-              {(["Mix", "US", "CA"] as const).map((bias) => (
-                <Button
-                  key={bias}
-                  variant={state.countryBias === bias ? "default" : "outline"}
-                  onClick={() => setCountryBias(bias)}
-                  className={`border-white/10 hover:bg-white/10 ${state.countryBias === bias ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                >
-                  {bias === "Mix" ? "Global Mix" : bias}
-                </Button>
-              ))}
             </div>
           </CardContent>
         </Card>
@@ -204,15 +185,45 @@ export default function Home() {
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
             disabled={state.teams.length < 2}
             onClick={handleStart}
+            data-testid="button-start-game"
           >
             START GAME
           </Button>
           
-          <div className="flex justify-center">
-            <Button variant="link" className="text-muted-foreground text-xs" onClick={() => setLocation("/admin")}>
-              <Settings className="w-3 h-3 mr-1" />
-              Game Settings & Admin
-            </Button>
+          <div className="flex justify-center gap-4 items-center flex-wrap">
+            {isAuthenticated && isAdmin && (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => setLocation("/admin")}
+                data-testid="link-admin"
+              >
+                <Shield className="w-3 h-3 mr-1" />
+                Admin Panel
+              </Button>
+            )}
+            
+            {isAuthenticated ? (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => logout()}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-3 h-3 mr-1" />
+                Sign Out ({user?.email?.split('@')[0]})
+              </Button>
+            ) : (
+              <Button 
+                variant="link" 
+                className="text-muted-foreground text-xs" 
+                onClick={() => window.location.href = "/api/login"}
+                data-testid="button-login"
+              >
+                <LogIn className="w-3 h-3 mr-1" />
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>

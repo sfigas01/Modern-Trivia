@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useGame, Team } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -6,18 +6,21 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight } from "lucide-react";
+import { Check, X, Minus, ArrowRight, Trophy, Flag } from "lucide-react";
+import { DisputeModal } from "@/components/DisputeModal";
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 export default function Game() {
   const [_, setLocation] = useLocation();
+  const [disputeOpen, setDisputeOpen] = useState(false);
   const { 
     state, 
     setTypedAnswer, 
     submitAnswer, 
     passQuestion, 
     advanceToScoreUpdate,
+    continueToNextRound,
     continueAfterScoreUpdate,
     resetGame
   } = useGame();
@@ -28,6 +31,53 @@ export default function Game() {
       setLocation("/");
     }
   }, [state.phase, state.teams.length, setLocation]);
+
+  if (state.phase === "ROUND_SCORE") {
+      const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
+      const currentRound = Math.floor(state.currentQuestionIndex / (state.teams.length * 4));
+      return (
+          <div className="min-h-screen flex items-center justify-center bg-background p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 max-w-2xl w-full"
+              >
+                  <div className="space-y-2">
+                      <Badge variant="outline" className="border-primary/40 text-primary flex items-center justify-center gap-2 mx-auto">
+                        <Trophy className="w-4 h-4" />
+                        Round {currentRound} Complete
+                      </Badge>
+                      <h1 className="text-5xl font-bold">Round Scores</h1>
+                  </div>
+                  <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+                    <CardContent className="p-6 space-y-3">
+                      {sortedTeams.map((team, index) => (
+                        <motion.div
+                          key={team.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                            <span className="font-semibold">{team.name}</span>
+                          </div>
+                          <span className="font-mono text-xl font-bold">{team.score}</span>
+                        </motion.div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                  <Button 
+                    onClick={continueToNextRound}
+                    className="w-full h-14 text-lg font-bold"
+                  >
+                    NEXT ROUND <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+              </motion.div>
+          </div>
+      );
+  }
 
   if (state.phase === "GAME_OVER" || !state.questions.length) {
       // Could render a nice game over screen here
@@ -239,6 +289,34 @@ export default function Game() {
                            {currentQ?.explanation}
                        </div>
 
+                     <div className="flex gap-4 mt-4">
+                       <Button 
+                          onClick={advanceToScoreUpdate}
+                          className="flex-1 h-16 text-xl font-bold shadow-lg"
+                       >
+                          NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
+                       </Button>
+                       <Button 
+                          onClick={() => setDisputeOpen(true)}
+                          variant="outline"
+                          className="h-16 px-6 border-white/20 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                       >
+                          <Flag className="w-5 h-5" />
+                          <span className="hidden sm:inline ml-2">Dispute</span>
+                       </Button>
+                     </div>
+
+                     <DisputeModal
+                       open={disputeOpen}
+                       onOpenChange={setDisputeOpen}
+                       questionId={currentQ.id}
+                       questionText={currentQ.question}
+                       correctAnswer={currentQ.answer}
+                       teamName={activeTeam?.name || "Unknown"}
+                       submittedAnswer={state.currentAttempt.submittedAnswer}
+                     />
+                 </motion.div>
+             )}
                        <Button 
                           onClick={advanceToScoreUpdate}
                           className="w-full h-16 text-xl font-bold shadow-lg mt-4"
