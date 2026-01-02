@@ -6,7 +6,11 @@
     "question": "What is the capital city of Canada?",
     "answer": "Ottawa",
     "explanation": "Ottawa was chosen as the capital in 1857 by Queen Victoria.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q2",
@@ -14,9 +18,16 @@
     "difficulty": "Easy",
     "question": "Which US state is known as the 'Sunshine State'?",
     "answer": "Florida",
-    "acceptableAnswers": ["FL", "The Sunshine State"],
+    "acceptableAnswers": [
+      "FL",
+      "The Sunshine State"
+    ],
     "explanation": "Florida adopted this nickname effectively in 1970.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q3",
@@ -24,9 +35,15 @@
     "difficulty": "Medium",
     "question": "What represents the 'K' in the periodic table?",
     "answer": "Potassium",
-    "acceptableAnswers": ["K"],
+    "acceptableAnswers": [
+      "K"
+    ],
     "explanation": "The symbol K comes from the Latin word 'Kalium'.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q4",
@@ -34,9 +51,17 @@
     "difficulty": "Hard",
     "question": "Who was the first Prime Minister of Canada?",
     "answer": "Sir John A. Macdonald",
-    "acceptableAnswers": ["John A Macdonald", "Macdonald", "John Macdonald"],
+    "acceptableAnswers": [
+      "John A Macdonald",
+      "Macdonald",
+      "John Macdonald"
+    ],
     "explanation": "He served as the first Prime Minister of Canada from 1867 to 1873.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q5",
@@ -44,8 +69,12 @@
     "difficulty": "Medium",
     "question": "In which year was the Declaration of Independence signed?",
     "answer": "1776",
-    "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy.",
-    "tags": ["US", "History", "GlobalEh"]
+    "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy. Source: https://www.archives.gov/milestone-documents/declaration-of-independence",
+    "tags": [
+      "US",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q6",
@@ -53,8 +82,12 @@
     "difficulty": "Easy",
     "question": "Which Canadian rapper released the album 'Views'?",
     "answer": "Drake",
-    "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album.",
-    "tags": ["CA", "Music", "FreshPrints"]
+    "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album. Major album tracks include 'One Dance' and 'Controlla'. Source: https://en.wikipedia.org/wiki/Views_(album)",
+    "tags": [
+      "CA",
+      "Music",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q7",
@@ -63,7 +96,11 @@
     "question": "Which city hosted the 2010 Winter Olympics?",
     "answer": "Vancouver",
     "explanation": "Vancouver, Canada hosted the XXI Olympic Winter Games.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q8",
@@ -72,7 +109,11 @@
     "question": "What is the national summer sport of Canada?",
     "answer": "Lacrosse",
     "explanation": "While Hockey is the winter sport, Lacrosse is the official summer sport.",
-    "tags": ["CA", "Sports", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Sports",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q9",
@@ -81,7 +122,11 @@
     "question": "What is the longest river in the United States?",
     "answer": "Missouri River",
     "explanation": "The Missouri River is slightly longer than the Mississippi River.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q10",
@@ -90,7 +135,11 @@
     "question": "Which TV show is set in the fictional city of Springfield?",
     "answer": "The Simpsons",
     "explanation": "The Simpsons is the longest-running American animated series.",
-    "tags": ["US", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "US",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q11",
@@ -99,7 +148,11 @@
     "question": "What is the currency of Japan?",
     "answer": "Yen",
     "explanation": "The Japanese Yen is the third most traded currency in the foreign exchange market.",
-    "tags": ["Global", "Economics", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Economics",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q12",
@@ -108,7 +161,11 @@
     "question": "What is the hardest natural substance on Earth?",
     "answer": "Diamond",
     "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q13",
@@ -117,7 +174,11 @@
     "question": "Which province joined Canada last?",
     "answer": "Newfoundland and Labrador",
     "explanation": "They joined Confederation on March 31, 1949.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q14",
@@ -126,7 +187,11 @@
     "question": "Mount Rushmore features the heads of four US presidents. Who is NOT one of them: Washington, Jefferson, Lincoln, or Franklin?",
     "answer": "Franklin",
     "explanation": "The four presidents are Washington, Jefferson, T. Roosevelt, and Lincoln.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q15",
@@ -134,8 +199,12 @@
     "difficulty": "Easy",
     "question": "Poutine originated in which Canadian province?",
     "answer": "Quebec",
-    "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "explanation": "It emerged in the late 1950s in the Centre-du-Qu\u00e9bec area.",
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q16",
@@ -144,7 +213,11 @@
     "question": "What year was the first iPhone released?",
     "answer": "2007",
     "explanation": "Steve Jobs announced the first iPhone on January 9, 2007.",
-    "tags": ["Global", "Tech", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Tech",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q17",
@@ -153,7 +226,11 @@
     "question": "How many time zones does Canada have?",
     "answer": "Six",
     "explanation": "Pacific, Mountain, Central, Eastern, Atlantic, and Newfoundland.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q18",
@@ -162,7 +239,11 @@
     "question": "Who was the 16th President of the United States?",
     "answer": "Abraham Lincoln",
     "explanation": "He served during the American Civil War.",
-    "tags": ["US", "History", "GlobalEh"]
+    "tags": [
+      "US",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q19",
@@ -171,7 +252,11 @@
     "question": "What is the national animal of the United States?",
     "answer": "Bald Eagle",
     "explanation": "The Bald Eagle was adopted as the national bird in 1782.",
-    "tags": ["US", "Nature", "GlobalEh"]
+    "tags": [
+      "US",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q20",
@@ -180,7 +265,11 @@
     "question": "What is the national animal of Canada?",
     "answer": "Beaver",
     "explanation": "The North American Beaver became an official symbol of Canada in 1975.",
-    "tags": ["CA", "Nature", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Nature",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q21",
@@ -189,7 +278,11 @@
     "question": "Which planet is known as the Red Planet?",
     "answer": "Mars",
     "explanation": "Iron oxide prevalent on its surface gives it a reddish appearance.",
-    "tags": ["Global", "Space", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Space",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q22",
@@ -198,7 +291,11 @@
     "question": "Who wrote 'The Handmaid's Tale'?",
     "answer": "Margaret Atwood",
     "explanation": "Margaret Atwood is a celebrated Canadian author.",
-    "tags": ["CA", "Literature", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Literature",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q23",
@@ -207,7 +304,11 @@
     "question": "Which city is known as the 'Big Apple'?",
     "answer": "New York City",
     "explanation": "The nickname was popularized in the 1920s by sports writer John J. Fitz Gerald.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q24",
@@ -216,7 +317,11 @@
     "question": "In which sport would you perform a 'slam dunk'?",
     "answer": "Basketball",
     "explanation": "Basketball was invented by Canadian James Naismith.",
-    "tags": ["US", "Sports", "TimeCapsule"]
+    "tags": [
+      "US",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q25",
@@ -225,7 +330,11 @@
     "question": "Ryan Reynolds was born in which Canadian city?",
     "answer": "Vancouver",
     "explanation": "He was born in Vancouver, British Columbia.",
-    "tags": ["CA", "Entertainment", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q26",
@@ -234,7 +343,11 @@
     "question": "What is the smallest US state by area?",
     "answer": "Rhode Island",
     "explanation": "Despite its name, it is not an island.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q27",
@@ -243,7 +356,11 @@
     "question": "H2O is the chemical formula for what?",
     "answer": "Water",
     "explanation": "Two hydrogen atoms and one oxygen atom.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q28",
@@ -252,7 +369,11 @@
     "question": "Which American singer is known as the 'King of Pop'?",
     "answer": "Michael Jackson",
     "explanation": "He is regarded as one of the most significant cultural figures of the 20th century.",
-    "tags": ["US", "Music", "TimeCapsule"]
+    "tags": [
+      "US",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q29",
@@ -261,7 +382,11 @@
     "question": "What is the largest province in Canada by area?",
     "answer": "Quebec",
     "explanation": "Nunavut is larger, but it is a territory, not a province.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q30",
@@ -270,7 +395,12 @@
     "question": "In which year did the War of 1812 end?",
     "answer": "1815",
     "explanation": "The Treaty of Ghent was signed in 1814, but fighting continued into early 1815.",
-    "tags": ["US", "History", "CA", "TimeCapsule"]
+    "tags": [
+      "US",
+      "History",
+      "CA",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q31",
@@ -279,7 +409,11 @@
     "question": "Which company was founded by Bill Gates and Paul Allen?",
     "answer": "Microsoft",
     "explanation": "Founded in 1975 in Albuquerque, New Mexico.",
-    "tags": ["US", "Tech", "TimeCapsule"]
+    "tags": [
+      "US",
+      "Tech",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q32",
@@ -288,7 +422,11 @@
     "question": "Celine Dion is from which Canadian province?",
     "answer": "Quebec",
     "explanation": "She was born in Charlemagne, Quebec.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q33",
@@ -297,7 +435,11 @@
     "question": "What is the capital of California?",
     "answer": "Sacramento",
     "explanation": "It's not Los Angeles or San Francisco!",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q34",
@@ -306,7 +448,11 @@
     "question": "How many sides does a hexagon have?",
     "answer": "Six",
     "explanation": "From the Greek 'hex' meaning six.",
-    "tags": ["Global", "General", "GlobalEh"]
+    "tags": [
+      "Global",
+      "General",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q35",
@@ -315,7 +461,11 @@
     "question": "What is the main ingredient in Guacamole?",
     "answer": "Avocado",
     "explanation": "It's an avocado-based dip, spread, or salad.",
-    "tags": ["Global", "Food", "GreatOutdoors"]
+    "tags": [
+      "Global",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q36",
@@ -324,7 +474,11 @@
     "question": "The CN Tower is located in which city?",
     "answer": "Toronto",
     "explanation": "It held the record for the world's tallest free-standing structure for 32 years.",
-    "tags": ["CA", "Geography", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q37",
@@ -333,7 +487,11 @@
     "question": "Which ocean is on the West Coast of the US and Canada?",
     "answer": "Pacific Ocean",
     "explanation": "It is the largest and deepest of Earth's oceanic divisions.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q38",
@@ -342,7 +500,11 @@
     "question": "Which team won the first ever Super Bowl?",
     "answer": "Green Bay Packers",
     "explanation": "They defeated the Kansas City Chiefs in 1967.",
-    "tags": ["US", "Sports", "TimeCapsule"]
+    "tags": [
+      "US",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q39",
@@ -351,7 +513,11 @@
     "question": "What is the largest mammal in the world?",
     "answer": "Blue Whale",
     "explanation": "They can grow up to 100 feet long and weigh as much as 200 tons.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q40",
@@ -360,7 +526,11 @@
     "question": "Tim Hortons is famous for what two items?",
     "answer": "Coffee and Donuts",
     "explanation": "Founded in 1964 by Canadian hockey player Tim Horton.",
-    "tags": ["CA", "Culture", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Culture",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q41",
@@ -369,7 +539,11 @@
     "question": "How many senators are in the US Senate?",
     "answer": "100",
     "explanation": "Two for each of the 50 states.",
-    "tags": ["US", "Government", "GlobalEh"]
+    "tags": [
+      "US",
+      "Government",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q42",
@@ -378,7 +552,11 @@
     "question": "What is the speed of light approximately?",
     "answer": "299,792 km/s",
     "explanation": "Often approximated as 300,000 km/s.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q43",
@@ -387,7 +565,11 @@
     "question": "What are the two official languages of Canada?",
     "answer": "English and French",
     "explanation": "Canada is officially bilingual at the federal level.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q44",
@@ -396,7 +578,11 @@
     "question": "Which Great Lake is the only one located entirely within the US?",
     "answer": "Lake Michigan",
     "explanation": "The other four are shared with Canada.",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q45",
@@ -405,7 +591,11 @@
     "question": "Who played Iron Man in the Marvel Cinematic Universe?",
     "answer": "Robert Downey Jr.",
     "explanation": "He kicked off the MCU in 2008.",
-    "tags": ["US", "Entertainment", "FreshPrints"]
+    "tags": [
+      "US",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q46",
@@ -414,7 +604,11 @@
     "question": "Which Canadian hockey player is known as 'The Great One'?",
     "answer": "Wayne Gretzky",
     "explanation": "He holds many records in the NHL.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q47",
@@ -423,7 +617,11 @@
     "question": "What is the powerhouse of the cell?",
     "answer": "Mitochondria",
     "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP).",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q48",
@@ -432,7 +630,11 @@
     "question": "What is the capital of Texas?",
     "answer": "Austin",
     "explanation": "Keep Austin Weird!",
-    "tags": ["US", "Geography", "GlobalEh"]
+    "tags": [
+      "US",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q49",
@@ -441,7 +643,11 @@
     "question": "What color do you get when you mix Red and Blue?",
     "answer": "Purple",
     "explanation": "It is a secondary color.",
-    "tags": ["Global", "Art", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Art",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q50",
@@ -450,7 +656,11 @@
     "question": "What is the northernmost permanent settlement in the world?",
     "answer": "Alert, Nunavut",
     "explanation": "It is located in the Qikiqtaaluk Region of Nunavut, Canada.",
-    "tags": ["CA", "Geography", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q51",
@@ -459,7 +669,11 @@
     "question": "In what year did Canada become a nation?",
     "answer": "1867",
     "explanation": "Confederation occurred on July 1, 1867, now celebrated as Canada Day.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q52",
@@ -467,8 +681,12 @@
     "difficulty": "Easy",
     "question": "Which Canadian artist performed the halftime show at Super Bowl LV?",
     "answer": "The Weeknd",
-    "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida.",
-    "tags": ["CA", "Music", "FreshPrints"]
+    "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida. Super Bowl LIV (54) in 2020 featured Shakira and Jennifer Lopez. Source: https://en.wikipedia.org/wiki/Super_Bowl_LV_halftime_show",
+    "tags": [
+      "CA",
+      "Music",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q53",
@@ -477,7 +695,11 @@
     "question": "How many Stanley Cups has Canada's Toronto Maple Leafs won?",
     "answer": "13",
     "explanation": "Their last championship was in 1967.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q54",
@@ -486,7 +708,11 @@
     "question": "What is the chemical symbol for Gold?",
     "answer": "Au",
     "explanation": "Au comes from the Latin word 'aurum'.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q55",
@@ -494,9 +720,16 @@
     "difficulty": "Hard",
     "question": "What is the tallest mountain in North America?",
     "answer": "Denali",
-    "acceptableAnswers": ["Mount Denali", "Mt. Denali"],
+    "acceptableAnswers": [
+      "Mount Denali",
+      "Mt. Denali"
+    ],
     "explanation": "Denali in Alaska stands at 20,310 feet (6,190 meters).",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q56",
@@ -505,7 +738,11 @@
     "question": "Maple syrup comes from which tree?",
     "answer": "Sugar Maple",
     "explanation": "The sugar maple is Canada's national tree.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q57",
@@ -513,8 +750,12 @@
     "difficulty": "Medium",
     "question": "Which British actor stars as Batman in 'The Batman' (2022)?",
     "answer": "Robert Pattinson",
-    "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He starred in 'The Batman' (2022).",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He is British and starred in 'The Batman' (2022). Source: https://www.britannica.com/facts/Robert-Pattinson",
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q58",
@@ -523,7 +764,11 @@
     "question": "Who discovered insulin and won a Nobel Prize for Medicine?",
     "answer": "Frederick Banting",
     "explanation": "Banting was a Canadian physician who shared the 1923 Nobel Prize.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q59",
@@ -532,7 +777,11 @@
     "question": "What is the world's largest freshwater lake?",
     "answer": "Lake Superior",
     "explanation": "It is shared between Canada and the United States.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q60",
@@ -541,7 +790,11 @@
     "question": "Who wrote 'Anne of Green Gables'?",
     "answer": "Lucy Maud Montgomery",
     "explanation": "Montgomery was a Canadian author born in Prince Edward Island.",
-    "tags": ["CA", "Literature", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Literature",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q61",
@@ -550,7 +803,11 @@
     "question": "Which Canadian city is known as the 'City of Festivals'?",
     "answer": "Montreal",
     "explanation": "Montreal hosts numerous cultural festivals throughout the year.",
-    "tags": ["CA", "Geography", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q62",
@@ -558,9 +815,16 @@
     "difficulty": "Medium",
     "question": "What gas do plants absorb for photosynthesis?",
     "answer": "Carbon Dioxide",
-    "acceptableAnswers": ["CO2"],
+    "acceptableAnswers": [
+      "CO2",
+      "CO2"
+    ],
     "explanation": "Plants use CO2 and sunlight to create glucose.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q63",
@@ -569,7 +833,11 @@
     "question": "Which Canadian tennis player won the US Open in 2019?",
     "answer": "Bianca Andreescu",
     "explanation": "Andreescu defeated Serena Williams in the final.",
-    "tags": ["CA", "Sports", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Sports",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q64",
@@ -578,7 +846,11 @@
     "question": "Which Canadian actor is known for the TV series 'Schitt's Creek'?",
     "answer": "Dan Levy",
     "explanation": "Levy created and starred in the Emmy-winning show.",
-    "tags": ["CA", "Entertainment", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q65",
@@ -587,7 +859,11 @@
     "question": "In which year did the Titanic sink?",
     "answer": "1912",
     "explanation": "It struck an iceberg on April 15, 1912.",
-    "tags": ["Global", "History", "GlobalEh"]
+    "tags": [
+      "Global",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q66",
@@ -596,7 +872,11 @@
     "question": "What is the capital of Australia?",
     "answer": "Canberra",
     "explanation": "Canberra was designed as a compromise between Sydney and Melbourne.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q67",
@@ -605,7 +885,11 @@
     "question": "Which Canadian singer-songwriter wrote 'Hallelujah'?",
     "answer": "Leonard Cohen",
     "explanation": "Cohen was born in Montreal and wrote this iconic song in 1984.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q68",
@@ -614,7 +898,11 @@
     "question": "What is the national dish of Canada?",
     "answer": "Poutine",
     "explanation": "This French fries, gravy, and cheese curd dish is beloved across Canada.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q69",
@@ -623,7 +911,11 @@
     "question": "How many bones does an adult human have?",
     "answer": "206",
     "explanation": "Babies are born with about 270 bones, but some fuse as they grow.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q70",
@@ -632,7 +924,11 @@
     "question": "Which Canadian comedy troupe created 'Kids in the Hall'?",
     "answer": "The Kids in the Hall",
     "explanation": "This sketch comedy group was hugely popular in the 1990s.",
-    "tags": ["CA", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q71",
@@ -641,7 +937,11 @@
     "question": "What year did Canada first win an Olympic gold medal?",
     "answer": "1900",
     "explanation": "Canadian athletes have competed since the first modern Olympics.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q72",
@@ -650,7 +950,11 @@
     "question": "Who was the first European to reach North America?",
     "answer": "Leif Erikson",
     "explanation": "The Viking explorer reached North America around 1000 AD.",
-    "tags": ["Global", "History", "GlobalEh"]
+    "tags": [
+      "Global",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q73",
@@ -659,7 +963,11 @@
     "question": "What is the capital of France?",
     "answer": "Paris",
     "explanation": "Paris is located on the Seine River.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q74",
@@ -668,7 +976,11 @@
     "question": "What is the largest land animal on Earth?",
     "answer": "African Elephant",
     "explanation": "Adult males can weigh up to 14,000 pounds.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q75",
@@ -677,7 +989,11 @@
     "question": "Who wrote the Harry Potter series?",
     "answer": "J.K. Rowling",
     "explanation": "The British author created the magical world of Hogwarts.",
-    "tags": ["Global", "Literature", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Literature",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q76",
@@ -686,16 +1002,24 @@
     "question": "In what year did the internet become publicly available?",
     "answer": "1991",
     "explanation": "The World Wide Web was released to the public on August 6, 1991.",
-    "tags": ["Global", "Tech", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Tech",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q77",
     "category": "Music",
     "difficulty": "Hard",
-    "question": "Which band released the album 'The Wall'?",
+    "question": "Which British rock band released the iconic album 'The Wall' in 1979?",
     "answer": "Pink Floyd",
-    "explanation": "Pink Floyd released The Wall in 1979. This is a British rock band.",
-    "tags": ["Global", "Music", "TimeCapsule"]
+    "explanation": "Pink Floyd is a British rock band formed in London in 1965. 'The Wall' is one of rock's most acclaimed concept albums. Source: https://en.wikipedia.org/wiki/Pink_Floyd",
+    "tags": [
+      "Global",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q78",
@@ -704,7 +1028,11 @@
     "question": "How many Olympic sports are there in the Summer Olympics?",
     "answer": "32",
     "explanation": "The number of sports varies with each Olympic Games.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q79",
@@ -713,7 +1041,11 @@
     "question": "Which Canadian province has the highest population?",
     "answer": "Ontario",
     "explanation": "Ontario is home to over 15 million people.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q80",
@@ -722,16 +1054,24 @@
     "question": "What is the largest organ in the human body?",
     "answer": "Skin",
     "explanation": "The skin covers and protects all other organs.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q81",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Hollywood actress plays Black Widow in Marvel films?",
+    "question": "Which American actress plays Black Widow in Marvel films?",
     "answer": "Scarlett Johansson",
-    "explanation": "Scarlett Johansson is an American actress, not Canadian.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Scarlett Johansson is an American actress born in New York City. She has played Natasha Romanoff/Black Widow since 2010. Source: https://en.wikipedia.org/wiki/Scarlett_Johansson",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q82",
@@ -740,7 +1080,11 @@
     "question": "What year did the Berlin Wall fall?",
     "answer": "1989",
     "explanation": "November 9, 1989 marked the end of the Cold War era.",
-    "tags": ["Global", "History", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q83",
@@ -748,9 +1092,16 @@
     "difficulty": "Easy",
     "question": "What is a Nanaimo bar?",
     "answer": "A chocolate dessert",
-    "acceptableAnswers": ["Chocolate bar", "Canadian candy"],
+    "acceptableAnswers": [
+      "Chocolate bar",
+      "Canadian candy"
+    ],
     "explanation": "It's a three-layer chocolate bar from Nanaimo, BC with custard filling.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q84",
@@ -759,7 +1110,11 @@
     "question": "What is the smallest independent country in the world?",
     "answer": "Vatican City",
     "explanation": "Vatican City is about 0.44 square kilometers.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q85",
@@ -768,16 +1123,24 @@
     "question": "Which NHL team is known as the Maple Leafs?",
     "answer": "Toronto",
     "explanation": "The Toronto Maple Leafs play in the Atlantic Division.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q86",
     "category": "Literature",
     "difficulty": "Medium",
     "question": "Who wrote 'One Hundred Years of Solitude'?",
-    "answer": "Gabriel García Márquez",
-    "explanation": "Márquez was a Colombian author and Nobel Prize winner.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "answer": "Gabriel Garc\u00eda M\u00e1rquez",
+    "explanation": "M\u00e1rquez was a Colombian author and Nobel Prize winner.",
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q87",
@@ -786,16 +1149,24 @@
     "question": "What element has the atomic number 1?",
     "answer": "Hydrogen",
     "explanation": "Hydrogen is the lightest and most abundant element.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q88",
     "category": "Music",
     "difficulty": "Easy",
-    "question": "Which artist sings 'Shape of You'?",
-    "answer": "Ed Sheeran",
-    "explanation": "Ed Sheeran is a British singer-songwriter.",
-    "tags": ["Global", "Music", "FreshPrints"]
+    "question": "Which British artist sings 'Watermelon Sugar'?",
+    "answer": "Harry Styles",
+    "explanation": "Harry Styles is a British singer born in Redditch, England. 'Watermelon Sugar' was released in 2019 from his album 'Fine Line'. Source: https://en.wikipedia.org/wiki/Harry_Styles",
+    "tags": [
+      "Global",
+      "Music",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q89",
@@ -804,7 +1175,11 @@
     "question": "In which year did the Titanic sink?",
     "answer": "1912",
     "explanation": "Over 1,500 people died in this maritime disaster.",
-    "tags": ["Global", "History", "GlobalEh"]
+    "tags": [
+      "Global",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q90",
@@ -813,7 +1188,11 @@
     "question": "What is the capital of Italy?",
     "answer": "Rome",
     "explanation": "Rome is known as the Eternal City.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q91",
@@ -821,8 +1200,12 @@
     "difficulty": "Medium",
     "question": "Which Australian actor played Wolverine in the X-Men films?",
     "answer": "Hugh Jackman",
-    "explanation": "Hugh Jackman is Australian, not Canadian.",
-    "tags": ["Global", "Entertainment", "TimeCapsule"]
+    "explanation": "Hugh Jackman is an Australian actor born in Sydney. He played Wolverine in nine X-Men films from 2000-2024. Source: https://en.wikipedia.org/wiki/Hugh_Jackman",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q92",
@@ -831,7 +1214,11 @@
     "question": "How many gold medals did Canadian sprinter Andre De Grasse win at the 2016 Olympics?",
     "answer": "0",
     "explanation": "De Grasse won three medals: 1 silver and 2 bronze.",
-    "tags": ["CA", "Sports", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Sports",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q93",
@@ -840,7 +1227,11 @@
     "question": "How many legs does a spider have?",
     "answer": "8",
     "explanation": "All spiders are arachnids with eight legs.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q94",
@@ -848,9 +1239,16 @@
     "difficulty": "Hard",
     "question": "What is a Buxton cake?",
     "answer": "A Canadian pastry",
-    "acceptableAnswers": ["Pastry", "Dessert"],
+    "acceptableAnswers": [
+      "Pastry",
+      "Dessert"
+    ],
     "explanation": "A traditional Canadian dessert from the early 20th century.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q95",
@@ -859,7 +1257,11 @@
     "question": "What is the rarest blood type?",
     "answer": "Rh-null",
     "explanation": "Only a handful of people worldwide have this blood type.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q96",
@@ -868,16 +1270,24 @@
     "question": "In which year did Canada get its own flag?",
     "answer": "1965",
     "explanation": "The Maple Leaf flag was officially adopted on February 15, 1965.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q97",
     "category": "Geography",
     "difficulty": "Medium",
     "question": "What is the capital of Brazil?",
-    "answer": "Brasília",
-    "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "answer": "Bras\u00edlia",
+    "explanation": "Bras\u00edlia replaced Rio de Janeiro as the capital in 1960.",
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q98",
@@ -885,8 +1295,12 @@
     "difficulty": "Medium",
     "question": "Which Scottish artist sings 'Someone You Loved'?",
     "answer": "Lewis Capaldi",
-    "explanation": "Lewis Capaldi is Scottish, not Canadian.",
-    "tags": ["Global", "Music", "FreshPrints"]
+    "explanation": "Lewis Capaldi is a Scottish singer-songwriter from Whitburn, West Lothian. 'Someone You Loved' reached #1 in the UK and US in 2019. Source: https://en.wikipedia.org/wiki/Lewis_Capaldi",
+    "tags": [
+      "Global",
+      "Music",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q99",
@@ -895,7 +1309,11 @@
     "question": "What streaming service did Netflix originate as?",
     "answer": "DVD rental by mail",
     "explanation": "Netflix started in 1997 as a mail-based DVD rental service.",
-    "tags": ["Global", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q100",
@@ -904,7 +1322,11 @@
     "question": "How many players are on a Canadian hockey team on the ice?",
     "answer": "6",
     "explanation": "Five skaters and one goaltender.",
-    "tags": ["CA", "Sports", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Sports",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q101",
@@ -913,7 +1335,11 @@
     "question": "Who was the first Canadian Prime Minister?",
     "answer": "Sir John A. Macdonald",
     "explanation": "He led from 1867 to 1873 and 1878 to 1891.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q102",
@@ -922,16 +1348,24 @@
     "question": "What gas makes up most of Earth's atmosphere?",
     "answer": "Nitrogen",
     "explanation": "Nitrogen comprises about 78% of the air we breathe.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q103",
     "category": "Geography",
     "difficulty": "Hard",
-    "question": "Which Canadian territory has the smallest population?",
+    "question": "Which Canadian province has the smallest population?",
     "answer": "Nunavut",
     "explanation": "Nunavut is a territory with fewer than 40,000 residents.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q104",
@@ -940,7 +1374,11 @@
     "question": "Who wrote 'The Odyssey'?",
     "answer": "Homer",
     "explanation": "Homer was an ancient Greek poet.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q105",
@@ -949,16 +1387,24 @@
     "question": "Which Canadian actor stars in the TV show 'Letterkenny'?",
     "answer": "Jared Keeso",
     "explanation": "Keeso created and stars in the comedy series.",
-    "tags": ["CA", "Entertainment", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q106",
     "category": "Music",
     "difficulty": "Easy",
-    "question": "Which Canadian artist released 'Both Sides Now'?",
+    "question": "Which Canadian artist released the acclaimed album 'Blue' in 1971?",
     "answer": "Joni Mitchell",
-    "explanation": "This is a notable Canadian artist's classic album from the 1970s.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "explanation": "Joni Mitchell is a Canadian singer-songwriter from Alberta. 'Blue' (1971) is considered one of the greatest albums of all time. Note: 'Take Me Home' is a Cher album (1979), not Joni Mitchell. Source: https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q107",
@@ -967,7 +1413,11 @@
     "question": "Which Canadian tennis player reached the Wimbledon finals?",
     "answer": "Milos Raonic",
     "explanation": "Raonic reached the Wimbledon final in 2016.",
-    "tags": ["CA", "Sports", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Sports",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q108",
@@ -976,7 +1426,11 @@
     "question": "What is butter tart filling made from?",
     "answer": "Butter, brown sugar, and eggs",
     "explanation": "This is a traditional Canadian dessert.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q109",
@@ -985,7 +1439,11 @@
     "question": "What is the deepest ocean trench?",
     "answer": "Mariana Trench",
     "explanation": "Located in the Western Pacific, it reaches nearly 11 km deep.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q110",
@@ -994,7 +1452,11 @@
     "question": "What is the symbol for Iron in the periodic table?",
     "answer": "Fe",
     "explanation": "Fe comes from the Latin word 'ferrum'.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q111",
@@ -1003,7 +1465,11 @@
     "question": "In which year did Canada abolish slavery?",
     "answer": "1834",
     "explanation": "The Slavery Abolition Act was passed throughout the British Empire.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q112",
@@ -1012,16 +1478,24 @@
     "question": "What is the longest river in Canada?",
     "answer": "Mackenzie River",
     "explanation": "The Mackenzie River flows through northern Canada.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q113",
     "category": "Entertainment",
     "difficulty": "Easy",
-    "question": "Which Barbadian musician performed at Super Bowl halftime in 2023?",
+    "question": "Which Barbadian musician performed at the Super Bowl LVII halftime show in 2023?",
     "answer": "Rihanna",
-    "explanation": "Rihanna is from Barbados, not Canada.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Rihanna is from Saint Michael, Barbados. She performed at Super Bowl LVII in Glendale, Arizona on February 12, 2023. Source: https://en.wikipedia.org/wiki/Super_Bowl_LVII_halftime_show",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q114",
@@ -1030,7 +1504,11 @@
     "question": "What year did the Vancouver Canucks join the NHL?",
     "answer": "1970",
     "explanation": "The Canucks have been a major NHL team since then.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q115",
@@ -1039,7 +1517,11 @@
     "question": "Who wrote 'Alice in Wonderland'?",
     "answer": "Lewis Carroll",
     "explanation": "The British author created the iconic tale.",
-    "tags": ["Global", "Literature", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Literature",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q116",
@@ -1047,8 +1529,12 @@
     "difficulty": "Hard",
     "question": "What is the boiling point of water in Fahrenheit?",
     "answer": "212",
-    "explanation": "At sea level, water boils at 212°F or 100°C.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "explanation": "At sea level, water boils at 212\u00b0F or 100\u00b0C.",
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q117",
@@ -1057,7 +1543,11 @@
     "question": "Which Canadian band performed at Live Aid in 1985?",
     "answer": "Rush",
     "explanation": "The prog rock band is from Toronto.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q118",
@@ -1066,7 +1556,11 @@
     "question": "What is the capital of Japan?",
     "answer": "Tokyo",
     "explanation": "Tokyo is the most populous metropolitan area in the world.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q119",
@@ -1075,7 +1569,11 @@
     "question": "What is the fastest land animal?",
     "answer": "Cheetah",
     "explanation": "Cheetahs can reach speeds of over 70 mph.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q120",
@@ -1084,16 +1582,24 @@
     "question": "What is a Beaver Tail in Canadian cuisine?",
     "answer": "A pastry dessert",
     "explanation": "It's a fried dough pastry traditionally served at Canadian fairs.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q121",
     "category": "Entertainment",
     "difficulty": "Medium",
-    "question": "Which TV show aired on Nickelodeon called 'Drake & Josh'?",
-    "answer": "Drake & Josh",
-    "explanation": "This is an American TV show produced by Nickelodeon.",
-    "tags": ["Global", "Entertainment", "TimeCapsule"]
+    "question": "Which Canadian show aired on Nickelodeon called 'Drake & Josh'?",
+    "answer": "Actually American",
+    "explanation": "Despite some Canadian involvement, it's primarily American.",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q122",
@@ -1102,7 +1608,11 @@
     "question": "When was the Canadian Constitution patriated?",
     "answer": "1982",
     "explanation": "Canada officially adopted its own constitution on April 17, 1982.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q123",
@@ -1111,7 +1621,11 @@
     "question": "In which sport do you serve and volley?",
     "answer": "Tennis",
     "explanation": "Tennis is played on courts worldwide.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q124",
@@ -1120,7 +1634,11 @@
     "question": "What is the most abundant element in the universe?",
     "answer": "Hydrogen",
     "explanation": "Hydrogen makes up about 75% of all matter.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q125",
@@ -1129,7 +1647,11 @@
     "question": "What is the capital of New Zealand?",
     "answer": "Wellington",
     "explanation": "Despite being smaller than Auckland, Wellington is the capital.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q126",
@@ -1138,16 +1660,24 @@
     "question": "Who wrote 'The Great Gatsby'?",
     "answer": "F. Scott Fitzgerald",
     "explanation": "Fitzgerald wrote this American classic in 1925.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q127",
     "category": "Music",
     "difficulty": "Hard",
-    "question": "Which Canadian jazz musician was known as 'the Maharishi of the keyboard'?",
+    "question": "Which Canadian jazz musician was known as 'Oscar Peterson'?",
     "answer": "Oscar Peterson",
     "explanation": "Peterson was from Montreal and a legendary pianist.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q128",
@@ -1156,7 +1686,11 @@
     "question": "Which Canadian actor is known for 'Trailer Park Boys'?",
     "answer": "Robb Wells",
     "explanation": "Wells plays Bubbles in the comedy series.",
-    "tags": ["CA", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q129",
@@ -1165,7 +1699,11 @@
     "question": "How many times has Canada hosted the Summer Olympics?",
     "answer": "2",
     "explanation": "Montreal (1976) and Vancouver (2010).",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q130",
@@ -1174,7 +1712,11 @@
     "question": "What ingredient makes Canadian bacon different from regular bacon?",
     "answer": "It comes from pork loin",
     "explanation": "Canadian bacon is back bacon from the loin, not belly.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q131",
@@ -1183,7 +1725,11 @@
     "question": "What year was the Canadian flag officially adopted?",
     "answer": "1965",
     "explanation": "The maple leaf flag replaced the Union Jack on February 15.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q132",
@@ -1191,8 +1737,12 @@
     "difficulty": "Easy",
     "question": "What is the freezing point of water in Celsius?",
     "answer": "0",
-    "explanation": "Water freezes at 0°C or 32°F.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "explanation": "Water freezes at 0\u00b0C or 32\u00b0F.",
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q133",
@@ -1201,7 +1751,11 @@
     "question": "Which Canadian city is farthest north?",
     "answer": "Alert",
     "explanation": "Alert, Nunavut is the northernmost settlement.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q134",
@@ -1210,7 +1764,11 @@
     "question": "How many species of bears are there?",
     "answer": "8",
     "explanation": "Including polar, grizzly, black, panda, and others.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q135",
@@ -1219,16 +1777,24 @@
     "question": "Which Canadian creator wrote 'The X-Files'?",
     "answer": "Chris Carter",
     "explanation": "Carter is from Toronto and created the iconic TV series.",
-    "tags": ["CA", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q136",
     "category": "Music",
     "difficulty": "Easy",
-    "question": "Which American band is known for 'Smells Like Teen Spirit'?",
-    "answer": "Nirvana",
+    "question": "Which Canadian band is known for 'Smells Like Teen Spirit'?",
+    "answer": "Not a Canadian band",
     "explanation": "Nirvana was from Seattle, Washington.",
-    "tags": ["Global", "Music", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q137",
@@ -1236,8 +1802,12 @@
     "difficulty": "Hard",
     "question": "How many Winter Olympic Games has Canada hosted?",
     "answer": "3",
-    "explanation": "Calgary (1988) and Vancouver (2010), plus earlier ones.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "explanation": "Squaw Valley (USA 1960), Calgary (1988), Vancouver (2010).",
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q138",
@@ -1246,7 +1816,11 @@
     "question": "Who wrote 'Crime and Punishment'?",
     "answer": "Fyodor Dostoevsky",
     "explanation": "The Russian author wrote this psychological novel.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q139",
@@ -1255,7 +1829,11 @@
     "question": "How many provinces and territories does Canada have?",
     "answer": "13",
     "explanation": "10 provinces and 3 territories.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q140",
@@ -1264,7 +1842,11 @@
     "question": "What is the chemical formula for table salt?",
     "answer": "NaCl",
     "explanation": "Sodium chloride is the most common salt.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q141",
@@ -1273,7 +1855,11 @@
     "question": "In which year did Canada gain independence from Britain?",
     "answer": "1867",
     "explanation": "Confederation in 1867 marked the creation of the Dominion.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q142",
@@ -1282,7 +1868,11 @@
     "question": "Which Canadian actor played Deadpool?",
     "answer": "Ryan Reynolds",
     "explanation": "Reynolds is from Vancouver and starred in the Marvel films.",
-    "tags": ["CA", "Entertainment", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q143",
@@ -1291,7 +1881,11 @@
     "question": "What country is known for sushi?",
     "answer": "Japan",
     "explanation": "Sushi originated in Japan centuries ago.",
-    "tags": ["Global", "Food", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Food",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q144",
@@ -1300,7 +1894,11 @@
     "question": "How many players does a baseball team have on the field?",
     "answer": "9",
     "explanation": "Eight players in the field plus a pitcher.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q145",
@@ -1309,7 +1907,11 @@
     "question": "What is the tallest living tree?",
     "answer": "Hyperion",
     "explanation": "Hyperion is a coast redwood in California.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q146",
@@ -1318,7 +1920,11 @@
     "question": "Which Canadian singer-songwriter released 'Blue'?",
     "answer": "Joni Mitchell",
     "explanation": "This iconic 1971 album is considered one of the greatest albums of all time.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q147",
@@ -1327,7 +1933,11 @@
     "question": "What is the second-largest country in the world by area?",
     "answer": "Canada",
     "explanation": "Only Russia is larger.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q148",
@@ -1336,7 +1946,11 @@
     "question": "Who wrote 'Pride and Prejudice'?",
     "answer": "Jane Austen",
     "explanation": "Austen was a British novelist from the 19th century.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q149",
@@ -1345,17 +1959,24 @@
     "question": "How many planets are in our solar system?",
     "answer": "8",
     "explanation": "Pluto was reclassified as a dwarf planet in 2006.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q150",
     "category": "Entertainment",
     "difficulty": "Easy",
-    "question": "What Canadian actor voices Metroman in 'Megamind'?",
+    "question": "Which American actor voices Metro Man in 'Megamind'?",
     "answer": "Brad Pitt",
-    "acceptableAnswers": ["Not Canadian"],
-    "explanation": "Brad Pitt is American.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Brad Pitt is an American actor from Shawnee, Oklahoma. He voiced Metro Man in the 2010 animated film 'Megamind'. Source: https://en.wikipedia.org/wiki/Megamind",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q151",
@@ -1364,7 +1985,11 @@
     "question": "Which Canadian curler won an Olympic gold medal?",
     "answer": "Brad Gushue",
     "explanation": "Gushue won gold in men's curling at the 2018 PyeongChang Olympics.",
-    "tags": ["CA", "Sports", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Sports",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q152",
@@ -1373,7 +1998,11 @@
     "question": "What year did Canada approve same-sex marriage?",
     "answer": "2005",
     "explanation": "Canada was the fourth country to legalize same-sex marriage.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q153",
@@ -1382,7 +2011,11 @@
     "question": "What is Montreal-style bagel?",
     "answer": "A boiled and baked bagel",
     "explanation": "Montreal bagels are smaller and sweeter than New York bagels.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q154",
@@ -1391,7 +2024,11 @@
     "question": "What is the most common element in the Earth's crust?",
     "answer": "Oxygen",
     "explanation": "Oxygen makes up about 46% of Earth's crust.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q155",
@@ -1400,25 +2037,37 @@
     "question": "What is the smallest province in Canada by area?",
     "answer": "Prince Edward Island",
     "explanation": "PEI is only about 5,600 square kilometers.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q156",
     "category": "Music",
     "difficulty": "Hard",
-    "question": "Which British band recorded 'Immigrant Song'?",
-    "answer": "Led Zeppelin",
-    "explanation": "Led Zeppelin's 'Immigrant Song' is a classic rock anthem.",
-    "tags": ["Global", "Music", "TimeCapsule"]
+    "question": "Which Canadian musician won a Grammy for 'Immigrant Song'?",
+    "answer": "Not a Canadian",
+    "explanation": "Led Zeppelin's 'Immigrant Song' was by a British band.",
+    "tags": [
+      "Global",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q157",
     "category": "Entertainment",
     "difficulty": "Medium",
-    "question": "Which American actor stars as Percy Jackson?",
+    "question": "Which American actor starred as Percy Jackson in the original film series?",
     "answer": "Logan Lerman",
-    "explanation": "Logan Lerman is American.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Logan Lerman is an American actor from Beverly Hills, California. He starred in 'Percy Jackson & the Olympians: The Lightning Thief' (2010) and its sequel. Source: https://en.wikipedia.org/wiki/Logan_Lerman",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q158",
@@ -1426,9 +2075,15 @@
     "difficulty": "Hard",
     "question": "What is the only mammal that lays eggs?",
     "answer": "Platypus",
-    "acceptableAnswers": ["Monotreme"],
+    "acceptableAnswers": [
+      "Monotreme"
+    ],
     "explanation": "The platypus is one of the few mammals that lays eggs.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q159",
@@ -1437,7 +2092,11 @@
     "question": "Who wrote 'The Catcher in the Rye'?",
     "answer": "J.D. Salinger",
     "explanation": "Salinger wrote this classic American novel.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q160",
@@ -1446,7 +2105,11 @@
     "question": "Which Canadian figure skater won Olympic gold?",
     "answer": "Elvis Stojko",
     "explanation": "Stojko won silver at the 1994 and 1998 Olympics.",
-    "tags": ["CA", "Sports", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Sports",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q161",
@@ -1455,7 +2118,11 @@
     "question": "What year did World War II end?",
     "answer": "1945",
     "explanation": "Japan surrendered in September 1945.",
-    "tags": ["Global", "History", "GlobalEh"]
+    "tags": [
+      "Global",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q162",
@@ -1464,7 +2131,11 @@
     "question": "What is the capital of Mexico?",
     "answer": "Mexico City",
     "explanation": "Mexico City is one of the largest cities in the world.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q163",
@@ -1473,25 +2144,37 @@
     "question": "What is the symbol for Silver in the periodic table?",
     "answer": "Ag",
     "explanation": "Ag comes from the Latin word 'argentum'.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q164",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which British-American director made 'Inception'?",
+    "question": "Which British-American director made 'Inception' and 'The Dark Knight' trilogy?",
     "answer": "Christopher Nolan",
-    "explanation": "Christopher Nolan is a renowned filmmaker.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Christopher Nolan was born in London, England and holds dual British-American citizenship. He is known for films like 'Inception', 'Interstellar', and 'The Dark Knight' trilogy. Source: https://en.wikipedia.org/wiki/Christopher_Nolan",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q165",
     "category": "Music",
     "difficulty": "Easy",
-    "question": "Which American band released 'Hotel California'?",
-    "answer": "The Eagles",
+    "question": "Which Canadian band released 'Hotel California'?",
+    "answer": "Not a Canadian band",
     "explanation": "The Eagles were an American rock band.",
-    "tags": ["Global", "Music", "TimeCapsule"]
+    "tags": [
+      "Global",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q166",
@@ -1500,7 +2183,11 @@
     "question": "What is Poutine Royale?",
     "answer": "Poutine with gravy and meat",
     "explanation": "A variation of poutine with added protein.",
-    "tags": ["CA", "Food", "GreatOutdoors"]
+    "tags": [
+      "CA",
+      "Food",
+      "GreatOutdoors"
+    ]
   },
   {
     "id": "q167",
@@ -1509,16 +2196,24 @@
     "question": "How many players are in a soccer team on the field?",
     "answer": "11",
     "explanation": "Including the goalkeeper.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q168",
     "category": "History",
     "difficulty": "Hard",
-    "question": "What was the first province to join Confederation?",
+    "question": "What was the first Canadian province?",
     "answer": "Ontario",
     "explanation": "Ontario was part of the original Confederation of 1867.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q169",
@@ -1527,7 +2222,11 @@
     "question": "What do you call a baby kangaroo?",
     "answer": "Joey",
     "explanation": "Young kangaroos are called joeys.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q170",
@@ -1536,7 +2235,11 @@
     "question": "Who wrote 'War and Peace'?",
     "answer": "Leo Tolstoy",
     "explanation": "Tolstoy was a Russian author.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q171",
@@ -1545,7 +2248,11 @@
     "question": "What is the westernmost province of Canada?",
     "answer": "British Columbia",
     "explanation": "BC is on the Pacific coast.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q172",
@@ -1554,16 +2261,24 @@
     "question": "What is DNA?",
     "answer": "Deoxyribonucleic acid",
     "explanation": "DNA carries genetic instructions for life.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q173",
     "category": "Entertainment",
     "difficulty": "Easy",
-    "question": "Which British actor is known for 'Inception' and 'The Dark Knight'?",
+    "question": "Which British actor played Batman in 'The Dark Knight' trilogy?",
     "answer": "Christian Bale",
-    "explanation": "Christian Bale is Welsh-American.",
-    "tags": ["Global", "Entertainment", "FreshPrints"]
+    "explanation": "Christian Bale was born in Haverfordwest, Wales. He played Batman in Christopher Nolan's Dark Knight trilogy (2005-2012). Note: Bale was NOT in 'Inception' - that film starred Leonardo DiCaprio. Source: https://en.wikipedia.org/wiki/Christian_Bale",
+    "tags": [
+      "Global",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q174",
@@ -1571,8 +2286,12 @@
     "difficulty": "Medium",
     "question": "Which Canadian musician was part of Nickelback?",
     "answer": "Chad Kroeger",
-    "explanation": "Kroeger is the lead singer from Vancouver.",
-    "tags": ["CA", "Music", "TimeCapsule"]
+    "explanation": "Chad Kroeger is the lead singer of Nickelback. He was born and raised in Hanna, Alberta, where the band formed in 1995. They later relocated to Vancouver, British Columbia. Source: https://en.wikipedia.org/wiki/Nickelback",
+    "tags": [
+      "CA",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q175",
@@ -1581,16 +2300,24 @@
     "question": "How many teams are in the NHL?",
     "answer": "32",
     "explanation": "The NHL expanded to 32 teams in recent years.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q176",
     "category": "Food",
     "difficulty": "Easy",
-    "question": "What is the national dish of India?",
+    "question": "Which dish was declared Britain's 'true national dish' by Foreign Secretary Robin Cook in 2001?",
     "answer": "Chicken Tikka Masala",
-    "explanation": "Though debated, this is widely considered India's national dish.",
-    "tags": ["Global", "Food", "GlobalEh"]
+    "explanation": "Chicken Tikka Masala was declared a 'true British national dish' by UK Foreign Secretary Robin Cook in 2001. It was likely invented in Glasgow, Scotland in the 1970s. India has no official national dish. Source: https://www.britannica.com/topic/chicken-tikka-masala",
+    "tags": [
+      "Global",
+      "Food",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q177",
@@ -1599,7 +2326,11 @@
     "question": "What year did Canada join the United Nations?",
     "answer": "1945",
     "explanation": "Canada was a founding member of the UN.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q178",
@@ -1608,7 +2339,11 @@
     "question": "How many legs does an octopus have?",
     "answer": "8",
     "explanation": "All octopuses have eight arms/legs.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q179",
@@ -1617,7 +2352,11 @@
     "question": "Who wrote 'The Lord of the Rings'?",
     "answer": "J.R.R. Tolkien",
     "explanation": "Tolkien was a British author and philologist.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q180",
@@ -1626,7 +2365,11 @@
     "question": "What is the easternmost province of Canada?",
     "answer": "Newfoundland and Labrador",
     "explanation": "It is the most eastern point of North America.",
-    "tags": ["CA", "Geography", "GlobalEh"]
+    "tags": [
+      "CA",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q181",
@@ -1635,7 +2378,11 @@
     "question": "What does RNA stand for?",
     "answer": "Ribonucleic acid",
     "explanation": "RNA is a key molecule in all living cells.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q182",
@@ -1643,17 +2390,25 @@
     "difficulty": "Medium",
     "question": "Which Canadian actress stars in 'Orphan Black'?",
     "answer": "Tatiana Maslany",
-    "explanation": "Maslany is from Winnipeg and won a Golden Globe.",
-    "tags": ["CA", "Entertainment", "FreshPrints"]
+    "explanation": "Tatiana Maslany is from Regina, Saskatchewan. She won an Emmy Award for Outstanding Lead Actress in a Drama Series in 2016 for 'Orphan Black', plus two Critics' Choice Awards and five Canadian Screen Awards. She was nominated for a Golden Globe in 2014 but did not win. Source: https://en.wikipedia.org/wiki/Tatiana_Maslany",
+    "tags": [
+      "CA",
+      "Entertainment",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q183",
     "category": "Music",
     "difficulty": "Hard",
-    "question": "Which British rock band is known for 'Hysteria'?",
+    "question": "Which British rock band is known for the album 'Absolution' and songs like 'Hysteria'?",
     "answer": "Muse",
-    "explanation": "Muse is a British rock band.",
-    "tags": ["Global", "Music", "TimeCapsule"]
+    "explanation": "Muse is a British rock band formed in Teignmouth, Devon, England in 1994. 'Hysteria' is from their 2003 album 'Absolution'. Source: https://en.wikipedia.org/wiki/Muse_(band)",
+    "tags": [
+      "Global",
+      "Music",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q184",
@@ -1662,7 +2417,11 @@
     "question": "How many periods does a hockey game have?",
     "answer": "3",
     "explanation": "Each period lasts 20 minutes.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q185",
@@ -1671,7 +2430,11 @@
     "question": "What is the main ingredient in hummus?",
     "answer": "Chickpeas",
     "explanation": "Hummus is made from pureed chickpeas.",
-    "tags": ["Global", "Food", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Food",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q186",
@@ -1680,7 +2443,11 @@
     "question": "What year did the Titanic sink?",
     "answer": "1912",
     "explanation": "It sank on April 15, 1912.",
-    "tags": ["Global", "History", "GlobalEh"]
+    "tags": [
+      "Global",
+      "History",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q187",
@@ -1689,16 +2456,24 @@
     "question": "What is the smallest bird in the world?",
     "answer": "Bee hummingbird",
     "explanation": "It weighs less than 2 grams.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q188",
     "category": "Literature",
     "difficulty": "Medium",
     "question": "Who wrote 'Jane Eyre'?",
-    "answer": "Charlotte Brontë",
-    "explanation": "Brontë was a British novelist.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "answer": "Charlotte Bront\u00eb",
+    "explanation": "Bront\u00eb was a British novelist.",
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q189",
@@ -1707,7 +2482,11 @@
     "question": "What is the capital of Singapore?",
     "answer": "Singapore",
     "explanation": "Singapore is both a city and a country.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q190",
@@ -1716,16 +2495,24 @@
     "question": "What is the chemical symbol for Copper?",
     "answer": "Cu",
     "explanation": "Cu comes from the Latin word 'cuprum'.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q191",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Canadian filmmaker directed 'Videodrome'?",
+    "question": "Which Canadian filmmaker directed 'Telefilm'?",
     "answer": "David Cronenberg",
     "explanation": "Cronenberg is a legendary Canadian director.",
-    "tags": ["CA", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q192",
@@ -1734,7 +2521,11 @@
     "question": "Which Canadian musician released 'I'm Like a Bird'?",
     "answer": "Nelly Furtado",
     "explanation": "Furtado is from Victoria, BC.",
-    "tags": ["CA", "Music", "FreshPrints"]
+    "tags": [
+      "CA",
+      "Music",
+      "FreshPrints"
+    ]
   },
   {
     "id": "q193",
@@ -1743,16 +2534,24 @@
     "question": "How many holes does a golf course have?",
     "answer": "18",
     "explanation": "Standard golf courses have 18 holes.",
-    "tags": ["Global", "Sports", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Sports",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q194",
     "category": "Food",
     "difficulty": "Hard",
     "question": "What is the main ingredient in tempura?",
-    "answer": "Battered vegetables or seafood",
+    "answer": "Battered and fried",
     "explanation": "Tempura is a Japanese battered and deep-fried dish.",
-    "tags": ["Global", "Food", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Food",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q195",
@@ -1761,7 +2560,11 @@
     "question": "What year did Confederation happen in Canada?",
     "answer": "1867",
     "explanation": "July 1, 1867 marks the birth of modern Canada.",
-    "tags": ["CA", "History", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "History",
+      "TimeCapsule"
+    ]
   },
   {
     "id": "q196",
@@ -1770,7 +2573,11 @@
     "question": "What is the largest reptile in the world?",
     "answer": "Saltwater crocodile",
     "explanation": "They can reach lengths of over 20 feet.",
-    "tags": ["Global", "Nature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Nature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q197",
@@ -1779,7 +2586,11 @@
     "question": "Who wrote 'Moby Dick'?",
     "answer": "Herman Melville",
     "explanation": "Melville wrote this American epic.",
-    "tags": ["Global", "Literature", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Literature",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q198",
@@ -1788,7 +2599,11 @@
     "question": "What is the capital of Spain?",
     "answer": "Madrid",
     "explanation": "Madrid is the largest city in Spain.",
-    "tags": ["Global", "Geography", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Geography",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q199",
@@ -1797,7 +2612,11 @@
     "question": "What is the process by which plants make their own food?",
     "answer": "Photosynthesis",
     "explanation": "Plants convert sunlight into chemical energy.",
-    "tags": ["Global", "Science", "GlobalEh"]
+    "tags": [
+      "Global",
+      "Science",
+      "GlobalEh"
+    ]
   },
   {
     "id": "q200",
@@ -1806,6 +2625,10 @@
     "question": "Which Canadian actor is known for 'Degrassi'?",
     "answer": "Nina Dobrev",
     "explanation": "Dobrev played Mia in the Canadian teen drama.",
-    "tags": ["CA", "Entertainment", "TimeCapsule"]
+    "tags": [
+      "CA",
+      "Entertainment",
+      "TimeCapsule"
+    ]
   }
 ]
