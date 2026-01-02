@@ -2,9 +2,11 @@
 
 Modern Trivia is a browser-based multiplayer trivia party game designed for local teams (2-6 teams) playing together. It features automatic answer verification with fuzzy matching, a comprehensive scoring system, and 600+ built-in trivia questions with Canadian-focused content and global general knowledge.
 
-## Project Origins
+## Project Origins and Commentary
 
-This project was created using ChatGPT, Replit, and Codex. The original prototype was designed by ChatGPT and built in Replit using the App Connector, and this README was created using Codex.
+This project was created using ChatGPT, Replit, and Codex. The original prototype was designed by ChatGPT and built in Replit using the App Connector, and the initial README was created using Codex.
+
+Additionally, Claude Code on web was used to update and enhance the README content to accurately reflect the current state of the application. This project demonstrates collaboration across multiple AI coding tools throughout its development lifecycle.
 
 ## Features
 
