@@ -60,6 +60,7 @@ interface GameContextType {
   passQuestion: () => void;
   advanceToScoreUpdate: () => void;
   continueToNextRound: () => void;
+  continueAfterScoreUpdate: () => void;
   resetGame: () => void;
   addQuestion: (q: Question) => void;
   updateQuestion: (q: Question) => void;
@@ -282,6 +283,12 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         nextPhase = "GAME_OVER";
       } else if (isRoundComplete) {
         nextPhase = "ROUND_SCORE";
+      } else {
+        const questionsPerRound = updatedTeams.length * QUESTIONS_PER_TEAM_ROTATION;
+        const roundComplete = questionsPerRound > 0 && nextIndex % questionsPerRound === 0;
+        if (roundComplete) {
+          nextPhase = "SCORE_UPDATE";
+        }
       }
 
       return {
@@ -301,6 +308,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       phase: "QUESTION"
     }));
+  const continueAfterScoreUpdate = () => {
+    setState((prev) => {
+      if (prev.phase !== "SCORE_UPDATE") return prev;
+      return {
+        ...prev,
+        phase: "QUESTION"
+      };
+    });
   };
 
   const resetGame = () => {
@@ -348,6 +363,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         passQuestion,
         advanceToScoreUpdate,
         continueToNextRound,
+        continueAfterScoreUpdate,
         resetGame,
         addQuestion,
         updateQuestion
