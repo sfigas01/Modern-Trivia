@@ -7,6 +7,8 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 **Live URL:** https://replit.com/@stephaniefigas/Modern-Trivia
 **Repository:** https://github.com/sfigas01/Modern-Trivia
 
+**Core Philosophy:** "Freshly Squeezed & Globally Smart" — A trivia game that mixes hyper-local Canadiana with globally relevant general knowledge, avoiding US-centric defaults while staying accessible to Canadians aged 18-50.
+
 ---
 
 ## Content Architecture
@@ -37,11 +39,41 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 - **US** - United States content
 - **Global** - International/general knowledge
 
-### Content Pillars
-1. **TimeCapsule** - Historical events and cultural moments
-2. **GlobalEh** - International knowledge with Canadian perspective
-3. **FreshPrints** - Recent events and modern culture
-4. **GreatOutdoors** - Nature, geography, and wildlife
+**Default Filtering:** Game filters to Canadian-friendly content by default (Global + CA tagged questions)
+
+---
+
+## Content Pillars & Distribution
+
+### 🎬 TimeCapsule (Target: 30%)
+**Audience:** Gen X / Elder Millennials (30-50)
+
+Shared nostalgia from the 80s, 90s, and 2000s — iconic Canadian moments, beloved pop culture, historical landmarks, generational touchstones.
+
+*Examples: Degrassi, MuchMusic VJs, Heritage Moments, early internet culture*
+
+### 🌍 GlobalEh (Target: 30%)
+**Audience:** Everyone (The "Smart" Pillar)
+
+General knowledge that is **NOT US-centric**. World history, science, geography, literature, and culture from a global perspective.
+
+**Editorial Rule:** Geography won't be about Iowa; history avoids US Civil War unless Canada was involved. Focus on world capitals, Nobel Prize winners, European history, Asian cultures, international sports.
+
+*Examples: World capitals, international Nobel Prize winners, global science facts, World Cup*
+
+### ⚡ FreshPrints (Target: 25%)
+**Audience:** Gen Z / Younger Millennials (18-30) + News Junkies
+
+Viral moments, current Billboard hits, trending topics, and meme culture. **Intended to reflect the last 3 months** — this pillar requires periodic updates to stay current.
+
+*Examples: Recent celebrity news, current chart toppers, recent awards winners, trending social media moments*
+
+### 🏕️ GreatOutdoors (Target: 15%)
+**Audience:** The "Hoser" Lifestyle
+
+Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
+
+*Examples: Poutine, Canadian slang ("double-double", "toque"), CN Tower, cottage culture, Tim Hortons*
 
 ---
 
@@ -111,23 +143,32 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 - Regional tag correctness
 - Content pillar alignment
 
-### 2. Answer Verification
-- Edge cases in fuzzy matching
-- Acceptable answer variants
-- False positive/negative rates
-- Handling of ambiguous answers
+### 2. Pillar Distribution Audit
+- **Target:** TimeCapsule 30%, GlobalEh 30%, FreshPrints 25%, GreatOutdoors 15%
+- Verify actual question counts match intended distribution
+- Flag imbalances that may affect gameplay variety
 
-### 3. User Experience
-- Question clarity and readability
-- Answer format expectations
-- Feedback on correct/incorrect
-- Difficulty progression
+### 3. Editorial Rule Compliance
+- **GlobalEh:** Verify questions are NOT US-centric (no Iowa geography, no US Civil War unless Canada-relevant)
+- **FreshPrints:** Flag questions that may have become stale (content older than 3 months)
+- **Regional tags:** Ensure CA/US/Global tags are accurate
 
-### 4. Data Integrity
+### 4. Audience-Difficulty Alignment
+- TimeCapsule (30-50 audience) — difficulty should match this demo
+- FreshPrints (18-30 audience) — difficulty should match this demo
+- Flag mismatches where difficulty doesn't suit target audience
+
+### 5. Answer Verification Edge Cases
+- Test 80% fuzzy threshold for false positives/negatives
+- Identify acceptable answer variants not currently handled
+- Flag ambiguous answers that may cause disputes
+
+### 6. Data Integrity
 - Duplicate question detection
-- Consistent formatting
+- Consistent formatting across all questions
 - Proper JSON structure
-- Missing or incomplete fields
+- Missing or incomplete fields (question, answer, category, difficulty, regional tag, pillar tag)
+- Every question should have ALL tag types present
 
 ---
 
@@ -146,9 +187,10 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 ## Notes for Quality Review Planning
 
 - Questions are JSON-formatted with fields for: question, answer, category, difficulty, regional tags, and content pillar
-- The 80% fuzzy matching threshold is a key area to test - both for catching legitimate typos and avoiding false positives
+- The 80% fuzzy matching threshold is a key area to test — both for catching legitimate typos and avoiding false positives
 - Canadian-focused content (GlobalEh pillar) should be verified for accuracy and relevance
 - Custom questions added via admin panel bypass the core question database, creating a separate QA stream
-- The dispute system exists but requires authentication - logs should be reviewed for patterns
+- The dispute system exists but requires authentication — logs should be reviewed for patterns
+- FreshPrints pillar is designed for AI-assisted updates; stale content is expected and flagging it is part of the review process
 
 ---
