@@ -1169,19 +1169,6 @@
     ]
   },
   {
-    "id": "q89",
-    "category": "History",
-    "difficulty": "Medium",
-    "question": "In which year did the Titanic sink?",
-    "answer": "1912",
-    "explanation": "Over 1,500 people died in this maritime disaster.",
-    "tags": [
-      "Global",
-      "History",
-      "GlobalEh"
-    ]
-  },
-  {
     "id": "q90",
     "category": "Geography",
     "difficulty": "Easy",
@@ -1329,19 +1316,6 @@
     ]
   },
   {
-    "id": "q101",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "Who was the first Canadian Prime Minister?",
-    "answer": "Sir John A. Macdonald",
-    "explanation": "He led from 1867 to 1873 and 1878 to 1891.",
-    "tags": [
-      "CA",
-      "History",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q102",
     "category": "Science",
     "difficulty": "Medium",
@@ -1359,8 +1333,8 @@
     "category": "Geography",
     "difficulty": "Hard",
     "question": "Which Canadian province has the smallest population?",
-    "answer": "Nunavut",
-    "explanation": "Nunavut is a territory with fewer than 40,000 residents.",
+    "answer": "Prince Edward Island",
+    "explanation": "Prince Edward Island has the smallest population of any Canadian province, with around 170,000 residents. Note: Nunavut has fewer people but is a territory, not a province.",
     "tags": [
       "CA",
       "Geography",
@@ -1589,19 +1563,6 @@
     ]
   },
   {
-    "id": "q121",
-    "category": "Entertainment",
-    "difficulty": "Medium",
-    "question": "Which Canadian show aired on Nickelodeon called 'Drake & Josh'?",
-    "answer": "Actually American",
-    "explanation": "Despite some Canadian involvement, it's primarily American.",
-    "tags": [
-      "Global",
-      "Entertainment",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q122",
     "category": "History",
     "difficulty": "Medium",
@@ -1667,25 +1628,12 @@
     ]
   },
   {
-    "id": "q127",
-    "category": "Music",
-    "difficulty": "Hard",
-    "question": "Which Canadian jazz musician was known as 'Oscar Peterson'?",
-    "answer": "Oscar Peterson",
-    "explanation": "Peterson was from Montreal and a legendary pianist.",
-    "tags": [
-      "CA",
-      "Music",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q128",
     "category": "Entertainment",
     "difficulty": "Easy",
-    "question": "Which Canadian actor is known for 'Trailer Park Boys'?",
+    "question": "Which Canadian actor plays Ricky in 'Trailer Park Boys'?",
     "answer": "Robb Wells",
-    "explanation": "Wells plays Bubbles in the comedy series.",
+    "explanation": "Robb Wells plays Ricky in the comedy series. Mike Smith plays Bubbles.",
     "tags": [
       "CA",
       "Entertainment",
@@ -1697,8 +1645,8 @@
     "category": "Sports",
     "difficulty": "Medium",
     "question": "How many times has Canada hosted the Summer Olympics?",
-    "answer": "2",
-    "explanation": "Montreal (1976) and Vancouver (2010).",
+    "answer": "1",
+    "explanation": "Montreal hosted the Summer Olympics in 1976. Vancouver 2010 was the Winter Olympics.",
     "tags": [
       "CA",
       "Sports",
@@ -1716,19 +1664,6 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
-  },
-  {
-    "id": "q131",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "What year was the Canadian flag officially adopted?",
-    "answer": "1965",
-    "explanation": "The maple leaf flag replaced the Union Jack on February 15.",
-    "tags": [
-      "CA",
-      "History",
-      "TimeCapsule"
     ]
   },
   {
@@ -1774,25 +1709,12 @@
     "id": "q135",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Canadian creator wrote 'The X-Files'?",
+    "question": "Who created the TV series 'The X-Files'?",
     "answer": "Chris Carter",
-    "explanation": "Carter is from Toronto and created the iconic TV series.",
+    "explanation": "Chris Carter is an American screenwriter and producer from Bellflower, California who created The X-Files in 1993.",
     "tags": [
-      "CA",
+      "US",
       "Entertainment",
-      "TimeCapsule"
-    ]
-  },
-  {
-    "id": "q136",
-    "category": "Music",
-    "difficulty": "Easy",
-    "question": "Which Canadian band is known for 'Smells Like Teen Spirit'?",
-    "answer": "Not a Canadian band",
-    "explanation": "Nirvana was from Seattle, Washington.",
-    "tags": [
-      "Global",
-      "Music",
       "TimeCapsule"
     ]
   },
@@ -1801,8 +1723,8 @@
     "category": "Sports",
     "difficulty": "Hard",
     "question": "How many Winter Olympic Games has Canada hosted?",
-    "answer": "3",
-    "explanation": "Squaw Valley (USA 1960), Calgary (1988), Vancouver (2010).",
+    "answer": "2",
+    "explanation": "Calgary (1988) and Vancouver (2010). Squaw Valley 1960 was in California, USA.",
     "tags": [
       "CA",
       "Sports",
@@ -1914,19 +1836,6 @@
     ]
   },
   {
-    "id": "q146",
-    "category": "Music",
-    "difficulty": "Medium",
-    "question": "Which Canadian singer-songwriter released 'Blue'?",
-    "answer": "Joni Mitchell",
-    "explanation": "This iconic 1971 album is considered one of the greatest albums of all time.",
-    "tags": [
-      "CA",
-      "Music",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q147",
     "category": "Geography",
     "difficulty": "Hard",
@@ -1984,7 +1893,7 @@
     "difficulty": "Hard",
     "question": "Which Canadian curler won an Olympic gold medal?",
     "answer": "Brad Gushue",
-    "explanation": "Gushue won gold in men's curling at the 2018 PyeongChang Olympics.",
+    "explanation": "Gushue won gold in men's curling at the 2006 Turin Olympics.",
     "tags": [
       "CA",
       "Sports",
@@ -2044,19 +1953,6 @@
     ]
   },
   {
-    "id": "q156",
-    "category": "Music",
-    "difficulty": "Hard",
-    "question": "Which Canadian musician won a Grammy for 'Immigrant Song'?",
-    "answer": "Not a Canadian",
-    "explanation": "Led Zeppelin's 'Immigrant Song' was by a British band.",
-    "tags": [
-      "Global",
-      "Music",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q157",
     "category": "Entertainment",
     "difficulty": "Medium",
@@ -2073,12 +1969,13 @@
     "id": "q158",
     "category": "Nature",
     "difficulty": "Hard",
-    "question": "What is the only mammal that lays eggs?",
-    "answer": "Platypus",
+    "question": "What are the only two types of mammals that lay eggs?",
+    "answer": "Platypus and echidna",
     "acceptableAnswers": [
-      "Monotreme"
+      "Monotremes",
+      "Platypus and echidnas"
     ],
-    "explanation": "The platypus is one of the few mammals that lays eggs.",
+    "explanation": "Platypuses and echidnas are the only egg-laying mammals, known as monotremes.",
     "tags": [
       "Global",
       "Nature",
@@ -2102,9 +1999,9 @@
     "id": "q160",
     "category": "Sports",
     "difficulty": "Medium",
-    "question": "Which Canadian figure skater won Olympic gold?",
+    "question": "Which Canadian figure skater won three World Championships?",
     "answer": "Elvis Stojko",
-    "explanation": "Stojko won silver at the 1994 and 1998 Olympics.",
+    "explanation": "Stojko won World Championships in 1994, 1995, and 1997. He won Olympic silver in 1994 and 1998.",
     "tags": [
       "CA",
       "Sports",
@@ -2164,19 +2061,6 @@
     ]
   },
   {
-    "id": "q165",
-    "category": "Music",
-    "difficulty": "Easy",
-    "question": "Which Canadian band released 'Hotel California'?",
-    "answer": "Not a Canadian band",
-    "explanation": "The Eagles were an American rock band.",
-    "tags": [
-      "Global",
-      "Music",
-      "TimeCapsule"
-    ]
-  },
-  {
     "id": "q166",
     "category": "Food",
     "difficulty": "Hard",
@@ -2206,9 +2090,12 @@
     "id": "q168",
     "category": "History",
     "difficulty": "Hard",
-    "question": "What was the first Canadian province?",
-    "answer": "Ontario",
-    "explanation": "Ontario was part of the original Confederation of 1867.",
+    "question": "Which four provinces formed Canada at Confederation in 1867?",
+    "answer": "Ontario, Quebec, Nova Scotia, and New Brunswick",
+    "acceptableAnswers": [
+      "Ontario, Quebec, New Brunswick, Nova Scotia"
+    ],
+    "explanation": "All four provinces joined simultaneously on July 1, 1867.",
     "tags": [
       "CA",
       "History",
@@ -2437,19 +2324,6 @@
     ]
   },
   {
-    "id": "q186",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "What year did the Titanic sink?",
-    "answer": "1912",
-    "explanation": "It sank on April 15, 1912.",
-    "tags": [
-      "Global",
-      "History",
-      "GlobalEh"
-    ]
-  },
-  {
     "id": "q187",
     "category": "Nature",
     "difficulty": "Hard",
@@ -2505,9 +2379,9 @@
     "id": "q191",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Canadian filmmaker directed 'Telefilm'?",
+    "question": "Which Canadian filmmaker directed 'Videodrome' and 'The Fly'?",
     "answer": "David Cronenberg",
-    "explanation": "Cronenberg is a legendary Canadian director.",
+    "explanation": "Cronenberg is a legendary Canadian director known for body horror films.",
     "tags": [
       "CA",
       "Entertainment",
@@ -2545,8 +2419,13 @@
     "category": "Food",
     "difficulty": "Hard",
     "question": "What is the main ingredient in tempura?",
-    "answer": "Battered and fried",
-    "explanation": "Tempura is a Japanese battered and deep-fried dish.",
+    "answer": "Vegetables or seafood",
+    "acceptableAnswers": [
+      "Shrimp",
+      "Vegetables",
+      "Seafood"
+    ],
+    "explanation": "Tempura is a Japanese dish of lightly battered and deep-fried vegetables or seafood.",
     "tags": [
       "Global",
       "Food",
