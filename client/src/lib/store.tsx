@@ -68,10 +68,6 @@ interface GameContextType {
   updateQuestion: (q: Question) => void;
 }
 
-// ... (omitting context creation lines if not changing)
-
-// In implementation:
-
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const STORAGE_KEY_QUESTIONS = "modern_trivia_questions";
@@ -317,12 +313,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         nextPhase = "GAME_OVER";
       } else if (isRoundComplete) {
         nextPhase = "ROUND_SCORE";
-      } else {
-        const questionsPerRound = updatedTeams.length * QUESTIONS_PER_TEAM_ROTATION;
-        const roundComplete = questionsPerRound > 0 && nextIndex % questionsPerRound === 0;
-        if (roundComplete) {
-          nextPhase = "SCORE_UPDATE";
-        }
       }
 
       return {

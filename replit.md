@@ -43,15 +43,29 @@ The game follows a linear state machine pattern documented in `docs/STATE_MACHIN
 ```
 client/          # React frontend application
   src/
-    components/  # UI components including shadcn/ui
+    components/  # UI components including shadcn/ui, admin-layout
     hooks/       # Custom React hooks (auth, admin, disputes)
     lib/         # Utilities, store, questions data
-    pages/       # Route components (Home, Game, Admin)
+    pages/       # Route components
+      Home.tsx         # Landing page
+      Game.tsx         # Main game interface
+      Admin.tsx        # Admin - Add Questions (uses AdminLayout)
+      admin-disputes.tsx  # Admin - Dispute Resolution (uses AdminLayout)
+      admin-settings.tsx  # Admin - Settings (uses AdminLayout)
 server/          # Express backend
   replit_integrations/auth/  # Authentication module
+  lib/ai.ts      # AI dispute analysis using GPT-4o
 shared/          # Shared types and database schema
+  schema.ts      # Database tables + AIAnalysis interface
 docs/            # Documentation (state machine)
 ```
+
+### Admin Panel Architecture
+- Uses sidebar navigation via `AdminLayout` component
+- Three sections accessible via sidebar:
+  - `/admin` - Add custom questions
+  - `/admin/disputes` - Review and resolve disputes with AI assistance
+  - `/admin/settings` - Configure AI providers
 
 ## External Dependencies
 
@@ -81,7 +95,7 @@ The admin panel includes an AI-powered dispute resolution system for handling ch
 
 ### Features
 - **Public Dispute Submission**: Users can flag incorrect answers during gameplay without authentication
-- **Admin Dispute Review**: Authenticated admins view and resolve disputes in the Admin panel's "Answer Disputes" tab
+- **Admin Dispute Review**: Authenticated admins view and resolve disputes at `/admin/disputes`
 - **AI Analysis**: GPT-4o powered analysis evaluates disputes with:
   - Verdict (CORRECT/INCORRECT/AMBIGUOUS)
   - Confidence percentage
@@ -101,3 +115,9 @@ The admin panel includes an AI-powered dispute resolution system for handling ch
   - `POST /api/disputes/:id/analyze` - Run AI analysis (admin only)
   - `PATCH /api/disputes/:id` - Update dispute status (admin only)
   - `DELETE /api/disputes` - Clear all disputes (admin only)
+
+### Question Versioning
+- `QUESTIONS_VERSION` constant in `store.tsx` controls cache refresh
+- When bumped, localStorage cache is cleared and users get fresh questions from `questions.json`
+- Custom user-added questions are preserved during version migrations
+- Questions support optional `sourceUrl` and `sourceName` fields for citations

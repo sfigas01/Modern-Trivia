@@ -5,21 +5,19 @@ import { GameProvider } from "@/lib/store";
 import { Toaster } from "@/components/ui/toaster";
 import Home from "@/pages/Home";
 import Game from "@/pages/Game";
+import Admin from "@/pages/Admin";
 import AdminDisputes from "@/pages/admin-disputes";
 import AdminSettings from "@/pages/admin-settings";
-import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
-
-// ... imports
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/game" component={Game} />
+      <Route path="/admin" component={Admin} />
       <Route path="/admin/disputes" component={AdminDisputes} />
       <Route path="/admin/settings" component={AdminSettings} />
-      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

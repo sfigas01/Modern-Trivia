@@ -52,3 +52,15 @@ export const adminRoles = pgTable("admin_roles", {
 });
 
 export type AdminRole = typeof adminRoles.$inferSelect;
+
+export interface AIAnalysis {
+  verdict: "CORRECT" | "INCORRECT" | "AMBIGUOUS";
+  confidence: number;
+  reasoning: string;
+  suggestedFix?: {
+    question?: string;
+    answer?: string;
+    explanation?: string;
+  };
+  sources: string[];
+}
