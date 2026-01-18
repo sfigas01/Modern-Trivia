@@ -73,3 +73,31 @@ docs/            # Documentation (state machine)
 ### Development Tools
 - **Vite Plugins**: Runtime error overlay, Cartographer (Replit-specific), meta images
 - **esbuild**: Production server bundling with dependency allowlist optimization
+
+## Dispute Resolution System
+
+### Overview
+The admin panel includes an AI-powered dispute resolution system for handling challenges to trivia answers.
+
+### Features
+- **Public Dispute Submission**: Users can flag incorrect answers during gameplay without authentication
+- **Admin Dispute Review**: Authenticated admins view and resolve disputes in the Admin panel's "Answer Disputes" tab
+- **AI Analysis**: GPT-4o powered analysis evaluates disputes with:
+  - Verdict (CORRECT/INCORRECT/AMBIGUOUS)
+  - Confidence percentage
+  - Reasoning explanation
+  - Suggested fix for incorrect answers
+  - Reference sources
+- **Resolution Workflow**: Accept, Reject, or Apply AI-suggested fixes
+- **Status Filtering**: Filter disputes by Pending, Resolved, Rejected, or All
+
+### Architecture
+- Questions stored in local storage via `useGame` store
+- Disputes stored in PostgreSQL `disputes` table
+- AI analysis stored in `disputes.aiAnalysis` JSON column
+- API Endpoints:
+  - `POST /api/disputes` - Create dispute (public)
+  - `GET /api/disputes` - List disputes (admin only)
+  - `POST /api/disputes/:id/analyze` - Run AI analysis (admin only)
+  - `PATCH /api/disputes/:id` - Update dispute status (admin only)
+  - `DELETE /api/disputes` - Clear all disputes (admin only)
