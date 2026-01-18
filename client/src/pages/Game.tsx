@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight, Trophy, Flag } from "lucide-react";
+import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink } from "lucide-react";
 import { DisputeModal } from "@/components/DisputeModal";
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
@@ -288,6 +288,20 @@ export default function Game() {
                        <div className="bg-white/5 p-4 rounded-lg text-center text-muted-foreground italic">
                            {currentQ?.explanation}
                        </div>
+
+                       {currentQ?.sourceUrl && (
+                         <div className="flex justify-center">
+                           <a
+                             href={currentQ.sourceUrl}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors"
+                           >
+                             <ExternalLink className="w-4 h-4" />
+                             {currentQ.sourceName || "Verify Source"}
+                           </a>
+                         </div>
+                       )}
 
                      <div className="flex gap-4 mt-4">
                        <Button 

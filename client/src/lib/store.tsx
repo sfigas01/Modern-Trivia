@@ -16,6 +16,8 @@ export interface Question {
   acceptableAnswers?: string[];
   explanation: string;
   tags: string[];
+  sourceUrl?: string;
+  sourceName?: string;
 }
 
 export interface Team {
