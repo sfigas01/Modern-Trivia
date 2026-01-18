@@ -5,12 +5,14 @@
     "difficulty": "Easy",
     "question": "What is the capital city of Canada?",
     "answer": "Ottawa",
-    "explanation": "Ottawa was chosen as the capital in 1857 by Queen Victoria.",
+    "explanation": "Ottawa was chosen as the capital on December 31, 1857 by Queen Victoria.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ottawa",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q2",
@@ -22,12 +24,14 @@
       "FL",
       "The Sunshine State"
     ],
-    "explanation": "Florida adopted this nickname effectively in 1970.",
+    "explanation": "Florida officially adopted 'The Sunshine State' nickname in 1970 when the state legislature included it on license plates.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Florida",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q3",
@@ -43,7 +47,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Potassium",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q4",
@@ -61,7 +67,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q5",
@@ -104,7 +112,9 @@
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/2010_Winter_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q8",
@@ -112,12 +122,14 @@
     "difficulty": "Easy",
     "question": "What is the national summer sport of Canada?",
     "answer": "Lacrosse",
-    "explanation": "While Hockey is the winter sport, Lacrosse is the official summer sport.",
+    "explanation": "While Hockey is the national winter sport, Lacrosse is the official national summer sport of Canada.",
     "tags": [
       "CA",
       "Sports",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/National_Sports_of_Canada_Act",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q9",
@@ -125,12 +137,14 @@
     "difficulty": "Hard",
     "question": "What is the longest river in the United States?",
     "answer": "Missouri River",
-    "explanation": "The Missouri River is slightly longer than the Mississippi River.",
+    "explanation": "The Missouri River is about 2,341 miles long, slightly longer than the Mississippi River at 2,340 miles.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Missouri_River",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q10",
@@ -138,12 +152,14 @@
     "difficulty": "Easy",
     "question": "Which TV show is set in the fictional city of Springfield?",
     "answer": "The Simpsons",
-    "explanation": "The Simpsons is the longest-running American animated series.",
+    "explanation": "The Simpsons is the longest-running American animated series and longest-running American sitcom.",
     "tags": [
       "US",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Simpsons",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q11",
@@ -156,7 +172,9 @@
       "Global",
       "Economics",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Japanese_yen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q12",
@@ -164,12 +182,14 @@
     "difficulty": "Hard",
     "question": "What is the hardest natural substance on Earth?",
     "answer": "Diamond",
-    "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure.",
+    "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure. They rank 10 on the Mohs hardness scale.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Diamond",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q13",
@@ -177,12 +197,14 @@
     "difficulty": "Medium",
     "question": "Which province joined Canada last?",
     "answer": "Newfoundland and Labrador",
-    "explanation": "They joined Confederation on March 31, 1949.",
+    "explanation": "They joined Confederation on March 31, 1949, becoming Canada's tenth province.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q14",
@@ -190,12 +212,14 @@
     "difficulty": "Medium",
     "question": "Mount Rushmore features the heads of four US presidents. Who is NOT one of them: Washington, Jefferson, Lincoln, or Franklin?",
     "answer": "Franklin",
-    "explanation": "The four presidents are Washington, Jefferson, T. Roosevelt, and Lincoln.",
+    "explanation": "The four presidents are George Washington, Thomas Jefferson, Theodore Roosevelt, and Abraham Lincoln. Benjamin Franklin was never president.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Rushmore",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q15",
@@ -216,12 +240,14 @@
     "difficulty": "Medium",
     "question": "What year was the first iPhone released?",
     "answer": "2007",
-    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007.",
+    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007, and it went on sale June 29, 2007.",
     "tags": [
       "Global",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q17",
@@ -234,7 +260,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Time_in_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q18",
@@ -242,12 +270,14 @@
     "difficulty": "Medium",
     "question": "Who was the 16th President of the United States?",
     "answer": "Abraham Lincoln",
-    "explanation": "He served during the American Civil War.",
+    "explanation": "He served from 1861 to 1865 during the American Civil War.",
     "tags": [
       "US",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Abraham_Lincoln",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q19",
@@ -260,7 +290,9 @@
       "US",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bald_eagle",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q20",
@@ -273,7 +305,9 @@
       "CA",
       "Nature",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/North_American_beaver",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q21",
@@ -286,7 +320,9 @@
       "Global",
       "Space",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mars",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q22",
@@ -294,12 +330,14 @@
     "difficulty": "Hard",
     "question": "Who wrote 'The Handmaid's Tale'?",
     "answer": "Margaret Atwood",
-    "explanation": "Margaret Atwood is a celebrated Canadian author.",
+    "explanation": "Margaret Atwood is a celebrated Canadian author. The novel was published in 1985.",
     "tags": [
       "CA",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q23",
@@ -312,7 +350,9 @@
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Big_Apple",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q24",
@@ -320,12 +360,14 @@
     "difficulty": "Medium",
     "question": "In which sport would you perform a 'slam dunk'?",
     "answer": "Basketball",
-    "explanation": "Basketball was invented by Canadian James Naismith.",
+    "explanation": "Basketball was invented by Canadian James Naismith in 1891.",
     "tags": [
       "US",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slam_dunk",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q25",
@@ -333,12 +375,14 @@
     "difficulty": "Medium",
     "question": "Ryan Reynolds was born in which Canadian city?",
     "answer": "Vancouver",
-    "explanation": "He was born in Vancouver, British Columbia.",
+    "explanation": "He was born in Vancouver, British Columbia on October 23, 1976.",
     "tags": [
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q26",
@@ -346,12 +390,14 @@
     "difficulty": "Hard",
     "question": "What is the smallest US state by area?",
     "answer": "Rhode Island",
-    "explanation": "Despite its name, it is not an island.",
+    "explanation": "Rhode Island is about 1,545 square miles. Despite its name, it is not an island.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rhode_Island",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q27",
@@ -943,13 +989,15 @@
     "category": "Sports",
     "difficulty": "Easy",
     "question": "What year did Canada first win an Olympic gold medal?",
-    "answer": "1900",
-    "explanation": "Canadian athletes have competed since the first modern Olympics.",
+    "answer": "1904",
+    "explanation": "Étienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_1904_Summer_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q72",
@@ -1377,13 +1425,15 @@
     "category": "Geography",
     "difficulty": "Hard",
     "question": "Which Canadian province has the smallest population?",
-    "answer": "Nunavut",
-    "explanation": "Nunavut is a territory with fewer than 40,000 residents.",
+    "answer": "Prince Edward Island",
+    "explanation": "Prince Edward Island has the smallest population of any Canadian province, with approximately 170,000 residents. Note: Nunavut has fewer people but is a territory, not a province.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q104",
@@ -1707,25 +1757,29 @@
     "difficulty": "Easy",
     "question": "Which Canadian actor is known for 'Trailer Park Boys'?",
     "answer": "Robb Wells",
-    "explanation": "Wells plays Bubbles in the comedy series.",
+    "explanation": "Robb Wells plays Ricky in the comedy series. Mike Smith plays Bubbles, and John Paul Tremblay plays Julian.",
     "tags": [
       "CA",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robb_Wells",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q129",
     "category": "Sports",
     "difficulty": "Medium",
     "question": "How many times has Canada hosted the Summer Olympics?",
-    "answer": "2",
-    "explanation": "Montreal (1976) and Vancouver (2010).",
+    "answer": "1",
+    "explanation": "Canada hosted the Summer Olympics once, in Montreal in 1976. Vancouver 2010 was the Winter Olympics.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/1976_Summer_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q130",
@@ -1796,14 +1850,16 @@
     "id": "q135",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Canadian creator wrote 'The X-Files'?",
+    "question": "Who created the TV series 'The X-Files'?",
     "answer": "Chris Carter",
-    "explanation": "Carter is from Toronto and created the iconic TV series.",
+    "explanation": "Chris Carter is an American writer and producer born in Bellflower, California. He created The X-Files in 1993.",
     "tags": [
-      "CA",
+      "US",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Chris_Carter_(screenwriter)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q136",
@@ -1823,13 +1879,15 @@
     "category": "Sports",
     "difficulty": "Hard",
     "question": "How many Winter Olympic Games has Canada hosted?",
-    "answer": "3",
-    "explanation": "Squaw Valley (USA 1960), Calgary (1988), Vancouver (2010).",
+    "answer": "2",
+    "explanation": "Canada has hosted the Winter Olympics twice: Calgary in 1988 and Vancouver in 2010.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_Winter_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q138",
@@ -2008,12 +2066,14 @@
     "difficulty": "Hard",
     "question": "Which Canadian curler won an Olympic gold medal?",
     "answer": "Brad Gushue",
-    "explanation": "Gushue won gold in men's curling at the 2018 PyeongChang Olympics.",
+    "explanation": "Brad Gushue won gold in men's curling at the 2006 Turin Olympics, becoming the first Newfoundlander to win Olympic gold. He also won bronze at the 2022 Beijing Olympics.",
     "tags": [
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Brad_Gushue",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q152",
@@ -2099,17 +2159,20 @@
     "id": "q158",
     "category": "Nature",
     "difficulty": "Hard",
-    "question": "What is the only mammal that lays eggs?",
-    "answer": "Platypus",
+    "question": "What type of mammal lays eggs?",
+    "answer": "Monotreme",
     "acceptableAnswers": [
-      "Monotreme"
+      "Platypus",
+      "Echidna"
     ],
-    "explanation": "The platypus is one of the few mammals that lays eggs.",
+    "explanation": "Monotremes are egg-laying mammals. There are five species: the platypus and four species of echidna. All are found in Australia and New Guinea.",
     "tags": [
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Monotreme",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q159",
@@ -2128,14 +2191,16 @@
     "id": "q160",
     "category": "Sports",
     "difficulty": "Medium",
-    "question": "Which Canadian figure skater won Olympic gold?",
+    "question": "Which Canadian figure skater won two Olympic silver medals?",
     "answer": "Elvis Stojko",
-    "explanation": "Stojko won silver at the 1994 and 1998 Olympics.",
+    "explanation": "Elvis Stojko won silver medals at both the 1994 Lillehammer and 1998 Nagano Olympics. He is a three-time World champion (1994, 1995, 1997).",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Elvis_Stojko",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q161",
@@ -2234,14 +2299,19 @@
     "id": "q168",
     "category": "History",
     "difficulty": "Hard",
-    "question": "What was the first Canadian province?",
-    "answer": "Ontario",
-    "explanation": "Ontario was part of the original Confederation of 1867.",
+    "question": "Which four provinces formed Canada at Confederation in 1867?",
+    "answer": "Ontario, Quebec, Nova Scotia, New Brunswick",
+    "acceptableAnswers": [
+      "Ontario, Quebec, New Brunswick, Nova Scotia"
+    ],
+    "explanation": "On July 1, 1867, Ontario, Quebec, Nova Scotia, and New Brunswick united to form the Dominion of Canada. Ontario and Quebec were created from the former Province of Canada.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q169",
