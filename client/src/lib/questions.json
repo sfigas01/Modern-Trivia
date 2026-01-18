@@ -69,12 +69,14 @@
     "difficulty": "Medium",
     "question": "In which year was the Declaration of Independence signed?",
     "answer": "1776",
-    "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy. Source: https://www.archives.gov/milestone-documents/declaration-of-independence",
+    "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy.",
     "tags": [
       "US",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://www.archives.gov/milestone-documents/declaration-of-independence",
+    "sourceName": "National Archives"
   },
   {
     "id": "q6",
@@ -82,12 +84,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian rapper released the album 'Views'?",
     "answer": "Drake",
-    "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album. Major album tracks include 'One Dance' and 'Controlla'. Source: https://en.wikipedia.org/wiki/Views_(album)",
+    "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album. Major album tracks include 'One Dance' and 'Controlla'.",
     "tags": [
       "CA",
       "Music",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Views_(album)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q7",
@@ -681,12 +685,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian artist performed the halftime show at Super Bowl LV?",
     "answer": "The Weeknd",
-    "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida. Super Bowl LIV (54) in 2020 featured Shakira and Jennifer Lopez. Source: https://en.wikipedia.org/wiki/Super_Bowl_LV_halftime_show",
+    "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida. Super Bowl LIV (54) in 2020 featured Shakira and Jennifer Lopez.",
     "tags": [
       "CA",
       "Music",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LV_halftime_show",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q53",
@@ -750,12 +756,14 @@
     "difficulty": "Medium",
     "question": "Which British actor stars as Batman in 'The Batman' (2022)?",
     "answer": "Robert Pattinson",
-    "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He is British and starred in 'The Batman' (2022). Source: https://www.britannica.com/facts/Robert-Pattinson",
+    "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He is British and starred in 'The Batman' (2022).",
     "tags": [
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://www.britannica.com/facts/Robert-Pattinson",
+    "sourceName": "Britannica"
   },
   {
     "id": "q58",
@@ -1014,12 +1022,14 @@
     "difficulty": "Hard",
     "question": "Which British rock band released the iconic album 'The Wall' in 1979?",
     "answer": "Pink Floyd",
-    "explanation": "Pink Floyd is a British rock band formed in London in 1965. 'The Wall' is one of rock's most acclaimed concept albums. Source: https://en.wikipedia.org/wiki/Pink_Floyd",
+    "explanation": "Pink Floyd is a British rock band formed in London in 1965. 'The Wall' is one of rock's most acclaimed concept albums.",
     "tags": [
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pink_Floyd",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q78",
@@ -1066,12 +1076,14 @@
     "difficulty": "Hard",
     "question": "Which American actress plays Black Widow in Marvel films?",
     "answer": "Scarlett Johansson",
-    "explanation": "Scarlett Johansson is an American actress born in New York City. She has played Natasha Romanoff/Black Widow since 2010. Source: https://en.wikipedia.org/wiki/Scarlett_Johansson",
+    "explanation": "Scarlett Johansson is an American actress born in New York City. She has played Natasha Romanoff/Black Widow since 2010.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Scarlett_Johansson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q82",
@@ -1161,12 +1173,14 @@
     "difficulty": "Easy",
     "question": "Which British artist sings 'Watermelon Sugar'?",
     "answer": "Harry Styles",
-    "explanation": "Harry Styles is a British singer born in Redditch, England. 'Watermelon Sugar' was released in 2019 from his album 'Fine Line'. Source: https://en.wikipedia.org/wiki/Harry_Styles",
+    "explanation": "Harry Styles is a British singer born in Redditch, England. 'Watermelon Sugar' was released in 2019 from his album 'Fine Line'.",
     "tags": [
       "Global",
       "Music",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Styles",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q89",
@@ -1200,12 +1214,14 @@
     "difficulty": "Medium",
     "question": "Which Australian actor played Wolverine in the X-Men films?",
     "answer": "Hugh Jackman",
-    "explanation": "Hugh Jackman is an Australian actor born in Sydney. He played Wolverine in nine X-Men films from 2000-2024. Source: https://en.wikipedia.org/wiki/Hugh_Jackman",
+    "explanation": "Hugh Jackman is an Australian actor born in Sydney. He played Wolverine in nine X-Men films from 2000-2024.",
     "tags": [
       "Global",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hugh_Jackman",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q92",
@@ -1295,12 +1311,14 @@
     "difficulty": "Medium",
     "question": "Which Scottish artist sings 'Someone You Loved'?",
     "answer": "Lewis Capaldi",
-    "explanation": "Lewis Capaldi is a Scottish singer-songwriter from Whitburn, West Lothian. 'Someone You Loved' reached #1 in the UK and US in 2019. Source: https://en.wikipedia.org/wiki/Lewis_Capaldi",
+    "explanation": "Lewis Capaldi is a Scottish singer-songwriter from Whitburn, West Lothian. 'Someone You Loved' reached #1 in the UK and US in 2019.",
     "tags": [
       "Global",
       "Music",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lewis_Capaldi",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q99",
@@ -1399,12 +1417,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian artist released the acclaimed album 'Blue' in 1971?",
     "answer": "Joni Mitchell",
-    "explanation": "Joni Mitchell is a Canadian singer-songwriter from Alberta. 'Blue' (1971) is considered one of the greatest albums of all time. Note: 'Take Me Home' is a Cher album (1979), not Joni Mitchell. Source: https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "explanation": "Joni Mitchell is a Canadian singer-songwriter from Alberta. 'Blue' (1971) is considered one of the greatest albums of all time. Note: 'Take Me Home' is a Cher album (1979), not Joni Mitchell.",
     "tags": [
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q107",
@@ -1490,12 +1510,14 @@
     "difficulty": "Easy",
     "question": "Which Barbadian musician performed at the Super Bowl LVII halftime show in 2023?",
     "answer": "Rihanna",
-    "explanation": "Rihanna is from Saint Michael, Barbados. She performed at Super Bowl LVII in Glendale, Arizona on February 12, 2023. Source: https://en.wikipedia.org/wiki/Super_Bowl_LVII_halftime_show",
+    "explanation": "Rihanna is from Saint Michael, Barbados. She performed at Super Bowl LVII in Glendale, Arizona on February 12, 2023.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LVII_halftime_show",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q114",
@@ -1971,12 +1993,14 @@
     "difficulty": "Easy",
     "question": "Which American actor voices Metro Man in 'Megamind'?",
     "answer": "Brad Pitt",
-    "explanation": "Brad Pitt is an American actor from Shawnee, Oklahoma. He voiced Metro Man in the 2010 animated film 'Megamind'. Source: https://en.wikipedia.org/wiki/Megamind",
+    "explanation": "Brad Pitt is an American actor from Shawnee, Oklahoma. He voiced Metro Man in the 2010 animated film 'Megamind'.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Megamind",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q151",
@@ -2062,12 +2086,14 @@
     "difficulty": "Medium",
     "question": "Which American actor starred as Percy Jackson in the original film series?",
     "answer": "Logan Lerman",
-    "explanation": "Logan Lerman is an American actor from Beverly Hills, California. He starred in 'Percy Jackson & the Olympians: The Lightning Thief' (2010) and its sequel. Source: https://en.wikipedia.org/wiki/Logan_Lerman",
+    "explanation": "Logan Lerman is an American actor from Beverly Hills, California. He starred in 'Percy Jackson & the Olympians: The Lightning Thief' (2010) and its sequel.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Logan_Lerman",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q158",
@@ -2156,12 +2182,14 @@
     "difficulty": "Hard",
     "question": "Which British-American director made 'Inception' and 'The Dark Knight' trilogy?",
     "answer": "Christopher Nolan",
-    "explanation": "Christopher Nolan was born in London, England and holds dual British-American citizenship. He is known for films like 'Inception', 'Interstellar', and 'The Dark Knight' trilogy. Source: https://en.wikipedia.org/wiki/Christopher_Nolan",
+    "explanation": "Christopher Nolan was born in London, England and holds dual British-American citizenship. He is known for films like 'Inception', 'Interstellar', and 'The Dark Knight' trilogy.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Christopher_Nolan",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q165",
@@ -2273,12 +2301,14 @@
     "difficulty": "Easy",
     "question": "Which British actor played Batman in 'The Dark Knight' trilogy?",
     "answer": "Christian Bale",
-    "explanation": "Christian Bale was born in Haverfordwest, Wales. He played Batman in Christopher Nolan's Dark Knight trilogy (2005-2012). Note: Bale was NOT in 'Inception' - that film starred Leonardo DiCaprio. Source: https://en.wikipedia.org/wiki/Christian_Bale",
+    "explanation": "Christian Bale was born in Haverfordwest, Wales. He played Batman in Christopher Nolan's Dark Knight trilogy (2005-2012). Note: Bale was NOT in 'Inception' - that film starred Leonardo DiCaprio.",
     "tags": [
       "Global",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Christian_Bale",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q174",
@@ -2286,12 +2316,14 @@
     "difficulty": "Medium",
     "question": "Which Canadian musician was part of Nickelback?",
     "answer": "Chad Kroeger",
-    "explanation": "Chad Kroeger is the lead singer of Nickelback. He was born and raised in Hanna, Alberta, where the band formed in 1995. They later relocated to Vancouver, British Columbia. Source: https://en.wikipedia.org/wiki/Nickelback",
+    "explanation": "Chad Kroeger is the lead singer of Nickelback. He was born and raised in Hanna, Alberta, where the band formed in 1995. They later relocated to Vancouver, British Columbia.",
     "tags": [
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nickelback",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q175",
@@ -2312,12 +2344,14 @@
     "difficulty": "Easy",
     "question": "Which dish was declared Britain's 'true national dish' by Foreign Secretary Robin Cook in 2001?",
     "answer": "Chicken Tikka Masala",
-    "explanation": "Chicken Tikka Masala was declared a 'true British national dish' by UK Foreign Secretary Robin Cook in 2001. It was likely invented in Glasgow, Scotland in the 1970s. India has no official national dish. Source: https://www.britannica.com/topic/chicken-tikka-masala",
+    "explanation": "Chicken Tikka Masala was declared a 'true British national dish' by UK Foreign Secretary Robin Cook in 2001. It was likely invented in Glasgow, Scotland in the 1970s. India has no official national dish.",
     "tags": [
       "Global",
       "Food",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://www.britannica.com/topic/chicken-tikka-masala",
+    "sourceName": "Britannica"
   },
   {
     "id": "q177",
@@ -2390,12 +2424,14 @@
     "difficulty": "Medium",
     "question": "Which Canadian actress stars in 'Orphan Black'?",
     "answer": "Tatiana Maslany",
-    "explanation": "Tatiana Maslany is from Regina, Saskatchewan. She won an Emmy Award for Outstanding Lead Actress in a Drama Series in 2016 for 'Orphan Black', plus two Critics' Choice Awards and five Canadian Screen Awards. She was nominated for a Golden Globe in 2014 but did not win. Source: https://en.wikipedia.org/wiki/Tatiana_Maslany",
+    "explanation": "Tatiana Maslany is from Regina, Saskatchewan. She won an Emmy Award for Outstanding Lead Actress in a Drama Series in 2016 for 'Orphan Black', plus two Critics' Choice Awards and five Canadian Screen Awards. She was nominated for a Golden Globe in 2014 but did not win.",
     "tags": [
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tatiana_Maslany",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q183",
@@ -2403,12 +2439,14 @@
     "difficulty": "Hard",
     "question": "Which British rock band is known for the album 'Absolution' and songs like 'Hysteria'?",
     "answer": "Muse",
-    "explanation": "Muse is a British rock band formed in Teignmouth, Devon, England in 1994. 'Hysteria' is from their 2003 album 'Absolution'. Source: https://en.wikipedia.org/wiki/Muse_(band)",
+    "explanation": "Muse is a British rock band formed in Teignmouth, Devon, England in 1994. 'Hysteria' is from their 2003 album 'Absolution'.",
     "tags": [
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Muse_(band)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q184",

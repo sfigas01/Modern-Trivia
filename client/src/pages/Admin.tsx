@@ -29,7 +29,9 @@ export default function Admin() {
     question: "",
     answer: "",
     explanation: "",
-    countryTag: "Global"
+    countryTag: "Global",
+    sourceUrl: "",
+    sourceName: ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,7 +46,9 @@ export default function Admin() {
       question: formData.question,
       answer: formData.answer,
       explanation: formData.explanation,
-      tags: ["Custom", formData.countryTag]
+      tags: ["Custom", formData.countryTag],
+      ...(formData.sourceUrl && { sourceUrl: formData.sourceUrl }),
+      ...(formData.sourceName && { sourceName: formData.sourceName })
     };
 
     addQuestion(newQuestion);
@@ -60,7 +64,9 @@ export default function Admin() {
       question: "",
       answer: "",
       explanation: "",
-      countryTag: "Global"
+      countryTag: "Global",
+      sourceUrl: "",
+      sourceName: ""
     });
   };
 
@@ -291,12 +297,33 @@ export default function Admin() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Explanation (Optional)</label>
-                    <Textarea 
-                      value={formData.explanation} 
+                    <Textarea
+                      value={formData.explanation}
                       onChange={e => setFormData({...formData, explanation: e.target.value})}
                       placeholder="Context shown after answering..."
                       data-testid="input-explanation"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Source URL (Optional)</label>
+                      <Input
+                        value={formData.sourceUrl}
+                        onChange={e => setFormData({...formData, sourceUrl: e.target.value})}
+                        placeholder="https://..."
+                        data-testid="input-source-url"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Source Name (Optional)</label>
+                      <Input
+                        value={formData.sourceName}
+                        onChange={e => setFormData({...formData, sourceName: e.target.value})}
+                        placeholder="e.g. Wikipedia"
+                        data-testid="input-source-name"
+                      />
+                    </div>
                   </div>
 
                   <Button type="submit" className="w-full" data-testid="button-save-question">
@@ -369,12 +396,34 @@ export default function Admin() {
                             </div>
                             <div className="space-y-2">
                               <label className="text-xs font-medium uppercase text-muted-foreground">Question Text</label>
-                              <Textarea 
+                              <Textarea
                                 value={editingQuestion.question}
                                 onChange={(e) => setEditingQuestion({...editingQuestion, question: e.target.value})}
                                 className="bg-background border-white/20 min-h-[80px]"
                                 data-testid="input-edit-question"
                               />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-xs font-medium uppercase text-muted-foreground">Source URL</label>
+                                <Input
+                                  value={editingQuestion.sourceUrl || ""}
+                                  onChange={(e) => setEditingQuestion({...editingQuestion, sourceUrl: e.target.value})}
+                                  className="bg-background border-white/20"
+                                  placeholder="https://..."
+                                  data-testid="input-edit-source-url"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-xs font-medium uppercase text-muted-foreground">Source Name</label>
+                                <Input
+                                  value={editingQuestion.sourceName || ""}
+                                  onChange={(e) => setEditingQuestion({...editingQuestion, sourceName: e.target.value})}
+                                  className="bg-background border-white/20"
+                                  placeholder="e.g. Wikipedia"
+                                  data-testid="input-edit-source-name"
+                                />
+                              </div>
                             </div>
                             <div className="flex gap-2 justify-end">
                               <Button variant="ghost" size="sm" onClick={() => setEditingQuestion(null)} data-testid="button-cancel-edit">
