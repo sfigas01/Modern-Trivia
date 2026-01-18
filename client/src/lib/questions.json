@@ -227,12 +227,14 @@
     "difficulty": "Easy",
     "question": "Poutine originated in which Canadian province?",
     "answer": "Quebec",
-    "explanation": "It emerged in the late 1950s in the Centre-du-Qu\u00e9bec area.",
+    "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q16",
@@ -410,7 +412,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Water",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q28",
@@ -423,7 +427,9 @@
       "US",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Michael_Jackson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q29",
@@ -431,12 +437,14 @@
     "difficulty": "Medium",
     "question": "What is the largest province in Canada by area?",
     "answer": "Quebec",
-    "explanation": "Nunavut is larger, but it is a territory, not a province.",
+    "explanation": "Quebec covers about 1.5 million km². Nunavut is larger, but it is a territory, not a province.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Quebec",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q30",
@@ -444,13 +452,15 @@
     "difficulty": "Hard",
     "question": "In which year did the War of 1812 end?",
     "answer": "1815",
-    "explanation": "The Treaty of Ghent was signed in 1814, but fighting continued into early 1815.",
+    "explanation": "The Treaty of Ghent was signed December 24, 1814, but fighting continued into 1815, including the Battle of New Orleans.",
     "tags": [
       "US",
       "History",
       "CA",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/War_of_1812",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q31",
@@ -458,12 +468,14 @@
     "difficulty": "Medium",
     "question": "Which company was founded by Bill Gates and Paul Allen?",
     "answer": "Microsoft",
-    "explanation": "Founded in 1975 in Albuquerque, New Mexico.",
+    "explanation": "Founded on April 4, 1975 in Albuquerque, New Mexico.",
     "tags": [
       "US",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Microsoft",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q32",
@@ -471,12 +483,14 @@
     "difficulty": "Easy",
     "question": "Celine Dion is from which Canadian province?",
     "answer": "Quebec",
-    "explanation": "She was born in Charlemagne, Quebec.",
+    "explanation": "She was born on March 30, 1968 in Charlemagne, Quebec.",
     "tags": [
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Celine_Dion",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q33",
@@ -484,12 +498,14 @@
     "difficulty": "Hard",
     "question": "What is the capital of California?",
     "answer": "Sacramento",
-    "explanation": "It's not Los Angeles or San Francisco!",
+    "explanation": "Sacramento became California's state capital in 1854. It's not Los Angeles or San Francisco!",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sacramento,_California",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q34",
@@ -502,7 +518,9 @@
       "Global",
       "General",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hexagon",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q35",
@@ -510,12 +528,14 @@
     "difficulty": "Medium",
     "question": "What is the main ingredient in Guacamole?",
     "answer": "Avocado",
-    "explanation": "It's an avocado-based dip, spread, or salad.",
+    "explanation": "It's an avocado-based dip, spread, or salad originating from Mexico.",
     "tags": [
       "Global",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Guacamole",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q36",
@@ -523,12 +543,14 @@
     "difficulty": "Medium",
     "question": "The CN Tower is located in which city?",
     "answer": "Toronto",
-    "explanation": "It held the record for the world's tallest free-standing structure for 32 years.",
+    "explanation": "It held the record for the world's tallest free-standing structure for 32 years (1975-2007).",
     "tags": [
       "CA",
       "Geography",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/CN_Tower",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q37",
@@ -536,12 +558,14 @@
     "difficulty": "Easy",
     "question": "Which ocean is on the West Coast of the US and Canada?",
     "answer": "Pacific Ocean",
-    "explanation": "It is the largest and deepest of Earth's oceanic divisions.",
+    "explanation": "It is the largest and deepest of Earth's oceanic divisions, covering about 63 million square miles.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q38",
@@ -549,12 +573,14 @@
     "difficulty": "Hard",
     "question": "Which team won the first ever Super Bowl?",
     "answer": "Green Bay Packers",
-    "explanation": "They defeated the Kansas City Chiefs in 1967.",
+    "explanation": "They defeated the Kansas City Chiefs 35-10 on January 15, 1967.",
     "tags": [
       "US",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_I",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q39",
@@ -567,7 +593,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_whale",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q40",
@@ -575,12 +603,14 @@
     "difficulty": "Medium",
     "question": "Tim Hortons is famous for what two items?",
     "answer": "Coffee and Donuts",
-    "explanation": "Founded in 1964 by Canadian hockey player Tim Horton.",
+    "explanation": "Founded in 1964 in Hamilton, Ontario by Canadian hockey player Tim Horton.",
     "tags": [
       "CA",
       "Culture",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tim_Hortons",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q41",
@@ -588,12 +618,14 @@
     "difficulty": "Hard",
     "question": "How many senators are in the US Senate?",
     "answer": "100",
-    "explanation": "Two for each of the 50 states.",
+    "explanation": "Two for each of the 50 states, serving six-year terms.",
     "tags": [
       "US",
       "Government",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/United_States_Senate",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q42",
@@ -601,12 +633,14 @@
     "difficulty": "Medium",
     "question": "What is the speed of light approximately?",
     "answer": "299,792 km/s",
-    "explanation": "Often approximated as 300,000 km/s.",
+    "explanation": "Often approximated as 300,000 km/s. Light travels at exactly 299,792,458 meters per second in a vacuum.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Speed_of_light",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q43",
@@ -614,12 +648,14 @@
     "difficulty": "Easy",
     "question": "What are the two official languages of Canada?",
     "answer": "English and French",
-    "explanation": "Canada is officially bilingual at the federal level.",
+    "explanation": "Canada became officially bilingual at the federal level with the Official Languages Act of 1969.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Official_Languages_Act_(Canada)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q44",
@@ -627,12 +663,14 @@
     "difficulty": "Medium",
     "question": "Which Great Lake is the only one located entirely within the US?",
     "answer": "Lake Michigan",
-    "explanation": "The other four are shared with Canada.",
+    "explanation": "The other four Great Lakes (Superior, Huron, Erie, Ontario) are shared with Canada.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Michigan",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q45",
@@ -640,12 +678,14 @@
     "difficulty": "Easy",
     "question": "Who played Iron Man in the Marvel Cinematic Universe?",
     "answer": "Robert Downey Jr.",
-    "explanation": "He kicked off the MCU in 2008.",
+    "explanation": "He kicked off the MCU in Iron Man (2008) and played Tony Stark until Avengers: Endgame (2019).",
     "tags": [
       "US",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robert_Downey_Jr.",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q46",
@@ -653,12 +693,14 @@
     "difficulty": "Medium",
     "question": "Which Canadian hockey player is known as 'The Great One'?",
     "answer": "Wayne Gretzky",
-    "explanation": "He holds many records in the NHL.",
+    "explanation": "He holds over 60 NHL records including most career goals (894) and assists (1,963).",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wayne_Gretzky",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q47",
@@ -666,12 +708,14 @@
     "difficulty": "Hard",
     "question": "What is the powerhouse of the cell?",
     "answer": "Mitochondria",
-    "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP).",
+    "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP) through cellular respiration.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mitochondrion",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q48",
@@ -679,12 +723,14 @@
     "difficulty": "Medium",
     "question": "What is the capital of Texas?",
     "answer": "Austin",
-    "explanation": "Keep Austin Weird!",
+    "explanation": "Austin has been the state capital since 1839. 'Keep Austin Weird' is the city's unofficial slogan.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Austin,_Texas",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q49",
@@ -692,12 +738,14 @@
     "difficulty": "Easy",
     "question": "What color do you get when you mix Red and Blue?",
     "answer": "Purple",
-    "explanation": "It is a secondary color.",
+    "explanation": "Purple is a secondary color in the traditional RYB color model used in painting.",
     "tags": [
       "Global",
       "Art",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Purple",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q50",
@@ -705,12 +753,14 @@
     "difficulty": "Hard",
     "question": "What is the northernmost permanent settlement in the world?",
     "answer": "Alert, Nunavut",
-    "explanation": "It is located in the Qikiqtaaluk Region of Nunavut, Canada.",
+    "explanation": "Alert is located at 82°30'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
     "tags": [
       "CA",
       "Geography",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q51",
@@ -723,7 +773,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q52",
