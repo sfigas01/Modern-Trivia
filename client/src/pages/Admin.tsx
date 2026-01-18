@@ -87,6 +87,36 @@ export default function Admin() {
     }
   };
 
+  const handleApplyFix = async (dispute: typeof disputes[0], analysis: AIAnalysis) => {
+    if (!analysis.suggestedFix) return;
+    
+    const questionToUpdate = state.questions.find(q => q.id === dispute.questionId);
+    if (!questionToUpdate) {
+      toast({
+        title: "Question Not Found",
+        description: "Could not find the question to update.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedQuestion: Question = {
+      ...questionToUpdate,
+      answer: analysis.suggestedFix.answer || questionToUpdate.answer,
+      question: analysis.suggestedFix.question || questionToUpdate.question,
+      explanation: analysis.suggestedFix.explanation || questionToUpdate.explanation,
+    };
+
+    updateQuestion(updatedQuestion);
+    
+    await handleResolve(dispute.id, "resolved");
+    
+    toast({
+      title: "Fix Applied",
+      description: "The question has been updated with the AI suggestion.",
+    });
+  };
+
   const [formData, setFormData] = useState({
     category: "",
     difficulty: "Medium" as Difficulty,
@@ -554,7 +584,21 @@ export default function Admin() {
                                   </p>
                                   {analysis.suggestedFix?.answer && (
                                     <div className="p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
-                                      <p className="text-xs font-medium text-yellow-500 mb-1">Suggested Fix:</p>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <p className="text-xs font-medium text-yellow-500">Suggested Fix:</p>
+                                        {dispute.status === 'pending' && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-6 text-xs border-yellow-500/20 hover:bg-yellow-500/10 hover:text-yellow-500"
+                                            onClick={() => handleApplyFix(dispute, analysis)}
+                                            disabled={resolvingId === dispute.id}
+                                            data-testid={`button-apply-fix-${dispute.id}`}
+                                          >
+                                            <Check className="w-3 h-3 mr-1" /> Apply Fix
+                                          </Button>
+                                        )}
+                                      </div>
                                       <p className="text-sm">
                                         Change answer to: <strong>{analysis.suggestedFix.answer}</strong>
                                       </p>
