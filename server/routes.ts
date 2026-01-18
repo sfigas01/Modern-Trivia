@@ -50,7 +50,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/disputes", isAuthenticated, async (req, res) => {
+  app.post("/api/disputes", async (req, res) => {
     try {
       const parsed = insertDisputeSchema.parse(req.body);
       const [newDispute] = await db.insert(disputes).values(parsed).returning();
