@@ -499,7 +499,9 @@ export default function Admin() {
                 {filteredDisputes.length === 0 ? (
                   <Card className="bg-white/5 border-white/10 border-dashed">
                     <CardContent className="p-8 text-center">
-                      <p className="text-muted-foreground">No {statusFilter} disputes.</p>
+                      <p className="text-muted-foreground">
+                        {statusFilter === "all" ? "No disputes match the current filter." : `No ${statusFilter} disputes.`}
+                      </p>
                     </CardContent>
                   </Card>
                 ) : (
