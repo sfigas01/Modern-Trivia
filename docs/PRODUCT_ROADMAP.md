@@ -23,8 +23,8 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 *   **Key Deliverables:**
     *   `Dispute Dashboard` (Admin UI)
     *   `AI Fact-Checker Agent` (Backend Service)
-    *   `Resolve/Reject Workflow` (Database Updates)
-*   **Reference Spec:** `docs/DISPUTE_QA_USER_STORIES.md`
+    *   "Resolve/Reject Workflow" (Database Updates)
+*   **Reference Spec:** `docs/epics/EPIC-01_dispute_resolution.md`
 
 ---
 
