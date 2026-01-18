@@ -1091,12 +1091,14 @@
     "difficulty": "Hard",
     "question": "Who was the first European to reach North America?",
     "answer": "Leif Erikson",
-    "explanation": "The Viking explorer reached North America around 1000 AD.",
+    "explanation": "The Viking explorer reached North America around 1000 AD, establishing a settlement at L'Anse aux Meadows in Newfoundland.",
     "tags": [
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Leif_Erikson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q73",
@@ -1104,12 +1106,14 @@
     "difficulty": "Medium",
     "question": "What is the capital of France?",
     "answer": "Paris",
-    "explanation": "Paris is located on the Seine River.",
+    "explanation": "Paris is located on the Seine River and has been France's capital since 987 AD.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Paris",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q74",
@@ -1117,12 +1121,14 @@
     "difficulty": "Hard",
     "question": "What is the largest land animal on Earth?",
     "answer": "African Elephant",
-    "explanation": "Adult males can weigh up to 14,000 pounds.",
+    "explanation": "Adult male African bush elephants can weigh up to 14,000 pounds (6,350 kg) and stand up to 13 feet tall.",
     "tags": [
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/African_elephant",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q75",
@@ -1130,12 +1136,14 @@
     "difficulty": "Easy",
     "question": "Who wrote the Harry Potter series?",
     "answer": "J.K. Rowling",
-    "explanation": "The British author created the magical world of Hogwarts.",
+    "explanation": "J.K. Rowling is a British author who published the first Harry Potter book in 1997.",
     "tags": [
       "Global",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Potter",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q76",
@@ -1143,12 +1151,14 @@
     "difficulty": "Easy",
     "question": "In what year did the internet become publicly available?",
     "answer": "1991",
-    "explanation": "The World Wide Web was released to the public on August 6, 1991.",
+    "explanation": "Tim Berners-Lee released the World Wide Web to the public on August 6, 1991 at CERN.",
     "tags": [
       "Global",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/World_Wide_Web",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q77",
@@ -1171,12 +1181,14 @@
     "difficulty": "Medium",
     "question": "How many Olympic sports are there in the Summer Olympics?",
     "answer": "32",
-    "explanation": "The number of sports varies with each Olympic Games.",
+    "explanation": "The 2024 Paris Olympics featured 32 sports. The number of sports varies with each Olympic Games.",
     "tags": [
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Summer_Olympic_Games",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q79",
@@ -1184,12 +1196,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian province has the highest population?",
     "answer": "Ontario",
-    "explanation": "Ontario is home to over 15 million people.",
+    "explanation": "Ontario is home to over 15 million people, about 38% of Canada's total population.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ontario",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q80",
@@ -1197,12 +1211,14 @@
     "difficulty": "Hard",
     "question": "What is the largest organ in the human body?",
     "answer": "Skin",
-    "explanation": "The skin covers and protects all other organs.",
+    "explanation": "The skin covers about 20 square feet in adults and weighs about 8 pounds.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Human_skin",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q81",
@@ -1225,12 +1241,14 @@
     "difficulty": "Easy",
     "question": "What year did the Berlin Wall fall?",
     "answer": "1989",
-    "explanation": "November 9, 1989 marked the end of the Cold War era.",
+    "explanation": "The Berlin Wall fell on November 9, 1989, symbolizing the end of the Cold War division of Europe.",
     "tags": [
       "Global",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Fall_of_the_Berlin_Wall",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q83",
@@ -1242,12 +1260,14 @@
       "Chocolate bar",
       "Canadian candy"
     ],
-    "explanation": "It's a three-layer chocolate bar from Nanaimo, BC with custard filling.",
+    "explanation": "It's a no-bake three-layer dessert bar originating from Nanaimo, British Columbia with a custard-flavored middle layer.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nanaimo_bar",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q84",
@@ -1255,12 +1275,14 @@
     "difficulty": "Hard",
     "question": "What is the smallest independent country in the world?",
     "answer": "Vatican City",
-    "explanation": "Vatican City is about 0.44 square kilometers.",
+    "explanation": "Vatican City is about 0.44 square kilometers (110 acres), entirely surrounded by Rome, Italy.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vatican_City",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q85",
@@ -1268,25 +1290,29 @@
     "difficulty": "Medium",
     "question": "Which NHL team is known as the Maple Leafs?",
     "answer": "Toronto",
-    "explanation": "The Toronto Maple Leafs play in the Atlantic Division.",
+    "explanation": "The Toronto Maple Leafs were founded in 1917 and play in the Atlantic Division of the Eastern Conference.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q86",
     "category": "Literature",
     "difficulty": "Medium",
     "question": "Who wrote 'One Hundred Years of Solitude'?",
-    "answer": "Gabriel Garc\u00eda M\u00e1rquez",
-    "explanation": "M\u00e1rquez was a Colombian author and Nobel Prize winner.",
+    "answer": "Gabriel García Márquez",
+    "explanation": "García Márquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
     "tags": [
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/One_Hundred_Years_of_Solitude",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q87",
@@ -1294,12 +1320,14 @@
     "difficulty": "Medium",
     "question": "What element has the atomic number 1?",
     "answer": "Hydrogen",
-    "explanation": "Hydrogen is the lightest and most abundant element.",
+    "explanation": "Hydrogen is the lightest element and makes up about 75% of all matter in the universe.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q88",
