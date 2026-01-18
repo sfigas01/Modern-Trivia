@@ -322,24 +322,16 @@ export default function Game() {
                   <DisputeModal
                     open={disputeOpen}
                     onOpenChange={setDisputeOpen}
-                    questionId={currentQ.id}
-                    questionText={currentQ.question}
-                    correctAnswer={currentQ.answer}
+                    questionId={currentQ?.id || ""}
+                    questionText={currentQ?.question || ""}
+                    correctAnswer={currentQ?.answer || ""}
                     teamName={activeTeam?.name || "Unknown"}
-                    submittedAnswer={state.currentAttempt.submittedAnswer}
+                    submittedAnswer={state.currentAttempt?.submittedAnswer || null}
                   />
                 </motion.div>
               )}
-              <Button
-                onClick={advanceToScoreUpdate}
-                className="w-full h-16 text-xl font-bold shadow-lg mt-4"
-              >
-                NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
-              </Button>
-            </motion.div>
-          )}
 
-          {/* QUESTION STATE UI */}
+              {/* QUESTION STATE UI */}
           {!isReveal && (
             <motion.div
               initial={{ opacity: 0 }}
