@@ -75,6 +75,8 @@ interface GameContextType {
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const STORAGE_KEY_QUESTIONS = "modern_trivia_questions";
+const STORAGE_KEY_VERSION = "modern_trivia_questions_version";
+const QUESTIONS_VERSION = 2; // Bump this when questions.json is updated with new fields
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 const normalize = (str: string): string => {
@@ -146,14 +148,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Load questions including custom ones
   useEffect(() => {
+    const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
+    const currentVersion = storedVersion ? parseInt(storedVersion, 10) : 0;
+    
+    // If version changed, clear old cached questions and use fresh data from questions.json
+    if (currentVersion < QUESTIONS_VERSION) {
+      localStorage.removeItem(STORAGE_KEY_QUESTIONS);
+      localStorage.setItem(STORAGE_KEY_VERSION, String(QUESTIONS_VERSION));
+    }
+    
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     let allQuestions = [...initialQuestions] as Question[];
 
     if (stored) {
       const custom = JSON.parse(stored);
-      // Merge custom questions, prioritizing them by ID if there are overlaps (though IDs should be unique)
-      const customIds = new Set(custom.map((q: Question) => q.id));
-      allQuestions = [...custom, ...initialQuestions.filter(q => !customIds.has(q.id))];
+      // Only keep truly custom questions (those not in initialQuestions)
+      const initialIds = new Set(initialQuestions.map(q => q.id));
+      const customOnly = custom.filter((q: Question) => !initialIds.has(q.id));
+      // Use fresh initial questions + any custom user-added questions
+      allQuestions = [...initialQuestions, ...customOnly];
     }
 
     const categories = Array.from(new Set(allQuestions.map(q => q.category))).sort();
