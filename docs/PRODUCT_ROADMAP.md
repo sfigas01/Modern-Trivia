@@ -7,10 +7,10 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 | ID | Status | Timeline | Focus Area | Description | Relative Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **EPIC-01** | **NOW** | Q1 2026 | **Trust & Quality** | Interactive Dispute Resolution | [View Epic](epics/EPIC-01_dispute_resolution.md) |
-| **FT-01** | **NOW** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](feature_specs/FT-01_reference_support.md) |
+| **FT-01** | **DONE** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](feature_specs/FT-01_reference_support.md) |
 | **FT-02** | **NOW** | Q1 2026 | **Scale** | Content Inventory & CMS | *(Spec Pending)* |
 
-| **FT-03** | **NEXT** | Q2 2026 | **Quality** | Automated Quality Audit | *(Planned)* |
+| **FT-03** | **NEXT** | Q2 2026 | **Maintenance** | AI Quality Sweep | *(Agent Spec Pending)* |
 | **EPIC-02** | **NEXT** | Q2 2026 | **Scale** | Backstage Content Pipeline | [View Epic](epics/EPIC-02_backstage_pipeline.md) |
 | **EPIC-03** | **LATER**| 2026+ | **Expansion** | On-Demand Generation | *(Planned)* |
 
@@ -32,7 +32,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ### FT-01: Reference Support
 **Goal:** Add rigorous reference tracking to all Q&A pairs for auditing and trust.
-**Status:** 🏗️ In Design
+**Status:** ✅ Done
 *   **Reference Spec:** `docs/feature_specs/FT-01_reference_support.md`
 
 ### FT-02: Content Inventory & CMS
@@ -45,11 +45,12 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ## 📅 Scheduled Priorities (NEXT)
 
-### FT-03: Automated Quality Audit (The "Janitor")
-**Goal:** Clean up existing database issues (bad tags, embedded answers, vague questions) using AI.
-**Status:** 📋 Planned
-*   **Problem:** Users report "stupid questions" (e.g., erroneous Canadian tags, answer in text, no clear answer).
-*   **Solution:** An async agent that scans `questions.json` and flags items for review or auto-fixes tags.
+### FT-03: AI Quality Sweep (Maintenance)
+**Goal:** Clean up existing database issues by repurposing the **AI Fact-Checker Agent**.
+**Status:** 📋 Planned (Dependent on core Agent Spec)
+*   **Problem:** Users report "stupid questions" (bad tags, answer in text) that need bulk cleanup.
+*   **Solution:** A batch process that runs the *AI Fact-Checker Agent* (from EPIC-01) across the entire inventory to identify and auto-fix low-quality data.
+*   **Dependency:** Requires formalizing the `AI Fact-Checker Agent` spec.
 
 ### Epic: Backstage Content Pipeline
 **Goal:** Enable high-volume, "Spoiler-Free" import of new questions directly from AI generation.

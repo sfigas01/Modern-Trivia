@@ -3,6 +3,8 @@
 ## 1. Objective
 Enable the trivia game to display strict, structured verification sources for answers. This enhances trust and provides "proof" for disputed answers, directly in the game UI. Currently, some references are embedded unstructured within the `explanation` text.
 
+**Status:** ✅ Done (Jan 18, 2026)
+
 ## 2. Data Model Changes
 The `Question` interface in `client/src/lib/store.tsx` needs to be updated to support an optional source URL.
 
