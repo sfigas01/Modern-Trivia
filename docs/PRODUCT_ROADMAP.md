@@ -26,7 +26,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 *   **Solution:** A dashboard where AI pre-validates disputes, offering a "Fix" or "Reject" recommendation.
 *   **Key Features:**
     *   `Dispute Dashboard` (Admin UI)
-    *   `AI Fact-Checker Agent` (Backend Service)
+    *   `AI Fact-Checker Agent` (Backend Service) "the Quality Reviwer"
     *   `Resolve/Reject Workflow` (Database Updates)
 *   **Reference Spec:** `docs/epics/EPIC-01_dispute_resolution.md`
 
@@ -45,12 +45,11 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ## 📅 Scheduled Priorities (NEXT)
 
-### FT-03: AI Quality Sweep (Maintenance)
-**Goal:** Clean up existing database issues by repurposing the **AI Fact-Checker Agent**.
-**Status:** 📋 Planned (Dependent on core Agent Spec)
-*   **Problem:** Users report "stupid questions" (bad tags, answer in text) that need bulk cleanup.
-*   **Solution:** A batch process that runs the *AI Fact-Checker Agent* (from EPIC-01) across the entire inventory to identify and auto-fix low-quality data.
-*   **Dependency:** Requires formalizing the `AI Fact-Checker Agent` spec.
+### FT-03: Automated Quality Audit (The "Janitor")
+**Goal:** Clean up existing database issues (bad tags, embedded answers, vague questions) using AI.
+**Status:** 📋 Planned
+*   **Problem:** Users report "stupid questions" (e.g., erroneous Canadian tags, answer in text, no clear answer).
+*   **Solution:** An async agent that scans `questions.json` and flags items for review or auto-fixes tags.
 
 ### Epic: Backstage Content Pipeline
 **Goal:** Enable high-volume, "Spoiler-Free" import of new questions directly from AI generation.
