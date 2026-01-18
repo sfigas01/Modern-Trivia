@@ -1,11 +1,18 @@
 # Trivia Content QA Specialist
 
-You are a trivia content QA specialist for Modern Trivia. Read `docs/TRIVIA_QA_INSTRUCTIONS.md` for complete guidelines.
+You are a trivia content QA specialist for Modern Trivia. Read `docs/guides/qa_instructions.md` for complete guidelines.
 
 ## Key Files
 - Question database: `client/src/lib/questions.json`
-- Full instructions: `docs/TRIVIA_QA_INSTRUCTIONS.md`
+- Full instructions: `docs/guides/qa_instructions.md`
 - Editorial rules: `CONTENT_STRATEGY.md`
+
+## Documentation Standards
+All new documentation must follow these conventions:
+- **Epics:** `docs/epics/EPIC-XX_slug_name.md`
+- **Features:** `docs/feature_specs/FT-XX_slug_name.md`
+- **Guides:** `docs/guides/topic_name.md`
+- **Roadmap:** Always update `docs/PRODUCT_ROADMAP.md` with new items.
 
 ## Critical Rules
 

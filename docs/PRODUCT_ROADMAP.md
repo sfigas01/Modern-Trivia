@@ -4,17 +4,18 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ## 🗺️ Roadmap Status
 
-| Status | Timeline | Focus Area | Description |
-| :--- | :--- | :--- | :--- |
-| **NOW** | Q1 2026 | **Trust & Quality** | Building the tools to verify and fix content without spoilers. |
-| **NEXT** | Q2 2026 | **Scale & Automation** | Automating the content pipeline to support "infinite" trusted questions. |
-| **LATER**| 2026+ | **Expansion** | New game modes, on-demand generation, and platform growth. |
+| ID | Status | Timeline | Focus Area | Description | Relative Link |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **EPIC-01** | **NOW** | Q1 2026 | **Trust & Quality** | Interactive Dispute Resolution | [View Epic](epics/EPIC-01_dispute_resolution.md) |
+| **FT-01** | **NOW** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](feature_specs/FT-01_reference_support.md) |
+| **EPIC-02** | **NEXT** | Q2 2026 | **Scale** | Backstage Content Pipeline | [View Epic](epics/EPIC-02_backstage_pipeline.md) |
+| **EPIC-03** | **LATER**| 2026+ | **Expansion** | On-Demand Generation | *(Planned)* |
 
 ---
 
 ## 🏗️ Active Development (NOW)
 
-### Epic: Interactive Dispute Resolution
+### EPIC-01: Interactive Dispute Resolution
 **Goal:** Enable Admins to resolve user-flagged errors efficiently with AI assistance.
 **Status:** 🏗️ In Design/Planning
 
@@ -23,8 +24,13 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 *   **Key Deliverables:**
     *   `Dispute Dashboard` (Admin UI)
     *   `AI Fact-Checker Agent` (Backend Service)
-    *   "Resolve/Reject Workflow" (Database Updates)
+    *   `Resolve/Reject Workflow` (Database Updates)
 *   **Reference Spec:** `docs/epics/EPIC-01_dispute_resolution.md`
+
+### FT-01: Reference Support
+**Goal:** Add rigorous reference tracking to all Q&A pairs for auditing and trust.
+**Status:** 🏗️ In Design
+*   **Reference Spec:** `docs/feature_specs/FT-01_reference_support.md`
 
 ---
 
