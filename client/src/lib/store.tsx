@@ -150,23 +150,38 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
     const currentVersion = storedVersion ? parseInt(storedVersion, 10) : 0;
+    const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     
-    // If version changed, clear old cached questions and use fresh data from questions.json
+    // Build a set of IDs from the bundled questions.json
+    const initialIds = new Set(initialQuestions.map(q => q.id));
+    
+    // If version changed, we need to refresh base questions but preserve custom ones
     if (currentVersion < QUESTIONS_VERSION) {
-      localStorage.removeItem(STORAGE_KEY_QUESTIONS);
       localStorage.setItem(STORAGE_KEY_VERSION, String(QUESTIONS_VERSION));
+      
+      if (stored) {
+        // Extract only truly custom questions (user-added, not in initial set)
+        const cachedQuestions = JSON.parse(stored) as Question[];
+        const customOnly = cachedQuestions.filter(q => !initialIds.has(q.id));
+        
+        // Save only the custom questions back
+        if (customOnly.length > 0) {
+          localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(customOnly));
+        } else {
+          localStorage.removeItem(STORAGE_KEY_QUESTIONS);
+        }
+      }
     }
     
-    const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
+    // Now load: always use fresh initial questions + any custom user-added questions
     let allQuestions = [...initialQuestions] as Question[];
-
-    if (stored) {
-      const custom = JSON.parse(stored);
-      // Only keep truly custom questions (those not in initialQuestions)
-      const initialIds = new Set(initialQuestions.map(q => q.id));
-      const customOnly = custom.filter((q: Question) => !initialIds.has(q.id));
-      // Use fresh initial questions + any custom user-added questions
-      allQuestions = [...initialQuestions, ...customOnly];
+    const storedAfterMigration = localStorage.getItem(STORAGE_KEY_QUESTIONS);
+    
+    if (storedAfterMigration) {
+      const customQuestions = JSON.parse(storedAfterMigration);
+      // Only add questions that don't exist in initial set (truly custom)
+      const customOnly = (customQuestions as Question[]).filter(q => !initialIds.has(q.id));
+      allQuestions = [...(initialQuestions as Question[]), ...customOnly];
     }
 
     const categories = Array.from(new Set(allQuestions.map(q => q.category))).sort();
