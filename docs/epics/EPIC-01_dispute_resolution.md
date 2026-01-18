@@ -20,6 +20,10 @@ The following steps must be taken by a developer to finalize deployment:
 3.  **Push Schema:** Run `npm run db:push` to create the tables.
 4.  **Configure Keys:** Log in to `/admin/settings` and add the OpenAI API Key.
 
+### 🐛 Known Issues & Bugs (To Tackle)
+1.  **Manual Question Editing:** Admin needs to be able to manually edit the *Question* text, not just the Answer.
+2.  **AI Auto-Fill:** When AI suggests a source/citation, it should automatically update/fill the Answer field if it is missing or incomplete based on the findings.
+
 ---
 
 ## Workflow Overview
@@ -70,6 +74,7 @@ graph TD
 **So that** the database is updated instantly and the dispute is marked resolved.
 
 **Acceptance Criteria:**
+*   **Review Flow:** Admin sees a "Diff" view (Current vs. AI Proposed) and must click "Confirm & Apply" to finalize.
 *   **Resolve (Fix):** Updates `questions.json` (or DB entry) with new content, sets dispute status to `RESOLVED`, saves resolution note.
 *   **Reject:** Sets dispute status to `REJECTED` with a note (e.g., "Team was wrong").
 *   **Manual Override:** Admin can edit the "Proposed Fix" before applying.
