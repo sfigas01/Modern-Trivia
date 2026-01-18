@@ -38,6 +38,15 @@ export default function Admin() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "resolved" | "rejected">("pending");
+  
+  const filteredDisputes = disputes.filter(d => 
+    statusFilter === "all" ? true : d.status === statusFilter
+  );
+  
+  const pendingCount = disputes.filter(d => d.status === "pending").length;
+  const resolvedCount = disputes.filter(d => d.status === "resolved").length;
+  const rejectedCount = disputes.filter(d => d.status === "rejected").length;
 
   const handleAnalyze = async (id: string) => {
     setAnalyzingId(id);
@@ -438,8 +447,44 @@ export default function Admin() {
               </Card>
             ) : (
               <>
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">{disputes.length} Disputed Answer{disputes.length !== 1 ? 's' : ''}</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex gap-1 flex-wrap" data-testid="dispute-filter-tabs">
+                    <Button
+                      size="sm"
+                      variant={statusFilter === "pending" ? "default" : "ghost"}
+                      onClick={() => setStatusFilter("pending")}
+                      className={statusFilter === "pending" ? "bg-yellow-600 hover:bg-yellow-700" : ""}
+                      data-testid="filter-pending"
+                    >
+                      Pending {pendingCount > 0 && `(${pendingCount})`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={statusFilter === "resolved" ? "default" : "ghost"}
+                      onClick={() => setStatusFilter("resolved")}
+                      className={statusFilter === "resolved" ? "bg-green-600 hover:bg-green-700" : ""}
+                      data-testid="filter-resolved"
+                    >
+                      Resolved {resolvedCount > 0 && `(${resolvedCount})`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={statusFilter === "rejected" ? "default" : "ghost"}
+                      onClick={() => setStatusFilter("rejected")}
+                      className={statusFilter === "rejected" ? "bg-red-600 hover:bg-red-700" : ""}
+                      data-testid="filter-rejected"
+                    >
+                      Rejected {rejectedCount > 0 && `(${rejectedCount})`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={statusFilter === "all" ? "default" : "ghost"}
+                      onClick={() => setStatusFilter("all")}
+                      data-testid="filter-all"
+                    >
+                      All ({disputes.length})
+                    </Button>
+                  </div>
                   <Button 
                     variant="destructive" 
                     size="sm"
@@ -450,8 +495,16 @@ export default function Admin() {
                     <Trash2 className="w-4 h-4 mr-2" /> Clear All
                   </Button>
                 </div>
+                
+                {filteredDisputes.length === 0 ? (
+                  <Card className="bg-white/5 border-white/10 border-dashed">
+                    <CardContent className="p-8 text-center">
+                      <p className="text-muted-foreground">No {statusFilter} disputes.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
                 <div className="space-y-4">
-                  {disputes.map((dispute) => {
+                  {filteredDisputes.map((dispute) => {
                     const analysis = dispute.aiAnalysis as AIAnalysis | null;
                     return (
                       <Card key={dispute.id} className={`bg-white/5 border-white/10 ${dispute.status === 'pending' ? 'border-yellow-500/30' : dispute.status === 'resolved' ? 'border-green-500/30' : 'border-red-500/30'}`} data-testid={`card-dispute-${dispute.id}`}>
@@ -658,6 +711,7 @@ export default function Admin() {
                     );
                   })}
                 </div>
+                )}
               </>
             )}
           </TabsContent>
