@@ -29,23 +29,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     {navItems.map((item) => {
                         const isActive = location === item.href;
                         return (
-                            <Link key={item.href} href={item.href}>
-                                <a className={cn(
+                            <Link 
+                                key={item.href} 
+                                href={item.href}
+                                className={cn(
                                     "flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-md transition-colors",
                                     isActive
                                         ? "bg-primary/10 text-primary"
                                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                                )}>
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </a>
+                                )}
+                            >
+                                <item.icon className="w-4 h-4" />
+                                {item.label}
                             </Link>
                         );
                     })}
                 </nav>
 
                 <div className="pt-4 border-t border-white/10">
-                    <Link href="/">
+                    <Link href="/" className="block">
                         <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
                             <LogOut className="w-4 h-4 mr-2" />
                             Exit to Game
