@@ -7,12 +7,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Trash2, Edit2, Check, X, LogIn, Shield } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Edit2, Check, X, LogIn, Shield, BrainCircuit, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useAdmin } from "@/hooks/use-admin";
 import { useDisputes } from "@/hooks/use-disputes";
 import { motion } from "framer-motion";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
+
+interface AIAnalysis {
+  verdict: "CORRECT" | "INCORRECT" | "AMBIGUOUS";
+  confidence: number;
+  reasoning: string;
+  suggestedFix?: {
+    question?: string;
+    answer?: string;
+    explanation?: string;
+  };
+  sources: string[];
+}
 
 export default function Admin() {
   const [_, setLocation] = useLocation();
@@ -22,6 +36,56 @@ export default function Admin() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
   const { disputes, clearDisputes, isClearing } = useDisputes();
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+
+  const handleAnalyze = async (id: string) => {
+    setAnalyzingId(id);
+    try {
+      await apiRequest("POST", `/api/disputes/${id}/analyze`);
+      await queryClient.invalidateQueries({ queryKey: ["/api/disputes"] });
+      toast({ title: "Analysis Complete", description: "AI has reviewed the dispute." });
+    } catch (error) {
+      toast({
+        title: "Analysis Failed",
+        description: "Could not contact AI service.",
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
+  const handleResolve = async (id: string, status: "resolved" | "rejected") => {
+    setResolvingId(id);
+    try {
+      await apiRequest("PATCH", `/api/disputes/${id}`, {
+        status,
+        resolutionNote: status === "resolved" ? "Accepted by admin" : "Rejected by admin"
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/disputes"] });
+      toast({
+        title: status === "resolved" ? "Dispute Accepted" : "Dispute Rejected",
+        description: `The dispute has been marked as ${status}.`
+      });
+    } catch (error) {
+      toast({
+        title: "Action Failed",
+        description: "Could not update dispute status.",
+        variant: "destructive"
+      });
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    switch (verdict) {
+      case "CORRECT": return "text-green-500";
+      case "INCORRECT": return "text-red-500";
+      default: return "text-yellow-500";
+    }
+  };
 
   const [formData, setFormData] = useState({
     category: "",
@@ -357,106 +421,198 @@ export default function Admin() {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {disputes.map((dispute) => (
-                    <Card key={dispute.id} className="bg-white/5 border-white/10 border-red-500/30" data-testid={`card-dispute-${dispute.id}`}>
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="text-xs text-muted-foreground mb-1">Question</div>
-                            <div className="font-semibold" data-testid={`text-question-${dispute.id}`}>{dispute.questionText}</div>
+                  {disputes.map((dispute) => {
+                    const analysis = dispute.aiAnalysis as AIAnalysis | null;
+                    return (
+                      <Card key={dispute.id} className={`bg-white/5 border-white/10 ${dispute.status === 'pending' ? 'border-yellow-500/30' : dispute.status === 'resolved' ? 'border-green-500/30' : 'border-red-500/30'}`} data-testid={`card-dispute-${dispute.id}`}>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className={
+                                  dispute.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                    dispute.status === 'resolved' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                      'bg-red-500/10 text-red-500 border-red-500/20'
+                                }>
+                                  {dispute.status.toUpperCase()}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Question</span>
+                              </div>
+                              <div className="font-semibold" data-testid={`text-question-${dispute.id}`}>{dispute.questionText}</div>
+                            </div>
+                            {dispute.status === 'pending' && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => startEditing(dispute)}
+                                className="text-primary hover:text-primary hover:bg-primary/10"
+                                data-testid={`button-edit-${dispute.id}`}
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => startEditing(dispute)}
-                            className="text-primary hover:text-primary hover:bg-primary/10"
-                            data-testid={`button-edit-${dispute.id}`}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        
-                        {editingQuestion?.id === dispute.questionId ? (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-4 border border-primary/30 bg-primary/5 rounded-lg space-y-4"
-                          >
-                            <div className="text-sm font-bold text-primary flex items-center gap-2">
-                              <Edit2 className="w-3 h-3" /> EDITING QUESTION
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-medium uppercase text-muted-foreground">Correct Answer</label>
-                              <Input 
-                                value={editingQuestion.answer}
-                                onChange={(e) => setEditingQuestion({...editingQuestion, answer: e.target.value})}
-                                className="bg-background border-white/20"
-                                data-testid="input-edit-answer"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-xs font-medium uppercase text-muted-foreground">Question Text</label>
-                              <Textarea
-                                value={editingQuestion.question}
-                                onChange={(e) => setEditingQuestion({...editingQuestion, question: e.target.value})}
-                                className="bg-background border-white/20 min-h-[80px]"
-                                data-testid="input-edit-question"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
+                          
+                          {editingQuestion?.id === dispute.questionId ? (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="p-4 border border-primary/30 bg-primary/5 rounded-lg space-y-4"
+                            >
+                              <div className="text-sm font-bold text-primary flex items-center gap-2">
+                                <Edit2 className="w-3 h-3" /> EDITING QUESTION
+                              </div>
                               <div className="space-y-2">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">Source URL</label>
-                                <Input
-                                  value={editingQuestion.sourceUrl || ""}
-                                  onChange={(e) => setEditingQuestion({...editingQuestion, sourceUrl: e.target.value})}
+                                <label className="text-xs font-medium uppercase text-muted-foreground">Correct Answer</label>
+                                <Input 
+                                  value={editingQuestion.answer}
+                                  onChange={(e) => setEditingQuestion({...editingQuestion, answer: e.target.value})}
                                   className="bg-background border-white/20"
-                                  placeholder="https://..."
-                                  data-testid="input-edit-source-url"
+                                  data-testid="input-edit-answer"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <label className="text-xs font-medium uppercase text-muted-foreground">Source Name</label>
-                                <Input
-                                  value={editingQuestion.sourceName || ""}
-                                  onChange={(e) => setEditingQuestion({...editingQuestion, sourceName: e.target.value})}
-                                  className="bg-background border-white/20"
-                                  placeholder="e.g. Wikipedia"
-                                  data-testid="input-edit-source-name"
+                                <label className="text-xs font-medium uppercase text-muted-foreground">Question Text</label>
+                                <Textarea
+                                  value={editingQuestion.question}
+                                  onChange={(e) => setEditingQuestion({...editingQuestion, question: e.target.value})}
+                                  className="bg-background border-white/20 min-h-[80px]"
+                                  data-testid="input-edit-question"
                                 />
                               </div>
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="ghost" size="sm" onClick={() => setEditingQuestion(null)} data-testid="button-cancel-edit">
-                                <X className="w-4 h-4 mr-1" /> Cancel
-                              </Button>
-                              <Button size="sm" onClick={saveEdit} data-testid="button-update-question">
-                                <Check className="w-4 h-4 mr-1" /> Update Question
-                              </Button>
-                            </div>
-                          </motion.div>
-                        ) : (
-                          <>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <div className="text-xs text-muted-foreground mb-1">Game's Answer</div>
-                                <div className="font-semibold text-primary" data-testid={`text-correct-answer-${dispute.id}`}>{dispute.correctAnswer}</div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-medium uppercase text-muted-foreground">Source URL</label>
+                                  <Input
+                                    value={editingQuestion.sourceUrl || ""}
+                                    onChange={(e) => setEditingQuestion({...editingQuestion, sourceUrl: e.target.value})}
+                                    className="bg-background border-white/20"
+                                    placeholder="https://..."
+                                    data-testid="input-edit-source-url"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-xs font-medium uppercase text-muted-foreground">Source Name</label>
+                                  <Input
+                                    value={editingQuestion.sourceName || ""}
+                                    onChange={(e) => setEditingQuestion({...editingQuestion, sourceName: e.target.value})}
+                                    className="bg-background border-white/20"
+                                    placeholder="e.g. Wikipedia"
+                                    data-testid="input-edit-source-name"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <Button variant="ghost" size="sm" onClick={() => setEditingQuestion(null)} data-testid="button-cancel-edit">
+                                  <X className="w-4 h-4 mr-1" /> Cancel
+                                </Button>
+                                <Button size="sm" onClick={saveEdit} data-testid="button-update-question">
+                                  <Check className="w-4 h-4 mr-1" /> Update Question
+                                </Button>
+                              </div>
+                            </motion.div>
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">Game's Answer</div>
+                                  <div className="font-semibold text-primary" data-testid={`text-correct-answer-${dispute.id}`}>{dispute.correctAnswer}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-muted-foreground mb-1">Team's Answer</div>
+                                  <div className="font-semibold" data-testid={`text-submitted-answer-${dispute.id}`}>{dispute.submittedAnswer || "(Passed)"}</div>
+                                </div>
                               </div>
                               <div>
-                                <div className="text-xs text-muted-foreground mb-1">Team's Answer</div>
-                                <div className="font-semibold" data-testid={`text-submitted-answer-${dispute.id}`}>{dispute.submittedAnswer || "(Passed)"}</div>
+                                <div className="text-xs text-muted-foreground mb-1">Team: {dispute.teamName} — {new Date(dispute.timestamp).toLocaleDateString()}</div>
+                                <div className="text-sm bg-red-500/10 rounded p-2 italic text-red-400/80" data-testid={`text-explanation-${dispute.id}`}>
+                                  "{dispute.teamExplanation}"
+                                </div>
                               </div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-muted-foreground mb-1">Team: {dispute.teamName} — {new Date(dispute.timestamp).toLocaleDateString()}</div>
-                              <div className="text-sm bg-red-500/10 rounded p-2 italic text-red-400/80" data-testid={`text-explanation-${dispute.id}`}>
-                                "{dispute.teamExplanation}"
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+
+                              {analysis && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="p-4 border border-purple-500/30 bg-purple-500/5 rounded-lg space-y-3"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <BrainCircuit className="w-4 h-4 text-purple-400" />
+                                    <span className="text-sm font-bold text-purple-400">AI ANALYSIS</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className={`font-bold ${getVerdictColor(analysis.verdict)}`}>
+                                      {analysis.verdict === "CORRECT" ? "User is Correct" : 
+                                       analysis.verdict === "INCORRECT" ? "Game is Correct" : "Ambiguous"}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {analysis.confidence}% confidence
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    {analysis.reasoning}
+                                  </p>
+                                  {analysis.suggestedFix?.answer && (
+                                    <div className="p-2 bg-yellow-500/10 rounded border border-yellow-500/20">
+                                      <p className="text-xs font-medium text-yellow-500 mb-1">Suggested Fix:</p>
+                                      <p className="text-sm">
+                                        Change answer to: <strong>{analysis.suggestedFix.answer}</strong>
+                                      </p>
+                                    </div>
+                                  )}
+                                  {analysis.sources.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {analysis.sources.map((source, i) => (
+                                        <Badge key={i} variant="outline" className="text-xs">
+                                          <ExternalLink className="w-3 h-3 mr-1" />
+                                          {source}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </motion.div>
+                              )}
+
+                              {dispute.status === 'pending' && (
+                                <div className="flex gap-2 pt-2 border-t border-white/10">
+                                  <Button
+                                    size="sm"
+                                    className="bg-purple-600 hover:bg-purple-700"
+                                    onClick={() => handleAnalyze(dispute.id)}
+                                    disabled={analyzingId === dispute.id || resolvingId === dispute.id}
+                                    data-testid={`button-analyze-${dispute.id}`}
+                                  >
+                                    <BrainCircuit className="w-4 h-4 mr-2" />
+                                    {analyzingId === dispute.id ? "Analyzing..." : "Analyze with AI"}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-green-500/20 hover:bg-green-500/10 hover:text-green-500"
+                                    onClick={() => handleResolve(dispute.id, "resolved")}
+                                    disabled={resolvingId === dispute.id}
+                                    data-testid={`button-accept-${dispute.id}`}
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-2" /> Accept
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-500/20 hover:bg-red-500/10 hover:text-red-500"
+                                    onClick={() => handleResolve(dispute.id, "rejected")}
+                                    disabled={resolvingId === dispute.id}
+                                    data-testid={`button-reject-${dispute.id}`}
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" /> Reject
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </>
             )}
