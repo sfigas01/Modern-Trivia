@@ -24,7 +24,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 *   **Problem:** Players dispute answers, and fixing them requires manual fact-checking which spoils the questions for the Admin.
 *   **Solution:** A dashboard where AI pre-validates disputes, offering a "Fix" or "Reject" recommendation.
-*   **Key Deliverables:**
+*   **Key Features:**
     *   `Dispute Dashboard` (Admin UI)
     *   `AI Fact-Checker Agent` (Backend Service)
     *   `Resolve/Reject Workflow` (Database Updates)

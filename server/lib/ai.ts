@@ -1,6 +1,9 @@
-import { db } from "../db";
-import { appConfig } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+});
 
 interface AnalysisResult {
     verdict: "CORRECT" | "INCORRECT" | "AMBIGUOUS";
@@ -20,22 +23,7 @@ export async function analyzeDispute(
     submittedAnswer: string,
     explanation: string
 ): Promise<AnalysisResult> {
-    // 1. Fetch API Key
-    const [config] = await db
-        .select()
-        .from(appConfig)
-        .where(eq(appConfig.key, "openai_api_key"))
-        .limit(1);
-
-    if (!config || !config.value) {
-        throw new Error("OpenAI API Key not configured. Please set it in Admin Settings.");
-    }
-
-    const apiKey = config.value;
-
-    // 2. Construct Prompt
-    const prompt = `
-    You are a Trivia Fact Checker. Analyze this dispute:
+    const prompt = `You are a Trivia Fact Checker. Analyze this dispute:
     
     Question: "${question}"
     Game's Correct Answer: "${correctAnswer}"
@@ -52,33 +40,43 @@ export async function analyzeDispute(
       "verdict": "CORRECT" (User is right) | "INCORRECT" (User is wrong) | "AMBIGUOUS" (Question needs fix),
       "confidence": 0-100,
       "reasoning": "Short explanation...",
-      "suggestedFix": { // Only if needed
+      "suggestedFix": {
         "question": "Reworded question...",
         "answer": "Corrected answer...",
         "explanation": "Better explanation..."
       },
       "sources": ["List of credible sources or domains"]
     }
-  `;
+    
+    Only include suggestedFix if there's a problem with the question or answer.`;
 
-    // 3. Call OpenAI (Mocking implementation for now as we don't have the SDK installed yet)
-    // In a real implementation, we would use 'openai' package here.
-
-    console.log("Analyzing with key:", apiKey.substring(0, 8) + "...");
-
-    // Mock Response for now to demonstrate UI flow
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                verdict: "CORRECT",
-                confidence: 95,
-                reasoning: "The user is correct. The capital of Australia is Canberra, not Sydney. Sydney is the largest city but not the capital.",
-                suggestedFix: {
-                    answer: "Canberra",
-                    explanation: "Canberra was selected as the capital in 1908 as a compromise between rivals Sydney and Melbourne."
-                },
-                sources: ["australia.gov.au", "britannica.com"]
-            });
-        }, 1500);
+    const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+            { role: "system", content: "You are a fact-checking assistant for a trivia game. Always respond with valid JSON." },
+            { role: "user", content: prompt }
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 1024,
     });
+
+    const content = response.choices[0]?.message?.content || "{}";
+    
+    try {
+        const parsed = JSON.parse(content) as AnalysisResult;
+        return {
+            verdict: parsed.verdict || "AMBIGUOUS",
+            confidence: parsed.confidence || 50,
+            reasoning: parsed.reasoning || "Analysis could not be completed.",
+            suggestedFix: parsed.suggestedFix,
+            sources: parsed.sources || []
+        };
+    } catch {
+        return {
+            verdict: "AMBIGUOUS",
+            confidence: 0,
+            reasoning: "Failed to parse AI response.",
+            sources: []
+        };
+    }
 }

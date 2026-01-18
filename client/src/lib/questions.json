@@ -5,12 +5,14 @@
     "difficulty": "Easy",
     "question": "What is the capital city of Canada?",
     "answer": "Ottawa",
-    "explanation": "Ottawa was chosen as the capital in 1857 by Queen Victoria.",
+    "explanation": "Ottawa was chosen as the capital on December 31, 1857 by Queen Victoria.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ottawa",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q2",
@@ -22,12 +24,14 @@
       "FL",
       "The Sunshine State"
     ],
-    "explanation": "Florida adopted this nickname effectively in 1970.",
+    "explanation": "Florida officially adopted 'The Sunshine State' nickname in 1970 when the state legislature included it on license plates.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Florida",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q3",
@@ -43,7 +47,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Potassium",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q4",
@@ -61,7 +67,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q5",
@@ -104,7 +112,9 @@
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/2010_Winter_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q8",
@@ -112,12 +122,14 @@
     "difficulty": "Easy",
     "question": "What is the national summer sport of Canada?",
     "answer": "Lacrosse",
-    "explanation": "While Hockey is the winter sport, Lacrosse is the official summer sport.",
+    "explanation": "While Hockey is the national winter sport, Lacrosse is the official national summer sport of Canada.",
     "tags": [
       "CA",
       "Sports",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/National_Sports_of_Canada_Act",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q9",
@@ -125,12 +137,14 @@
     "difficulty": "Hard",
     "question": "What is the longest river in the United States?",
     "answer": "Missouri River",
-    "explanation": "The Missouri River is slightly longer than the Mississippi River.",
+    "explanation": "The Missouri River is about 2,341 miles long, slightly longer than the Mississippi River at 2,340 miles.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Missouri_River",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q10",
@@ -138,12 +152,14 @@
     "difficulty": "Easy",
     "question": "Which TV show is set in the fictional city of Springfield?",
     "answer": "The Simpsons",
-    "explanation": "The Simpsons is the longest-running American animated series.",
+    "explanation": "The Simpsons is the longest-running American animated series and longest-running American sitcom.",
     "tags": [
       "US",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Simpsons",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q11",
@@ -156,7 +172,9 @@
       "Global",
       "Economics",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Japanese_yen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q12",
@@ -164,12 +182,14 @@
     "difficulty": "Hard",
     "question": "What is the hardest natural substance on Earth?",
     "answer": "Diamond",
-    "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure.",
+    "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure. They rank 10 on the Mohs hardness scale.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Diamond",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q13",
@@ -177,12 +197,14 @@
     "difficulty": "Medium",
     "question": "Which province joined Canada last?",
     "answer": "Newfoundland and Labrador",
-    "explanation": "They joined Confederation on March 31, 1949.",
+    "explanation": "They joined Confederation on March 31, 1949, becoming Canada's tenth province.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q14",
@@ -190,12 +212,14 @@
     "difficulty": "Medium",
     "question": "Mount Rushmore features the heads of four US presidents. Who is NOT one of them: Washington, Jefferson, Lincoln, or Franklin?",
     "answer": "Franklin",
-    "explanation": "The four presidents are Washington, Jefferson, T. Roosevelt, and Lincoln.",
+    "explanation": "The four presidents are George Washington, Thomas Jefferson, Theodore Roosevelt, and Abraham Lincoln. Benjamin Franklin was never president.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Rushmore",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q15",
@@ -203,12 +227,14 @@
     "difficulty": "Easy",
     "question": "Poutine originated in which Canadian province?",
     "answer": "Quebec",
-    "explanation": "It emerged in the late 1950s in the Centre-du-Qu\u00e9bec area.",
+    "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q16",
@@ -216,12 +242,14 @@
     "difficulty": "Medium",
     "question": "What year was the first iPhone released?",
     "answer": "2007",
-    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007.",
+    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007, and it went on sale June 29, 2007.",
     "tags": [
       "Global",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q17",
@@ -234,7 +262,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Time_in_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q18",
@@ -242,12 +272,14 @@
     "difficulty": "Medium",
     "question": "Who was the 16th President of the United States?",
     "answer": "Abraham Lincoln",
-    "explanation": "He served during the American Civil War.",
+    "explanation": "He served from 1861 to 1865 during the American Civil War.",
     "tags": [
       "US",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Abraham_Lincoln",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q19",
@@ -260,7 +292,9 @@
       "US",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bald_eagle",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q20",
@@ -273,7 +307,9 @@
       "CA",
       "Nature",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/North_American_beaver",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q21",
@@ -286,7 +322,9 @@
       "Global",
       "Space",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mars",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q22",
@@ -294,12 +332,14 @@
     "difficulty": "Hard",
     "question": "Who wrote 'The Handmaid's Tale'?",
     "answer": "Margaret Atwood",
-    "explanation": "Margaret Atwood is a celebrated Canadian author.",
+    "explanation": "Margaret Atwood is a celebrated Canadian author. The novel was published in 1985.",
     "tags": [
       "CA",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q23",
@@ -312,7 +352,9 @@
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Big_Apple",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q24",
@@ -320,12 +362,14 @@
     "difficulty": "Medium",
     "question": "In which sport would you perform a 'slam dunk'?",
     "answer": "Basketball",
-    "explanation": "Basketball was invented by Canadian James Naismith.",
+    "explanation": "Basketball was invented by Canadian James Naismith in 1891.",
     "tags": [
       "US",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slam_dunk",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q25",
@@ -333,12 +377,14 @@
     "difficulty": "Medium",
     "question": "Ryan Reynolds was born in which Canadian city?",
     "answer": "Vancouver",
-    "explanation": "He was born in Vancouver, British Columbia.",
+    "explanation": "He was born in Vancouver, British Columbia on October 23, 1976.",
     "tags": [
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q26",
@@ -346,12 +392,14 @@
     "difficulty": "Hard",
     "question": "What is the smallest US state by area?",
     "answer": "Rhode Island",
-    "explanation": "Despite its name, it is not an island.",
+    "explanation": "Rhode Island is about 1,545 square miles. Despite its name, it is not an island.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rhode_Island",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q27",
@@ -364,7 +412,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Water",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q28",
@@ -377,7 +427,9 @@
       "US",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Michael_Jackson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q29",
@@ -385,12 +437,14 @@
     "difficulty": "Medium",
     "question": "What is the largest province in Canada by area?",
     "answer": "Quebec",
-    "explanation": "Nunavut is larger, but it is a territory, not a province.",
+    "explanation": "Quebec covers about 1.5 million km². Nunavut is larger, but it is a territory, not a province.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Quebec",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q30",
@@ -398,13 +452,15 @@
     "difficulty": "Hard",
     "question": "In which year did the War of 1812 end?",
     "answer": "1815",
-    "explanation": "The Treaty of Ghent was signed in 1814, but fighting continued into early 1815.",
+    "explanation": "The Treaty of Ghent was signed December 24, 1814, but fighting continued into 1815, including the Battle of New Orleans.",
     "tags": [
       "US",
       "History",
       "CA",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/War_of_1812",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q31",
@@ -412,12 +468,14 @@
     "difficulty": "Medium",
     "question": "Which company was founded by Bill Gates and Paul Allen?",
     "answer": "Microsoft",
-    "explanation": "Founded in 1975 in Albuquerque, New Mexico.",
+    "explanation": "Founded on April 4, 1975 in Albuquerque, New Mexico.",
     "tags": [
       "US",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Microsoft",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q32",
@@ -425,12 +483,14 @@
     "difficulty": "Easy",
     "question": "Celine Dion is from which Canadian province?",
     "answer": "Quebec",
-    "explanation": "She was born in Charlemagne, Quebec.",
+    "explanation": "She was born on March 30, 1968 in Charlemagne, Quebec.",
     "tags": [
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Celine_Dion",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q33",
@@ -438,12 +498,14 @@
     "difficulty": "Hard",
     "question": "What is the capital of California?",
     "answer": "Sacramento",
-    "explanation": "It's not Los Angeles or San Francisco!",
+    "explanation": "Sacramento became California's state capital in 1854. It's not Los Angeles or San Francisco!",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sacramento,_California",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q34",
@@ -456,7 +518,9 @@
       "Global",
       "General",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hexagon",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q35",
@@ -464,12 +528,14 @@
     "difficulty": "Medium",
     "question": "What is the main ingredient in Guacamole?",
     "answer": "Avocado",
-    "explanation": "It's an avocado-based dip, spread, or salad.",
+    "explanation": "It's an avocado-based dip, spread, or salad originating from Mexico.",
     "tags": [
       "Global",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Guacamole",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q36",
@@ -477,12 +543,14 @@
     "difficulty": "Medium",
     "question": "The CN Tower is located in which city?",
     "answer": "Toronto",
-    "explanation": "It held the record for the world's tallest free-standing structure for 32 years.",
+    "explanation": "It held the record for the world's tallest free-standing structure for 32 years (1975-2007).",
     "tags": [
       "CA",
       "Geography",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/CN_Tower",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q37",
@@ -490,12 +558,14 @@
     "difficulty": "Easy",
     "question": "Which ocean is on the West Coast of the US and Canada?",
     "answer": "Pacific Ocean",
-    "explanation": "It is the largest and deepest of Earth's oceanic divisions.",
+    "explanation": "It is the largest and deepest of Earth's oceanic divisions, covering about 63 million square miles.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q38",
@@ -503,12 +573,14 @@
     "difficulty": "Hard",
     "question": "Which team won the first ever Super Bowl?",
     "answer": "Green Bay Packers",
-    "explanation": "They defeated the Kansas City Chiefs in 1967.",
+    "explanation": "They defeated the Kansas City Chiefs 35-10 on January 15, 1967.",
     "tags": [
       "US",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_I",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q39",
@@ -521,7 +593,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_whale",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q40",
@@ -529,12 +603,14 @@
     "difficulty": "Medium",
     "question": "Tim Hortons is famous for what two items?",
     "answer": "Coffee and Donuts",
-    "explanation": "Founded in 1964 by Canadian hockey player Tim Horton.",
+    "explanation": "Founded in 1964 in Hamilton, Ontario by Canadian hockey player Tim Horton.",
     "tags": [
       "CA",
       "Culture",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tim_Hortons",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q41",
@@ -542,12 +618,14 @@
     "difficulty": "Hard",
     "question": "How many senators are in the US Senate?",
     "answer": "100",
-    "explanation": "Two for each of the 50 states.",
+    "explanation": "Two for each of the 50 states, serving six-year terms.",
     "tags": [
       "US",
       "Government",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/United_States_Senate",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q42",
@@ -555,12 +633,14 @@
     "difficulty": "Medium",
     "question": "What is the speed of light approximately?",
     "answer": "299,792 km/s",
-    "explanation": "Often approximated as 300,000 km/s.",
+    "explanation": "Often approximated as 300,000 km/s. Light travels at exactly 299,792,458 meters per second in a vacuum.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Speed_of_light",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q43",
@@ -568,12 +648,14 @@
     "difficulty": "Easy",
     "question": "What are the two official languages of Canada?",
     "answer": "English and French",
-    "explanation": "Canada is officially bilingual at the federal level.",
+    "explanation": "Canada became officially bilingual at the federal level with the Official Languages Act of 1969.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Official_Languages_Act_(Canada)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q44",
@@ -581,12 +663,14 @@
     "difficulty": "Medium",
     "question": "Which Great Lake is the only one located entirely within the US?",
     "answer": "Lake Michigan",
-    "explanation": "The other four are shared with Canada.",
+    "explanation": "The other four Great Lakes (Superior, Huron, Erie, Ontario) are shared with Canada.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Michigan",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q45",
@@ -594,12 +678,14 @@
     "difficulty": "Easy",
     "question": "Who played Iron Man in the Marvel Cinematic Universe?",
     "answer": "Robert Downey Jr.",
-    "explanation": "He kicked off the MCU in 2008.",
+    "explanation": "He kicked off the MCU in Iron Man (2008) and played Tony Stark until Avengers: Endgame (2019).",
     "tags": [
       "US",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robert_Downey_Jr.",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q46",
@@ -607,12 +693,14 @@
     "difficulty": "Medium",
     "question": "Which Canadian hockey player is known as 'The Great One'?",
     "answer": "Wayne Gretzky",
-    "explanation": "He holds many records in the NHL.",
+    "explanation": "He holds over 60 NHL records including most career goals (894) and assists (1,963).",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wayne_Gretzky",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q47",
@@ -620,12 +708,14 @@
     "difficulty": "Hard",
     "question": "What is the powerhouse of the cell?",
     "answer": "Mitochondria",
-    "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP).",
+    "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP) through cellular respiration.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mitochondrion",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q48",
@@ -633,12 +723,14 @@
     "difficulty": "Medium",
     "question": "What is the capital of Texas?",
     "answer": "Austin",
-    "explanation": "Keep Austin Weird!",
+    "explanation": "Austin has been the state capital since 1839. 'Keep Austin Weird' is the city's unofficial slogan.",
     "tags": [
       "US",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Austin,_Texas",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q49",
@@ -646,12 +738,14 @@
     "difficulty": "Easy",
     "question": "What color do you get when you mix Red and Blue?",
     "answer": "Purple",
-    "explanation": "It is a secondary color.",
+    "explanation": "Purple is a secondary color in the traditional RYB color model used in painting.",
     "tags": [
       "Global",
       "Art",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Purple",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q50",
@@ -659,12 +753,14 @@
     "difficulty": "Hard",
     "question": "What is the northernmost permanent settlement in the world?",
     "answer": "Alert, Nunavut",
-    "explanation": "It is located in the Qikiqtaaluk Region of Nunavut, Canada.",
+    "explanation": "Alert is located at 82°30'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
     "tags": [
       "CA",
       "Geography",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q51",
@@ -677,7 +773,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q52",
@@ -700,12 +798,14 @@
     "difficulty": "Medium",
     "question": "How many Stanley Cups has Canada's Toronto Maple Leafs won?",
     "answer": "13",
-    "explanation": "Their last championship was in 1967.",
+    "explanation": "Their last championship was in 1967, the longest active drought in the NHL.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q54",
@@ -713,12 +813,14 @@
     "difficulty": "Medium",
     "question": "What is the chemical symbol for Gold?",
     "answer": "Au",
-    "explanation": "Au comes from the Latin word 'aurum'.",
+    "explanation": "Au comes from the Latin word 'aurum', meaning 'shining dawn'.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Gold",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q55",
@@ -730,12 +832,14 @@
       "Mount Denali",
       "Mt. Denali"
     ],
-    "explanation": "Denali in Alaska stands at 20,310 feet (6,190 meters).",
+    "explanation": "Denali in Alaska stands at 20,310 feet (6,190 meters). It was formerly known as Mount McKinley.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Denali",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q56",
@@ -743,12 +847,14 @@
     "difficulty": "Easy",
     "question": "Maple syrup comes from which tree?",
     "answer": "Sugar Maple",
-    "explanation": "The sugar maple is Canada's national tree.",
+    "explanation": "The sugar maple (Acer saccharum) is the primary source of maple syrup and is Canada's national tree.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sugar_maple",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q57",
@@ -771,12 +877,14 @@
     "difficulty": "Hard",
     "question": "Who discovered insulin and won a Nobel Prize for Medicine?",
     "answer": "Frederick Banting",
-    "explanation": "Banting was a Canadian physician who shared the 1923 Nobel Prize.",
+    "explanation": "Sir Frederick Banting was a Canadian physician who shared the 1923 Nobel Prize with John Macleod for the discovery of insulin.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Frederick_Banting",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q59",
@@ -784,12 +892,14 @@
     "difficulty": "Easy",
     "question": "What is the world's largest freshwater lake?",
     "answer": "Lake Superior",
-    "explanation": "It is shared between Canada and the United States.",
+    "explanation": "Lake Superior is the largest freshwater lake by surface area (31,700 sq mi), shared between Canada and the United States.",
     "tags": [
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Superior",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q60",
@@ -797,12 +907,14 @@
     "difficulty": "Medium",
     "question": "Who wrote 'Anne of Green Gables'?",
     "answer": "Lucy Maud Montgomery",
-    "explanation": "Montgomery was a Canadian author born in Prince Edward Island.",
+    "explanation": "L.M. Montgomery was a Canadian author born in Clifton, Prince Edward Island. The novel was published in 1908.",
     "tags": [
       "CA",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Anne_of_Green_Gables",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q61",
@@ -810,12 +922,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian city is known as the 'City of Festivals'?",
     "answer": "Montreal",
-    "explanation": "Montreal hosts numerous cultural festivals throughout the year.",
+    "explanation": "Montreal hosts over 100 festivals annually including the Montreal Jazz Festival and Just for Laughs.",
     "tags": [
       "CA",
       "Geography",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Montreal",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q62",
@@ -827,12 +941,14 @@
       "CO2",
       "CO2"
     ],
-    "explanation": "Plants use CO2 and sunlight to create glucose.",
+    "explanation": "Plants use CO2 and sunlight to create glucose and release oxygen.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q63",
@@ -840,12 +956,14 @@
     "difficulty": "Hard",
     "question": "Which Canadian tennis player won the US Open in 2019?",
     "answer": "Bianca Andreescu",
-    "explanation": "Andreescu defeated Serena Williams in the final.",
+    "explanation": "Andreescu defeated Serena Williams 6–3, 7–5 in the final, becoming the first Canadian to win a Grand Slam singles title.",
     "tags": [
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bianca_Andreescu",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q64",
@@ -853,12 +971,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian actor is known for the TV series 'Schitt's Creek'?",
     "answer": "Dan Levy",
-    "explanation": "Levy created and starred in the Emmy-winning show.",
+    "explanation": "Dan Levy co-created the show with his father Eugene Levy. It won 9 Emmy Awards in 2020.",
     "tags": [
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Schitt%27s_Creek",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q65",
@@ -866,12 +986,14 @@
     "difficulty": "Medium",
     "question": "In which year did the Titanic sink?",
     "answer": "1912",
-    "explanation": "It struck an iceberg on April 15, 1912.",
+    "explanation": "RMS Titanic struck an iceberg on April 14, 1912 and sank in the early morning of April 15. Over 1,500 people died.",
     "tags": [
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sinking_of_the_Titanic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q66",
@@ -879,12 +1001,14 @@
     "difficulty": "Hard",
     "question": "What is the capital of Australia?",
     "answer": "Canberra",
-    "explanation": "Canberra was designed as a compromise between Sydney and Melbourne.",
+    "explanation": "Canberra was chosen in 1908 as a compromise between Sydney and Melbourne, and became the capital in 1927.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canberra",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q67",
@@ -892,12 +1016,14 @@
     "difficulty": "Medium",
     "question": "Which Canadian singer-songwriter wrote 'Hallelujah'?",
     "answer": "Leonard Cohen",
-    "explanation": "Cohen was born in Montreal and wrote this iconic song in 1984.",
+    "explanation": "Leonard Cohen was born in Montreal and originally released 'Hallelujah' on his 1984 album 'Various Positions'.",
     "tags": [
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hallelujah_(Leonard_Cohen_song)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q68",
@@ -905,12 +1031,14 @@
     "difficulty": "Medium",
     "question": "What is the national dish of Canada?",
     "answer": "Poutine",
-    "explanation": "This French fries, gravy, and cheese curd dish is beloved across Canada.",
+    "explanation": "Poutine consists of French fries topped with cheese curds and brown gravy. It originated in Quebec in the late 1950s.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q69",
@@ -918,12 +1046,14 @@
     "difficulty": "Easy",
     "question": "How many bones does an adult human have?",
     "answer": "206",
-    "explanation": "Babies are born with about 270 bones, but some fuse as they grow.",
+    "explanation": "Babies are born with about 270 bones, but some fuse together as they grow into adults.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Human_skeleton",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q70",
@@ -931,25 +1061,29 @@
     "difficulty": "Medium",
     "question": "Which Canadian comedy troupe created 'Kids in the Hall'?",
     "answer": "The Kids in the Hall",
-    "explanation": "This sketch comedy group was hugely popular in the 1990s.",
+    "explanation": "The Kids in the Hall is a Canadian sketch comedy group formed in 1984. Their TV series aired from 1988-1995.",
     "tags": [
       "CA",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Kids_in_the_Hall",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q71",
     "category": "Sports",
     "difficulty": "Easy",
     "question": "What year did Canada first win an Olympic gold medal?",
-    "answer": "1900",
-    "explanation": "Canadian athletes have competed since the first modern Olympics.",
+    "answer": "1904",
+    "explanation": "Étienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_1904_Summer_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q72",
@@ -957,12 +1091,14 @@
     "difficulty": "Hard",
     "question": "Who was the first European to reach North America?",
     "answer": "Leif Erikson",
-    "explanation": "The Viking explorer reached North America around 1000 AD.",
+    "explanation": "The Viking explorer reached North America around 1000 AD, establishing a settlement at L'Anse aux Meadows in Newfoundland.",
     "tags": [
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Leif_Erikson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q73",
@@ -970,12 +1106,14 @@
     "difficulty": "Medium",
     "question": "What is the capital of France?",
     "answer": "Paris",
-    "explanation": "Paris is located on the Seine River.",
+    "explanation": "Paris is located on the Seine River and has been France's capital since 987 AD.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Paris",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q74",
@@ -983,12 +1121,14 @@
     "difficulty": "Hard",
     "question": "What is the largest land animal on Earth?",
     "answer": "African Elephant",
-    "explanation": "Adult males can weigh up to 14,000 pounds.",
+    "explanation": "Adult male African bush elephants can weigh up to 14,000 pounds (6,350 kg) and stand up to 13 feet tall.",
     "tags": [
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/African_elephant",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q75",
@@ -996,12 +1136,14 @@
     "difficulty": "Easy",
     "question": "Who wrote the Harry Potter series?",
     "answer": "J.K. Rowling",
-    "explanation": "The British author created the magical world of Hogwarts.",
+    "explanation": "J.K. Rowling is a British author who published the first Harry Potter book in 1997.",
     "tags": [
       "Global",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Potter",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q76",
@@ -1009,12 +1151,14 @@
     "difficulty": "Easy",
     "question": "In what year did the internet become publicly available?",
     "answer": "1991",
-    "explanation": "The World Wide Web was released to the public on August 6, 1991.",
+    "explanation": "Tim Berners-Lee released the World Wide Web to the public on August 6, 1991 at CERN.",
     "tags": [
       "Global",
       "Tech",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/World_Wide_Web",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q77",
@@ -1037,12 +1181,14 @@
     "difficulty": "Medium",
     "question": "How many Olympic sports are there in the Summer Olympics?",
     "answer": "32",
-    "explanation": "The number of sports varies with each Olympic Games.",
+    "explanation": "The 2024 Paris Olympics featured 32 sports. The number of sports varies with each Olympic Games.",
     "tags": [
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Summer_Olympic_Games",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q79",
@@ -1050,12 +1196,14 @@
     "difficulty": "Easy",
     "question": "Which Canadian province has the highest population?",
     "answer": "Ontario",
-    "explanation": "Ontario is home to over 15 million people.",
+    "explanation": "Ontario is home to over 15 million people, about 38% of Canada's total population.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ontario",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q80",
@@ -1063,12 +1211,14 @@
     "difficulty": "Hard",
     "question": "What is the largest organ in the human body?",
     "answer": "Skin",
-    "explanation": "The skin covers and protects all other organs.",
+    "explanation": "The skin covers about 20 square feet in adults and weighs about 8 pounds.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Human_skin",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q81",
@@ -1091,12 +1241,14 @@
     "difficulty": "Easy",
     "question": "What year did the Berlin Wall fall?",
     "answer": "1989",
-    "explanation": "November 9, 1989 marked the end of the Cold War era.",
+    "explanation": "The Berlin Wall fell on November 9, 1989, symbolizing the end of the Cold War division of Europe.",
     "tags": [
       "Global",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Fall_of_the_Berlin_Wall",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q83",
@@ -1108,12 +1260,14 @@
       "Chocolate bar",
       "Canadian candy"
     ],
-    "explanation": "It's a three-layer chocolate bar from Nanaimo, BC with custard filling.",
+    "explanation": "It's a no-bake three-layer dessert bar originating from Nanaimo, British Columbia with a custard-flavored middle layer.",
     "tags": [
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nanaimo_bar",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q84",
@@ -1121,12 +1275,14 @@
     "difficulty": "Hard",
     "question": "What is the smallest independent country in the world?",
     "answer": "Vatican City",
-    "explanation": "Vatican City is about 0.44 square kilometers.",
+    "explanation": "Vatican City is about 0.44 square kilometers (110 acres), entirely surrounded by Rome, Italy.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vatican_City",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q85",
@@ -1134,25 +1290,29 @@
     "difficulty": "Medium",
     "question": "Which NHL team is known as the Maple Leafs?",
     "answer": "Toronto",
-    "explanation": "The Toronto Maple Leafs play in the Atlantic Division.",
+    "explanation": "The Toronto Maple Leafs were founded in 1917 and play in the Atlantic Division of the Eastern Conference.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q86",
     "category": "Literature",
     "difficulty": "Medium",
     "question": "Who wrote 'One Hundred Years of Solitude'?",
-    "answer": "Gabriel Garc\u00eda M\u00e1rquez",
-    "explanation": "M\u00e1rquez was a Colombian author and Nobel Prize winner.",
+    "answer": "Gabriel García Márquez",
+    "explanation": "García Márquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
     "tags": [
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/One_Hundred_Years_of_Solitude",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q87",
@@ -1160,12 +1320,14 @@
     "difficulty": "Medium",
     "question": "What element has the atomic number 1?",
     "answer": "Hydrogen",
-    "explanation": "Hydrogen is the lightest and most abundant element.",
+    "explanation": "Hydrogen is the lightest element and makes up about 75% of all matter in the universe.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q88",
@@ -1188,12 +1350,14 @@
     "difficulty": "Medium",
     "question": "In which year did the Titanic sink?",
     "answer": "1912",
-    "explanation": "Over 1,500 people died in this maritime disaster.",
+    "explanation": "Over 1,500 people died when RMS Titanic sank on April 15, 1912 after hitting an iceberg.",
     "tags": [
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q90",
@@ -1201,12 +1365,14 @@
     "difficulty": "Easy",
     "question": "What is the capital of Italy?",
     "answer": "Rome",
-    "explanation": "Rome is known as the Eternal City.",
+    "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Città Eterna).",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rome",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q91",
@@ -1234,7 +1400,9 @@
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Andre_De_Grasse",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q93",
@@ -1247,7 +1415,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Spider",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q94",
@@ -1264,7 +1434,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_cuisine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q95",
@@ -1277,7 +1449,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rh_blood_group_system",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q96",
@@ -1290,20 +1464,24 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q97",
     "category": "Geography",
     "difficulty": "Medium",
     "question": "What is the capital of Brazil?",
-    "answer": "Bras\u00edlia",
-    "explanation": "Bras\u00edlia replaced Rio de Janeiro as the capital in 1960.",
+    "answer": "Brasília",
+    "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bras%C3%ADlia",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q98",
@@ -1331,7 +1509,9 @@
       "Global",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Netflix",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q100",
@@ -1344,7 +1524,9 @@
       "CA",
       "Sports",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q101",
@@ -1357,7 +1539,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q102",
@@ -1370,20 +1554,24 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Atmosphere_of_Earth",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q103",
     "category": "Geography",
     "difficulty": "Hard",
     "question": "Which Canadian province has the smallest population?",
-    "answer": "Nunavut",
-    "explanation": "Nunavut is a territory with fewer than 40,000 residents.",
+    "answer": "Prince Edward Island",
+    "explanation": "Prince Edward Island has the smallest population of any Canadian province, with approximately 170,000 residents. Note: Nunavut has fewer people but is a territory, not a province.",
     "tags": [
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q104",
@@ -1396,7 +1584,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Odyssey",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q105",
@@ -1409,7 +1599,9 @@
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Letterkenny_(TV_series)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q106",
@@ -1437,7 +1629,9 @@
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Milos_Raonic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q108",
@@ -1450,7 +1644,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Butter_tart",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q109",
@@ -1463,7 +1659,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mariana_Trench",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q110",
@@ -1476,7 +1674,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Iron",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q111",
@@ -1489,7 +1689,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slavery_Abolition_Act_1833",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q112",
@@ -1502,7 +1704,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mackenzie_River",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q113",
@@ -1530,7 +1734,9 @@
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vancouver_Canucks",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q115",
@@ -1543,7 +1749,9 @@
       "Global",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alice%27s_Adventures_in_Wonderland",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q116",
@@ -1551,12 +1759,14 @@
     "difficulty": "Hard",
     "question": "What is the boiling point of water in Fahrenheit?",
     "answer": "212",
-    "explanation": "At sea level, water boils at 212\u00b0F or 100\u00b0C.",
+    "explanation": "At sea level, water boils at 212°F or 100°C.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q117",
@@ -1569,7 +1779,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rush_(band)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q118",
@@ -1582,7 +1794,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q119",
@@ -1595,7 +1809,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q120",
@@ -1608,7 +1824,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/BeaverTails",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q121",
@@ -1621,7 +1839,9 @@
       "Global",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Drake_%26_Josh",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q122",
@@ -1634,7 +1854,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Patriation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q123",
@@ -1647,7 +1869,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tennis",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q124",
@@ -1660,7 +1884,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q125",
@@ -1673,7 +1899,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wellington",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q126",
@@ -1686,7 +1914,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Great_Gatsby",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q127",
@@ -1699,7 +1929,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Oscar_Peterson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q128",
@@ -1707,25 +1939,29 @@
     "difficulty": "Easy",
     "question": "Which Canadian actor is known for 'Trailer Park Boys'?",
     "answer": "Robb Wells",
-    "explanation": "Wells plays Bubbles in the comedy series.",
+    "explanation": "Robb Wells plays Ricky in the comedy series. Mike Smith plays Bubbles, and John Paul Tremblay plays Julian.",
     "tags": [
       "CA",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robb_Wells",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q129",
     "category": "Sports",
     "difficulty": "Medium",
     "question": "How many times has Canada hosted the Summer Olympics?",
-    "answer": "2",
-    "explanation": "Montreal (1976) and Vancouver (2010).",
+    "answer": "1",
+    "explanation": "Canada hosted the Summer Olympics once, in Montreal in 1976. Vancouver 2010 was the Winter Olympics.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/1976_Summer_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q130",
@@ -1738,7 +1974,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Back_bacon",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q131",
@@ -1751,7 +1989,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q132",
@@ -1759,12 +1999,14 @@
     "difficulty": "Easy",
     "question": "What is the freezing point of water in Celsius?",
     "answer": "0",
-    "explanation": "Water freezes at 0\u00b0C or 32\u00b0F.",
+    "explanation": "Water freezes at 0°C or 32°F.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Melting_point",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q133",
@@ -1777,7 +2019,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q134",
@@ -1790,20 +2034,24 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bear",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q135",
     "category": "Entertainment",
     "difficulty": "Hard",
-    "question": "Which Canadian creator wrote 'The X-Files'?",
+    "question": "Who created the TV series 'The X-Files'?",
     "answer": "Chris Carter",
-    "explanation": "Carter is from Toronto and created the iconic TV series.",
+    "explanation": "Chris Carter is an American writer and producer born in Bellflower, California. He created The X-Files in 1993.",
     "tags": [
-      "CA",
+      "US",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Chris_Carter_(screenwriter)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q136",
@@ -1816,20 +2064,24 @@
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nirvana_(band)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q137",
     "category": "Sports",
     "difficulty": "Hard",
     "question": "How many Winter Olympic Games has Canada hosted?",
-    "answer": "3",
-    "explanation": "Squaw Valley (USA 1960), Calgary (1988), Vancouver (2010).",
+    "answer": "2",
+    "explanation": "Canada has hosted the Winter Olympics twice: Calgary in 1988 and Vancouver in 2010.",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_Winter_Olympics",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q138",
@@ -1842,7 +2094,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Crime_and_Punishment",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q139",
@@ -1855,7 +2109,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Provinces_and_territories_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q140",
@@ -1868,7 +2124,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sodium_chloride",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q141",
@@ -1881,7 +2139,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q142",
@@ -1894,7 +2154,9 @@
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q143",
@@ -1907,7 +2169,9 @@
       "Global",
       "Food",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sushi",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q144",
@@ -1920,7 +2184,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Baseball",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q145",
@@ -1933,7 +2199,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hyperion_(tree)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q146",
@@ -1946,7 +2214,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q147",
@@ -1959,7 +2229,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q148",
@@ -1972,7 +2244,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pride_and_Prejudice",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q149",
@@ -1985,7 +2259,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Solar_System",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q150",
@@ -2008,12 +2284,14 @@
     "difficulty": "Hard",
     "question": "Which Canadian curler won an Olympic gold medal?",
     "answer": "Brad Gushue",
-    "explanation": "Gushue won gold in men's curling at the 2018 PyeongChang Olympics.",
+    "explanation": "Brad Gushue won gold in men's curling at the 2006 Turin Olympics, becoming the first Newfoundlander to win Olympic gold. He also won bronze at the 2022 Beijing Olympics.",
     "tags": [
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Brad_Gushue",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q152",
@@ -2026,7 +2304,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Same-sex_marriage_in_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q153",
@@ -2039,7 +2319,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Montreal-style_bagel",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q154",
@@ -2052,7 +2334,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Abundance_of_elements_in_Earth%27s_crust",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q155",
@@ -2065,7 +2349,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q156",
@@ -2078,7 +2364,9 @@
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Immigrant_Song",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q157",
@@ -2099,17 +2387,20 @@
     "id": "q158",
     "category": "Nature",
     "difficulty": "Hard",
-    "question": "What is the only mammal that lays eggs?",
-    "answer": "Platypus",
+    "question": "What type of mammal lays eggs?",
+    "answer": "Monotreme",
     "acceptableAnswers": [
-      "Monotreme"
+      "Platypus",
+      "Echidna"
     ],
-    "explanation": "The platypus is one of the few mammals that lays eggs.",
+    "explanation": "Monotremes are egg-laying mammals. There are five species: the platypus and four species of echidna. All are found in Australia and New Guinea.",
     "tags": [
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Monotreme",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q159",
@@ -2122,20 +2413,24 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Catcher_in_the_Rye",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q160",
     "category": "Sports",
     "difficulty": "Medium",
-    "question": "Which Canadian figure skater won Olympic gold?",
+    "question": "Which Canadian figure skater won two Olympic silver medals?",
     "answer": "Elvis Stojko",
-    "explanation": "Stojko won silver at the 1994 and 1998 Olympics.",
+    "explanation": "Elvis Stojko won silver medals at both the 1994 Lillehammer and 1998 Nagano Olympics. He is a three-time World champion (1994, 1995, 1997).",
     "tags": [
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Elvis_Stojko",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q161",
@@ -2148,7 +2443,9 @@
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/World_War_II",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q162",
@@ -2161,7 +2458,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mexico_City",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q163",
@@ -2174,7 +2473,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Silver",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q164",
@@ -2202,7 +2503,9 @@
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hotel_California_(Eagles_album)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q166",
@@ -2215,7 +2518,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q167",
@@ -2228,20 +2533,27 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Association_football",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q168",
     "category": "History",
     "difficulty": "Hard",
-    "question": "What was the first Canadian province?",
-    "answer": "Ontario",
-    "explanation": "Ontario was part of the original Confederation of 1867.",
+    "question": "Which four provinces formed Canada at Confederation in 1867?",
+    "answer": "Ontario, Quebec, Nova Scotia, New Brunswick",
+    "acceptableAnswers": [
+      "Ontario, Quebec, New Brunswick, Nova Scotia"
+    ],
+    "explanation": "On July 1, 1867, Ontario, Quebec, Nova Scotia, and New Brunswick united to form the Dominion of Canada. Ontario and Quebec were created from the former Province of Canada.",
     "tags": [
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q169",
@@ -2254,7 +2566,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Kangaroo",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q170",
@@ -2267,7 +2581,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/War_and_Peace",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q171",
@@ -2280,7 +2596,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/British_Columbia",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q172",
@@ -2293,7 +2611,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/DNA",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q173",
@@ -2336,7 +2656,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/National_Hockey_League",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q176",
@@ -2364,7 +2686,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_and_the_United_Nations",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q178",
@@ -2377,7 +2701,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Octopus",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q179",
@@ -2390,7 +2716,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Lord_of_the_Rings",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q180",
@@ -2403,7 +2731,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q181",
@@ -2416,7 +2746,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/RNA",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q182",
@@ -2459,7 +2791,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q185",
@@ -2472,7 +2806,9 @@
       "Global",
       "Food",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hummus",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q186",
@@ -2485,7 +2821,9 @@
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q187",
@@ -2498,7 +2836,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bee_hummingbird",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q188",
@@ -2511,7 +2851,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Jane_Eyre",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q189",
@@ -2524,7 +2866,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Singapore",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q190",
@@ -2537,7 +2881,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Copper",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q191",
@@ -2550,7 +2896,9 @@
       "CA",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/David_Cronenberg",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q192",
@@ -2563,7 +2911,9 @@
       "CA",
       "Music",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nelly_Furtado",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q193",
@@ -2576,7 +2926,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Golf_course",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q194",
@@ -2589,7 +2941,9 @@
       "Global",
       "Food",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tempura",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q195",
@@ -2602,7 +2956,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q196",
@@ -2615,7 +2971,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Saltwater_crocodile",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q197",
@@ -2628,7 +2986,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Moby-Dick",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q198",
@@ -2641,7 +3001,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Madrid",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q199",
@@ -2654,7 +3016,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q200",
@@ -2667,6 +3031,8 @@
       "CA",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nina_Dobrev",
+    "sourceName": "Wikipedia"
   }
 ]

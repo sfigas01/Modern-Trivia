@@ -6,6 +6,9 @@ import { z } from "zod";
 // Export auth models (REQUIRED for Replit Auth)
 export * from "./models/auth";
 
+// Export chat models (for AI integrations)
+export * from "./models/chat";
+
 // Disputes table for QA logging
 export const disputes = pgTable("disputes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
