@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink } from "lucide-react";
+import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink, LogOut } from "lucide-react";
 import { DisputeModal } from "@/components/DisputeModal";
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
@@ -14,6 +14,7 @@ const QUESTIONS_PER_TEAM_ROTATION = 4;
 export default function Game() {
   const [_, setLocation] = useLocation();
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const {
     state,
     setTypedAnswer,
@@ -370,24 +371,81 @@ export default function Game() {
       </AnimatePresence>
     </div>
 
-      {/* Scoreboard Preview (Bottom) */ }
-  <div className="w-full bg-white/5 border-t border-white/10 p-4 z-20 backdrop-blur-md">
-    <div className="max-w-6xl mx-auto flex items-center gap-4 overflow-x-auto pb-2">
-      {state.teams.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full border ${t.id === state.activeTeamId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-white/10'
-            }`}
-        >
-          <span className="font-bold">{t.name}</span>
-          <span className="font-mono bg-black/20 px-2 rounded">{t.score}</span>
+      {/* Scoreboard Preview (Bottom) */}
+      <div className="w-full bg-white/5 border-t border-white/10 p-4 z-20 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto flex items-center gap-4 overflow-x-auto pb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowQuitConfirm(true)}
+            className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 shrink-0"
+            data-testid="button-quit-game"
+          >
+            <LogOut className="w-4 h-4 mr-1" />
+            Quit
+          </Button>
+          {state.teams.map((t) => (
+            <div
+              key={t.id}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border ${t.id === state.activeTeamId ? 'bg-primary text-primary-foreground border-primary' : 'bg-background border-white/10'}`}
+            >
+              <span className="font-bold">{t.name}</span>
+              <span className="font-mono bg-black/20 px-2 rounded">{t.score}</span>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
-  </div>
+      </div>
 
-  {/* Background decoration */ }
-  <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-background to-transparent z-0 pointer-events-none" />
-    </div >
+      {/* Quit Confirmation Modal */}
+      <AnimatePresence>
+        {showQuitConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-background border border-white/10 rounded-xl p-6 max-w-md w-full space-y-4"
+            >
+              <div className="text-center space-y-2">
+                <LogOut className="w-12 h-12 mx-auto text-red-500" />
+                <h2 className="text-2xl font-bold">End Game Early?</h2>
+                <p className="text-muted-foreground">
+                  The game will end and final scores will be shown.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowQuitConfirm(false)}
+                  data-testid="button-cancel-quit"
+                >
+                  Keep Playing
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => {
+                    setShowQuitConfirm(false);
+                    endGame();
+                  }}
+                  data-testid="button-confirm-quit"
+                >
+                  End Game
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Background decoration */}
+      <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-background to-transparent z-0 pointer-events-none" />
+    </div>
   );
 }
