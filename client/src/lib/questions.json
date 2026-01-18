@@ -1350,12 +1350,14 @@
     "difficulty": "Medium",
     "question": "In which year did the Titanic sink?",
     "answer": "1912",
-    "explanation": "Over 1,500 people died in this maritime disaster.",
+    "explanation": "Over 1,500 people died when RMS Titanic sank on April 15, 1912 after hitting an iceberg.",
     "tags": [
       "Global",
       "History",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q90",
@@ -1363,12 +1365,14 @@
     "difficulty": "Easy",
     "question": "What is the capital of Italy?",
     "answer": "Rome",
-    "explanation": "Rome is known as the Eternal City.",
+    "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Città Eterna).",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rome",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q91",
@@ -1396,7 +1400,9 @@
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Andre_De_Grasse",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q93",
@@ -1409,7 +1415,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Spider",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q94",
@@ -1426,7 +1434,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_cuisine",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q95",
@@ -1439,7 +1449,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rh_blood_group_system",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q96",
@@ -1452,20 +1464,24 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q97",
     "category": "Geography",
     "difficulty": "Medium",
     "question": "What is the capital of Brazil?",
-    "answer": "Bras\u00edlia",
-    "explanation": "Bras\u00edlia replaced Rio de Janeiro as the capital in 1960.",
+    "answer": "Brasília",
+    "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
     "tags": [
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bras%C3%ADlia",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q98",
@@ -1493,7 +1509,9 @@
       "Global",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Netflix",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q100",
@@ -1506,7 +1524,9 @@
       "CA",
       "Sports",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q101",
@@ -1519,7 +1539,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q102",
@@ -1532,7 +1554,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Atmosphere_of_Earth",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q103",
@@ -1560,7 +1584,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Odyssey",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q105",
@@ -1573,7 +1599,9 @@
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Letterkenny_(TV_series)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q106",
@@ -1601,7 +1629,9 @@
       "CA",
       "Sports",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Milos_Raonic",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q108",
@@ -1614,7 +1644,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Butter_tart",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q109",
@@ -1627,7 +1659,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mariana_Trench",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q110",
@@ -1640,7 +1674,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Iron",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q111",
@@ -1653,7 +1689,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slavery_Abolition_Act_1833",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q112",
@@ -1666,7 +1704,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mackenzie_River",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q113",
@@ -1694,7 +1734,9 @@
       "CA",
       "Sports",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vancouver_Canucks",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q115",
@@ -1707,7 +1749,9 @@
       "Global",
       "Literature",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alice%27s_Adventures_in_Wonderland",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q116",
@@ -1715,12 +1759,14 @@
     "difficulty": "Hard",
     "question": "What is the boiling point of water in Fahrenheit?",
     "answer": "212",
-    "explanation": "At sea level, water boils at 212\u00b0F or 100\u00b0C.",
+    "explanation": "At sea level, water boils at 212°F or 100°C.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q117",
@@ -1733,7 +1779,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rush_(band)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q118",
@@ -1746,7 +1794,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q119",
@@ -1759,7 +1809,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q120",
@@ -1772,7 +1824,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/BeaverTails",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q121",
@@ -1785,7 +1839,9 @@
       "Global",
       "Entertainment",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Drake_%26_Josh",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q122",
@@ -1798,7 +1854,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Patriation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q123",
@@ -1811,7 +1869,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tennis",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q124",
@@ -1824,7 +1884,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q125",
@@ -1837,7 +1899,9 @@
       "Global",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wellington",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q126",
@@ -1850,7 +1914,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Great_Gatsby",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q127",
@@ -1863,7 +1929,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Oscar_Peterson",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q128",
@@ -1906,7 +1974,9 @@
       "CA",
       "Food",
       "GreatOutdoors"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Back_bacon",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q131",
@@ -1919,7 +1989,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q132",
@@ -1927,12 +1999,14 @@
     "difficulty": "Easy",
     "question": "What is the freezing point of water in Celsius?",
     "answer": "0",
-    "explanation": "Water freezes at 0\u00b0C or 32\u00b0F.",
+    "explanation": "Water freezes at 0°C or 32°F.",
     "tags": [
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Melting_point",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q133",
@@ -1945,7 +2019,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q134",
@@ -1958,7 +2034,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bear",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q135",
@@ -1986,7 +2064,9 @@
       "Global",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nirvana_(band)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q137",
@@ -2014,7 +2094,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Crime_and_Punishment",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q139",
@@ -2027,7 +2109,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Provinces_and_territories_of_Canada",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q140",
@@ -2040,7 +2124,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sodium_chloride",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q141",
@@ -2053,7 +2139,9 @@
       "CA",
       "History",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q142",
@@ -2066,7 +2154,9 @@
       "CA",
       "Entertainment",
       "FreshPrints"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q143",
@@ -2079,7 +2169,9 @@
       "Global",
       "Food",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sushi",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q144",
@@ -2092,7 +2184,9 @@
       "Global",
       "Sports",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Baseball",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q145",
@@ -2105,7 +2199,9 @@
       "Global",
       "Nature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hyperion_(tree)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q146",
@@ -2118,7 +2214,9 @@
       "CA",
       "Music",
       "TimeCapsule"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q147",
@@ -2131,7 +2229,9 @@
       "CA",
       "Geography",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q148",
@@ -2144,7 +2244,9 @@
       "Global",
       "Literature",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pride_and_Prejudice",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q149",
@@ -2157,7 +2259,9 @@
       "Global",
       "Science",
       "GlobalEh"
-    ]
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Solar_System",
+    "sourceName": "Wikipedia"
   },
   {
     "id": "q150",
