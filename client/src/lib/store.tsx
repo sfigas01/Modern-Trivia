@@ -62,11 +62,15 @@ interface GameContextType {
   passQuestion: () => void;
   advanceToScoreUpdate: () => void;
   continueToNextRound: () => void;
-  continueAfterScoreUpdate: () => void;
+  endGame: () => void;
   resetGame: () => void;
   addQuestion: (q: Question) => void;
   updateQuestion: (q: Question) => void;
 }
+
+// ... (omitting context creation lines if not changing)
+
+// In implementation:
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -312,14 +316,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const continueAfterScoreUpdate = () => {
-    setState((prev) => {
-      if (prev.phase !== "SCORE_UPDATE") return prev;
-      return {
-        ...prev,
-        phase: "QUESTION"
-      };
-    });
+  const endGame = () => {
+    setState(prev => ({ ...prev, phase: "GAME_OVER" }));
   };
 
   const resetGame = () => {
@@ -367,7 +365,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         passQuestion,
         advanceToScoreUpdate,
         continueToNextRound,
-        continueAfterScoreUpdate,
+        endGame,
         resetGame,
         addQuestion,
         updateQuestion
