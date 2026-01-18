@@ -94,16 +94,16 @@ const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: 
   const normInput = normalize(input);
   const normCorrect = normalize(q.answer);
   const acceptable = (q.acceptableAnswers || []).map(normalize);
-  
+
   // Exact match first
   let isCorrect = normInput === normCorrect || acceptable.includes(normInput);
-  
+
   // Fuzzy match if not exact
   if (!isCorrect && normInput.length > 2) {
     const similarity = stringSimilarity.compareTwoStrings(normInput, normCorrect);
     // 0.8 is a good threshold for typos but enough to prevent wild guesses
     if (similarity > 0.8) isCorrect = true;
-    
+
     // Check acceptable variants with fuzzy logic too
     if (!isCorrect) {
       for (const variant of acceptable) {
@@ -114,7 +114,7 @@ const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: 
       }
     }
   }
-  
+
   if (isCorrect) {
     const p = q.difficulty === "Easy" ? 1 : q.difficulty === "Medium" ? 2 : 3;
     return { verdict: "CORRECT", points: p };
@@ -142,14 +142,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
     let allQuestions = [...initialQuestions] as Question[];
-    
+
     if (stored) {
       const custom = JSON.parse(stored);
       // Merge custom questions, prioritizing them by ID if there are overlaps (though IDs should be unique)
       const customIds = new Set(custom.map((q: Question) => q.id));
       allQuestions = [...custom, ...initialQuestions.filter(q => !customIds.has(q.id))];
     }
-    
+
     const categories = Array.from(new Set(allQuestions.map(q => q.category))).sort();
     setState(s => ({ ...s, questions: allQuestions, categories: ["All", ...categories] }));
   }, []);
@@ -174,17 +174,17 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const startGame = () => {
     setState(prev => {
       // Filter questions based on category and shuffle
-      let filtered = prev.selectedCategory === "All" 
+      let filtered = prev.selectedCategory === "All"
         ? [...prev.questions]
         : prev.questions.filter(q => q.category === prev.selectedCategory);
-      
+
       // Shuffle
       filtered = filtered.sort(() => Math.random() - 0.5);
-      
+
       // Limit to number of rounds * teams
       const totalNeeded = prev.numRounds * prev.teams.length;
       const finalQuestions = filtered.slice(0, totalNeeded);
-      
+
       return {
         ...prev,
         questions: finalQuestions,
@@ -200,10 +200,10 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const submitAnswer = () => {
     setState((prev) => {
       if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
-      
+
       const currentQ = prev.questions[prev.currentQuestionIndex];
       const { verdict, points } = verifyAttempt(prev.typedAnswer, currentQ);
-      
+
       const attempt: Attempt = {
         questionId: currentQ.id,
         teamId: prev.activeTeamId,
@@ -215,7 +215,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       return {
         ...prev,
-        phase: "REVEAL", 
+        phase: "REVEAL",
         currentAttempt: attempt
       };
     });
@@ -224,9 +224,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const passQuestion = () => {
     setState((prev) => {
       if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
-      
+
       const currentQ = prev.questions[prev.currentQuestionIndex];
-      
+
       const attempt: Attempt = {
         questionId: currentQ.id,
         teamId: prev.activeTeamId,
@@ -308,6 +308,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       ...prev,
       phase: "QUESTION"
     }));
+  };
+
   const continueAfterScoreUpdate = () => {
     setState((prev) => {
       if (prev.phase !== "SCORE_UPDATE") return prev;

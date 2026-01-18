@@ -17,7 +17,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ### EPIC-01: Interactive Dispute Resolution
 **Goal:** Enable Admins to resolve user-flagged errors efficiently with AI assistance.
-**Status:** 🏗️ In Design/Planning
+**Status:** 🏗️ Code Complete (Pending Infra)
 
 *   **Problem:** Players dispute answers, and fixing them requires manual fact-checking which spoils the questions for the Admin.
 *   **Solution:** A dashboard where AI pre-validates disputes, offering a "Fix" or "Reject" recommendation.
