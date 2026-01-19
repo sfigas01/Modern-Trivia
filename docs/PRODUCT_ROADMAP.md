@@ -7,10 +7,10 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 | ID | Status | Timeline | Focus Area | Description | Relative Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **EPIC-01** | **NOW** | Q1 2026 | **Trust & Quality** | Interactive Dispute Resolution | [View Epic](epics/EPIC-01_dispute_resolution.md) |
-| **FT-01** | **DONE** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](feature_specs/FT-01_reference_support.md) |
-| **FT-02** | **NOW** | Q1 2026 | **Scale** | Content Inventory & CMS | *(Spec Pending)* |
+| **FT-01** | **DONE** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](features/FT-01_reference_support.md) |
+| **FT-02** | **NOW** | Q1 2026 | **Scale** | Content Inventory & CMS | [View Feature](features/FT-02_content_inventory.md) |
 
-| **FT-03** | **NEXT** | Q2 2026 | **Maintenance** | AI Quality Sweep | *(Agent Spec Pending)* |
+| **FT-03** | **NEXT** | Q2 2026 | **Maintenance** | AI Quality Sweep | [View Feature](features/FT-03_ai_quality_sweep.md) |
 | **EPIC-02** | **NEXT** | Q2 2026 | **Scale** | Backstage Content Pipeline | [View Epic](epics/EPIC-02_backstage_pipeline.md) |
 | **EPIC-03** | **LATER**| 2026+ | **Expansion** | On-Demand Generation | *(Planned)* |
 
@@ -33,13 +33,13 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 ### FT-01: Reference Support
 **Goal:** Add rigorous reference tracking to all Q&A pairs for auditing and trust.
 **Status:** ✅ Done
-*   **Reference Spec:** `docs/feature_specs/FT-01_reference_support.md`
+*   **Reference Spec:** `docs/features/FT-01_reference_support.md`
 
 ### FT-02: Content Inventory & CMS
 **Goal:** Scalable question management to search, filter, and edit the entire question database.
 **Status:** 📋 Requirements Gathering
 *   **Problem:** As the database grows, finding specific questions (e.g., duplicates, typol) becomes impossible without a searchable inventory.
-*   **Scope:** Searchable table, Filters (Category, Difficulty), Bulk Actions.
+*   **Reference Spec:** `docs/features/FT-02_content_inventory.md`
 
 ---
 
@@ -50,7 +50,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 **Status:** 📋 Planned (Dependent on core Agent Spec)
 *   **Problem:** Users report "stupid questions" (bad tags, answer in text) that need bulk cleanup.
 *   **Solution:** A batch process that runs the *AI Fact-Checker Agent* (from EPIC-01) across the entire inventory to identify and auto-fix low-quality data.
-*   **Dependency:** Requires formalizing the `AI Fact-Checker Agent` spec.
+*   **Reference Spec:** `docs/features/FT-03_ai_quality_sweep.md`
 
 ### Epic: Backstage Content Pipeline
 **Goal:** Enable high-volume, "Spoiler-Free" import of new questions directly from AI generation.

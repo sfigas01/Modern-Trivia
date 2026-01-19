@@ -1,11 +1,23 @@
 # Epic-01: Interactive Dispute Resolution
 
 **Goal:** Enable Admins to resolve user-flagged errors efficiently with AI assistance via an interactive dashboard.
-**Status:** 🏗️ Code Complete (Pending Infra)
+**Status:** 🚧 In Progress
 **Prerequisites:** Database Provisioning
 
+## Child Features (Program Layer)
+*   **[FT-04: Admin Dispute Dashboard](../features/FT-04_admin_dashboard.md)** (In Progress)
+*   **[FT-01: Reference Support](../features/FT-01_reference_support.md)** (Done)
+*   **[FT-02: Content Inventory & CMS](../features/FT-02_content_inventory.md)** (Scale)
+*   **[FT-03: AI Quality Sweep](../features/FT-03_ai_quality_sweep.md)** (Maintenance)
+
+## ✅ Definition of Done (Epic Level)
+*   All child features (FT-01, FT-02, FT-03, and FT-04) are implemented and verified.
+*   Dispute Resolution Dashboard is fully functional in Production.
+*   Database infrastructure is provisioned and stable.
+
 ## 🚧 Implementation Status (Jan 17, 2026)
-The implementation for this epic is **Code Complete** but requires database infrastructure to function.
+The project is currently in the **Integration & Deployment** phase. While the core application logic and UI components (FT-01 through FT-04) are functionally complete in development, the epic remains "In Progress" pending database provisioning and environment configuration for production readiness.
+
 
 ### Completed Work
 - [x] **Database Schema:** Updated `shared/schema.ts` with `disputes` (status, analysis) and `app_config` tables.
@@ -45,8 +57,8 @@ graph TD
 
 ### Story 1: Admin Dispute Dashboard
 **As an** Admin,
-**I want** a centralized dashboard to view all player disputes,
-**So that** I can track what needs attention without managing external files.
+**I want** a centralized dashboard to view and manage all player disputes,
+**So that** I can resolve the issues.
 
 **Acceptance Criteria:**
 *   **Route:** `/admin/disputes`
