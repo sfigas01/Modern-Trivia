@@ -28,6 +28,7 @@
 ## 4. Shared Workflows
 Common workflows available to all agents are located in `.agent/workflows/`.
 - **Epic Creator:** `.agent/workflows/modern-trivia-epic-creator.md` - Use when starting new epics.
+- **Feature Creator:** `.agent/workflows/modern-trivia-feature-creator.md` - Use when specifying new features (FT-XX).
 
 ---
 

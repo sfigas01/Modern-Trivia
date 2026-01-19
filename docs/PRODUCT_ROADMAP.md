@@ -11,8 +11,12 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 | **FT-02** | **NOW** | Q1 2026 | **Scale** | Content Inventory & CMS | [View Feature](features/FT-02_content_inventory.md) |
 
 | **FT-03** | **NEXT** | Q2 2026 | **Maintenance** | AI Quality Sweep | [View Feature](features/FT-03_ai_quality_sweep.md) |
+| **EPIC-03** | **NEXT** | Q2 2026 | **AI Core** | AI QA "Guardian" Agent | [View Epic](epics/EPIC-03_qa_agent.md) |
+| **FT-05** | **NEXT** | Q2 2026 | **AI Core** | Agent Core & Rules Engine | *(Spec Pending)* |
+| **FT-06** | **NEXT** | Q2 2026 | **AI Core** | Search Tool Integration | *(Spec Pending)* |
+| **FT-07** | **NEXT** | Q2 2026 | **AI Core** | Test Harness / Playground | *(Spec Pending)* |
 | **EPIC-02** | **NEXT** | Q2 2026 | **Scale** | Backstage Content Pipeline | [View Epic](epics/EPIC-02_backstage_pipeline.md) |
-| **EPIC-03** | **LATER**| 2026+ | **Expansion** | On-Demand Generation | *(Planned)* |
+| **EPIC-04** | **LATER**| 2026+ | **Expansion** | On-Demand Generation | *(Planned)* |
 
 ---
 
@@ -51,6 +55,12 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 *   **Problem:** Users report "stupid questions" (bad tags, answer in text) that need bulk cleanup.
 *   **Solution:** A batch process that runs the *AI Fact-Checker Agent* (from EPIC-01) across the entire inventory to identify and auto-fix low-quality data.
 *   **Reference Spec:** `docs/features/FT-03_ai_quality_sweep.md`
+
+### EPIC-03: AI QA "Guardian" Agent
+**Goal:** Create a centralized, versioned AI service to enforce editorial quality across the platform.
+**Status:** 📋 Planned
+*   **Features:** Agent Core (FT-05), Search Tools (FT-06), Test Harness (FT-07).
+*   **Reference Spec:** `docs/epics/EPIC-03_qa_agent.md`
 
 ### Epic: Backstage Content Pipeline
 **Goal:** Enable high-volume, "Spoiler-Free" import of new questions directly from AI generation.
