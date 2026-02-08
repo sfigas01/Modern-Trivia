@@ -129,7 +129,6 @@ export async function registerRoutes(
     }
   });
 
-
   app.delete("/api/disputes", isAuthenticated, isAdmin, async (req, res) => {
     try {
       await db.delete(disputes);
@@ -161,7 +160,6 @@ export async function registerRoutes(
       res.status(500).json({ message: "Failed to grant admin access" });
     }
   });
-
 
   // App Configuration Routes (Admin Only)
   app.get("/api/admin/config", isAuthenticated, isAdmin, async (req, res) => {

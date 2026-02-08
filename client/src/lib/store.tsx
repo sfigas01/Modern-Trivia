@@ -68,13 +68,11 @@ interface GameContextType {
   updateQuestion: (q: Question) => void;
 }
 
-// ... (omitting context creation lines if not changing)
-
-// In implementation:
-
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const STORAGE_KEY_QUESTIONS = "modern_trivia_questions";
+const STORAGE_KEY_VERSION = "modern_trivia_questions_version";
+const QUESTIONS_VERSION = 2; // Bump this when questions.json is updated with new fields
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 const normalize = (str: string): string => {
@@ -146,14 +144,40 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   // Load questions including custom ones
   useEffect(() => {
+    const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
+    const currentVersion = storedVersion ? parseInt(storedVersion, 10) : 0;
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
+    
+    // Build a set of IDs from the bundled questions.json
+    const initialIds = new Set(initialQuestions.map(q => q.id));
+    
+    // If version changed, we need to refresh base questions but preserve custom ones
+    if (currentVersion < QUESTIONS_VERSION) {
+      localStorage.setItem(STORAGE_KEY_VERSION, String(QUESTIONS_VERSION));
+      
+      if (stored) {
+        // Extract only truly custom questions (user-added, not in initial set)
+        const cachedQuestions = JSON.parse(stored) as Question[];
+        const customOnly = cachedQuestions.filter(q => !initialIds.has(q.id));
+        
+        // Save only the custom questions back
+        if (customOnly.length > 0) {
+          localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(customOnly));
+        } else {
+          localStorage.removeItem(STORAGE_KEY_QUESTIONS);
+        }
+      }
+    }
+    
+    // Now load: always use fresh initial questions + any custom user-added questions
     let allQuestions = [...initialQuestions] as Question[];
-
-    if (stored) {
-      const custom = JSON.parse(stored);
-      // Merge custom questions, prioritizing them by ID if there are overlaps (though IDs should be unique)
-      const customIds = new Set(custom.map((q: Question) => q.id));
-      allQuestions = [...custom, ...initialQuestions.filter(q => !customIds.has(q.id))];
+    const storedAfterMigration = localStorage.getItem(STORAGE_KEY_QUESTIONS);
+    
+    if (storedAfterMigration) {
+      const customQuestions = JSON.parse(storedAfterMigration);
+      // Only add questions that don't exist in initial set (truly custom)
+      const customOnly = (customQuestions as Question[]).filter(q => !initialIds.has(q.id));
+      allQuestions = [...(initialQuestions as Question[]), ...customOnly];
     }
 
     const categories = Array.from(new Set(allQuestions.map(q => q.category))).sort();
@@ -289,12 +313,6 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         nextPhase = "GAME_OVER";
       } else if (isRoundComplete) {
         nextPhase = "ROUND_SCORE";
-      } else {
-        const questionsPerRound = updatedTeams.length * QUESTIONS_PER_TEAM_ROTATION;
-        const roundComplete = questionsPerRound > 0 && nextIndex % questionsPerRound === 0;
-        if (roundComplete) {
-          nextPhase = "SCORE_UPDATE";
-        }
       }
 
       return {
