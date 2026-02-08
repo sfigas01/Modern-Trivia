@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 import { db } from "./db";
@@ -6,8 +6,10 @@ import { disputes, adminRoles, insertDisputeSchema, appConfig } from "@shared/sc
 import { eq } from "drizzle-orm";
 import { analyzeDispute } from "./lib/ai";
 
+import { AuthenticatedRequest } from "./types";
+
 // Middleware to check if user is admin
-async function isAdmin(req: any, res: any, next: any) {
+async function isAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
     const userId = req.user?.claims?.sub;
     if (!userId) {
@@ -140,7 +142,7 @@ export async function registerRoutes(
   });
 
   // Admin management routes
-  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req: any, res) => {
+  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { userId } = req.body;
       const grantedBy = req.user?.claims?.sub;
@@ -214,7 +216,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/check", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/check", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user?.claims?.sub;
       const [admin] = await db
