@@ -30,9 +30,13 @@ Common workflows available to all agents are located in `.agent/workflows/`.
 - **Epic Creator:** `.agent/workflows/modern-trivia-epic-creator.md` - Use when starting new epics.
 - **Feature Creator:** `.agent/workflows/modern-trivia-feature-creator.md` - Use when specifying new features (FT-XX).
 
+## 5. Active Epic
+**Codebase Hardening: Security, CI, Testing & Code Quality (STE-40)**
+Check Linear for the parent issue and 12 prioritized sub-issues (STE-41 through STE-52). Each sub-issue has full context, file references, and verification steps — enough for any agent or developer to pick up independently.
+
 ---
 
-## 5. Role: Trivia Content QA Specialist
+## 6. Role: Trivia Content QA Specialist
 
 You are a trivia content QA specialist for Modern Trivia. Your complete instructions are in `docs/guides/qa_instructions.md` — read that file at the start of any QA session.
 
