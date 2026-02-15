@@ -2,14 +2,16 @@
 
 This document serves as the high-level roadmap for Modern Trivia, tracking active work, upcoming priorities, and future vision.
 
+> **⚠️ Current Focus: Professionalise the App.** Feature development is paused while we establish DevOps, security, and operational maturity. See STE-66 in Linear.
+
 ## 🗺️ Roadmap Status
 
 | ID | Status | Timeline | Focus Area | Description | Relative Link |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EPIC-01** | **NOW** | Q1 2026 | **Trust & Quality** | Interactive Dispute Resolution | [View Epic](epics/EPIC-01_dispute_resolution.md) |
+| **STE-66** | **NOW** | Q1 2026 | **DevOps & Security** | Implement Modern DevOps Practices | [View in Linear](https://linear.app/stephs-vibe-coding/issue/STE-66) |
+| **EPIC-01** | **PAUSED** | Q1 2026 | **Trust & Quality** | Interactive Dispute Resolution | [View Epic](epics/EPIC-01_dispute_resolution.md) |
 | **FT-01** | **DONE** | Q1 2026 | **Support** | Reference Support for Q&A | [View Feature](features/FT-01_reference_support.md) |
-| **FT-02** | **NOW** | Q1 2026 | **Scale** | Content Inventory & CMS | [View Feature](features/FT-02_content_inventory.md) |
-
+| **FT-02** | **PAUSED** | Q1 2026 | **Scale** | Content Inventory & CMS | [View Feature](features/FT-02_content_inventory.md) |
 | **FT-03** | **NEXT** | Q2 2026 | **Maintenance** | AI Quality Sweep | [View Feature](features/FT-03_ai_quality_sweep.md) |
 | **EPIC-03** | **NEXT** | Q2 2026 | **AI Core** | AI QA "Guardian" Agent | [View Epic](epics/EPIC-03_qa_agent.md) |
 | **FT-05** | **NEXT** | Q2 2026 | **AI Core** | Agent Core & Rules Engine | *(Spec Pending)* |
@@ -20,18 +22,38 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ---
 
-## 🏗️ Active Development (NOW)
+## 🔧 Active Development (NOW): DevOps & Security
+
+### STE-66: Implement Modern DevOps Practices
+**Goal:** Establish CI/CD, testing, linting, monitoring, and operational best practices before resuming feature work.
+**Status:** 🏗️ In Progress
+**Tracked in:** [Linear — Modern Trivia project](https://linear.app/stephs-vibe-coding/issue/STE-66)
+
+**Why now:** The app is worked on by 4 AI agents (Claude Code Desktop, Claude Code Web, Replit Codex, Antigravity) with no automated quality gates, no testing, no CI/CD, and a security incident (exposed API key). The codebase needs guardrails before it can scale safely.
+
+**Key workstreams:**
+- 🔴 **Security:** Rotate exposed secrets, establish secrets management (STE-53)
+- 🔴 **CI/CD:** GitHub Actions pipeline with type-check, lint, test, build (STE-54)
+- 🔴 **Testing:** Vitest framework with initial test suite (STE-55)
+- 🟡 **Code Quality:** ESLint + Prettier + pre-commit hooks (STE-56, STE-57)
+- 🟡 **Observability:** Sentry error tracking + Pino structured logging (STE-58)
+- 🟡 **Dependency Security:** Dependabot + npm audit in CI (STE-59)
+- 🟡 **Portability:** Dockerfile for local dev outside Replit (STE-60)
+- 🟡 **Agent Docs:** Update CLAUDE.md + .cursorrules for all agents (STE-65)
+- 🟢 **Process:** Branch protection, PR workflow, semantic versioning (STE-61–64)
+
+**Completion criteria:** CI/CD pipeline is green, tests exist, linting enforced, secrets secured, all agents have clear DevOps instructions.
+
+---
+
+## ⏸️ Paused (Resume After DevOps)
 
 ### EPIC-01: Interactive Dispute Resolution
 **Goal:** Enable Admins to resolve user-flagged errors efficiently with AI assistance.
-**Status:** 🏗️ Code Complete (Pending Infra)
+**Status:** ⏸️ Paused (Code Complete, Pending Infra)
 
 *   **Problem:** Players dispute answers, and fixing them requires manual fact-checking which spoils the questions for the Admin.
 *   **Solution:** A dashboard where AI pre-validates disputes, offering a "Fix" or "Reject" recommendation.
-*   **Key Features:**
-    *   `Dispute Dashboard` (Admin UI)
-    *   `AI Fact-Checker Agent` (Backend Service) "the Quality Reviwer"
-    *   `Resolve/Reject Workflow` (Database Updates)
 *   **Reference Spec:** `docs/epics/EPIC-01_dispute_resolution.md`
 
 ### FT-01: Reference Support
@@ -41,13 +63,12 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 
 ### FT-02: Content Inventory & CMS
 **Goal:** Scalable question management to search, filter, and edit the entire question database.
-**Status:** 📋 Requirements Gathering
-*   **Problem:** As the database grows, finding specific questions (e.g., duplicates, typol) becomes impossible without a searchable inventory.
+**Status:** ⏸️ Paused (was Requirements Gathering)
 *   **Reference Spec:** `docs/features/FT-02_content_inventory.md`
 
 ---
 
-## 📅 Scheduled Priorities (NEXT)
+## 📅 Scheduled Priorities (NEXT — After DevOps Complete)
 
 ### FT-03: AI Quality Sweep (Maintenance)
 **Goal:** Clean up existing database issues by repurposing the **AI Fact-Checker Agent**.

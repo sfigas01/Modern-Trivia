@@ -1,12 +1,37 @@
 # CLAUDE.md
 
-> **Root context for all AI Agents (Claude & Antigravity).**
+> **Root context for all AI Agents (Claude Code Desktop, Claude Code Web, Replit Codex, Antigravity).**
+
+---
+
+## ⚠️ Current Priority: Professionalise the App (No New Features)
+
+**Feature development is paused.** The current focus is on DevOps, security, and operational maturity. Do not introduce new product features until this phase is complete. All work should fall into one of these categories:
+
+1. **Security** — Secrets management, dependency scanning, vulnerability fixes
+2. **DevOps** — CI/CD, testing, linting, pre-commit hooks, containerisation
+3. **Observability** — Error tracking, structured logging, health checks
+4. **Process** — Branch protection, PR workflow, versioning
+5. **Bug fixes** — Only if critical to existing functionality
+
+Track all DevOps work under **[STE-66: Implement Modern DevOps Practices](https://linear.app/stephs-vibe-coding/issue/STE-66)** in Linear (Modern Trivia project).
+
+### 🔒 Security: In Progress
+- An API key was previously exposed in git history — rotation and cleanup is underway (STE-53)
+- **Never commit `.env` files or secrets.** Use `.env.example` as a reference template.
+- Production secrets must go in **Replit Secrets**, not in code or config files.
+- If you encounter any hardcoded secrets, credentials, or API keys in the codebase, **stop and flag it immediately** — do not commit over it.
+
+---
 
 ## 1. Commands & Environment
 - **Run Dev (Full Stack):** `npm run dev` (Starts frontend :5000 + backend :3000)
 - **Database Push:** `npm run db:push` (Apply schema changes)
 - **Build:** `npm run build`
-- **Lint/Check:** `npm run check`
+- **Type Check:** `npm run check` (tsc, no emit)
+- **Test:** `npm test` *(being set up — STE-55)*
+- **Lint:** `npm run lint` *(being set up — STE-56)*
+- **Format:** `npm run format` *(being set up — STE-56)*
 
 ## 2. Tech Stack & Style
 - **Frontend:** React, Vite, Shadcn UI, Tailwind CSS (@tailwindcss/vite).
@@ -17,15 +42,55 @@
     - Define Zod schemas in `shared/schema.ts`.
     - Use `lucide-react` for icons.
 
-## 3. Documentation & Process
+## 3. DevOps & Quality
+
+### Git Workflow
+- **Branch naming:** `feature/STE-XX-description` or `fix/STE-XX-description`
+- **Never push directly to `main`** — always use pull requests.
+- CI must pass before merging (once CI is live — STE-54).
+- Pre-commit hooks will auto-run lint + type-check (once Husky is set up — STE-57).
+
+### Quality Gates (being implemented via CI — STE-54)
+1. TypeScript type-check (`npm run check`)
+2. ESLint passes (`npm run lint`)
+3. All tests pass (`npm test`)
+4. Build succeeds (`npm run build`)
+5. No high/critical dependency vulnerabilities (`npm audit`)
+
+### Secrets & Environment
+- **Never commit `.env` files or API keys** — this has caused a security incident already.
+- Use `.env.example` as the template for required variables.
+- Production secrets go in **Replit Secrets** (not in code).
+- Required env vars: `DATABASE_URL`, `SESSION_SECRET`, `PORT`, `LINEAR_API_KEY`
+
+### Testing *(being set up — STE-55)*
+- New features and bug fixes must include tests.
+- Test files: `*.test.ts` co-located with source files.
+- Run `npm test` before committing.
+
+### Logging *(being set up — STE-58)*
+- Once Pino is set up, use `logger.info()` / `logger.error()` — not `console.log`.
+- Never log passwords, tokens, or PII.
+
+### Multi-Agent Context
+This codebase is worked on by multiple AI agents:
+- **Claude Code Desktop** (local terminal agent)
+- **Claude Code Web** (browser-based agent)
+- **Replit Codex** (Replit's built-in agent)
+- **Antigravity** (autonomous agent)
+
+All agents must follow the same quality gates, branching strategy, and commit conventions. Pre-commit hooks and CI enforce standards regardless of which agent authored the code. If you are an agent reading this, do not bypass quality checks or skip hooks with `--no-verify`.
+
+## 4. Documentation & Process
 *   **Standards:** `docs/guides/documentation_standards.md`
 *   **Process:** Spec-Driven Development (Specify -> Plan -> Tasks).
 *   **Hierarchy:**
     *   **Epics:** `docs/epics/` (Strategic goals)
     *   **Features:** `docs/features/` (Shippable functionality)
 *   **Roadmap:** `docs/PRODUCT_ROADMAP.md` (Update when creating Epics/Features).
+*   **Issue Tracker:** Linear — [Steph's Vibe Coding workspace](https://linear.app/stephs-vibe-coding). All DevOps work is under the **Modern Trivia** project.
 
-## 4. Shared Workflows
+## 5. Shared Workflows
 Common workflows available to all agents are located in `.agent/workflows/`.
 - **Epic Creator:** `.agent/workflows/modern-trivia-epic-creator.md` - Use when starting new epics.
 - **Feature Creator:** `.agent/workflows/modern-trivia-feature-creator.md` - Use when specifying new features (FT-XX).
