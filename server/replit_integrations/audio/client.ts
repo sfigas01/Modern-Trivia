@@ -248,7 +248,7 @@ export class SentenceParser {
     const sentences: Array<{ seq: number; text: string }> = [];
 
     // Segment current buffer
-    const segments = [...this.segmenter.segment(this.buffer)];
+    const segments = Array.from(this.segmenter.segment(this.buffer));
 
     // All segments except the last are complete sentences
     // (last segment might be incomplete, still accumulating tokens)
