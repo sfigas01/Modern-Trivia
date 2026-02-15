@@ -47,15 +47,16 @@ Track all DevOps work under **[STE-66: Implement Modern DevOps Practices](https:
 ### Git Workflow
 - **Branch naming:** `feature/STE-XX-description` or `fix/STE-XX-description`
 - **Never push directly to `main`** — always use pull requests.
-- CI must pass before merging (once CI is live — STE-54).
+- **CI must pass before merging.** GitHub Actions runs type-check, build, and dependency audit on every push and PR to `main`.
+- PR workflow: branch → push → CI green → merge. Never merge a red build.
 - Pre-commit hooks will auto-run lint + type-check (once Husky is set up — STE-57).
 
-### Quality Gates (being implemented via CI — STE-54)
-1. TypeScript type-check (`npm run check`)
-2. ESLint passes (`npm run lint`)
-3. All tests pass (`npm test`)
-4. Build succeeds (`npm run build`)
-5. No high/critical dependency vulnerabilities (`npm audit`)
+### Quality Gates (enforced by CI — `.github/workflows/ci.yml`)
+1. TypeScript type-check (`npm run check`) ✅ Live
+2. Build succeeds (`npm run build`) ✅ Live
+3. No high/critical dependency vulnerabilities (`npm audit`) ✅ Live (non-blocking)
+4. ESLint passes (`npm run lint`) — *coming soon, STE-56*
+5. All tests pass (`npm test`) — *coming soon, STE-55*
 
 ### Secrets & Environment
 - **Never commit `.env` files or API keys** — this has caused a security incident already.
@@ -80,6 +81,8 @@ This codebase is worked on by multiple AI agents:
 - **Antigravity** (autonomous agent)
 
 All agents must follow the same quality gates, branching strategy, and commit conventions. Pre-commit hooks and CI enforce standards regardless of which agent authored the code. If you are an agent reading this, do not bypass quality checks or skip hooks with `--no-verify`.
+
+**Agent coordination:** Check `.agent/AGENT_STATUS.md` before starting any STE-xx issue to see what's claimed. Update it when you pick up or finish work.
 
 ## 4. Documentation & Process
 *   **Standards:** `docs/guides/documentation_standards.md`
