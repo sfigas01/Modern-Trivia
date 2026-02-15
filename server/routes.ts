@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { analyzeDispute } from "./lib/ai";
 
 import { AuthenticatedRequest } from "./types";
+import { aiLimiter } from "./middleware/rateLimiter";
 
 // Middleware to check if user is admin
 async function isAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -65,7 +66,7 @@ export async function registerRoutes(
   });
 
   // Analyze dispute with AI
-  app.post("/api/disputes/:id/analyze", isAuthenticated, isAdmin, async (req, res) => {
+  app.post("/api/disputes/:id/analyze", isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
     try {
       const { id } = req.params;
 
