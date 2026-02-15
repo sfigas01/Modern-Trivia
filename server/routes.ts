@@ -5,14 +5,15 @@ import { db } from "./db";
 import { disputes, adminRoles, insertDisputeSchema, appConfig } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { analyzeDispute } from "./lib/ai";
-
-import { AuthenticatedRequest } from "./types";
 import { aiLimiter } from "./middleware/rateLimiter";
 
-// Middleware to check if user is admin
-async function isAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+function getUserId(req: Request): string | undefined {
+  return (req as any).user?.claims?.sub;
+}
+
+async function isAdmin(req: Request, res: Response, next: NextFunction) {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -143,10 +144,10 @@ export async function registerRoutes(
   });
 
   // Admin management routes
-  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  app.post("/api/admin/grant", isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
       const { userId } = req.body;
-      const grantedBy = req.user?.claims?.sub;
+      const grantedBy = getUserId(req);
 
       if (!userId) {
         return res.status(400).json({ message: "userId is required" });
@@ -217,9 +218,12 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/admin/check", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  app.get("/api/admin/check", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.json({ isAdmin: false });
+      }
       const [admin] = await db
         .select()
         .from(adminRoles)
