@@ -54,9 +54,12 @@ export default function AdminDisputes() {
             await queryClient.invalidateQueries({ queryKey: ["/api/disputes"] });
             toast({ title: "Analysis Complete", description: "AI has reviewed the dispute." });
         } catch (error) {
+            const isRateLimited = error instanceof Error && error.message.startsWith("429");
             toast({
-                title: "Analysis Failed",
-                description: "Could not contact AI service.",
+                title: isRateLimited ? "Rate Limit Reached" : "Analysis Failed",
+                description: isRateLimited
+                    ? "Please wait a few minutes before analyzing another dispute."
+                    : "Could not contact AI service.",
                 variant: "destructive"
             });
         } finally {
