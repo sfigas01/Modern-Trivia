@@ -1,4 +1,4 @@
-export { registerAudioRoutes } from "./routes";
+export { registerAudioRoutes } from './routes';
 export {
   openai,
   textToSpeech,
@@ -9,4 +9,4 @@ export {
   voiceChatStream,
   voiceChatWithTextModel,
   SentenceParser,
-} from "./client";
+} from './client';

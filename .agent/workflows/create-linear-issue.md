@@ -9,6 +9,7 @@ User is mid-development and thought of a bug/feature/improvement. Capture it fas
 ## Your Goal
 
 Create a complete issue with:
+
 - Clear title
 - TL;DR of what this is about
 - Current state vs expected outcome
@@ -19,6 +20,7 @@ Create a complete issue with:
 ## How to Get There
 
 **Ask questions** to fill gaps - be concise, respect the user's time. They're mid-flow and want to capture this quickly. Usually need:
+
 - What's the issue/feature
 - Current behavior vs desired behavior
 - Type (bug/feature/improvement) and priority if not obvious
@@ -26,6 +28,7 @@ Create a complete issue with:
 Keep questions brief. One message with 2-3 targeted questions beats multiple back-and-forths.
 
 **Search for context** only when helpful:
+
 - Web search for best practices if it's a complex feature
 - Grep codebase to find relevant files
 - Note any risks or dependencies you spot

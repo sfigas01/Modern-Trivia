@@ -1,37 +1,41 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useGame } from "@/lib/store";
-import { useAuth } from "@/hooks/use-auth";
-import { useAdmin } from "@/hooks/use-admin";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useGame } from '@/lib/store';
+import { useAuth } from '@/hooks/use-auth';
+import { useAdmin } from '@/hooks/use-admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
   const [_, setLocation] = useLocation();
   const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
   const { user, isAuthenticated, logout } = useAuth();
   const { isAdmin } = useAdmin();
-  const [newTeamName, setNewTeamName] = useState("");
+  const [newTeamName, setNewTeamName] = useState('');
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTeamName.trim()) {
       addTeam(newTeamName.trim());
-      setNewTeamName("");
+      setNewTeamName('');
     }
   };
 
   const handleStart = () => {
     startGame();
-    setLocation("/game");
+    setLocation('/game');
   };
 
   const statusLabel =
-    state.phase === "SETUP" ? "Not Started" : state.phase === "GAME_OVER" ? "Completed" : "In Progress";
+    state.phase === 'SETUP'
+      ? 'Not Started'
+      : state.phase === 'GAME_OVER'
+        ? 'Completed'
+        : 'In Progress';
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
@@ -40,14 +44,16 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] opacity-50" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md z-10 space-y-8"
       >
         <div className="text-center space-y-2">
           <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            TRIVIA<br/>CLASH
+            TRIVIA
+            <br />
+            CLASH
           </h1>
           <p className="text-muted-foreground font-medium tracking-wide">
             THE COMPETITIVE PARTY GAME
@@ -65,9 +71,7 @@ export default function Home() {
               <Users className="w-5 h-5 text-primary" />
               Team Setup
             </CardTitle>
-            <CardDescription>
-              Add 2-6 teams to begin.
-            </CardDescription>
+            <CardDescription>Add 2-6 teams to begin.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleAddTeam} className="flex gap-2">
@@ -78,7 +82,12 @@ export default function Home() {
                 className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
                 autoFocus
               />
-              <Button type="submit" size="icon" className="h-12 w-12 shrink-0 rounded-xl" disabled={!newTeamName.trim() || state.teams.length >= 6}>
+              <Button
+                type="submit"
+                size="icon"
+                className="h-12 w-12 shrink-0 rounded-xl"
+                disabled={!newTeamName.trim() || state.teams.length >= 6}
+              >
                 <Plus className="w-6 h-6" />
               </Button>
             </form>
@@ -106,7 +115,7 @@ export default function Home() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              
+
               {state.teams.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground italic border-2 border-dashed border-white/5 rounded-lg">
                   No teams added yet
@@ -118,20 +127,18 @@ export default function Home() {
 
         <Card className="border-white/10 bg-white/5 backdrop-blur-md">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              Category
-            </CardTitle>
-            <CardDescription>
-              Choose a topic for this round.
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
+            <CardDescription>Choose a topic for this round.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
               <Button
-                variant={state.selectedCategory === "All" ? "default" : "outline"}
-                onClick={() => setCategory("All")}
+                variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
+                onClick={() => setCategory('All')}
                 className={`border-white/10 hover:bg-white/10 ${
-                  state.selectedCategory === "All" ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+                  state.selectedCategory === 'All'
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                    : ''
                 }`}
               >
                 All Categories
@@ -139,12 +146,12 @@ export default function Home() {
               {state.categories.map((category) => (
                 <Button
                   key={category}
-                  variant={state.selectedCategory === category ? "default" : "outline"}
+                  variant={state.selectedCategory === category ? 'default' : 'outline'}
                   onClick={() => setCategory(category)}
                   className={`border-white/10 hover:bg-white/10 ${
                     state.selectedCategory === category
-                      ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                      : ""
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                      : ''
                   }`}
                 >
                   {category}
@@ -160,16 +167,14 @@ export default function Home() {
               <Zap className="w-4 h-4 text-primary" />
               Number of Rounds
             </CardTitle>
-            <CardDescription>
-              How many questions to play.
-            </CardDescription>
+            <CardDescription>How many questions to play.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-2">
               {[5, 10, 15, 20].map((rounds) => (
                 <Button
                   key={rounds}
-                  variant={state.numRounds === rounds ? "default" : "outline"}
+                  variant={state.numRounds === rounds ? 'default' : 'outline'}
                   onClick={() => setNumRounds(rounds)}
                   className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                 >
@@ -181,7 +186,7 @@ export default function Home() {
         </Card>
 
         <div className="space-y-4">
-          <Button 
+          <Button
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
             disabled={state.teams.length < 2}
             onClick={handleStart}
@@ -189,24 +194,24 @@ export default function Home() {
           >
             START GAME
           </Button>
-          
+
           <div className="flex justify-center gap-4 items-center flex-wrap">
             {isAuthenticated && isAdmin && (
-              <Button 
-                variant="link" 
-                className="text-muted-foreground text-xs" 
-                onClick={() => setLocation("/admin")}
+              <Button
+                variant="link"
+                className="text-muted-foreground text-xs"
+                onClick={() => setLocation('/admin')}
                 data-testid="link-admin"
               >
                 <Shield className="w-3 h-3 mr-1" />
                 Admin Panel
               </Button>
             )}
-            
+
             {isAuthenticated ? (
-              <Button 
-                variant="link" 
-                className="text-muted-foreground text-xs" 
+              <Button
+                variant="link"
+                className="text-muted-foreground text-xs"
                 onClick={() => logout()}
                 data-testid="button-logout"
               >
@@ -214,10 +219,10 @@ export default function Home() {
                 Sign Out ({user?.email?.split('@')[0]})
               </Button>
             ) : (
-              <Button 
-                variant="link" 
-                className="text-muted-foreground text-xs" 
-                onClick={() => window.location.href = "/api/login"}
+              <Button
+                variant="link"
+                className="text-muted-foreground text-xs"
+                onClick={() => (window.location.href = '/api/login')}
                 data-testid="button-login"
               >
                 <LogIn className="w-3 h-3 mr-1" />

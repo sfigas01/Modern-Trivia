@@ -1,14 +1,17 @@
 # Feature Specification: Question References & Citations
 
 ## 1. Objective
+
 Enable the trivia game to display strict, structured verification sources for answers. This enhances trust and provides "proof" for disputed answers, directly in the game UI. Currently, some references are embedded unstructured within the `explanation` text.
 
 **Status:** ✅ Done (Jan 18, 2026)
 
 ## 2. Data Model Changes
+
 The `Question` interface in `client/src/lib/store.tsx` needs to be updated to support an optional source URL.
 
 ### Current Interface
+
 ```typescript
 export interface Question {
   id: string;
@@ -23,7 +26,9 @@ export interface Question {
 ```
 
 ### Proposed Changes
+
 Add `sourceUrl` and `sourceName` fields.
+
 ```typescript
 export interface Question {
   // ... existing fields
@@ -35,9 +40,11 @@ export interface Question {
 ## 3. UI/UX Specifications
 
 ### A. Game Interface (`Game.tsx`)
+
 **Location:** The "REVEAL" phase (when the answer is shown).
 **Placement:** Below the Explanation text or near the Correct Answer card.
 **Visuals:**
+
 - A subtle, pill-shaped button or link (e.g., using `ExternalLink` icon from `lucide-react`).
 - **Label:** Display the `sourceName` (e.g. "Wikipedia", "NASA") if available. Fallback to "Verify Source" if not.
 - **Icon:** Small icon to the right or left of the text.
@@ -45,6 +52,7 @@ export interface Question {
 - **Condition:** Only render if `q.sourceUrl` is present.
 
 ### B. Admin Interface (`Admin.tsx`)
+
 The Admin panel must allow operators to add and edit sources.
 
 1.  **Add Question Form:**
@@ -56,22 +64,27 @@ The Admin panel must allow operators to add and edit sources.
     - When editing a disputed question, include the "Source URL" and "Source Name" input fields.
 
 ## 4. Data Migration Plan
+
 Existing questions in `client/src/lib/questions.json` currently have sources embedded in the `explanation` string (e.g., "Source: https://...").
 
 **Action Required:**
+
 1.  Identify all questions with "Source:" text in `explanation`.
 2.  Extract the URL into the new `sourceUrl` field.
 3.  **Infer Source Name:** Automatically derive `sourceName` from the domain (e.g. "wikipedia.org" -> "Wikipedia") or hardcode common ones during migration.
 4.  Clean the `explanation` text to remove the "Source: ..." suffix.
 
 **Example Migration:**
-*Before:*
+_Before:_
+
 ```json
 {
   "explanation": "He served as the first Prime Minister... Source: https://en.wikipedia.org/wiki/John_A._Macdonald"
 }
 ```
-*After:*
+
+_After:_
+
 ```json
 {
   "explanation": "He served as the first Prime Minister...",
@@ -81,6 +94,7 @@ Existing questions in `client/src/lib/questions.json` currently have sources emb
 ```
 
 ## 5. Implementation Roadmap
+
 1.  **Update Types**: Modify `Question` interface in `store.tsx`.
 2.  **Migrate Data**: Script or text-edit `questions.json` to move existing sources to the new field.
 3.  **Update Game UI**: Add the source button to `Game.tsx`.

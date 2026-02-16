@@ -14,11 +14,13 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 ## Content Architecture
 
 ### Question Database
+
 - **Total Questions:** 200 built-in trivia questions
 - **Storage Location:** `client/src/lib/questions.json`
 - **Custom Questions:** Stored in browser localStorage via admin panel
 
 ### Categories
+
 - Geography
 - Science
 - History
@@ -28,13 +30,15 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 - (Players can filter by category or select "All")
 
 ### Difficulty Levels & Scoring
+
 | Difficulty | Points (Correct) | Points (Incorrect) |
-|------------|------------------|-------------------|
-| Easy       | +1               | -1                |
-| Medium     | +2               | -2                |
-| Hard       | +3               | -3                |
+| ---------- | ---------------- | ------------------ |
+| Easy       | +1               | -1                 |
+| Medium     | +2               | -2                 |
+| Hard       | +3               | -3                 |
 
 ### Regional Tags
+
 - **CA** - Canada-focused content
 - **US** - United States content
 - **Global** - International/general knowledge
@@ -46,40 +50,45 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 ## Content Pillars & Distribution
 
 ### 🎬 TimeCapsule (Target: 30%)
+
 **Audience:** Gen X / Elder Millennials (30-50)
 
 Shared nostalgia from the 80s, 90s, and 2000s — iconic Canadian moments, beloved pop culture, historical landmarks, generational touchstones.
 
-*Examples: Degrassi, MuchMusic VJs, Heritage Moments, early internet culture*
+_Examples: Degrassi, MuchMusic VJs, Heritage Moments, early internet culture_
 
 ### 🌍 GlobalEh (Target: 30%)
+
 **Audience:** Everyone (The "Smart" Pillar)
 
 General knowledge that is **NOT US-centric**. World history, science, geography, literature, and culture from a global perspective.
 
 **Editorial Rule:** Geography won't be about Iowa; history avoids US Civil War unless Canada was involved. Focus on world capitals, Nobel Prize winners, European history, Asian cultures, international sports.
 
-*Examples: World capitals, international Nobel Prize winners, global science facts, World Cup*
+_Examples: World capitals, international Nobel Prize winners, global science facts, World Cup_
 
 ### ⚡ FreshPrints (Target: 25%)
+
 **Audience:** Gen Z / Younger Millennials (18-30) + News Junkies
 
 Viral moments, current Billboard hits, trending topics, and meme culture. **Intended to reflect the last 3 months** — this pillar requires periodic updates to stay current.
 
-*Examples: Recent celebrity news, current chart toppers, recent awards winners, trending social media moments*
+_Examples: Recent celebrity news, current chart toppers, recent awards winners, trending social media moments_
 
 ### 🏕️ GreatOutdoors (Target: 15%)
+
 **Audience:** The "Hoser" Lifestyle
 
 Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 
-*Examples: Poutine, Canadian slang ("double-double", "toque"), CN Tower, cottage culture, Tim Hortons*
+_Examples: Poutine, Canadian slang ("double-double", "toque"), CN Tower, cottage culture, Tim Hortons_
 
 ---
 
 ## Answer Verification System
 
 ### Fuzzy Matching
+
 - **Similarity Threshold:** 80% (using string-similarity library)
 - **Normalization handles:**
   - Case insensitivity
@@ -93,6 +102,7 @@ Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 ## Technical Stack
 
 ### Frontend
+
 - React 19 + TypeScript
 - Vite build system
 - Tailwind CSS v4
@@ -103,6 +113,7 @@ Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 - React Hook Form + Zod validation
 
 ### Backend
+
 - Node.js 20 + TypeScript
 - Express.js
 - Drizzle ORM
@@ -137,6 +148,7 @@ Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 ## Quality Review Focus Areas
 
 ### 1. Content Quality
+
 - Factual accuracy of questions and answers
 - Appropriateness of difficulty ratings
 - Category assignment accuracy
@@ -144,26 +156,31 @@ Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 - Content pillar alignment
 
 ### 2. Pillar Distribution Audit
+
 - **Target:** TimeCapsule 30%, GlobalEh 30%, FreshPrints 25%, GreatOutdoors 15%
 - Verify actual question counts match intended distribution
 - Flag imbalances that may affect gameplay variety
 
 ### 3. Editorial Rule Compliance
+
 - **GlobalEh:** Verify questions are NOT US-centric (no Iowa geography, no US Civil War unless Canada-relevant)
 - **FreshPrints:** Flag questions that may have become stale (content older than 3 months)
 - **Regional tags:** Ensure CA/US/Global tags are accurate
 
 ### 4. Audience-Difficulty Alignment
+
 - TimeCapsule (30-50 audience) — difficulty should match this demo
 - FreshPrints (18-30 audience) — difficulty should match this demo
 - Flag mismatches where difficulty doesn't suit target audience
 
 ### 5. Answer Verification Edge Cases
+
 - Test 80% fuzzy threshold for false positives/negatives
 - Identify acceptable answer variants not currently handled
 - Flag ambiguous answers that may cause disputes
 
 ### 6. Data Integrity
+
 - Duplicate question detection
 - Consistent formatting across all questions
 - Proper JSON structure
@@ -174,13 +191,13 @@ Culinary, travel, slang, cottage life, and uniquely Canadian experiences.
 
 ## Key Files for Review
 
-| File | Purpose |
-|------|---------|
+| File                            | Purpose                                |
+| ------------------------------- | -------------------------------------- |
 | `client/src/lib/questions.json` | Main question database (200 questions) |
-| `CONTENT_STRATEGY.md` | Content guidelines and pillars |
-| `docs/STATE_MACHINE.md` | Game flow documentation |
-| `docs/ADMIN_SETUP.md` | Admin role setup |
-| `server/routes.ts` | API routes including disputes |
+| `CONTENT_STRATEGY.md`           | Content guidelines and pillars         |
+| `docs/STATE_MACHINE.md`         | Game flow documentation                |
+| `docs/ADMIN_SETUP.md`           | Admin role setup                       |
+| `server/routes.ts`              | API routes including disputes          |
 
 ---
 

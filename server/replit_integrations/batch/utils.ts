@@ -1,5 +1,5 @@
-import pLimit from "p-limit";
-import pRetry from "p-retry";
+import pLimit from 'p-limit';
+import pRetry from 'p-retry';
 
 /**
  * Batch Processing Utilities
@@ -48,10 +48,10 @@ export interface BatchOptions {
 export function isRateLimitError(error: unknown): boolean {
   const errorMsg = error instanceof Error ? error.message : String(error);
   return (
-    errorMsg.includes("429") ||
-    errorMsg.includes("RATELIMIT_EXCEEDED") ||
-    errorMsg.toLowerCase().includes("quota") ||
-    errorMsg.toLowerCase().includes("rate limit")
+    errorMsg.includes('429') ||
+    errorMsg.includes('RATELIMIT_EXCEEDED') ||
+    errorMsg.toLowerCase().includes('quota') ||
+    errorMsg.toLowerCase().includes('rate limit')
   );
 }
 
@@ -107,9 +107,7 @@ export async function batchProcess<T, R>(
               throw error; // Rethrow to trigger p-retry
             }
             // For non-rate-limit errors, abort immediately
-            throw new pRetry.AbortError(
-              error instanceof Error ? error : new Error(String(error))
-            );
+            throw new pRetry.AbortError(error instanceof Error ? error : new Error(String(error)));
           }
         },
         { retries, minTimeout, maxTimeout, factor: 2 }
@@ -133,50 +131,44 @@ export async function batchProcessWithSSE<T, R>(
   items: T[],
   processor: (item: T, index: number) => Promise<R>,
   sendEvent: (event: { type: string; [key: string]: unknown }) => void,
-  options: Omit<BatchOptions, "concurrency" | "onProgress"> = {}
+  options: Omit<BatchOptions, 'concurrency' | 'onProgress'> = {}
 ): Promise<R[]> {
   const { retries = 5, minTimeout = 1000, maxTimeout = 15000 } = options;
 
-  sendEvent({ type: "started", total: items.length });
+  sendEvent({ type: 'started', total: items.length });
 
   const results: R[] = [];
   let errors = 0;
 
   for (let index = 0; index < items.length; index++) {
     const item = items[index];
-    sendEvent({ type: "processing", index, item });
+    sendEvent({ type: 'processing', index, item });
 
     try {
-      const result = await pRetry(
-        () => processor(item, index),
-        {
-          retries,
-          minTimeout,
-          maxTimeout,
-          factor: 2,
-          onFailedAttempt: (error) => {
-            if (!isRateLimitError(error)) {
-              throw new pRetry.AbortError(
-                error instanceof Error ? error : new Error(String(error))
-              );
-            }
-          },
-        }
-      );
+      const result = await pRetry(() => processor(item, index), {
+        retries,
+        minTimeout,
+        maxTimeout,
+        factor: 2,
+        onFailedAttempt: (error) => {
+          if (!isRateLimitError(error)) {
+            throw new pRetry.AbortError(error instanceof Error ? error : new Error(String(error)));
+          }
+        },
+      });
       results.push(result);
-      sendEvent({ type: "progress", index, result });
+      sendEvent({ type: 'progress', index, result });
     } catch (error) {
       errors++;
       results.push(undefined as R); // Placeholder for failed items
       sendEvent({
-        type: "progress",
+        type: 'progress',
         index,
-        error: error instanceof Error ? error.message : "Processing failed",
+        error: error instanceof Error ? error.message : 'Processing failed',
       });
     }
   }
 
-  sendEvent({ type: "complete", processed: items.length, errors });
+  sendEvent({ type: 'complete', processed: items.length, errors });
   return results;
 }
-

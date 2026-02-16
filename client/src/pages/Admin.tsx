@@ -1,16 +1,22 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useGame, Question, Difficulty } from "@/lib/store";
-import { AdminLayout } from "@/components/admin-layout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, LogIn, Shield } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { useAdmin } from "@/hooks/use-admin";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useGame, Question, Difficulty } from '@/lib/store';
+import { AdminLayout } from '@/components/admin-layout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Save, LogIn, Shield } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { useAdmin } from '@/hooks/use-admin';
 
 export default function Admin() {
   const [_, setLocation] = useLocation();
@@ -20,49 +26,49 @@ export default function Admin() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
 
   const [formData, setFormData] = useState({
-    category: "",
-    difficulty: "Medium" as Difficulty,
-    question: "",
-    answer: "",
-    explanation: "",
-    countryTag: "Global",
-    sourceUrl: "",
-    sourceName: ""
+    category: '',
+    difficulty: 'Medium' as Difficulty,
+    question: '',
+    answer: '',
+    explanation: '',
+    countryTag: 'Global',
+    sourceUrl: '',
+    sourceName: '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.question || !formData.answer) return;
 
     const newQuestion: Question = {
       id: crypto.randomUUID(),
-      category: formData.category || "General",
+      category: formData.category || 'General',
       difficulty: formData.difficulty,
       question: formData.question,
       answer: formData.answer,
       explanation: formData.explanation,
-      tags: ["Custom", formData.countryTag],
+      tags: ['Custom', formData.countryTag],
       ...(formData.sourceUrl && { sourceUrl: formData.sourceUrl }),
-      ...(formData.sourceName && { sourceName: formData.sourceName })
+      ...(formData.sourceName && { sourceName: formData.sourceName }),
     };
 
     addQuestion(newQuestion);
-    
+
     toast({
-      title: "Question Added",
-      description: "Successfully added to local library.",
+      title: 'Question Added',
+      description: 'Successfully added to local library.',
     });
 
     setFormData({
-      category: "",
-      difficulty: "Medium",
-      question: "",
-      answer: "",
-      explanation: "",
-      countryTag: "Global",
-      sourceUrl: "",
-      sourceName: ""
+      category: '',
+      difficulty: 'Medium',
+      question: '',
+      answer: '',
+      explanation: '',
+      countryTag: 'Global',
+      sourceUrl: '',
+      sourceName: '',
     });
   };
 
@@ -86,24 +92,18 @@ export default function Admin() {
               <Shield className="w-8 h-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">Admin Access Required</CardTitle>
-            <CardDescription>
-              Please sign in to access the admin panel
-            </CardDescription>
+            <CardDescription>Please sign in to access the admin panel</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               size="lg"
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => (window.location.href = '/api/login')}
             >
               <LogIn className="w-4 h-4 mr-2" />
               Sign In with Replit
             </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setLocation("/")}
-            >
+            <Button variant="outline" className="w-full" onClick={() => setLocation('/')}>
               Back to Home
             </Button>
           </CardContent>
@@ -128,13 +128,9 @@ export default function Admin() {
           <CardContent className="space-y-4">
             <div className="p-3 bg-muted/50 rounded-lg text-sm">
               <p className="text-muted-foreground">Signed in as:</p>
-              <p className="font-medium">{user?.email || "Unknown user"}</p>
+              <p className="font-medium">{user?.email || 'Unknown user'}</p>
             </div>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setLocation("/")}
-            >
+            <Button variant="outline" className="w-full" onClick={() => setLocation('/')}>
               Back to Home
             </Button>
           </CardContent>
@@ -148,7 +144,9 @@ export default function Admin() {
       <div className="space-y-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Add Questions</h2>
-          <p className="text-muted-foreground">Add custom trivia questions to your local library.</p>
+          <p className="text-muted-foreground">
+            Add custom trivia questions to your local library.
+          </p>
         </div>
 
         <Card className="bg-white/5 border-white/10 max-w-2xl">
@@ -161,18 +159,18 @@ export default function Admin() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
-                  <Input 
-                    value={formData.category} 
-                    onChange={e => setFormData({...formData, category: e.target.value})}
+                  <Input
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     placeholder="e.g. Science"
                     data-testid="input-category"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Difficulty</label>
-                  <Select 
-                    value={formData.difficulty} 
-                    onValueChange={(v: Difficulty) => setFormData({...formData, difficulty: v})}
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(v: Difficulty) => setFormData({ ...formData, difficulty: v })}
                   >
                     <SelectTrigger data-testid="select-difficulty">
                       <SelectValue />
@@ -188,26 +186,26 @@ export default function Admin() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Region Tag</label>
-                <Select 
-                    value={formData.countryTag} 
-                    onValueChange={(v) => setFormData({...formData, countryTag: v})}
-                  >
-                    <SelectTrigger data-testid="select-region">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Global">Global</SelectItem>
-                      <SelectItem value="US">United States</SelectItem>
-                      <SelectItem value="CA">Canada</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <Select
+                  value={formData.countryTag}
+                  onValueChange={(v) => setFormData({ ...formData, countryTag: v })}
+                >
+                  <SelectTrigger data-testid="select-region">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Global">Global</SelectItem>
+                    <SelectItem value="US">United States</SelectItem>
+                    <SelectItem value="CA">Canada</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Question</label>
-                <Textarea 
-                  value={formData.question} 
-                  onChange={e => setFormData({...formData, question: e.target.value})}
+                <Textarea
+                  value={formData.question}
+                  onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                   placeholder="What is the capital of..."
                   className="min-h-[100px]"
                   data-testid="input-question"
@@ -216,9 +214,9 @@ export default function Admin() {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Answer</label>
-                <Input 
-                  value={formData.answer} 
-                  onChange={e => setFormData({...formData, answer: e.target.value})}
+                <Input
+                  value={formData.answer}
+                  onChange={(e) => setFormData({ ...formData, answer: e.target.value })}
                   placeholder="Short, direct answer"
                   data-testid="input-answer"
                 />
@@ -228,7 +226,7 @@ export default function Admin() {
                 <label className="text-sm font-medium">Explanation (Optional)</label>
                 <Textarea
                   value={formData.explanation}
-                  onChange={e => setFormData({...formData, explanation: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
                   placeholder="Context shown after answering..."
                   data-testid="input-explanation"
                 />
@@ -239,7 +237,7 @@ export default function Admin() {
                   <label className="text-sm font-medium">Source URL (Optional)</label>
                   <Input
                     value={formData.sourceUrl}
-                    onChange={e => setFormData({...formData, sourceUrl: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, sourceUrl: e.target.value })}
                     placeholder="https://..."
                     data-testid="input-source-url"
                   />
@@ -248,7 +246,7 @@ export default function Admin() {
                   <label className="text-sm font-medium">Source Name (Optional)</label>
                   <Input
                     value={formData.sourceName}
-                    onChange={e => setFormData({...formData, sourceName: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, sourceName: e.target.value })}
                     placeholder="e.g. Wikipedia"
                     data-testid="input-source-name"
                   />

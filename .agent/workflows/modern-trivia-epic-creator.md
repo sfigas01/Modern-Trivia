@@ -15,35 +15,44 @@ Epics follow this structure, optimized for AI agents to quickly understand conte
 # EPIC-XX: [Name]
 
 ## Context
+
 **Problem:** [1-2 sentences: what pain point or opportunity exists]
 **Value:** [1 sentence: why this matters to users/business]
 **Success Metrics:** [2-3 measurable outcomes]
 
 ## Current State
+
 **Status:** [emoji + label from vocabulary below]
 **Blockers:** [what's preventing progress, or "None"]
 **Last Updated:** [date and brief note]
 
 ## Scope
+
 **In Scope:**
+
 - [boundary 1]
 - [boundary 2]
 
 **Out of Scope:**
+
 - [explicit exclusion 1]
 
 **Technical Constraints:**
+
 - [dependency, environment requirement, or limitation]
 
 ## Features
-| ID | Name | Status | Notes |
-|----|------|--------|-------|
+
+| ID    | Name   | Status   | Notes           |
+| ----- | ------ | -------- | --------------- |
 | FT-XX | [name] | [status] | [brief context] |
 
 ## Technical Notes
+
 [Schema changes, API endpoints, key dependencies - keep brief, link to details]
 
 ## Workflow
+
 [Mermaid diagram if helpful for complex flows]
 ```
 
@@ -51,13 +60,13 @@ Epics follow this structure, optimized for AI agents to quickly understand conte
 
 Use consistent status labels so any agent can parse state:
 
-| Status | Emoji | Meaning |
-|--------|-------|---------|
-| Planned | 📋 | Defined but not started |
-| In Progress | 🏗️ | Active development |
-| Blocked | 🚫 | Cannot proceed (see Blockers) |
-| Code Complete | ✅ | Built, pending validation/infra |
-| Done | 🎉 | Fully shipped and verified |
+| Status        | Emoji | Meaning                         |
+| ------------- | ----- | ------------------------------- |
+| Planned       | 📋    | Defined but not started         |
+| In Progress   | 🏗️    | Active development              |
+| Blocked       | 🚫    | Cannot proceed (see Blockers)   |
+| Code Complete | ✅    | Built, pending validation/infra |
+| Done          | 🎉    | Fully shipped and verified      |
 
 ## Workflow
 
@@ -97,20 +106,24 @@ This helps the next agent (or human) understand current state without reading fu
 ## Writing Guidelines
 
 **For Context section:**
+
 - Problem statement should be user/business focused, not technical
 - Value connects to why someone would care about solving this
 - Metrics should be verifiable (how will you know it worked?)
 
 **For Scope section:**
+
 - Be explicit about what's NOT included - prevents agents from gold-plating
 - Technical constraints inform implementation choices
 
 **For Features table:**
+
 - Each feature should have its own FT-XX spec in `docs/feature_specs/`
 - Epic stays thin; features contain implementation detail
 - Status in table should match the feature spec's status
 
 **For Technical Notes:**
+
 - Keep brief - link to detailed docs where needed
 - Focus on cross-cutting concerns (schema, APIs, dependencies)
 - Include anything an agent needs before writing code

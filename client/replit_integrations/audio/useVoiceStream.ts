@@ -2,8 +2,8 @@
  * React hook for handling SSE voice streaming responses.
  * Supports both simple streaming and sequenced audio (text model pipeline).
  */
-import { useCallback } from "react";
-import { useAudioPlayback } from "./useAudioPlayback";
+import { useCallback } from 'react';
+import { useAudioPlayback } from './useAudioPlayback';
 
 interface StreamCallbacks {
   onUserTranscript?: (text: string) => void;
@@ -25,50 +25,50 @@ export function useVoiceStream(callbacks: StreamCallbacks = {}) {
       const base64Audio = await new Promise<string>((resolve) => {
         reader.onload = () => {
           const result = reader.result as string;
-          resolve(result.split(",")[1]); // Remove data URL prefix
+          resolve(result.split(',')[1]); // Remove data URL prefix
         };
         reader.readAsDataURL(audioBlob);
       });
 
       const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ audio: base64Audio }),
       });
 
-      if (!response.ok) throw new Error("Voice request failed");
+      if (!response.ok) throw new Error('Voice request failed');
 
       const streamReader = response.body?.getReader();
-      if (!streamReader) throw new Error("No response body");
+      if (!streamReader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
-      let buffer = "";
-      let fullTranscript = "";
+      let buffer = '';
+      let fullTranscript = '';
 
       while (true) {
         const { done, value } = await streamReader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
+          if (!line.startsWith('data: ')) continue;
 
           try {
             const event = JSON.parse(line.slice(6));
 
             switch (event.type) {
-              case "user_transcript":
+              case 'user_transcript':
                 callbacks.onUserTranscript?.(event.data);
                 break;
 
-              case "sentence":
+              case 'sentence':
                 callbacks.onSentence?.(event.seq, event.text);
                 break;
 
-              case "transcript":
+              case 'transcript':
                 // Legacy: simple transcript delta (no seq)
                 if (event.seq === undefined && event.data) {
                   fullTranscript += event.data;
@@ -79,7 +79,7 @@ export function useVoiceStream(callbacks: StreamCallbacks = {}) {
                 }
                 break;
 
-              case "audio":
+              case 'audio':
                 if (event.seq !== undefined) {
                   // Sequenced audio (text model pipeline)
                   playback.pushSequencedAudio(event.seq, event.data);
@@ -89,12 +89,12 @@ export function useVoiceStream(callbacks: StreamCallbacks = {}) {
                 }
                 break;
 
-              case "done":
+              case 'done':
                 playback.signalComplete();
                 callbacks.onComplete?.(fullTranscript);
                 break;
 
-              case "error":
+              case 'error':
                 throw new Error(event.error);
             }
           } catch (e) {
