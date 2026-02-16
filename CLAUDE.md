@@ -57,11 +57,12 @@ Track all DevOps work under **[STE-66: Implement Modern DevOps Practices](https:
 - Pre-commit hooks will auto-run lint + type-check (once Husky is set up — STE-57).
 
 ### Quality Gates (enforced by CI — `.github/workflows/ci.yml`)
+
 1. TypeScript type-check (`npm run check`) ✅ Live
 2. Build succeeds (`npm run build`) ✅ Live
 3. No high/critical dependency vulnerabilities (`npm audit`) ✅ Live (non-blocking)
 4. ESLint passes (`npm run lint`) ✅ Live
-5. All tests pass (`npm test`) — *coming soon, STE-55*
+5. All tests pass (`npm test`) — _coming soon, STE-55_
 
 ### Secrets & Environment
 
