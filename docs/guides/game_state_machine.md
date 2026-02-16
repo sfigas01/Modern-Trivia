@@ -1,6 +1,7 @@
 # Modern Trivia Game State Machine
 
 ## Overview
+
 The game uses a linear state machine to ensure data integrity and a consistent gameplay loop. This document outlines the states, transitions, and verification logic.
 
 ## States
@@ -46,7 +47,9 @@ The game uses a linear state machine to ensure data integrity and a consistent g
    - **Next State**: `SETUP`.
 
 ## Answer Normalization Rules
+
 To verify answers automatically, both the user input and the canonical answers are normalized using the following chain:
+
 1. **Trim**: Remove leading/trailing whitespace.
 2. **Lowercase**: Convert to lowercase.
 3. **Remove Punctuation**: Remove `.`, `,`, `'`, `"`, `!`, `?`.
@@ -54,12 +57,13 @@ To verify answers automatically, both the user input and the canonical answers a
 5. **Number Conversion**: (Optional) Convert "one" to "1", etc. (Currently strict string matching).
 
 ## Attempt Object Schema
+
 ```typescript
 interface Attempt {
   questionId: string;
   teamId: string;
   submittedAnswer: string | null; // null if passed
-  verdict: "CORRECT" | "INCORRECT" | "PASS";
+  verdict: 'CORRECT' | 'INCORRECT' | 'PASS';
   pointsDelta: number;
   processed: boolean; // Guard for score application
 }

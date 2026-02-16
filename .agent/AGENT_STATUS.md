@@ -18,26 +18,26 @@
 
 ## 🔴 Currently In Progress
 
-| Issue | Title | Agent | Started | Branch | Notes |
-|-------|-------|-------|---------|--------|-------|
+| Issue  | Title                       | Agent  | Started    | Branch                             | Notes                                  |
+| ------ | --------------------------- | ------ | ---------- | ---------------------------------- | -------------------------------------- |
 | STE-54 | Set up GitHub Actions CI/CD | Cowork | 2026-02-15 | `feature/STE-54-github-actions-ci` | CI workflow created, needs commit + PR |
 
 ## 🟡 Up Next (Unclaimed — Grab One!)
 
-| Priority | Issue | Title | Dependencies |
-|----------|-------|-------|--------------|
-| 🔴 Urgent | STE-53 | Rotate exposed LINEAR_API_KEY | Needs Stephanie for key rotation |
-| 🔴 Urgent | STE-55 | Add Vitest testing framework | None (can start now) |
-| 🟡 High | STE-56 | Add ESLint + Prettier | None (can start now) |
-| 🟡 High | STE-57 | Add pre-commit hooks (Husky) | Depends on STE-56 |
-| 🟡 High | STE-58 | Add Sentry + Pino logging | None |
-| 🟡 High | STE-59 | Add Dependabot | None |
-| 🟡 High | STE-60 | Add Dockerfile | None |
-| 🟡 High | STE-65 | Update CLAUDE.md for multi-agent DevOps | Update as each issue completes |
-| 🟢 Medium | STE-61 | Database backup strategy | None |
-| 🟢 Medium | STE-62 | Rate limiting + CORS | None |
-| 🟢 Medium | STE-63 | Branch protection rules | None |
-| 🟢 Medium | STE-64 | Semantic versioning | None |
+| Priority  | Issue  | Title                                   | Dependencies                     |
+| --------- | ------ | --------------------------------------- | -------------------------------- |
+| 🔴 Urgent | STE-53 | Rotate exposed LINEAR_API_KEY           | Needs Stephanie for key rotation |
+| 🔴 Urgent | STE-55 | Add Vitest testing framework            | None (can start now)             |
+| 🟡 High   | STE-56 | Add ESLint + Prettier                   | None (can start now)             |
+| 🟡 High   | STE-57 | Add pre-commit hooks (Husky)            | Depends on STE-56                |
+| 🟡 High   | STE-58 | Add Sentry + Pino logging               | None                             |
+| 🟡 High   | STE-59 | Add Dependabot                          | None                             |
+| 🟡 High   | STE-60 | Add Dockerfile                          | None                             |
+| 🟡 High   | STE-65 | Update CLAUDE.md for multi-agent DevOps | Update as each issue completes   |
+| 🟢 Medium | STE-61 | Database backup strategy                | None                             |
+| 🟢 Medium | STE-62 | Rate limiting + CORS                    | None                             |
+| 🟢 Medium | STE-63 | Branch protection rules                 | None                             |
+| 🟢 Medium | STE-64 | Semantic versioning                     | None                             |
 
 ## ✅ Recently Completed
 

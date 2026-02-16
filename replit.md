@@ -11,6 +11,7 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### Frontend Architecture
+
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite for development and production builds
 - **Routing**: Wouter for lightweight client-side routing
@@ -21,6 +22,7 @@ Preferred communication style: Simple, everyday language.
 - **Animations**: Framer Motion for transitions and effects
 
 ### Backend Architecture
+
 - **Runtime**: Node.js with Express.js
 - **Language**: TypeScript with ES modules
 - **API Style**: RESTful JSON endpoints under `/api/*`
@@ -28,18 +30,22 @@ Preferred communication style: Simple, everyday language.
 - **Session Management**: Express sessions with PostgreSQL store (`connect-pg-simple`)
 
 ### Game State Machine
+
 The game follows a linear state machine pattern documented in `docs/STATE_MACHINE.md`:
+
 - **SETUP** → **QUESTION** → **VERIFYING** → **REVEAL** → **SCORE_UPDATE** → (loop or **GAME_OVER**)
 - Answer verification uses string similarity matching with normalization rules
 - Transient states (VERIFYING, SCORE_UPDATE) handle automatic transitions
 
 ### Data Storage
+
 - **ORM**: Drizzle ORM with PostgreSQL dialect
 - **Schema Location**: `shared/schema.ts` with auth models in `shared/models/auth.ts`
 - **Tables**: `sessions` (auth), `users` (auth), `disputes` (QA logging), `admin_roles`
 - **Questions**: Stored in static JSON file (`client/src/lib/questions.json`) with optional local storage for custom questions
 
 ### Project Structure
+
 ```
 client/          # React frontend application
   src/
@@ -61,6 +67,7 @@ docs/            # Documentation (state machine)
 ```
 
 ### Admin Panel Architecture
+
 - Uses sidebar navigation via `AdminLayout` component
 - Three sections accessible via sidebar:
   - `/admin` - Add custom questions
@@ -70,30 +77,36 @@ docs/            # Documentation (state machine)
 ## External Dependencies
 
 ### Database
+
 - **PostgreSQL**: Required for session storage, user data, disputes, and admin roles
 - **Connection**: Via `DATABASE_URL` environment variable
 - **Migrations**: Managed with `drizzle-kit push`
 
 ### Authentication
+
 - **Replit Auth**: OpenID Connect integration for user authentication
 - **Session Secret**: Requires `SESSION_SECRET` environment variable
 - **Issuer URL**: Defaults to `https://replit.com/oidc`
 
 ### Third-Party Libraries
+
 - **string-similarity**: Fuzzy answer matching for verification
 - **canvas-confetti**: Visual celebration effects
 - **Passport.js**: Authentication middleware with OpenID Client strategy
 
 ### Development Tools
+
 - **Vite Plugins**: Runtime error overlay, Cartographer (Replit-specific), meta images
 - **esbuild**: Production server bundling with dependency allowlist optimization
 
 ## Dispute Resolution System
 
 ### Overview
+
 The admin panel includes an AI-powered dispute resolution system for handling challenges to trivia answers.
 
 ### Features
+
 - **Public Dispute Submission**: Users can flag incorrect answers during gameplay without authentication
 - **Admin Dispute Review**: Authenticated admins view and resolve disputes at `/admin/disputes`
 - **AI Analysis**: GPT-4o powered analysis evaluates disputes with:
@@ -106,6 +119,7 @@ The admin panel includes an AI-powered dispute resolution system for handling ch
 - **Status Filtering**: Filter disputes by Pending, Resolved, Rejected, or All
 
 ### Architecture
+
 - Questions stored in local storage via `useGame` store
 - Disputes stored in PostgreSQL `disputes` table
 - AI analysis stored in `disputes.aiAnalysis` JSON column
@@ -117,6 +131,7 @@ The admin panel includes an AI-powered dispute resolution system for handling ch
   - `DELETE /api/disputes` - Clear all disputes (admin only)
 
 ### Question Versioning
+
 - `QUESTIONS_VERSION` constant in `store.tsx` controls cache refresh
 - When bumped, localStorage cache is cleared and users get fresh questions from `questions.json`
 - Custom user-added questions are preserved during version migrations

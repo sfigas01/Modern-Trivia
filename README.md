@@ -11,6 +11,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 ## Features
 
 ### Game Features
+
 - **Team-Based Gameplay**: 2-6 teams with custom names
 - **200 Trivia Questions**: Organized by category, difficulty, and regional focus
 - **Category Selection**: Filter by Geography, Science, History, Music, and more, or select "All"
@@ -24,6 +25,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 - **State Machine Architecture**: Ensures consistent game flow (see `docs/STATE_MACHINE.md`)
 
 ### Authentication & Admin Features
+
 - **Replit Authentication**: Secure OpenID Connect-based login
 - **Dispute System**: Challenge question answers with explanations (requires authentication)
 - **Admin Panel**:
@@ -33,6 +35,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 - **Role-Based Access Control**: Admin-only features protected by database roles
 
 ### User Experience
+
 - **Responsive Design**: Mobile-friendly interface with Tailwind CSS
 - **Smooth Animations**: Framer Motion transitions throughout
 - **Modern UI**: Radix UI components with accessible, polished design
@@ -41,6 +44,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 ## Tech Stack
 
 ### Frontend
+
 - **React 19** with TypeScript
 - **Vite** for fast development and optimized builds
 - **Tailwind CSS v4** for styling
@@ -51,6 +55,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 - **React Hook Form** + **Zod** for form validation
 
 ### Backend
+
 - **Node.js 20** with TypeScript
 - **Express.js** web framework
 - **Drizzle ORM** for type-safe database queries
@@ -59,6 +64,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 - **Express Session** with PostgreSQL session store
 
 ### Libraries & Utilities
+
 - **string-similarity** for fuzzy answer matching
 - **canvas-confetti** for celebration effects
 - **Lucide React** for icons
@@ -98,6 +104,7 @@ npm run db:push
 ```
 
 This creates the required tables:
+
 - `sessions` - Session storage
 - `users` - User accounts
 - `disputes` - Question dispute logs
@@ -127,6 +134,7 @@ npm start
 ```
 
 The build process:
+
 1. Compiles the React app with Vite → `dist/public/`
 2. Bundles the Express server with esbuild → `dist/index.cjs`
 3. Optimizes and minifies for production
@@ -184,16 +192,19 @@ To grant admin access to users:
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/login` - Start Replit Auth flow
 - `GET /api/logout` - Logout current user
 - `GET /api/auth/user` - Get current authenticated user
 
 ### Disputes
+
 - `POST /api/disputes` - Submit question dispute (requires authentication)
 - `GET /api/disputes` - View all disputes (requires admin)
 - `DELETE /api/disputes` - Clear all disputes (requires admin)
 
 ### Admin
+
 - `POST /api/admin/grant` - Grant admin role (requires admin)
 - `DELETE /api/admin/revoke/:userId` - Revoke admin role (requires admin)
 - `GET /api/admin/check` - Check if current user is admin

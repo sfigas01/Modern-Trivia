@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Dispute, InsertDispute } from "@shared/schema";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Dispute, InsertDispute } from '@shared/schema';
 
 async function fetchDisputes(): Promise<Dispute[]> {
-  const response = await fetch("/api/disputes", {
-    credentials: "include",
+  const response = await fetch('/api/disputes', {
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -14,10 +14,10 @@ async function fetchDisputes(): Promise<Dispute[]> {
 }
 
 async function createDispute(dispute: InsertDispute): Promise<Dispute> {
-  const response = await fetch("/api/disputes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
+  const response = await fetch('/api/disputes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(dispute),
   });
 
@@ -29,9 +29,9 @@ async function createDispute(dispute: InsertDispute): Promise<Dispute> {
 }
 
 async function clearAllDisputes(): Promise<void> {
-  const response = await fetch("/api/disputes", {
-    method: "DELETE",
-    credentials: "include",
+  const response = await fetch('/api/disputes', {
+    method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -42,8 +42,12 @@ async function clearAllDisputes(): Promise<void> {
 export function useDisputes() {
   const queryClient = useQueryClient();
 
-  const { data: disputes = [], isLoading, error } = useQuery({
-    queryKey: ["/api/disputes"],
+  const {
+    data: disputes = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['/api/disputes'],
     queryFn: fetchDisputes,
     retry: false,
   });
@@ -51,14 +55,14 @@ export function useDisputes() {
   const createMutation = useMutation({
     mutationFn: createDispute,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/disputes"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
     },
   });
 
   const clearMutation = useMutation({
     mutationFn: clearAllDisputes,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/disputes"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
     },
   });
 

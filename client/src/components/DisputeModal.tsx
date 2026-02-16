@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +11,9 @@ import {
   AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { saveDispute } from "@/lib/disputes";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/alert-dialog';
+import { saveDispute } from '@/lib/disputes';
+import { useToast } from '@/hooks/use-toast';
 
 interface DisputeModalProps {
   open: boolean;
@@ -32,17 +32,17 @@ export function DisputeModal({
   questionText,
   correctAnswer,
   teamName,
-  submittedAnswer
+  submittedAnswer,
 }: DisputeModalProps) {
-  const [explanation, setExplanation] = useState("");
+  const [explanation, setExplanation] = useState('');
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     if (!explanation.trim()) {
       toast({
-        title: "Error",
-        description: "Please provide an explanation for the dispute.",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Please provide an explanation for the dispute.',
+        variant: 'destructive',
       });
       return;
     }
@@ -53,36 +53,36 @@ export function DisputeModal({
       correctAnswer,
       teamName,
       submittedAnswer,
-      teamExplanation: explanation
+      teamExplanation: explanation,
     });
 
     if (result.needsAuth) {
       toast({
-        title: "Authentication Required",
-        description: "Please sign in to submit disputes. Redirecting to login...",
-        variant: "destructive"
+        title: 'Authentication Required',
+        description: 'Please sign in to submit disputes. Redirecting to login...',
+        variant: 'destructive',
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        window.location.href = '/api/login';
       }, 1500);
       return;
     }
 
     if (!result.success) {
       toast({
-        title: "Error",
-        description: result.message || "Failed to submit dispute. Please try again.",
-        variant: "destructive"
+        title: 'Error',
+        description: result.message || 'Failed to submit dispute. Please try again.',
+        variant: 'destructive',
       });
       return;
     }
 
     toast({
-      title: "Dispute Submitted",
+      title: 'Dispute Submitted',
       description: "Thank you for helping us improve the game. We'll review this.",
     });
 
-    setExplanation("");
+    setExplanation('');
     onOpenChange(false);
   };
 
@@ -109,7 +109,7 @@ export function DisputeModal({
               </div>
               <div>
                 <div className="text-sm text-muted-foreground mb-1">Your Answer</div>
-                <div className="font-semibold">{submittedAnswer || "(Passed)"}</div>
+                <div className="font-semibold">{submittedAnswer || '(Passed)'}</div>
               </div>
             </CardContent>
           </Card>

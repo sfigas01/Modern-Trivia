@@ -1,11 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import initialQuestions from "./questions.json";
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import initialQuestions from './questions.json';
 // @ts-ignore
-import stringSimilarity from "string-similarity";
+import stringSimilarity from 'string-similarity';
 
-export type Difficulty = "Easy" | "Medium" | "Hard";
-export type Phase = "SETUP" | "QUESTION" | "VERIFYING" | "REVEAL" | "SCORE_UPDATE" | "ROUND_SCORE" | "GAME_OVER";
-export type Verdict = "CORRECT" | "INCORRECT" | "PASS" | "PENDING";
+export type Difficulty = 'Easy' | 'Medium' | 'Hard';
+export type Phase =
+  | 'SETUP'
+  | 'QUESTION'
+  | 'VERIFYING'
+  | 'REVEAL'
+  | 'SCORE_UPDATE'
+  | 'ROUND_SCORE'
+  | 'GAME_OVER';
+export type Verdict = 'CORRECT' | 'INCORRECT' | 'PASS' | 'PENDING';
 
 export interface Question {
   id: string;
@@ -70,8 +77,8 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-const STORAGE_KEY_QUESTIONS = "modern_trivia_questions";
-const STORAGE_KEY_VERSION = "modern_trivia_questions_version";
+const STORAGE_KEY_QUESTIONS = 'modern_trivia_questions';
+const STORAGE_KEY_VERSION = 'modern_trivia_questions_version';
 const QUESTIONS_VERSION = 2; // Bump this when questions.json is updated with new fields
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -79,19 +86,19 @@ const normalize = (str: string): string => {
   return str
     .toLowerCase()
     .trim()
-    .replace(/[.,!?'"]/g, "") // Remove punctuation
-    .replace(/\b(a|an|the)\b/g, "") // Remove articles (simple regex)
-    .replace(/\b(zero|0)\b/g, "0")
-    .replace(/\b(one|1)\b/g, "1")
-    .replace(/\b(two|2)\b/g, "2")
-    .replace(/\b(three|3)\b/g, "3")
-    .replace(/\b(four|4)\b/g, "4")
-    .replace(/\b(five|5)\b/g, "5")
-    .replace(/\b(six|6)\b/g, "6")
-    .replace(/\b(seven|7)\b/g, "7")
-    .replace(/\b(eight|8)\b/g, "8")
-    .replace(/\b(nine|9)\b/g, "9")
-    .replace(/\s+/g, " "); // Collapse whitespace
+    .replace(/[.,!?'"]/g, '') // Remove punctuation
+    .replace(/\b(a|an|the)\b/g, '') // Remove articles (simple regex)
+    .replace(/\b(zero|0)\b/g, '0')
+    .replace(/\b(one|1)\b/g, '1')
+    .replace(/\b(two|2)\b/g, '2')
+    .replace(/\b(three|3)\b/g, '3')
+    .replace(/\b(four|4)\b/g, '4')
+    .replace(/\b(five|5)\b/g, '5')
+    .replace(/\b(six|6)\b/g, '6')
+    .replace(/\b(seven|7)\b/g, '7')
+    .replace(/\b(eight|8)\b/g, '8')
+    .replace(/\b(nine|9)\b/g, '9')
+    .replace(/\s+/g, ' '); // Collapse whitespace
 };
 
 const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: number } => {
@@ -120,11 +127,11 @@ const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: 
   }
 
   if (isCorrect) {
-    const p = q.difficulty === "Easy" ? 1 : q.difficulty === "Medium" ? 2 : 3;
-    return { verdict: "CORRECT", points: p };
+    const p = q.difficulty === 'Easy' ? 1 : q.difficulty === 'Medium' ? 2 : 3;
+    return { verdict: 'CORRECT', points: p };
   } else {
-    const p = q.difficulty === "Easy" ? -1 : q.difficulty === "Medium" ? -2 : -3;
-    return { verdict: "INCORRECT", points: p };
+    const p = q.difficulty === 'Easy' ? -1 : q.difficulty === 'Medium' ? -2 : -3;
+    return { verdict: 'INCORRECT', points: p };
   }
 };
 
@@ -133,13 +140,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     teams: [],
     questions: [],
     categories: [],
-    selectedCategory: "All",
+    selectedCategory: 'All',
     currentQuestionIndex: 0,
-    phase: "SETUP",
+    phase: 'SETUP',
     activeTeamId: null,
-    typedAnswer: "",
+    typedAnswer: '',
     currentAttempt: null,
-    numRounds: 10
+    numRounds: 10,
   });
 
   // Load questions including custom ones
@@ -147,19 +154,19 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
     const currentVersion = storedVersion ? parseInt(storedVersion, 10) : 0;
     const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
-    
+
     // Build a set of IDs from the bundled questions.json
-    const initialIds = new Set(initialQuestions.map(q => q.id));
-    
+    const initialIds = new Set(initialQuestions.map((q) => q.id));
+
     // If version changed, we need to refresh base questions but preserve custom ones
     if (currentVersion < QUESTIONS_VERSION) {
       localStorage.setItem(STORAGE_KEY_VERSION, String(QUESTIONS_VERSION));
-      
+
       if (stored) {
         // Extract only truly custom questions (user-added, not in initial set)
         const cachedQuestions = JSON.parse(stored) as Question[];
-        const customOnly = cachedQuestions.filter(q => !initialIds.has(q.id));
-        
+        const customOnly = cachedQuestions.filter((q) => !initialIds.has(q.id));
+
         // Save only the custom questions back
         if (customOnly.length > 0) {
           localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(customOnly));
@@ -168,45 +175,49 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-    
+
     // Now load: always use fresh initial questions + any custom user-added questions
     let allQuestions = [...initialQuestions] as Question[];
     const storedAfterMigration = localStorage.getItem(STORAGE_KEY_QUESTIONS);
-    
+
     if (storedAfterMigration) {
       const customQuestions = JSON.parse(storedAfterMigration);
       // Only add questions that don't exist in initial set (truly custom)
-      const customOnly = (customQuestions as Question[]).filter(q => !initialIds.has(q.id));
+      const customOnly = (customQuestions as Question[]).filter((q) => !initialIds.has(q.id));
       allQuestions = [...(initialQuestions as Question[]), ...customOnly];
     }
 
-    const categories = Array.from(new Set(allQuestions.map(q => q.category))).sort();
-    setState(s => ({ ...s, questions: allQuestions, categories: ["All", ...categories] }));
+    const categories = Array.from(new Set(allQuestions.map((q) => q.category))).sort();
+    setState((s) => ({ ...s, questions: allQuestions, categories: ['All', ...categories] }));
   }, []);
 
   const addTeam = (name: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      teams: [...prev.teams, { id: crypto.randomUUID(), name, score: 0, questionCount: 0, lastRoundDelta: 0 }]
+      teams: [
+        ...prev.teams,
+        { id: crypto.randomUUID(), name, score: 0, questionCount: 0, lastRoundDelta: 0 },
+      ],
     }));
   };
 
   const removeTeam = (id: string) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      teams: prev.teams.filter(t => t.id !== id)
+      teams: prev.teams.filter((t) => t.id !== id),
     }));
   };
 
-  const setCategory = (category: string) => setState(s => ({ ...s, selectedCategory: category }));
-  const setNumRounds = (rounds: number) => setState(s => ({ ...s, numRounds: rounds }));
+  const setCategory = (category: string) => setState((s) => ({ ...s, selectedCategory: category }));
+  const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
   const startGame = () => {
-    setState(prev => {
+    setState((prev) => {
       // Filter questions based on category and shuffle
-      let filtered = prev.selectedCategory === "All"
-        ? [...prev.questions]
-        : prev.questions.filter(q => q.category === prev.selectedCategory);
+      let filtered =
+        prev.selectedCategory === 'All'
+          ? [...prev.questions]
+          : prev.questions.filter((q) => q.category === prev.selectedCategory);
 
       // Shuffle
       filtered = filtered.sort(() => Math.random() - 0.5);
@@ -218,18 +229,18 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       return {
         ...prev,
         questions: finalQuestions,
-        phase: "QUESTION",
+        phase: 'QUESTION',
         activeTeamId: prev.teams[0].id,
-        currentQuestionIndex: 0
+        currentQuestionIndex: 0,
       };
     });
   };
 
-  const setTypedAnswer = (text: string) => setState(s => ({ ...s, typedAnswer: text }));
+  const setTypedAnswer = (text: string) => setState((s) => ({ ...s, typedAnswer: text }));
 
   const submitAnswer = () => {
     setState((prev) => {
-      if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
+      if (prev.phase !== 'QUESTION' || !prev.activeTeamId) return prev;
 
       const currentQ = prev.questions[prev.currentQuestionIndex];
       const { verdict, points } = verifyAttempt(prev.typedAnswer, currentQ);
@@ -240,20 +251,20 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         submittedAnswer: prev.typedAnswer,
         verdict,
         pointsDelta: points,
-        processed: false
+        processed: false,
       };
 
       return {
         ...prev,
-        phase: "REVEAL",
-        currentAttempt: attempt
+        phase: 'REVEAL',
+        currentAttempt: attempt,
       };
     });
   };
 
   const passQuestion = () => {
     setState((prev) => {
-      if (prev.phase !== "QUESTION" || !prev.activeTeamId) return prev;
+      if (prev.phase !== 'QUESTION' || !prev.activeTeamId) return prev;
 
       const currentQ = prev.questions[prev.currentQuestionIndex];
 
@@ -261,32 +272,33 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         questionId: currentQ.id,
         teamId: prev.activeTeamId,
         submittedAnswer: null,
-        verdict: "PASS",
+        verdict: 'PASS',
         pointsDelta: 0,
-        processed: false
+        processed: false,
       };
 
       return {
         ...prev,
-        phase: "REVEAL",
+        phase: 'REVEAL',
         currentAttempt: attempt,
-        typedAnswer: ""
+        typedAnswer: '',
       };
     });
   };
 
   const advanceToScoreUpdate = () => {
     setState((prev) => {
-      if (prev.phase !== "REVEAL" || !prev.currentAttempt || prev.currentAttempt.processed) return prev;
+      if (prev.phase !== 'REVEAL' || !prev.currentAttempt || prev.currentAttempt.processed)
+        return prev;
 
       const attempt = prev.currentAttempt;
-      const updatedTeams = prev.teams.map(t => {
+      const updatedTeams = prev.teams.map((t) => {
         if (t.id === attempt.teamId) {
           return {
             ...t,
             score: t.score + attempt.pointsDelta,
             questionCount: t.questionCount + 1,
-            lastRoundDelta: attempt.pointsDelta
+            lastRoundDelta: attempt.pointsDelta,
           };
         }
         return { ...t, lastRoundDelta: 0 };
@@ -294,25 +306,25 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
       const processedAttempt = { ...attempt, processed: true };
 
-      const activeTeam = updatedTeams.find(t => t.id === prev.activeTeamId);
+      const activeTeam = updatedTeams.find((t) => t.id === prev.activeTeamId);
       let nextActiveTeamId = prev.activeTeamId;
 
       if (activeTeam && activeTeam.questionCount % QUESTIONS_PER_TEAM_ROTATION === 0) {
-        const currentTeamIndex = updatedTeams.findIndex(t => t.id === prev.activeTeamId);
+        const currentTeamIndex = updatedTeams.findIndex((t) => t.id === prev.activeTeamId);
         const nextTeamIndex = (currentTeamIndex + 1) % updatedTeams.length;
         nextActiveTeamId = updatedTeams[nextTeamIndex].id;
       }
 
       const nextIndex = prev.currentQuestionIndex + 1;
-      let nextPhase: Phase = "QUESTION";
+      let nextPhase: Phase = 'QUESTION';
 
       const questionsPerRound = prev.teams.length * QUESTIONS_PER_TEAM_ROTATION;
       const isRoundComplete = nextIndex % questionsPerRound === 0;
 
       if (nextIndex >= prev.questions.length) {
-        nextPhase = "GAME_OVER";
+        nextPhase = 'GAME_OVER';
       } else if (isRoundComplete) {
-        nextPhase = "ROUND_SCORE";
+        nextPhase = 'ROUND_SCORE';
       }
 
       return {
@@ -322,7 +334,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         currentQuestionIndex: nextIndex,
         activeTeamId: nextActiveTeamId,
         phase: nextPhase,
-        typedAnswer: "",
+        typedAnswer: '',
       };
     });
   };
@@ -330,26 +342,26 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const continueToNextRound = () => {
     setState((prev) => ({
       ...prev,
-      phase: "QUESTION"
+      phase: 'QUESTION',
     }));
   };
 
   const endGame = () => {
-    setState(prev => ({ ...prev, phase: "GAME_OVER" }));
+    setState((prev) => ({ ...prev, phase: 'GAME_OVER' }));
   };
 
   const resetGame = () => {
     setState((prev) => ({
       ...prev,
-      phase: "SETUP",
+      phase: 'SETUP',
       teams: [],
       questions: [],
-      selectedCategory: "All",
+      selectedCategory: 'All',
       currentQuestionIndex: 0,
       activeTeamId: null,
-      typedAnswer: "",
+      typedAnswer: '',
       currentAttempt: null,
-      numRounds: 10
+      numRounds: 10,
     }));
   };
 
@@ -363,7 +375,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuestion = (updatedQ: Question) => {
     setState((prev) => {
-      const updated = prev.questions.map(q => q.id === updatedQ.id ? updatedQ : q);
+      const updated = prev.questions.map((q) => (q.id === updatedQ.id ? updatedQ : q));
       localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(updated));
       return { ...prev, questions: updated };
     });
@@ -386,7 +398,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         endGame,
         resetGame,
         addQuestion,
-        updateQuestion
+        updateQuestion,
       }}
     >
       {children}
@@ -397,7 +409,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 export function useGame() {
   const context = useContext(GameContext);
   if (!context) {
-    throw new Error("useGame must be used within a GameProvider");
+    throw new Error('useGame must be used within a GameProvider');
   }
   return context;
 }

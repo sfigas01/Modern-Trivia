@@ -1,29 +1,29 @@
-import OpenAI from "openai";
+import OpenAI from 'openai';
 
 const openai = new OpenAI({
-    apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
 interface AnalysisResult {
-    verdict: "CORRECT" | "INCORRECT" | "AMBIGUOUS";
-    confidence: number;
-    reasoning: string;
-    suggestedFix?: {
-        question?: string;
-        answer?: string;
-        explanation?: string;
-    };
-    sources: string[];
+  verdict: 'CORRECT' | 'INCORRECT' | 'AMBIGUOUS';
+  confidence: number;
+  reasoning: string;
+  suggestedFix?: {
+    question?: string;
+    answer?: string;
+    explanation?: string;
+  };
+  sources: string[];
 }
 
 export async function analyzeDispute(
-    question: string,
-    correctAnswer: string,
-    submittedAnswer: string,
-    explanation: string
+  question: string,
+  correctAnswer: string,
+  submittedAnswer: string,
+  explanation: string
 ): Promise<AnalysisResult> {
-    const prompt = `You are a Trivia Fact Checker. Analyze this dispute:
+  const prompt = `You are a Trivia Fact Checker. Analyze this dispute:
     
     Question: "${question}"
     Game's Correct Answer: "${correctAnswer}"
@@ -50,33 +50,37 @@ export async function analyzeDispute(
     
     Only include suggestedFix if there's a problem with the question or answer.`;
 
-    const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-            { role: "system", content: "You are a fact-checking assistant for a trivia game. Always respond with valid JSON." },
-            { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 1024,
-    });
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a fact-checking assistant for a trivia game. Always respond with valid JSON.',
+      },
+      { role: 'user', content: prompt },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 1024,
+  });
 
-    const content = response.choices[0]?.message?.content || "{}";
-    
-    try {
-        const parsed = JSON.parse(content) as AnalysisResult;
-        return {
-            verdict: parsed.verdict || "AMBIGUOUS",
-            confidence: parsed.confidence || 50,
-            reasoning: parsed.reasoning || "Analysis could not be completed.",
-            suggestedFix: parsed.suggestedFix,
-            sources: parsed.sources || []
-        };
-    } catch {
-        return {
-            verdict: "AMBIGUOUS",
-            confidence: 0,
-            reasoning: "Failed to parse AI response.",
-            sources: []
-        };
-    }
+  const content = response.choices[0]?.message?.content || '{}';
+
+  try {
+    const parsed = JSON.parse(content) as AnalysisResult;
+    return {
+      verdict: parsed.verdict || 'AMBIGUOUS',
+      confidence: parsed.confidence || 50,
+      reasoning: parsed.reasoning || 'Analysis could not be completed.',
+      suggestedFix: parsed.suggestedFix,
+      sources: parsed.sources || [],
+    };
+  } catch {
+    return {
+      verdict: 'AMBIGUOUS',
+      confidence: 0,
+      reasoning: 'Failed to parse AI response.',
+      sources: [],
+    };
+  }
 }

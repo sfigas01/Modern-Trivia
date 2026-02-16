@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { useGame, Team } from "@/lib/store";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink, LogOut } from "lucide-react";
-import { DisputeModal } from "@/components/DisputeModal";
+import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
+import { useGame, Team } from '@/lib/store';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
+import { DisputeModal } from '@/components/DisputeModal';
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -23,17 +23,17 @@ export default function Game() {
     advanceToScoreUpdate,
     continueToNextRound,
     endGame,
-    resetGame
+    resetGame,
   } = useGame();
 
   // Redirect if invalid state
   useEffect(() => {
-    if (state.phase === "SETUP" || state.teams.length === 0) {
-      setLocation("/");
+    if (state.phase === 'SETUP' || state.teams.length === 0) {
+      setLocation('/');
     }
   }, [state.phase, state.teams.length, setLocation]);
 
-  if (state.phase === "ROUND_SCORE") {
+  if (state.phase === 'ROUND_SCORE') {
     const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
     const currentRound = Math.floor(state.currentQuestionIndex / (state.teams.length * 4));
     return (
@@ -44,7 +44,10 @@ export default function Game() {
           className="text-center space-y-6 max-w-2xl w-full"
         >
           <div className="space-y-2">
-            <Badge variant="outline" className="border-primary/40 text-primary flex items-center justify-center gap-2 mx-auto">
+            <Badge
+              variant="outline"
+              className="border-primary/40 text-primary flex items-center justify-center gap-2 mx-auto"
+            >
               <Trophy className="w-4 h-4" />
               Round {currentRound} Complete
             </Badge>
@@ -69,10 +72,7 @@ export default function Game() {
               ))}
             </CardContent>
           </Card>
-          <Button
-            onClick={continueToNextRound}
-            className="w-full h-14 text-lg font-bold"
-          >
+          <Button onClick={continueToNextRound} className="w-full h-14 text-lg font-bold">
             NEXT ROUND <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </motion.div>
@@ -80,7 +80,7 @@ export default function Game() {
     );
   }
 
-  if (state.phase === "GAME_OVER" || !state.questions.length) {
+  if (state.phase === 'GAME_OVER' || !state.questions.length) {
     // Could render a nice game over screen here
     const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
     const winner = rankedTeams[0];
@@ -118,7 +118,7 @@ export default function Game() {
             <Button
               onClick={() => {
                 resetGame();
-                setLocation("/");
+                setLocation('/');
               }}
             >
               Start New Game
@@ -126,10 +126,10 @@ export default function Game() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
-  const isScoreUpdate = state.phase === "SCORE_UPDATE";
+  const isScoreUpdate = state.phase === 'SCORE_UPDATE';
   const currentQ = isScoreUpdate ? null : state.questions[state.currentQuestionIndex];
   // If we are in REVEAL state, we might be 'between' indices effectively if we handled it differently,
   // but here index increments AFTER reveal. So currentQ is still the one we just answered.
@@ -140,19 +140,24 @@ export default function Game() {
 
   if (!isScoreUpdate && !currentQ) return null;
 
-  const activeTeam = state.teams.find(t => t.id === state.activeTeamId);
-  const isReveal = state.phase === "REVEAL";
-  const statusLabel = "In Progress";
+  const activeTeam = state.teams.find((t) => t.id === state.activeTeamId);
+  const isReveal = state.phase === 'REVEAL';
+  const statusLabel = 'In Progress';
   const questionsPerRound = state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const completedRounds = questionsPerRound > 0 ? Math.floor(state.currentQuestionIndex / questionsPerRound) : 0;
+  const completedRounds =
+    questionsPerRound > 0 ? Math.floor(state.currentQuestionIndex / questionsPerRound) : 0;
   const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
 
   const getDifficultyColor = (d: string) => {
     switch (d) {
-      case "Easy": return "bg-[var(--color-difficulty-easy)] text-white";
-      case "Medium": return "bg-[var(--color-difficulty-medium)] text-black";
-      case "Hard": return "bg-[var(--color-difficulty-hard)] text-white";
-      default: return "bg-primary";
+      case 'Easy':
+        return 'bg-[var(--color-difficulty-easy)] text-white';
+      case 'Medium':
+        return 'bg-[var(--color-difficulty-medium)] text-black';
+      case 'Hard':
+        return 'bg-[var(--color-difficulty-hard)] text-white';
+      default:
+        return 'bg-primary';
     }
   };
 
@@ -168,13 +173,12 @@ export default function Game() {
       <div className="w-full h-2 bg-white/5">
         <motion.div
           className="h-full bg-primary"
-          initial={{ width: "0%" }}
-          animate={{ width: `${((state.currentQuestionIndex) / state.questions.length) * 100}%` }}
+          initial={{ width: '0%' }}
+          animate={{ width: `${(state.currentQuestionIndex / state.questions.length) * 100}%` }}
         />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-6xl mx-auto w-full relative z-10">
-
         {/* Question Area */}
         <AnimatePresence mode="wait">
           {isScoreUpdate ? (
@@ -229,18 +233,27 @@ export default function Game() {
                   <Badge variant="outline" className="text-lg px-4 py-2 border-white/20 bg-white/5">
                     {currentQ?.category}
                   </Badge>
-                  <Badge className={`text-lg px-4 py-2 ${currentQ ? getDifficultyColor(currentQ.difficulty) : "bg-primary"} border-none shadow-lg`}>
+                  <Badge
+                    className={`text-lg px-4 py-2 ${currentQ ? getDifficultyColor(currentQ.difficulty) : 'bg-primary'} border-none shadow-lg`}
+                  >
                     {currentQ?.difficulty}
                   </Badge>
-                  <Badge variant="outline" className="text-lg px-4 py-2 border-primary/40 text-primary">
+                  <Badge
+                    variant="outline"
+                    className="text-lg px-4 py-2 border-primary/40 text-primary"
+                  >
                     {statusLabel}
                   </Badge>
                 </div>
                 {activeTeam && (
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground uppercase tracking-widest">Active Team</div>
+                    <div className="text-sm text-muted-foreground uppercase tracking-widest">
+                      Active Team
+                    </div>
                     <div className="text-xl font-bold text-primary">{activeTeam.name}</div>
-                    <div className="text-xs text-muted-foreground">Question {activeTeam.questionCount % 4 + 1}/4</div>
+                    <div className="text-xs text-muted-foreground">
+                      Question {(activeTeam.questionCount % 4) + 1}/4
+                    </div>
                   </div>
                 )}
               </div>
@@ -260,27 +273,36 @@ export default function Game() {
                   className="space-y-6"
                 >
                   <div className="grid md:grid-cols-2 gap-4">
-                    <Card className={`border-2 ${state.currentAttempt.verdict === 'CORRECT' ? 'border-green-500/50 bg-green-500/10' :
-                      state.currentAttempt.verdict === 'PASS' ? 'border-yellow-500/50 bg-yellow-500/10' :
-                        'border-red-500/50 bg-red-500/10'
-                      }`}>
+                    <Card
+                      className={`border-2 ${
+                        state.currentAttempt.verdict === 'CORRECT'
+                          ? 'border-green-500/50 bg-green-500/10'
+                          : state.currentAttempt.verdict === 'PASS'
+                            ? 'border-yellow-500/50 bg-yellow-500/10'
+                            : 'border-red-500/50 bg-red-500/10'
+                      }`}
+                    >
                       <CardContent className="p-4 text-center">
-                        <div className="text-sm uppercase tracking-widest opacity-70 mb-1">They Answered</div>
+                        <div className="text-sm uppercase tracking-widest opacity-70 mb-1">
+                          They Answered
+                        </div>
                         <div className="text-2xl font-bold">
-                          {state.currentAttempt.submittedAnswer || "(Passed)"}
+                          {state.currentAttempt.submittedAnswer || '(Passed)'}
                         </div>
                         <div className="mt-2 font-mono font-bold text-lg">
-                          {state.currentAttempt.verdict} ({state.currentAttempt.pointsDelta > 0 ? '+' : ''}{state.currentAttempt.pointsDelta})
+                          {state.currentAttempt.verdict} (
+                          {state.currentAttempt.pointsDelta > 0 ? '+' : ''}
+                          {state.currentAttempt.pointsDelta})
                         </div>
                       </CardContent>
                     </Card>
 
                     <Card className="bg-primary/10 border-primary/20">
                       <CardContent className="p-4 text-center">
-                        <div className="text-sm uppercase tracking-widest opacity-70 mb-1">Correct Answer</div>
-                        <div className="text-2xl font-bold text-primary">
-                          {currentQ?.answer}
+                        <div className="text-sm uppercase tracking-widest opacity-70 mb-1">
+                          Correct Answer
                         </div>
+                        <div className="text-2xl font-bold text-primary">{currentQ?.answer}</div>
                       </CardContent>
                     </Card>
                   </div>
@@ -298,7 +320,7 @@ export default function Game() {
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-muted-foreground hover:bg-white/10 hover:text-foreground transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
-                        {currentQ.sourceName || "Verify Source"}
+                        {currentQ.sourceName || 'Verify Source'}
                       </a>
                     </div>
                   )}
@@ -323,53 +345,48 @@ export default function Game() {
                   <DisputeModal
                     open={disputeOpen}
                     onOpenChange={setDisputeOpen}
-                    questionId={currentQ?.id || ""}
-                    questionText={currentQ?.question || ""}
-                    correctAnswer={currentQ?.answer || ""}
-                    teamName={activeTeam?.name || "Unknown"}
+                    questionId={currentQ?.id || ''}
+                    questionText={currentQ?.question || ''}
+                    correctAnswer={currentQ?.answer || ''}
+                    teamName={activeTeam?.name || 'Unknown'}
                     submittedAnswer={state.currentAttempt?.submittedAnswer || null}
                   />
                 </motion.div>
               )}
 
               {/* QUESTION STATE UI */}
-          {!isReveal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-4 max-w-2xl mx-auto pt-4"
-            >
-              <Input
-                value={state.typedAnswer}
-                onChange={(e) => setTypedAnswer(e.target.value)}
-                placeholder="Type answer here..."
-                className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
-                autoFocus
-                onKeyDown={handleKeyDown}
-              />
-              <div className="grid grid-cols-3 gap-4">
-                <Button
-                  variant="secondary"
-                  onClick={passQuestion}
-                  className="h-14 text-lg"
+              {!isReveal && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-4 max-w-2xl mx-auto pt-4"
                 >
-                  Pass
-                </Button>
-                <Button
-                  onClick={submitAnswer}
-                  disabled={!state.typedAnswer.trim()}
-                  className="col-span-2 h-14 text-lg font-bold"
-                >
-                  Submit Answer
-                </Button>
-              </div>
+                  <Input
+                    value={state.typedAnswer}
+                    onChange={(e) => setTypedAnswer(e.target.value)}
+                    placeholder="Type answer here..."
+                    className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
+                    autoFocus
+                    onKeyDown={handleKeyDown}
+                  />
+                  <div className="grid grid-cols-3 gap-4">
+                    <Button variant="secondary" onClick={passQuestion} className="h-14 text-lg">
+                      Pass
+                    </Button>
+                    <Button
+                      onClick={submitAnswer}
+                      disabled={!state.typedAnswer.trim()}
+                      className="col-span-2 h-14 text-lg font-bold"
+                    >
+                      Submit Answer
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
-
-        </motion.div>
-           )}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>
+      </div>
 
       {/* Scoreboard Preview (Bottom) */}
       <div className="w-full bg-white/5 border-t border-white/10 p-4 z-20 backdrop-blur-md">
