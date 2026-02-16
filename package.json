@@ -9,7 +9,10 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -85,7 +88,7 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.25.76",
-    "zod-validation-error": "^3.5.4"
+    "zod-validation-error": "^4.0.2"
   },
   "devDependencies": {
     "@replit/vite-plugin-cartographer": "^0.4.4",
@@ -101,11 +104,18 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/ws": "^8.5.13",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "postcss": "^8.5.6",
+    "prettier": "^3.8.1",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "5.6.3",
