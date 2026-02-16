@@ -10,20 +10,19 @@ This document records the initial dependency audit and triage for STE-59.
 
 ## Findings and Triage
 
-1. `drizzle-kit` / `@esbuild-kit/*` / `esbuild` (moderate)
-   - Risk context: Development tooling chain (`drizzle-kit`), not runtime production API code.
-   - Current action: Keep pinned current versions for compatibility, monitor via Dependabot, and upgrade as soon as a non-breaking patch path is available.
-   - Notes: Advisory includes `GHSA-67mh-4wv8-2f99` for `esbuild`.
+1. `@esbuild-kit/core-utils` (moderate, transitive)
+2. `@esbuild-kit/esm-loader` (moderate, transitive)
+3. `drizzle-kit` (moderate, direct dev dependency)
+4. `esbuild` (moderate, transitive, `GHSA-67mh-4wv8-2f99`)
+5. `lodash` (moderate, transitive via `recharts`, `GHSA-xxjr-mmjv-4gpg`)
+6. `qs` (low, transitive via `express` / `body-parser` and `superagent`, `GHSA-w7fw-mjwx-w883`)
 
-2. `lodash` (moderate)
-   - Risk context: Transitive via `recharts`.
-   - Current action: Track upstream updates with Dependabot and apply once available.
-   - Notes: Advisory includes `GHSA-xxjr-mmjv-4gpg`.
+### Triage Notes
 
-3. `qs` (low)
-   - Risk context: Transitive via `express` / `body-parser` and `superagent`.
-   - Current action: Track upstream updates with Dependabot and apply once available.
-   - Notes: Advisory includes `GHSA-w7fw-mjwx-w883`.
+- The first four moderate findings are one development-tooling chain rooted at `drizzle-kit`.
+- This tooling chain is not on the production request path, so current treatment is monitor + patch via Dependabot and upgrade when a safe upstream path is available.
+- `lodash` and `qs` are transitive runtime dependencies; they remain monitored and should be updated through upstream package releases.
+- Advisory IDs are taken directly from `npm audit` output to avoid ambiguity when CVE aliases differ.
 
 ## Current Security Gate
 
