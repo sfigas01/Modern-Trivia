@@ -54,7 +54,10 @@ Track all DevOps work under **[STE-66: Implement Modern DevOps Practices](https:
 - **Never push directly to `main`** — always use pull requests.
 - **CI must pass before merging.** GitHub Actions runs type-check, build, and dependency audit on every push and PR to `main`.
 - PR workflow: branch → push → CI green → merge. Never merge a red build.
-- Pre-commit hooks will auto-run lint + type-check (once Husky is set up — STE-57).
+- **Pre-commit hooks (Husky + lint-staged)** run automatically on every commit:
+  - `lint-staged`: ESLint --fix + Prettier on staged `.ts`/`.tsx` files; Prettier on `.json`/`.md`
+  - `tsc --noEmit`: Full type-check
+  - If a commit fails, fix the issues and recommit. **Never use `--no-verify` to skip hooks.**
 
 ### Quality Gates (enforced by CI — `.github/workflows/ci.yml`)
 
