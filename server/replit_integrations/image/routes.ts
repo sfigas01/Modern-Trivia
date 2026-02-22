@@ -18,9 +18,15 @@ export function registerImageRoutes(app: Express): void {
       });
 
       const imageData = response.data?.[0];
+      if (!imageData?.url && !imageData?.b64_json) {
+        return res
+          .status(502)
+          .json({ error: 'Image provider returned an empty image response' });
+      }
+
       res.json({
-        url: imageData?.url,
-        b64_json: imageData?.b64_json,
+        url: imageData.url,
+        b64_json: imageData.b64_json,
       });
     } catch (error) {
       console.error('Error generating image:', error);
