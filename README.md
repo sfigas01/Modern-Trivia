@@ -79,12 +79,18 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 
 ### Environment Variables
 
-Create a `.env` file or set the following environment variables:
+Use `.env.example` as the template, then create your local `.env`.
+
+- Never commit `.env` files or real API keys.
+- Store production values in Replit Secrets.
+
+Set the following variables:
 
 ```bash
 DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret-here
 PORT=5000
+LINEAR_API_KEY=your-linear-api-key-here
 ISSUER_URL=https://replit.com/oidc  # Optional, defaults to Replit OIDC
 REPL_ID=your-repl-id  # Auto-set on Replit
 ```
