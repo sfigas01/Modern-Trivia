@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
 export const generalLimiter = rateLimit({
@@ -7,7 +7,7 @@ export const generalLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: { message: 'Too many requests, please try again later.' },
-  keyGenerator: (req: Request) => req.ip || 'unknown',
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip ?? 'unknown'),
 });
 
 export const aiLimiter = rateLimit({
@@ -19,6 +19,8 @@ export const aiLimiter = rateLimit({
     message: 'AI analysis rate limit exceeded. Please wait before trying again.',
   },
   keyGenerator: (req: Request) => {
-    return (req as any).user?.claims?.sub || req.ip || 'unknown';
+    const userId = (req as any).user?.claims?.sub;
+    if (userId) return userId;
+    return ipKeyGenerator(req.ip ?? 'unknown');
   },
 });
