@@ -133,10 +133,13 @@ export default function AdminDisputes() {
       const response = await apiRequest('POST', `/api/disputes/${dispute.id}/analyze`);
       const analysis = (await response.json()) as AIAnalysis;
 
-      setResolutionDrafts((prev) => ({
-        ...prev,
-        [dispute.id]: buildResolutionDraft(dispute, sourceQuestion, analysis),
-      }));
+      setResolutionDrafts((prev) => {
+        const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+        return {
+          ...prev,
+          [dispute.id]: mergeResolutionDraft(baseDraft, prev[dispute.id]),
+        };
+      });
 
       await queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
       toast({ title: 'Analysis Complete', description: 'AI has reviewed the dispute.' });
@@ -166,12 +169,14 @@ export default function AdminDisputes() {
         title: status === 'resolved' ? 'Dispute Accepted' : 'Dispute Rejected',
         description: `The dispute has been marked as ${status}.`,
       });
+      return true;
     } catch (error) {
       toast({
         title: 'Action Failed',
         description: 'Could not update dispute status.',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setResolvingId(null);
     }
@@ -206,6 +211,11 @@ export default function AdminDisputes() {
       return;
     }
 
+    const resolved = await handleResolve(dispute.id, 'resolved');
+    if (!resolved) {
+      return;
+    }
+
     const updatedQuestion: Question = {
       ...sourceQuestion,
       question: nextQuestion,
@@ -214,7 +224,6 @@ export default function AdminDisputes() {
     };
 
     updateQuestion(updatedQuestion);
-    await handleResolve(dispute.id, 'resolved');
     setResolutionDrafts((prev) => {
       if (!prev[dispute.id]) {
         return prev;
