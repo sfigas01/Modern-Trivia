@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   CheckCircle,
   XCircle,
@@ -23,6 +24,15 @@ import { useGame, Question } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 
+type ResolutionField = 'question' | 'answer' | 'explanation';
+
+interface ResolutionDraft {
+  question: string;
+  answer: string;
+  explanation: string;
+  touched: Record<ResolutionField, boolean>;
+}
+
 export default function AdminDisputes() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
@@ -35,6 +45,7 @@ export default function AdminDisputes() {
 
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolutionDrafts, setResolutionDrafts] = useState<Record<string, ResolutionDraft>>({});
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'resolved' | 'rejected'>(
     'pending'
   );
@@ -58,10 +69,78 @@ export default function AdminDisputes() {
     },
   });
 
-  const handleAnalyze = async (id: string) => {
-    setAnalyzingId(id);
+  const buildResolutionDraft = (
+    dispute: Dispute,
+    sourceQuestion: Question | undefined,
+    analysis: AIAnalysis | null
+  ): ResolutionDraft => {
+    return {
+      question: analysis?.suggestedFix?.question || sourceQuestion?.question || dispute.questionText,
+      answer: analysis?.suggestedFix?.answer || sourceQuestion?.answer || dispute.correctAnswer,
+      explanation: analysis?.suggestedFix?.explanation || sourceQuestion?.explanation || '',
+      touched: {
+        question: false,
+        answer: false,
+        explanation: false,
+      },
+    };
+  };
+
+  const mergeResolutionDraft = (
+    baseDraft: ResolutionDraft,
+    storedDraft: ResolutionDraft | undefined
+  ): ResolutionDraft => {
+    if (!storedDraft) {
+      return baseDraft;
+    }
+
+    return {
+      ...baseDraft,
+      question: storedDraft.touched.question ? storedDraft.question : baseDraft.question,
+      answer: storedDraft.touched.answer ? storedDraft.answer : baseDraft.answer,
+      explanation: storedDraft.touched.explanation ? storedDraft.explanation : baseDraft.explanation,
+      touched: { ...storedDraft.touched },
+    };
+  };
+
+  const handleDraftChange = (
+    dispute: Dispute,
+    sourceQuestion: Question | undefined,
+    analysis: AIAnalysis | null,
+    field: ResolutionField,
+    value: string
+  ) => {
+    setResolutionDrafts((prev) => {
+      const existingDraft = prev[dispute.id] ?? buildResolutionDraft(dispute, sourceQuestion, analysis);
+      return {
+        ...prev,
+        [dispute.id]: {
+          ...existingDraft,
+          [field]: value,
+          touched: {
+            ...existingDraft.touched,
+            [field]: true,
+          },
+        },
+      };
+    });
+  };
+
+  const handleAnalyze = async (dispute: Dispute) => {
+    setAnalyzingId(dispute.id);
     try {
-      await apiRequest('POST', `/api/disputes/${id}/analyze`);
+      const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
+      const response = await apiRequest('POST', `/api/disputes/${dispute.id}/analyze`);
+      const analysis = (await response.json()) as AIAnalysis;
+
+      setResolutionDrafts((prev) => {
+        const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+        return {
+          ...prev,
+          [dispute.id]: mergeResolutionDraft(baseDraft, prev[dispute.id]),
+        };
+      });
+
       await queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
       toast({ title: 'Analysis Complete', description: 'AI has reviewed the dispute.' });
     } catch (error) {
@@ -90,22 +169,25 @@ export default function AdminDisputes() {
         title: status === 'resolved' ? 'Dispute Accepted' : 'Dispute Rejected',
         description: `The dispute has been marked as ${status}.`,
       });
+      return true;
     } catch (error) {
       toast({
         title: 'Action Failed',
         description: 'Could not update dispute status.',
         variant: 'destructive',
       });
+      return false;
     } finally {
       setResolvingId(null);
     }
   };
 
-  const handleApplyFix = async (dispute: Dispute, analysis: AIAnalysis) => {
-    if (!analysis.suggestedFix) return;
-
-    const questionToUpdate = state.questions.find((q) => q.id === dispute.questionId);
-    if (!questionToUpdate) {
+  const handleApplyFix = async (
+    dispute: Dispute,
+    analysis: AIAnalysis | null
+  ) => {
+    const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
+    if (!sourceQuestion) {
       toast({
         title: 'Question Not Found',
         description: 'Could not find the question to update.',
@@ -114,19 +196,46 @@ export default function AdminDisputes() {
       return;
     }
 
+    const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+    const draft = mergeResolutionDraft(baseDraft, resolutionDrafts[dispute.id]);
+    const nextQuestion = draft.question.trim();
+    const nextAnswer = draft.answer.trim();
+    const nextExplanation = draft.explanation.trim();
+
+    if (!nextQuestion || !nextAnswer) {
+      toast({
+        title: 'Missing Required Fields',
+        description: 'Question and answer are required before applying a fix.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const resolved = await handleResolve(dispute.id, 'resolved');
+    if (!resolved) {
+      return;
+    }
+
     const updatedQuestion: Question = {
-      ...questionToUpdate,
-      answer: analysis.suggestedFix.answer || questionToUpdate.answer,
-      question: analysis.suggestedFix.question || questionToUpdate.question,
-      explanation: analysis.suggestedFix.explanation || questionToUpdate.explanation,
+      ...sourceQuestion,
+      question: nextQuestion,
+      answer: nextAnswer,
+      explanation: nextExplanation || sourceQuestion.explanation,
     };
 
     updateQuestion(updatedQuestion);
-    await handleResolve(dispute.id, 'resolved');
+    setResolutionDrafts((prev) => {
+      if (!prev[dispute.id]) {
+        return prev;
+      }
+      const nextDrafts = { ...prev };
+      delete nextDrafts[dispute.id];
+      return nextDrafts;
+    });
 
     toast({
       title: 'Fix Applied',
-      description: 'The question has been updated with the AI suggestion.',
+      description: 'The question was updated and the dispute was resolved.',
     });
   };
 
@@ -296,6 +405,9 @@ export default function AdminDisputes() {
           ) : (
             filteredDisputes.map((dispute) => {
               const analysis = dispute.aiAnalysis as AIAnalysis | null;
+              const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
+              const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+              const draft = mergeResolutionDraft(baseDraft, resolutionDrafts[dispute.id]);
               return (
                 <Card
                   key={dispute.id}
@@ -386,6 +498,11 @@ export default function AdminDisputes() {
                                 <p className="text-xs font-medium text-yellow-500 mb-1">
                                   Suggested Fix:
                                 </p>
+                                {analysis.suggestedFix.question && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Question: {analysis.suggestedFix.question}
+                                  </p>
+                                )}
                                 {analysis.suggestedFix.answer && (
                                   <p className="text-xs text-muted-foreground">
                                     Answer: <strong>{analysis.suggestedFix.answer}</strong>
@@ -417,26 +534,101 @@ export default function AdminDisputes() {
                       </div>
 
                       {dispute.status === 'pending' && (
-                        <div className="space-y-2 pt-4 border-t border-white/10">
+                        <div className="space-y-3 pt-4 border-t border-white/10">
                           <Button
                             className="w-full bg-purple-600 hover:bg-purple-700"
-                            onClick={() => handleAnalyze(dispute.id)}
+                            onClick={() => handleAnalyze(dispute)}
                             disabled={analyzingId === dispute.id || resolvingId === dispute.id}
                             data-testid={`button-analyze-${dispute.id}`}
                           >
                             {analyzingId === dispute.id ? 'Analyzing...' : 'Analyze with AI'}
                           </Button>
 
-                          {analysis?.suggestedFix && (
-                            <Button
-                              className="w-full bg-amber-600 hover:bg-amber-700"
-                              onClick={() => handleApplyFix(dispute, analysis)}
-                              disabled={resolvingId === dispute.id}
-                              data-testid={`button-apply-fix-${dispute.id}`}
-                            >
-                              <Sparkles className="w-4 h-4 mr-2" /> Apply Fix
-                            </Button>
-                          )}
+                          <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-500">
+                                Proposed Fix (Editable)
+                              </p>
+                              <Badge variant="outline" className="text-[10px]">
+                                {analysis?.suggestedFix ? 'AI suggested' : 'Manual'}
+                              </Badge>
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-[10px] uppercase text-muted-foreground">Current question</p>
+                              <p className="text-xs text-muted-foreground">
+                                {sourceQuestion?.question || dispute.questionText}
+                              </p>
+                              <Textarea
+                                value={draft.question}
+                                onChange={(event) =>
+                                  handleDraftChange(
+                                    dispute,
+                                    sourceQuestion,
+                                    analysis,
+                                    'question',
+                                    event.target.value
+                                  )
+                                }
+                                className="min-h-[70px] text-xs"
+                                data-testid={`input-fix-question-${dispute.id}`}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-[10px] uppercase text-muted-foreground">Current answer</p>
+                              <p className="text-xs text-muted-foreground">
+                                {sourceQuestion?.answer || dispute.correctAnswer}
+                              </p>
+                              <Textarea
+                                value={draft.answer}
+                                onChange={(event) =>
+                                  handleDraftChange(
+                                    dispute,
+                                    sourceQuestion,
+                                    analysis,
+                                    'answer',
+                                    event.target.value
+                                  )
+                                }
+                                className="min-h-[58px] text-xs"
+                                data-testid={`input-fix-answer-${dispute.id}`}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-[10px] uppercase text-muted-foreground">
+                                Current explanation
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {sourceQuestion?.explanation || 'No explanation set.'}
+                              </p>
+                              <Textarea
+                                value={draft.explanation}
+                                onChange={(event) =>
+                                  handleDraftChange(
+                                    dispute,
+                                    sourceQuestion,
+                                    analysis,
+                                    'explanation',
+                                    event.target.value
+                                  )
+                                }
+                                className="min-h-[88px] text-xs"
+                                data-testid={`input-fix-explanation-${dispute.id}`}
+                              />
+                            </div>
+                          </div>
+
+                          <Button
+                            className="w-full bg-amber-600 hover:bg-amber-700"
+                            onClick={() => handleApplyFix(dispute, analysis)}
+                            disabled={resolvingId === dispute.id}
+                            data-testid={`button-apply-fix-${dispute.id}`}
+                          >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            {analysis?.suggestedFix ? 'Confirm & Apply Fix' : 'Apply Manual Fix'}
+                          </Button>
 
                           <div className="grid grid-cols-2 gap-2">
                             <Button
