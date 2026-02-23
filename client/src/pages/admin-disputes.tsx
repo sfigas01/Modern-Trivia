@@ -24,10 +24,13 @@ import { useGame, Question } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 
+type ResolutionField = 'question' | 'answer' | 'explanation';
+
 interface ResolutionDraft {
   question: string;
   answer: string;
   explanation: string;
+  touched: Record<ResolutionField, boolean>;
 }
 
 export default function AdminDisputes() {
@@ -75,6 +78,28 @@ export default function AdminDisputes() {
       question: analysis?.suggestedFix?.question || sourceQuestion?.question || dispute.questionText,
       answer: analysis?.suggestedFix?.answer || sourceQuestion?.answer || dispute.correctAnswer,
       explanation: analysis?.suggestedFix?.explanation || sourceQuestion?.explanation || '',
+      touched: {
+        question: false,
+        answer: false,
+        explanation: false,
+      },
+    };
+  };
+
+  const mergeResolutionDraft = (
+    baseDraft: ResolutionDraft,
+    storedDraft: ResolutionDraft | undefined
+  ): ResolutionDraft => {
+    if (!storedDraft) {
+      return baseDraft;
+    }
+
+    return {
+      ...baseDraft,
+      question: storedDraft.touched.question ? storedDraft.question : baseDraft.question,
+      answer: storedDraft.touched.answer ? storedDraft.answer : baseDraft.answer,
+      explanation: storedDraft.touched.explanation ? storedDraft.explanation : baseDraft.explanation,
+      touched: { ...storedDraft.touched },
     };
   };
 
@@ -82,7 +107,7 @@ export default function AdminDisputes() {
     dispute: Dispute,
     sourceQuestion: Question | undefined,
     analysis: AIAnalysis | null,
-    field: keyof ResolutionDraft,
+    field: ResolutionField,
     value: string
   ) => {
     setResolutionDrafts((prev) => {
@@ -92,6 +117,10 @@ export default function AdminDisputes() {
         [dispute.id]: {
           ...existingDraft,
           [field]: value,
+          touched: {
+            ...existingDraft.touched,
+            [field]: true,
+          },
         },
       };
     });
@@ -150,9 +179,9 @@ export default function AdminDisputes() {
 
   const handleApplyFix = async (
     dispute: Dispute,
-    analysis: AIAnalysis | null,
-    sourceQuestion: Question | undefined
+    analysis: AIAnalysis | null
   ) => {
+    const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
     if (!sourceQuestion) {
       toast({
         title: 'Question Not Found',
@@ -162,7 +191,8 @@ export default function AdminDisputes() {
       return;
     }
 
-    const draft = resolutionDrafts[dispute.id] ?? buildResolutionDraft(dispute, sourceQuestion, analysis);
+    const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+    const draft = mergeResolutionDraft(baseDraft, resolutionDrafts[dispute.id]);
     const nextQuestion = draft.question.trim();
     const nextAnswer = draft.answer.trim();
     const nextExplanation = draft.explanation.trim();
@@ -185,6 +215,14 @@ export default function AdminDisputes() {
 
     updateQuestion(updatedQuestion);
     await handleResolve(dispute.id, 'resolved');
+    setResolutionDrafts((prev) => {
+      if (!prev[dispute.id]) {
+        return prev;
+      }
+      const nextDrafts = { ...prev };
+      delete nextDrafts[dispute.id];
+      return nextDrafts;
+    });
 
     toast({
       title: 'Fix Applied',
@@ -359,8 +397,8 @@ export default function AdminDisputes() {
             filteredDisputes.map((dispute) => {
               const analysis = dispute.aiAnalysis as AIAnalysis | null;
               const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
-              const draft =
-                resolutionDrafts[dispute.id] ?? buildResolutionDraft(dispute, sourceQuestion, analysis);
+              const baseDraft = buildResolutionDraft(dispute, sourceQuestion, analysis);
+              const draft = mergeResolutionDraft(baseDraft, resolutionDrafts[dispute.id]);
               return (
                 <Card
                   key={dispute.id}
@@ -575,7 +613,7 @@ export default function AdminDisputes() {
 
                           <Button
                             className="w-full bg-amber-600 hover:bg-amber-700"
-                            onClick={() => handleApplyFix(dispute, analysis, sourceQuestion)}
+                            onClick={() => handleApplyFix(dispute, analysis)}
                             disabled={resolvingId === dispute.id}
                             data-testid={`button-apply-fix-${dispute.id}`}
                           >
