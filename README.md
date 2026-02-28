@@ -79,14 +79,26 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 
 ### Environment Variables
 
-Create a `.env` file or set the following environment variables:
+Copy the template and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Required variables:
 
 ```bash
 DATABASE_URL=postgresql://user:password@host:port/database
-SESSION_SECRET=your-session-secret-here
-PORT=5000
-ISSUER_URL=https://replit.com/oidc  # Optional, defaults to Replit OIDC
+SESSION_SECRET=your-session-secret-here  # Generate with: openssl rand -hex 32
 REPL_ID=your-repl-id  # Auto-set on Replit
+```
+
+Optional variables:
+
+```bash
+PORT=5000
+ISSUER_URL=https://replit.com/oidc
+AI_INTEGRATIONS_OPENAI_API_KEY=...
 ```
 
 ### Install
@@ -97,7 +109,14 @@ npm install
 
 ### Database Setup
 
-Push the database schema to your PostgreSQL instance:
+1. Provision a PostgreSQL instance (Replit PostgreSQL, Neon, Supabase, etc.).
+2. Verify connectivity:
+
+```bash
+npm run db:check
+```
+
+3. Push the database schema:
 
 ```bash
 npm run db:push
@@ -109,6 +128,7 @@ This creates the required tables:
 - `users` - User accounts
 - `disputes` - Question dispute logs
 - `admin_roles` - Admin access control
+- `app_config` - Admin configuration values
 
 ### Development
 
@@ -241,7 +261,7 @@ The Replit configuration is defined in `.replit`.
 - The dispute system requires user authentication via Replit Auth
 - Admin roles are managed in the PostgreSQL database
 - Answer verification uses fuzzy matching with an 80% similarity threshold to handle minor typos and formatting differences
-- The session store uses PostgreSQL for persistence (falls back to in-memory if `DATABASE_URL` is not set)
+- `DATABASE_URL` and `SESSION_SECRET` are required to start the server
 
 ## License
 

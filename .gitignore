@@ -11,5 +11,6 @@ vite.config.ts.*
 .env.local
 .env.production
 .env.development
+!.env.example
 # Local MCP Settings (Secrets)
 .vscode/mcp.json
