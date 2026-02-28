@@ -8,6 +8,9 @@ import memoize from 'memoizee';
 import connectPg from 'connect-pg-simple';
 import MemoryStore from 'memorystore';
 import { authStorage } from './storage';
+import { loadEnvironment } from '../../lib/env';
+
+loadEnvironment();
 
 const getOidcConfig = memoize(
   async () => {
@@ -21,6 +24,13 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const sessionSecret = process.env.SESSION_SECRET;
+
+  if (!sessionSecret) {
+    throw new Error(
+      'SESSION_SECRET must be set. Generate one with: openssl rand -hex 32'
+    );
+  }
 
   let sessionStore: session.Store;
 
@@ -47,7 +57,7 @@ export function getSession() {
   }
 
   return session({
-    secret: process.env.SESSION_SECRET!,
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
