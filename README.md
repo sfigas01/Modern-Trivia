@@ -79,11 +79,14 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 
 ### Environment Variables
 
-Copy the template and fill in your values:
+Use `.env.example` as the template, then create your local `.env`:
 
 ```bash
 cp .env.example .env
 ```
+
+- Never commit `.env` files or real API keys.
+- Store production values in Replit Secrets.
 
 Required variables:
 
@@ -98,6 +101,7 @@ Optional variables:
 ```bash
 PORT=5000
 ISSUER_URL=https://replit.com/oidc
+LINEAR_API_KEY=your-linear-api-key-here
 AI_INTEGRATIONS_OPENAI_API_KEY=...
 ```
 

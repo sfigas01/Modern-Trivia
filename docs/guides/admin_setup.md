@@ -43,12 +43,27 @@ INSERT INTO admin_roles (user_id) VALUES ('the-id-from-above');
 2. The "Admin Panel" link should now appear in the navigation
 3. Click it to access the admin panel and manage disputes
 
+### Step 4: Resolve Disputes in `/admin/disputes`
+
+1. Open a pending dispute and click **Analyze with AI**.
+2. Review the AI verdict, confidence, reasoning, and sources.
+3. In **Proposed Fix (Editable)**, update question/answer/explanation as needed.
+4. Click **Confirm & Apply Fix** to update the question and resolve the dispute.
+5. Use **Reject** when no content change should be applied.
+
+Notes:
+- Re-running **Analyze with AI** preserves fields you already edited manually.
+- If resolving fails due to a transient API error, your draft stays in place so you can retry.
+
 ## Admin Features
 
 Once granted admin access, users can:
 
 - **View all disputes** submitted by players
 - **Review disputed questions** with team explanations
+- **Analyze disputes with AI** to get suggested fixes and sources
+- **Edit proposed question/answer/explanation** before applying fixes
+- **Apply or reject disputes** with status tracking
 - **Clear disputes** after reviewing them
 - **Access admin-only sections** of the application
 

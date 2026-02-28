@@ -6,7 +6,7 @@
 
 ## Child Features (Program Layer)
 
-- **[FT-04: Admin Dispute Dashboard](../features/FT-04_admin_dashboard.md)** (In Progress)
+- **FT-04: Admin Dispute Dashboard** (In Progress)
 - **[FT-01: Reference Support](../features/FT-01_reference_support.md)** (Done)
 - **[FT-02: Content Inventory & CMS](../features/FT-02_content_inventory.md)** (Scale)
 - **[FT-03: AI Quality Sweep](../features/FT-03_ai_quality_sweep.md)** (Maintenance)
@@ -17,7 +17,7 @@
 - Dispute Resolution Dashboard is fully functional in Production.
 - Database infrastructure is provisioned and stable.
 
-## 🚧 Implementation Status (Jan 17, 2026)
+## 🚧 Implementation Status (Feb 23, 2026)
 
 The project is currently in the **Integration & Deployment** phase. While the core application logic and UI components (FT-01 through FT-04) are functionally complete in development, the epic remains "In Progress" pending database provisioning and environment configuration for production readiness.
 
@@ -25,22 +25,30 @@ The project is currently in the **Integration & Deployment** phase. While the co
 
 - [x] **Database Schema:** Updated `shared/schema.ts` with `disputes` (status, analysis) and `app_config` tables.
 - [x] **API Endpoints:** Implemented `server/routes.ts` for dispute management and AI analysis (`POST /api/disputes/:id/analyze`).
-- [x] **AI Service:** Created `server/lib/ai.ts` to handle OpenAI interactions (currently mocking response).
+- [x] **AI Service:** `server/lib/ai.ts` calls OpenAI (`gpt-4o`) and stores structured analysis in `ai_analysis`.
 - [x] **Admin UI:** Built `/admin/disputes` dashboard and `/admin/settings` page in React.
+- [x] **Manual Override Workflow:** Admin can edit question/answer/explanation before apply (`STE-16`, `STE-17`, `STE-78`).
+
+### ✅ Recently Resolved (Feb 23, 2026)
+
+- `STE-16`: Admin can edit question text during dispute resolution.
+- `STE-17`: AI analysis auto-fills editable answer/explanation fields.
+- `STE-78`: Editable proposed-fix panel with confirm/apply flow is live.
 
 ### ⚠️ Pending Actions (CRITICAL)
 
 The following steps must be taken by a developer to finalize deployment:
 
-1.  **Assess & Prepare Database:** Evaluate infrastructure requirements and ensure a Postgres instance is provisioned or accessible for connection.
-2.  **Set Environment Variables:** Create a `.env` file with `DATABASE_URL=postgres://...`.
-3.  **Push Schema:** Run `npm run db:push` to create the tables.
-4.  **Configure Keys:** Log in to `/admin/settings` and add the OpenAI API Key.
+1. **Assess & Prepare Database:** Ensure a production PostgreSQL instance is provisioned and reachable.
+2. **Set Environment Variables:** Configure `DATABASE_URL` and `SESSION_SECRET`.
+3. **Push Schema:** Run `npm run db:push` to create/verify tables in production.
+4. **Configure AI Keys:** Set provider credentials in production and verify analysis requests succeed.
+5. **Run Smoke Test:** Complete end-to-end dispute workflow validation in production.
 
 ### 🐛 Known Issues & Bugs (To Tackle)
 
-1.  **Manual Question Editing:** Admin needs to be able to manually edit the _Question_ text, not just the Answer.
-2.  **AI Auto-Fill:** When AI suggests a source/citation, it should automatically update/fill the Answer field if it is missing or incomplete based on the findings.
+1. **Provider Selector:** OpenAI/Anthropic provider selector is still pending in settings UX.
+2. **Test Connection Button:** API key/provider connection test action is still pending.
 
 ---
 
