@@ -1,150 +1,180 @@
-# CLAUDE.md
+# Modern Trivia Agent Manual (Shared)
 
-> **Root context for all AI Agents (Claude Code Desktop, Claude Code Web, Replit Codex, Antigravity).**
+This file is intentionally shared across agent entrypoints:
 
----
+- `AGENTS.md`
+- `CLAUDE.md`
+- `replit.md`
 
-## ⚠️ Current Priority: Professionalise the App (No New Features)
+All three files must contain the same policy content so every agent operates with the same context and rules.
 
-**Feature development is paused.** The current focus is on DevOps, security, and operational maturity. Do not introduce new product features until this phase is complete. All work should fall into one of these categories:
+## Sync Contract
 
-1. **Security** — Secrets management, dependency scanning, vulnerability fixes
-2. **DevOps** — CI/CD, testing, linting, pre-commit hooks, containerisation
-3. **Observability** — Error tracking, structured logging, health checks
-4. **Process** — Branch protection, PR workflow, versioning
-5. **Bug fixes** — Only if critical to existing functionality
+### Required behavior
 
-Track all DevOps work under **[STE-66: Implement Modern DevOps Practices](https://linear.app/stephs-vibe-coding/issue/STE-66)** in Linear (Modern Trivia project).
+1. If any shared rule is added/changed/removed in one file, mirror the exact policy update in the other two files in the same change.
+2. Do not treat any one file as canonical-only for policy; all three are equal entrypoints for agents.
+3. If all three files cannot be synced in one pass, do not finalize silently. Add an explicit mismatch note in all three files.
 
-### 🔒 Security: In Progress
+## Agent Team & Scope
 
-- An API key was previously exposed in git history — rotation and cleanup is underway (STE-53)
-- **Never commit `.env` files or secrets.** Use `.env.example` as a reference template.
-- Production secrets must go in **Replit Secrets**, not in code or config files.
-- If you encounter any hardcoded secrets, credentials, or API keys in the codebase, **stop and flag it immediately** — do not commit over it.
+This repository is actively worked on by multiple agents:
 
----
+- Claude Code (desktop/web)
+- Replit agent
+- Codex
+- Antigravity (multi-model)
 
-## 1. Commands & Environment
+All agents must follow the same operating rules in this manual.
 
-- **Run Dev (Full Stack):** `npm run dev` (Starts frontend :5000 + backend :3000)
-- **Database Push:** `npm run db:push` (Apply schema changes)
-- **Build:** `npm run build`
-- **Type Check:** `npm run check` (tsc, no emit)
-- **Test:** `npm test` _(being set up — STE-55)_
-- **Lint:** `npm run lint` (ESLint — TypeScript + React)
-- **Lint Fix:** `npm run lint:fix` (auto-fix lint issues)
-- **Format:** `npm run format` (Prettier — TS, TSX, JSON, Markdown)
+## Current Priority
 
-## 2. Tech Stack & Style
+Feature development is paused. Focus on security, DevOps, observability, process hardening, and critical bug fixes.
 
-- **Frontend:** React, Vite, Shadcn UI, Tailwind CSS (@tailwindcss/vite).
-- **Backend:** Express, Drizzle ORM, Postgres (pg), Passport Auth.
-- **Language:** TypeScript (Strict).
-- **Style:**
-  - Use functional components & hooks.
-  - Define Zod schemas in `shared/schema.ts`.
-  - Use `lucide-react` for icons.
+Primary work categories:
 
-## 3. DevOps & Quality
+1. Security
+2. DevOps
+3. Observability
+4. Process
+5. Critical bug fixes
 
-### Git Workflow
+Track project work in Linear under the Modern Trivia project.
 
-- **Branch naming:** `feature/STE-XX-description` or `fix/STE-XX-description`
-- **Never push directly to `main`** — always use pull requests.
-- **CI must pass before merging.** GitHub Actions runs type-check, build, and dependency audit on every push and PR to `main`.
-- PR workflow: branch → push → CI green → merge. Never merge a red build.
-- **Pre-commit hooks (Husky + lint-staged)** run automatically on every commit:
-  - `lint-staged`: ESLint --fix + Prettier on staged `.ts`/`.tsx` files; Prettier on `.json`/`.md`
-  - `tsc --noEmit`: Full type-check
-  - If a commit fails, fix the issues and recommit. **Never use `--no-verify` to skip hooks.**
+## Security Rules
 
-### Quality Gates (enforced by CI — `.github/workflows/ci.yml`)
+1. Never commit `.env` files, API keys, credentials, or secrets.
+2. Use `.env.example` as the reference template.
+3. Put production secrets in Replit Secrets.
+4. If hardcoded secrets are found, stop and flag immediately.
 
-1. TypeScript type-check (`npm run check`) ✅ Live
-2. Build succeeds (`npm run build`) ✅ Live
-3. No high/critical dependency vulnerabilities (`npm audit`) ✅ Live (non-blocking)
-4. ESLint passes (`npm run lint`) ✅ Live
-5. All tests pass (`npm test`) — _coming soon, STE-55_
+## Git, Branch, and Worktree Rules
 
-### Secrets & Environment
+### Core workflow
 
-- **Never commit `.env` files or API keys** — this has caused a security incident already.
-- Use `.env.example` as the template for required variables.
-- Production secrets go in **Replit Secrets** (not in code).
-- Required env vars: `DATABASE_URL`, `SESSION_SECRET`, `PORT`, `LINEAR_API_KEY`
+1. Never push directly to `main`; use pull requests.
+2. CI must pass before merge.
+3. Do not bypass hooks with `--no-verify`.
+4. Use issue-linked branch names, e.g. `feature/STE-XX-short-description`, `fix/STE-XX-short-description`, or `codex/ste-XX-short-description`.
 
-### Testing _(being set up — STE-55)_
+### Hygiene requirements
 
-- New features and bug fixes must include tests.
-- Test files: `*.test.ts` co-located with source files.
-- Run `npm test` before committing.
+1. At task start and before handoff, check git state:
+   - `git status --short --branch`
+   - `git worktree list`
+   - local branch inventory
+2. Do not leave temporary worktrees behind; remove them when done and run `git worktree prune`.
+3. Do not leave abandoned dirty state in old worktrees/branches; either commit, stash with a clear dated message, or explicitly report why cleanup was not possible.
+4. Delete local branches that are fully merged into the target base branch; never delete unmerged branches without explicit user approval.
+5. Handoff should leave a clean working tree unless the user asked to preserve local changes; if anything remains, provide a concise inventory.
 
-### Logging _(being set up — STE-58)_
+## Linear Parent Sync Rule
 
-- Once Pino is set up, use `logger.info()` / `logger.error()` — not `console.log`.
-- Never log passwords, tokens, or PII.
+When completing a Linear sub-issue with a `parentId`, always sync the parent in the same workflow unless the user explicitly says not to.
 
-### Multi-Agent Context
+### Required sequence
 
-This codebase is worked on by multiple AI agents:
+1. Update/close the sub-issue first.
+2. Read all current child issues of the parent and recompute progress (`done/total` and percentage).
+3. Update parent description so status, completed/open/canceled child lists, critical path, and next recommended issue are current.
+4. Add a parent comment summarizing refresh with concrete counts and issue IDs.
+5. If parent sync fails, do not silently skip it.
+6. If parent sync fails, add a sub-issue comment stating parent sync failed and why.
+7. If parent sync fails, keep sub-issue in `In Review` instead of `Done` until parent sync is resolved.
 
-- **Claude Code Desktop** (local terminal agent)
-- **Claude Code Web** (browser-based agent)
-- **Replit Codex** (Replit's built-in agent)
-- **Antigravity** (autonomous agent)
+## Quality Gates
 
-All agents must follow the same quality gates, branching strategy, and commit conventions. Pre-commit hooks and CI enforce standards regardless of which agent authored the code. If you are an agent reading this, do not bypass quality checks or skip hooks with `--no-verify`.
+Required checks before merge:
 
-**Agent coordination:** Check `.agent/AGENT_STATUS.md` before starting any STE-xx issue to see what's claimed. Update it when you pick up or finish work.
+1. TypeScript check: `npm run check`
+2. Build: `npm run build`
+3. Lint: `npm run lint`
+4. Tests: `npm test`
+5. Dependency audit and security checks in CI
 
-## 4. Documentation & Process
+If any required gate fails, fix before merge.
 
-- **Standards:** `docs/guides/documentation_standards.md`
-- **Process:** Spec-Driven Development (Specify -> Plan -> Tasks).
-- **Hierarchy:**
-  - **Epics:** `docs/epics/` (Strategic goals)
-  - **Features:** `docs/features/` (Shippable functionality)
-- **Roadmap:** `docs/PRODUCT_ROADMAP.md` (Update when creating Epics/Features).
-- **Issue Tracker:** Linear — [Steph's Vibe Coding workspace](https://linear.app/stephs-vibe-coding). All DevOps work is under the **Modern Trivia** project.
+## Commands & Environment
 
-## 5. Shared Workflows
+Common commands:
 
-Common workflows available to all agents are located in `.agent/workflows/`.
+- Dev: `npm run dev`
+- DB push: `npm run db:push`
+- Build: `npm run build`
+- Type-check: `npm run check`
+- Test: `npm test`
+- Lint: `npm run lint`
+- Lint fix: `npm run lint:fix`
+- Format: `npm run format`
 
-- **Epic Creator:** `.agent/workflows/modern-trivia-epic-creator.md` - Use when starting new epics.
-- **Feature Creator:** `.agent/workflows/modern-trivia-feature-creator.md` - Use when specifying new features (FT-XX).
+Required environment variables:
 
-## 5. Active Epic
+- `DATABASE_URL`
+- `SESSION_SECRET`
+- `PORT`
+- `LINEAR_API_KEY`
 
-**Codebase Hardening: Security, CI, Testing & Code Quality (STE-40)**
-Check Linear for the parent issue and 12 prioritized sub-issues (STE-41 through STE-52). Each sub-issue has full context, file references, and verification steps — enough for any agent or developer to pick up independently.
+## Product + Architecture Context
 
----
+Modern Trivia is a browser-based multiplayer trivia game (local play) with dispute resolution tooling for admins.
 
-## 6. Role: Trivia Content QA Specialist
+Core stack:
 
-You are a trivia content QA specialist for Modern Trivia. Your complete instructions are in `docs/guides/qa_instructions.md` — read that file at the start of any QA session.
+- Frontend: React 18 + TypeScript + Vite + Wouter + TanStack Query + Tailwind + shadcn/ui
+- Backend: Node + Express + TypeScript
+- Data: PostgreSQL + Drizzle ORM
+- Auth: Replit OIDC/Auth + session storage in Postgres
 
-**Quick Reference:**
+Important app areas:
 
-- Question database: `client/src/lib/questions.json`
-- Editorial rules: `CONTENT_STRATEGY.md`
-- Full QA instructions: `docs/guides/qa_instructions.md`
+- Gameplay loop/state machine: `SETUP -> QUESTION -> VERIFYING -> REVEAL -> SCORE_UPDATE -> GAME_OVER`
+- Admin pages:
+  - `/admin` (question management)
+  - `/admin/disputes` (dispute review + resolution)
+  - `/admin/settings` (admin configuration)
+- Dispute API endpoints:
+  - `POST /api/disputes`
+  - `GET /api/disputes`
+  - `POST /api/disputes/:id/analyze`
+  - `PATCH /api/disputes/:id`
+  - `DELETE /api/disputes`
 
-**Key Rules:**
+Primary file areas:
 
-1. Always web search to verify facts before making corrections
-2. GlobalEh content must NOT be US-centric
-3. FreshPrints content must be from the last 3 months
-4. Verify nationality before tagging celebrity questions
+- `client/src/` for frontend
+- `server/` for backend
+- `shared/` for shared schema/types
+- `docs/` for product/process docs
 
-**Common Commands:**
+## Documentation & Process
 
-- "Review questions [range] for factual accuracy"
-- "Check pillar distribution"
-- "Find US-centric GlobalEh questions"
-- "Find stale FreshPrints content"
-- "Fix question [id]: [issue]"
+1. Follow documentation standards in `docs/guides/documentation_standards.md`.
+2. Keep roadmap updated in `docs/PRODUCT_ROADMAP.md` when scope changes.
+3. Current doc structure:
+   - Epics: `docs/epics/`
+   - Features: `docs/features/`
+   - Guides: `docs/guides/`
+4. Use `.agent/workflows/` workflows when applicable.
 
-For full task list and detailed guidelines, see `docs/guides/qa_instructions.md`.
+## Trivia Content QA Rules
+
+For QA sessions, read `docs/guides/qa_instructions.md` first.
+
+Key references:
+
+- Questions: `client/src/lib/questions.json`
+- Editorial strategy: `CONTENT_STRATEGY.md`
+- QA instructions: `docs/guides/qa_instructions.md`
+
+Hard constraints:
+
+1. Verify facts before changing content.
+2. GlobalEh content must not be US-centric.
+3. FreshPrints content must be recent.
+4. Verify nationality before assigning regional tags.
+
+## When Uncertain
+
+1. Flag uncertainty early.
+2. Preserve data integrity over speed.
+3. Ask one focused clarification when needed.
