@@ -1,6 +1,6 @@
 # Modern Trivia - Content QA Instructions
 
-> **Purpose:** This document defines the quality review rules, editorial guidelines, and common tasks for maintaining the Modern Trivia question database. It is designed to be used by AI coding assistants (Claude Code, Google Antigravity, Cursor, etc.) or human reviewers.
+> **Purpose:** This document defines the quality review rules, editorial guidelines, and common tasks for maintaining the Modern Trivia question database. It is designed to be used by AI coding assistants (Claude Code, Replit agent, Codex, Google Antigravity, etc.) or human reviewers.
 
 ---
 

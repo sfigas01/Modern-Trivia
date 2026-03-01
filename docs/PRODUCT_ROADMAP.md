@@ -41,7 +41,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 - 🟡 **Observability:** Sentry error tracking + Pino structured logging (STE-58)
 - 🟡 **Dependency Security:** Dependabot + npm audit in CI (STE-59)
 - 🟡 **Portability:** Dockerfile for local dev outside Replit (STE-60)
-- 🟡 **Agent Docs:** Update CLAUDE.md + .cursorrules for all agents (STE-65)
+- 🟡 **Agent Docs:** Keep AGENTS.md + CLAUDE.md + replit.md aligned for all active agents (STE-65)
 - 🟢 **Process:** Branch protection, PR workflow, semantic versioning (STE-61–64)
 
 **Completion criteria:** CI/CD pipeline is green, tests exist, linting enforced, secrets secured, all agents have clear DevOps instructions.
