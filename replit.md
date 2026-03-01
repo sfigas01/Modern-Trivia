@@ -122,37 +122,18 @@ Common script entrypoints include:
 
 Use `.env.example` as the source of truth for required environment variables and expected names.
 
-## Product + Architecture Context
+## Repository Context
 
-Modern Trivia is a browser-based multiplayer trivia game (local play) with dispute resolution tooling for admins.
+Use canonical docs instead of duplicating volatile technical details in this manual.
 
-Core stack:
+Primary references:
 
-- Frontend: React 18 + TypeScript + Vite + Wouter + TanStack Query + Tailwind + shadcn/ui
-- Backend: Node + Express + TypeScript
-- Data: PostgreSQL + Drizzle ORM
-- Auth: Replit OIDC/Auth + session storage in Postgres
+- Product and project context: `README.md`, `docs/PRODUCT_ROADMAP.md`
+- App behavior and state flow: `docs/guides/game_state_machine.md`
+- Admin and operational setup: `docs/guides/admin_setup.md`, `docs/guides/ai_tool_setup.md`
+- Code-level implementation details: source files under `client/`, `server/`, and `shared/`
 
-Important app areas:
-
-- Gameplay loop/state machine: `SETUP -> QUESTION -> VERIFYING -> REVEAL -> SCORE_UPDATE -> GAME_OVER`
-- Admin pages:
-  - `/admin` (question management)
-  - `/admin/disputes` (dispute review + resolution)
-  - `/admin/settings` (admin configuration)
-- Dispute API endpoints:
-  - `POST /api/disputes`
-  - `GET /api/disputes`
-  - `POST /api/disputes/:id/analyze`
-  - `PATCH /api/disputes/:id`
-  - `DELETE /api/disputes`
-
-Primary file areas:
-
-- `client/src/` for frontend
-- `server/` for backend
-- `shared/` for shared schema/types
-- `docs/` for product/process docs
+If architecture, endpoints, or implementation details change, update the dedicated docs above rather than expanding this shared manual.
 
 ## Documentation & Process
 
