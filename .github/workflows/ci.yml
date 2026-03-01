@@ -15,6 +15,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Agent manual sync check
+        run: |
+          set -euo pipefail
+
+          for f in AGENTS.md CLAUDE.md replit.md; do
+            if [ ! -f "$f" ]; then
+              echo "::error file=$f::Missing required shared agent file: $f"
+              exit 1
+            fi
+          done
+
+          if ! cmp -s AGENTS.md CLAUDE.md; then
+            echo "::error::AGENTS.md and CLAUDE.md must remain identical."
+            diff -u AGENTS.md CLAUDE.md || true
+            exit 1
+          fi
+
+          if ! cmp -s AGENTS.md replit.md; then
+            echo "::error::AGENTS.md and replit.md must remain identical."
+            diff -u AGENTS.md replit.md || true
+            exit 1
+          fi
+
+          if [ -f .cursorrules ]; then
+            echo "::error::.cursorrules is deprecated and should not exist."
+            exit 1
+          fi
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
