@@ -1,5 +1,9 @@
 # Modern Trivia Agent Manual (Shared)
 
+**Last updated:** 2026-03-01
+**Maintainer:** Modern Trivia maintainers (owner: Stephanie Figas)
+**Review cadence:** Monthly (or immediately after major workflow/tooling changes)
+
 This file is intentionally shared across agent entrypoints:
 
 - `AGENTS.md`
@@ -29,9 +33,11 @@ All agents must follow the same operating rules in this manual.
 
 ## Current Priority
 
-Feature development is paused. Focus on security, DevOps, observability, process hardening, and critical bug fixes.
+Follow the current prioritized work in Linear (Modern Trivia project) as the source of truth.
 
-Primary work categories:
+Do not assume a static priority (for example, feature freeze vs feature work) unless it is explicitly reflected in current Linear priorities/issues.
+
+Default work categories:
 
 1. Security
 2. DevOps
@@ -39,7 +45,7 @@ Primary work categories:
 4. Process
 5. Critical bug fixes
 
-Track project work in Linear under the Modern Trivia project.
+If Linear priority changes, update this section in all three shared files in the same change.
 
 ## Security Rules
 
@@ -55,7 +61,12 @@ Track project work in Linear under the Modern Trivia project.
 1. Never push directly to `main`; use pull requests.
 2. CI must pass before merge.
 3. Do not bypass hooks with `--no-verify`.
-4. Use issue-linked branch names, e.g. `feature/STE-XX-short-description`, `fix/STE-XX-short-description`, or `codex/ste-XX-short-description`.
+4. Use issue-linked branch names with one normalized pattern set:
+   - `feature/STE-XX-short-description`
+   - `fix/STE-XX-short-description`
+   - `chore/STE-XX-short-description`
+   - `docs/STE-XX-short-description`
+   - `codex/ste-XX-short-description` (when Codex-specific branch prefix is required)
 
 ### Hygiene requirements
 
@@ -84,35 +95,32 @@ When completing a Linear sub-issue with a `parentId`, always sync the parent in 
 
 ## Quality Gates
 
-Required checks before merge:
+Configured CI checks are the source of truth for required merge gates.
 
-1. TypeScript check: `npm run check`
-2. Build: `npm run build`
-3. Lint: `npm run lint`
-4. Tests: `npm test`
-5. Dependency audit and security checks in CI
+Reference:
 
-If any required gate fails, fix before merge.
+- `.github/workflows/ci.yml`
+
+At minimum, expect type-check, build, lint, tests, and dependency/security checks to pass when configured as required in CI.
+
+If any required CI gate fails, fix it before merge.
 
 ## Commands & Environment
 
-Common commands:
+Use `package.json` scripts as the source of truth for runnable commands.
 
-- Dev: `npm run dev`
-- DB push: `npm run db:push`
-- Build: `npm run build`
-- Type-check: `npm run check`
-- Test: `npm test`
-- Lint: `npm run lint`
-- Lint fix: `npm run lint:fix`
-- Format: `npm run format`
+Common script entrypoints include:
 
-Required environment variables:
+- `npm run dev`
+- `npm run db:push`
+- `npm run build`
+- `npm run check`
+- `npm test`
+- `npm run lint`
+- `npm run lint:fix`
+- `npm run format`
 
-- `DATABASE_URL`
-- `SESSION_SECRET`
-- `PORT`
-- `LINEAR_API_KEY`
+Use `.env.example` as the source of truth for required environment variables and expected names.
 
 ## Product + Architecture Context
 
