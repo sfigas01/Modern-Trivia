@@ -103,8 +103,32 @@ async function main() {
     `, { id: issue.id, input: { stateId: doneState.id } });
 
     console.log('Updated', identifier, 'to Done:', result.data?.issueUpdate?.success);
+  } else if (action === 'comment') {
+    const identifier = process.argv[3];
+    const body = process.argv[4];
+    if (!identifier || !body) { console.error('Usage: comment <identifier> <body>'); process.exit(1); }
+    const { teamKey, number } = parseIdentifier(identifier);
+
+    const issueData: any = await graphql(accessToken, `
+      query($number: Float!, $teamKey: String!) {
+        issues(filter: { number: { eq: $number }, team: { key: { eq: $teamKey } } }) {
+          nodes { id identifier }
+        }
+      }
+    `, { number, teamKey });
+
+    const issue = issueData.data?.issues?.nodes?.[0];
+    if (!issue) { console.error('Issue not found:', identifier); process.exit(1); }
+
+    const result: any = await graphql(accessToken, `
+      mutation($issueId: String!, $body: String!) {
+        commentCreate(input: { issueId: $issueId, body: $body }) { success }
+      }
+    `, { issueId: issue.id, body });
+
+    console.log('Comment posted on', identifier + ':', result.data?.commentCreate?.success);
   } else {
-    console.log('Usage: search <identifier> | done <identifier>');
+    console.log('Usage: search <identifier> | done <identifier> | comment <identifier> <body>');
   }
 }
 
