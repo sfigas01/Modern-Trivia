@@ -36,7 +36,7 @@ export default function Admin() {
     sourceName: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.question || !formData.answer) return;
@@ -48,28 +48,35 @@ export default function Admin() {
       question: formData.question,
       answer: formData.answer,
       explanation: formData.explanation,
+      pillar: 'GlobalEh',
       tags: ['Custom', formData.countryTag],
       ...(formData.sourceUrl && { sourceUrl: formData.sourceUrl }),
       ...(formData.sourceName && { sourceName: formData.sourceName }),
     };
 
-    addQuestion(newQuestion);
-
-    toast({
-      title: 'Question Added',
-      description: 'Successfully added to local library.',
-    });
-
-    setFormData({
-      category: '',
-      difficulty: 'Medium',
-      question: '',
-      answer: '',
-      explanation: '',
-      countryTag: 'Global',
-      sourceUrl: '',
-      sourceName: '',
-    });
+    try {
+      await addQuestion(newQuestion);
+      toast({
+        title: 'Question Added',
+        description: 'Successfully added to the database.',
+      });
+      setFormData({
+        category: '',
+        difficulty: 'Medium',
+        question: '',
+        answer: '',
+        explanation: '',
+        countryTag: 'Global',
+        sourceUrl: '',
+        sourceName: '',
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to add question. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (authLoading || adminLoading) {

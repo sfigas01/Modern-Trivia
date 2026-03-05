@@ -25,8 +25,8 @@ export default function Home() {
     }
   };
 
-  const handleStart = () => {
-    startGame();
+  const handleStart = async () => {
+    await startGame();
     setLocation('/game');
   };
 
@@ -143,7 +143,7 @@ export default function Home() {
               >
                 All Categories
               </Button>
-              {state.categories.map((category) => (
+              {state.categories.filter((c) => c !== 'All').map((category) => (
                 <Button
                   key={category}
                   variant={state.selectedCategory === category ? 'default' : 'outline'}

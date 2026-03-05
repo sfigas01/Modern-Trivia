@@ -9,6 +9,9 @@ export * from './models/auth';
 // Export chat models (for AI integrations)
 export * from './models/chat';
 
+// Export question models (questions DB + seen-question tracking)
+export * from './models/questions';
+
 // Disputes table for QA logging
 export const disputes = pgTable('disputes', {
   id: varchar('id')
