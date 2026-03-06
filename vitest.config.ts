@@ -1,4 +1,6 @@
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   test: {
@@ -7,7 +9,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["server/**/*.ts", "client/src/**/*.ts", "shared/**/*.ts"],
-      exclude: ["**/*.test.ts"],
+      exclude: ["**/*.test.ts", "**/*.test.tsx"],
     },
     projects: [
       {
@@ -18,10 +20,17 @@ export default defineConfig({
         },
       },
       {
+        plugins: [react()],
         test: {
           name: "client",
           environment: "jsdom",
-          include: ["client/src/**/*.test.ts"],
+          include: ["client/src/**/*.test.{ts,tsx}"],
+        },
+        resolve: {
+          alias: {
+            "@": path.resolve(import.meta.dirname, "client", "src"),
+            "@shared": path.resolve(import.meta.dirname, "shared"),
+          },
         },
       },
     ],
