@@ -145,18 +145,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     numRounds: 10,
   });
 
-  // Load questions from the database API
+  // Load questions from the database API (setup catalog only)
   useEffect(() => {
     async function loadQuestions() {
       try {
         const res = await fetch('/api/questions', { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to load questions');
         const data = await res.json();
-        setState((s) => ({
-          ...s,
-          questions: data.questions,
-          categories: ['All', ...data.categories],
-        }));
+        // Only apply if still in SETUP — avoid overwriting an active game
+        setState((s) => {
+          if (s.phase !== 'SETUP') return s;
+          return {
+            ...s,
+            questions: data.questions,
+            categories: ['All', ...data.categories],
+          };
+        });
       } catch (error) {
         console.error('Failed to load questions from API:', error);
       }
@@ -164,10 +168,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     loadQuestions();
   }, []);
 
-  // Record seen questions when game ends
+  // Record only actually-presented questions as seen when game ends
   useEffect(() => {
     if (state.phase === 'GAME_OVER' && state.questions.length > 0) {
-      const seenIds = state.questions.map((q) => q.id);
+      // currentQuestionIndex points past the last asked question, so slice(0, index)
+      // captures exactly the questions that were presented to players
+      const askedQuestions = state.questions.slice(0, state.currentQuestionIndex);
+      if (askedQuestions.length === 0) return;
+      const seenIds = askedQuestions.map((q) => q.id);
       fetch('/api/questions/seen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
