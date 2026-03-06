@@ -78,7 +78,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
-const normalize = (str: string): string => {
+export const normalize = (str: string): string => {
   return str
     .toLowerCase()
     .trim()
@@ -94,10 +94,11 @@ const normalize = (str: string): string => {
     .replace(/\b(seven|7)\b/g, '7')
     .replace(/\b(eight|8)\b/g, '8')
     .replace(/\b(nine|9)\b/g, '9')
-    .replace(/\s+/g, ' '); // Collapse whitespace
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .trim(); // Final trim after article removal may leave leading/trailing space
 };
 
-const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: number } => {
+export const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: number } => {
   const normInput = normalize(input);
   const normCorrect = normalize(q.answer);
   const acceptable = (q.acceptableAnswers || []).map(normalize);
