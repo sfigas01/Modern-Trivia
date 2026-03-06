@@ -94,7 +94,8 @@ export const normalize = (str: string): string => {
     .replace(/\b(seven|7)\b/g, '7')
     .replace(/\b(eight|8)\b/g, '8')
     .replace(/\b(nine|9)\b/g, '9')
-    .replace(/\s+/g, ' '); // Collapse whitespace
+    .replace(/\s+/g, ' ') // Collapse whitespace
+    .trim(); // Final trim after article removal may leave leading/trailing space
 };
 
 export const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: number } => {

@@ -20,40 +20,58 @@ vi.stubGlobal('localStorage', {
 });
 
 // ---------------------------------------------------------------------------
-// Mocks
+// Fetch mock — intercepts /api/questions used by the store
 // ---------------------------------------------------------------------------
 
-vi.mock('@/lib/questions.json', () => ({
-  default: [
-    {
-      id: 'q1',
-      category: 'Geography',
-      difficulty: 'Easy',
-      question: 'Capital of Canada?',
-      answer: 'Ottawa',
-      explanation: 'Ottawa is the capital.',
-      tags: [],
-    },
-    {
-      id: 'q2',
-      category: 'Science',
-      difficulty: 'Medium',
-      question: 'H2O?',
-      answer: 'Water',
-      explanation: 'H2O is water.',
-      tags: [],
-    },
-    {
-      id: 'q3',
-      category: 'History',
-      difficulty: 'Hard',
-      question: 'First president?',
-      answer: 'Washington',
-      explanation: 'George Washington.',
-      tags: [],
-    },
-  ],
-}));
+const HOME_TEST_QUESTIONS = [
+  {
+    id: 'q1',
+    category: 'Geography',
+    difficulty: 'Easy',
+    question: 'Capital of Canada?',
+    answer: 'Ottawa',
+    explanation: 'Ottawa is the capital.',
+    tags: [],
+  },
+  {
+    id: 'q2',
+    category: 'Science',
+    difficulty: 'Medium',
+    question: 'H2O?',
+    answer: 'Water',
+    explanation: 'H2O is water.',
+    tags: [],
+  },
+  {
+    id: 'q3',
+    category: 'History',
+    difficulty: 'Hard',
+    question: 'First president?',
+    answer: 'Washington',
+    explanation: 'George Washington.',
+    tags: [],
+  },
+];
+
+function createFetchMock() {
+  return vi.fn((input: string | URL | Request, _init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+    if (url.includes('/api/questions')) {
+      const categories = Array.from(new Set(HOME_TEST_QUESTIONS.map((q) => q.category))).sort();
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ questions: HOME_TEST_QUESTIONS, categories }),
+      } as Response);
+    }
+
+    return Promise.reject(new Error(`Unmocked fetch: ${url}`));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Mocks
+// ---------------------------------------------------------------------------
 
 vi.mock('wouter', () => ({
   useLocation: () => ['/', vi.fn()],
@@ -110,10 +128,12 @@ function renderHome() {
 describe('Home page', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.stubGlobal('fetch', createFetchMock());
   });
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
 
   it('renders the Category section heading', async () => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GameProvider, useGame, normalize, verifyAttempt } from './store';
 import type { Question } from './store';
 
@@ -23,6 +23,28 @@ vi.stubGlobal('localStorage', {
 // Test fixtures
 // ---------------------------------------------------------------------------
 
+const SCIENCE_QUESTIONS = Array.from({ length: 12 }, (_, i) => ({
+  id: `sci-${i}`,
+  category: 'Science',
+  difficulty: i < 4 ? 'Easy' : i < 8 ? 'Medium' : 'Hard',
+  question: `Question sci-${i}?`,
+  answer: `science-answer-${i}`,
+  explanation: `Explanation for sci-${i}`,
+  tags: [],
+}));
+
+const HISTORY_QUESTIONS = Array.from({ length: 12 }, (_, i) => ({
+  id: `hist-${i}`,
+  category: 'History',
+  difficulty: i < 4 ? 'Easy' : i < 8 ? 'Medium' : 'Hard',
+  question: `Question hist-${i}?`,
+  answer: `history-answer-${i}`,
+  explanation: `Explanation for hist-${i}`,
+  tags: [],
+}));
+
+const ALL_TEST_QUESTIONS = [...SCIENCE_QUESTIONS, ...HISTORY_QUESTIONS];
+
 function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
   return {
     category: 'Science',
@@ -36,31 +58,45 @@ function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
 }
 
 // ---------------------------------------------------------------------------
-// Mocks
+// Fetch mock — intercepts /api/questions (GET) and /api/questions/seen (POST)
 // ---------------------------------------------------------------------------
 
-vi.mock('./questions.json', () => ({
-  default: [
-    ...Array.from({ length: 12 }, (_, i) => ({
-      id: `sci-${i}`,
-      category: 'Science',
-      difficulty: i < 4 ? 'Easy' : i < 8 ? 'Medium' : 'Hard',
-      question: `Question sci-${i}?`,
-      answer: `science-answer-${i}`,
-      explanation: `Explanation for sci-${i}`,
-      tags: [],
-    })),
-    ...Array.from({ length: 12 }, (_, i) => ({
-      id: `hist-${i}`,
-      category: 'History',
-      difficulty: i < 4 ? 'Easy' : i < 8 ? 'Medium' : 'Hard',
-      question: `Question hist-${i}?`,
-      answer: `history-answer-${i}`,
-      explanation: `Explanation for hist-${i}`,
-      tags: [],
-    })),
-  ],
-}));
+function createFetchMock() {
+  return vi.fn((input: string | URL | Request, _init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+    // POST /api/questions/seen — fire-and-forget
+    if (url.includes('/api/questions/seen')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response);
+    }
+
+    // GET /api/questions?shuffle=true&limit=...&category=...
+    if (url.includes('/api/questions')) {
+      const parsed = new URL(url, 'http://localhost');
+      const category = parsed.searchParams.get('category');
+      const limit = parsed.searchParams.get('limit');
+
+      let questions = [...ALL_TEST_QUESTIONS];
+      if (category) {
+        questions = questions.filter((q) => q.category === category);
+      }
+      // Shuffle (deterministic for tests: just reverse)
+      questions = questions.reverse();
+      if (limit) {
+        questions = questions.slice(0, parseInt(limit, 10));
+      }
+
+      const categories = Array.from(new Set(ALL_TEST_QUESTIONS.map((q) => q.category))).sort();
+
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ questions, categories }),
+      } as Response);
+    }
+
+    return Promise.reject(new Error(`Unmocked fetch: ${url}`));
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -70,10 +106,10 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return <GameProvider>{children}</GameProvider>;
 }
 
-/** Render the useGame hook inside a GameProvider and wait for questions to load. */
+/** Render the useGame hook inside a GameProvider and wait for questions to load via fetch. */
 async function renderGame() {
   const hook = renderHook(() => useGame(), { wrapper });
-  // Wait for the useEffect that loads questions from the mock JSON
+  // Wait for the useEffect that loads questions from the mock API
   await waitFor(() => {
     expect(hook.result.current.state.questions.length).toBeGreaterThan(0);
   });
@@ -97,7 +133,10 @@ async function setupAndStart(opts?: { category?: string; numRounds?: number }) {
     act(() => result.current.setNumRounds(opts.numRounds!));
   }
 
-  act(() => result.current.startGame());
+  // startGame is async (fetches from API)
+  await act(async () => {
+    await result.current.startGame();
+  });
 
   return hook;
 }
@@ -128,9 +167,8 @@ describe('normalize', () => {
     expect(normalize("It's a test!")).toBe('its test');
   });
 
-  it('removes articles', () => {
-    // After removing "the", leading whitespace is collapsed but not trimmed
-    expect(normalize('the big apple')).toBe(' big apple');
+  it('removes articles and trims result', () => {
+    expect(normalize('the big apple')).toBe('big apple');
   });
 
   it('converts number words to digits', () => {
@@ -197,6 +235,11 @@ describe('verifyAttempt', () => {
 describe('GameProvider state machine', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.stubGlobal('fetch', createFetchMock());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('initializes in SETUP phase with no teams', async () => {
@@ -381,6 +424,11 @@ describe('GameProvider state machine', () => {
 describe('Full game happy path', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.stubGlobal('fetch', createFetchMock());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('plays a complete game: SETUP → questions → ROUND_SCORE → GAME_OVER with scores', async () => {
@@ -400,7 +448,8 @@ describe('Full game happy path', () => {
 
       // Alternate between correct and pass
       if (questionsAnswered % 2 === 0) {
-        const correctAnswer = result.current.state.questions[result.current.state.currentQuestionIndex].answer;
+        const correctAnswer =
+          result.current.state.questions[result.current.state.currentQuestionIndex].answer;
         answerAndAdvance(result, correctAnswer);
       } else {
         passAndAdvance(result);
