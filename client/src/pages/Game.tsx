@@ -26,12 +26,23 @@ export default function Game() {
     resetGame,
   } = useGame();
 
-  // Redirect if invalid state
+  // Redirect if invalid state — only when explicitly in SETUP with no teams
   useEffect(() => {
-    if (state.phase === 'SETUP' || state.teams.length === 0) {
+    if (state.phase === 'SETUP' && state.teams.length === 0) {
       setLocation('/');
     }
   }, [state.phase, state.teams.length, setLocation]);
+
+  if (state.phase === 'SETUP') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground" data-testid="text-loading-game">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (state.phase === 'ROUND_SCORE') {
     const sortedTeams = [...state.teams].sort((a, b) => b.score - a.score);
@@ -80,8 +91,18 @@ export default function Game() {
     );
   }
 
-  if (state.phase === 'GAME_OVER' || !state.questions.length) {
-    // Could render a nice game over screen here
+  if (state.phase === 'QUESTION' && !state.questions.length) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground" data-testid="text-loading-questions">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (state.phase === 'GAME_OVER') {
     const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
     const winner = rankedTeams[0];
     return (
