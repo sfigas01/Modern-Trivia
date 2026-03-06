@@ -99,11 +99,14 @@ vi.mock('@/hooks/use-admin', () => ({
 vi.mock('framer-motion', () => ({
   motion: {
     div: React.forwardRef(
-      ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>, ref: React.Ref<HTMLDivElement>) => (
+      (
+        { children, ...props }: React.HTMLAttributes<HTMLDivElement>,
+        ref: React.Ref<HTMLDivElement>
+      ) => (
         <div ref={ref} {...props}>
           {children}
         </div>
-      ),
+      )
     ),
   },
   AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -117,7 +120,7 @@ function renderHome() {
   return render(
     <GameProvider>
       <Home />
-    </GameProvider>,
+    </GameProvider>
   );
 }
 
@@ -143,19 +146,17 @@ describe('Home page', () => {
 
   it('renders the "All Categories" button', async () => {
     renderHome();
-    // The Home page has a hardcoded "All Categories" button plus categories
-    // from the store include "All". Use getAllByText to be resilient.
-    const buttons = await screen.findAllByText(/All/);
-    const allCategoriesBtn = buttons.find((el) => el.textContent === 'All Categories');
-    expect(allCategoriesBtn).toBeDefined();
+    expect(await screen.findByRole('button', { name: /all categories/i })).toBeDefined();
   });
 
   it('renders individual category buttons from loaded questions', async () => {
     renderHome();
-    // Categories from the mocked questions: Geography, Science, History
-    expect(await screen.findByText('Geography')).toBeDefined();
-    expect(await screen.findByText('Science')).toBeDefined();
-    expect(await screen.findByText('History')).toBeDefined();
+    await screen.findByRole('button', { name: /all categories/i });
+    expect(
+      await screen.findByRole('button', { name: 'Geography' }, { timeout: 3000 })
+    ).toBeDefined();
+    expect(await screen.findByRole('button', { name: 'Science' }, { timeout: 3000 })).toBeDefined();
+    expect(await screen.findByRole('button', { name: 'History' }, { timeout: 3000 })).toBeDefined();
   });
 
   it('renders the Team Setup section', () => {
