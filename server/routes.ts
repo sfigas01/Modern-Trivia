@@ -2,9 +2,18 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
 import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integrations/auth';
 import { db } from './db';
-import { disputes, adminRoles, insertDisputeSchema, appConfig } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import {
+  disputes,
+  adminRoles,
+  insertDisputeSchema,
+  appConfig,
+  questions,
+  seenQuestions,
+  insertQuestionSchema,
+} from '@shared/schema';
+import { eq, and, sql, isNull } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
+import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
 function getUserId(req: Request): string | undefined {
@@ -220,6 +229,158 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error checking admin status:', error);
       res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Questions API
+  app.get('/api/questions', async (req, res) => {
+    try {
+      const { category, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
+
+      const conditions = [];
+      if (category && category !== 'All') {
+        conditions.push(eq(questions.category, category as string));
+      }
+      if (pillar) {
+        conditions.push(eq(questions.pillar, pillar as string));
+      }
+      if (difficulty) {
+        conditions.push(eq(questions.difficulty, difficulty as string));
+      }
+
+      // Exclude seen questions for authenticated users
+      const userId = getUserId(req);
+      const shouldExcludeSeen = excludeSeen === 'true' && userId;
+
+      let results;
+      if (shouldExcludeSeen) {
+        // LEFT JOIN to find unseen questions
+        const query = db
+          .select({
+            id: questions.id,
+            category: questions.category,
+            difficulty: questions.difficulty,
+            question: questions.question,
+            answer: questions.answer,
+            acceptableAnswers: questions.acceptableAnswers,
+            explanation: questions.explanation,
+            pillar: questions.pillar,
+            tags: questions.tags,
+            sourceUrl: questions.sourceUrl,
+            sourceName: questions.sourceName,
+          })
+          .from(questions)
+          .leftJoin(
+            seenQuestions,
+            and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId)),
+          )
+          .where(
+            and(...conditions, isNull(seenQuestions.questionId)),
+          );
+
+        if (shuffle === 'true') {
+          query.orderBy(sql`random()`);
+        }
+        if (limit) {
+          query.limit(parseInt(limit as string, 10));
+        }
+
+        results = await query;
+      } else {
+        const query = db.select().from(questions);
+
+        if (conditions.length > 0) {
+          query.where(and(...conditions));
+        }
+        if (shuffle === 'true') {
+          query.orderBy(sql`random()`);
+        }
+        if (limit) {
+          query.limit(parseInt(limit as string, 10));
+        }
+
+        results = await query;
+      }
+
+      // Get distinct categories and pillars for UI
+      const [allCategories, allPillars] = await Promise.all([
+        db.selectDistinct({ category: questions.category }).from(questions),
+        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+      ]);
+
+      res.json({
+        questions: results,
+        total: results.length,
+        categories: allCategories.map((c) => c.category).sort(),
+        pillars: allPillars.map((p) => p.pillar).sort(),
+      });
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+  });
+
+  // Mark questions as seen
+  app.post('/api/questions/seen', isAuthenticated, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const { questionIds } = req.body;
+      if (!Array.isArray(questionIds) || questionIds.length === 0) {
+        return res.status(400).json({ message: 'questionIds array is required' });
+      }
+
+      await db
+        .insert(seenQuestions)
+        .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
+        .onConflictDoNothing();
+
+      res.json({ message: 'Questions marked as seen', count: questionIds.length });
+    } catch (error) {
+      console.error('Error marking questions as seen:', error);
+      res.status(500).json({ message: 'Failed to mark questions as seen' });
+    }
+  });
+
+  // Create a new question (admin only)
+  app.post('/api/questions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const parsed = insertQuestionSchema.parse({
+        ...req.body,
+        id: req.body.id || crypto.randomUUID(),
+      });
+
+      const [newQuestion] = await db.insert(questions).values(parsed).returning();
+      res.status(201).json(newQuestion);
+    } catch (error) {
+      console.error('Error creating question:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(422).json({ message: 'Invalid question data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create question' });
+    }
+  });
+
+  // Update a question (admin only)
+  app.patch('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [updated] = await db
+        .update(questions)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error updating question:', error);
+      res.status(500).json({ message: 'Failed to update question' });
     }
   });
 

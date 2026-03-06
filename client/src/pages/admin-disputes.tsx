@@ -223,20 +223,28 @@ export default function AdminDisputes() {
       explanation: nextExplanation || sourceQuestion.explanation,
     };
 
-    updateQuestion(updatedQuestion);
-    setResolutionDrafts((prev) => {
-      if (!prev[dispute.id]) {
-        return prev;
-      }
-      const nextDrafts = { ...prev };
-      delete nextDrafts[dispute.id];
-      return nextDrafts;
-    });
+    try {
+      await updateQuestion(updatedQuestion);
+      setResolutionDrafts((prev) => {
+        if (!prev[dispute.id]) {
+          return prev;
+        }
+        const nextDrafts = { ...prev };
+        delete nextDrafts[dispute.id];
+        return nextDrafts;
+      });
 
-    toast({
-      title: 'Fix Applied',
-      description: 'The question was updated and the dispute was resolved.',
-    });
+      toast({
+        title: 'Fix Applied',
+        description: 'The question was updated and the dispute was resolved.',
+      });
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update question. The dispute was resolved but the fix was not applied.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getVerdictColor = (verdict: string) => {

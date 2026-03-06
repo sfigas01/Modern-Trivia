@@ -1,6 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import initialQuestions from './questions.json';
-// @ts-ignore
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import stringSimilarity from 'string-similarity';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
@@ -22,6 +20,7 @@ export interface Question {
   answer: string;
   acceptableAnswers?: string[];
   explanation: string;
+  pillar: string;
   tags: string[];
   sourceUrl?: string;
   sourceName?: string;
@@ -63,7 +62,7 @@ interface GameContextType {
   removeTeam: (id: string) => void;
   setCategory: (category: string) => void;
   setNumRounds: (rounds: number) => void;
-  startGame: () => void;
+  startGame: () => Promise<void>;
   setTypedAnswer: (text: string) => void;
   submitAnswer: () => void;
   passQuestion: () => void;
@@ -71,15 +70,12 @@ interface GameContextType {
   continueToNextRound: () => void;
   endGame: () => void;
   resetGame: () => void;
-  addQuestion: (q: Question) => void;
-  updateQuestion: (q: Question) => void;
+  addQuestion: (q: Question) => Promise<void>;
+  updateQuestion: (q: Question) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-const STORAGE_KEY_QUESTIONS = 'modern_trivia_questions';
-const STORAGE_KEY_VERSION = 'modern_trivia_questions_version';
-const QUESTIONS_VERSION = 2; // Bump this when questions.json is updated with new fields
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 const normalize = (str: string): string => {
@@ -149,47 +145,45 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     numRounds: 10,
   });
 
-  // Load questions including custom ones
+  // Load questions from the database API (setup catalog only)
   useEffect(() => {
-    const storedVersion = localStorage.getItem(STORAGE_KEY_VERSION);
-    const currentVersion = storedVersion ? parseInt(storedVersion, 10) : 0;
-    const stored = localStorage.getItem(STORAGE_KEY_QUESTIONS);
-
-    // Build a set of IDs from the bundled questions.json
-    const initialIds = new Set(initialQuestions.map((q) => q.id));
-
-    // If version changed, we need to refresh base questions but preserve custom ones
-    if (currentVersion < QUESTIONS_VERSION) {
-      localStorage.setItem(STORAGE_KEY_VERSION, String(QUESTIONS_VERSION));
-
-      if (stored) {
-        // Extract only truly custom questions (user-added, not in initial set)
-        const cachedQuestions = JSON.parse(stored) as Question[];
-        const customOnly = cachedQuestions.filter((q) => !initialIds.has(q.id));
-
-        // Save only the custom questions back
-        if (customOnly.length > 0) {
-          localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(customOnly));
-        } else {
-          localStorage.removeItem(STORAGE_KEY_QUESTIONS);
-        }
+    async function loadQuestions() {
+      try {
+        const res = await fetch('/api/questions', { credentials: 'include' });
+        if (!res.ok) throw new Error('Failed to load questions');
+        const data = await res.json();
+        // Only apply if still in SETUP — avoid overwriting an active game
+        setState((s) => {
+          if (s.phase !== 'SETUP') return s;
+          return {
+            ...s,
+            questions: data.questions,
+            categories: ['All', ...data.categories],
+          };
+        });
+      } catch (error) {
+        console.error('Failed to load questions from API:', error);
       }
     }
-
-    // Now load: always use fresh initial questions + any custom user-added questions
-    let allQuestions = [...initialQuestions] as Question[];
-    const storedAfterMigration = localStorage.getItem(STORAGE_KEY_QUESTIONS);
-
-    if (storedAfterMigration) {
-      const customQuestions = JSON.parse(storedAfterMigration);
-      // Only add questions that don't exist in initial set (truly custom)
-      const customOnly = (customQuestions as Question[]).filter((q) => !initialIds.has(q.id));
-      allQuestions = [...(initialQuestions as Question[]), ...customOnly];
-    }
-
-    const categories = Array.from(new Set(allQuestions.map((q) => q.category))).sort();
-    setState((s) => ({ ...s, questions: allQuestions, categories: ['All', ...categories] }));
+    loadQuestions();
   }, []);
+
+  // Record only actually-presented questions as seen when game ends
+  useEffect(() => {
+    if (state.phase === 'GAME_OVER' && state.questions.length > 0) {
+      // currentQuestionIndex points past the last asked question, so slice(0, index)
+      // captures exactly the questions that were presented to players
+      const askedQuestions = state.questions.slice(0, state.currentQuestionIndex);
+      if (askedQuestions.length === 0) return;
+      const seenIds = askedQuestions.map((q) => q.id);
+      fetch('/api/questions/seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ questionIds: seenIds }),
+      }).catch((err) => console.error('Failed to record seen questions:', err));
+    }
+  }, [state.phase]);
 
   const addTeam = (name: string) => {
     setState((prev) => ({
@@ -211,29 +205,47 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setCategory = (category: string) => setState((s) => ({ ...s, selectedCategory: category }));
   const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
-  const startGame = () => {
-    setState((prev) => {
-      // Filter questions based on category and shuffle
-      let filtered =
-        prev.selectedCategory === 'All'
-          ? [...prev.questions]
-          : prev.questions.filter((q) => q.category === prev.selectedCategory);
+  const startGame = async () => {
+    const totalNeeded = state.numRounds * state.teams.length;
+    const categoryParam =
+      state.selectedCategory !== 'All'
+        ? `&category=${encodeURIComponent(state.selectedCategory)}`
+        : '';
 
-      // Shuffle
-      filtered = filtered.sort(() => Math.random() - 0.5);
+    try {
+      const res = await fetch(
+        `/api/questions?shuffle=true&limit=${totalNeeded}&excludeSeen=true${categoryParam}`,
+        { credentials: 'include' },
+      );
+      if (!res.ok) throw new Error('Failed to fetch game questions');
+      const data = await res.json();
 
-      // Limit to number of rounds * teams
-      const totalNeeded = prev.numRounds * prev.teams.length;
-      const finalQuestions = filtered.slice(0, totalNeeded);
-
-      return {
+      setState((prev) => ({
         ...prev,
-        questions: finalQuestions,
+        questions: data.questions,
         phase: 'QUESTION',
         activeTeamId: prev.teams[0].id,
         currentQuestionIndex: 0,
-      };
-    });
+      }));
+    } catch (error) {
+      console.error('Failed to fetch questions from API, falling back to client-side:', error);
+      // Fallback to client-side shuffle of already-loaded questions
+      setState((prev) => {
+        let filtered =
+          prev.selectedCategory === 'All'
+            ? [...prev.questions]
+            : prev.questions.filter((q) => q.category === prev.selectedCategory);
+        filtered = filtered.sort(() => Math.random() - 0.5);
+        const finalQuestions = filtered.slice(0, totalNeeded);
+        return {
+          ...prev,
+          questions: finalQuestions,
+          phase: 'QUESTION',
+          activeTeamId: prev.teams[0].id,
+          currentQuestionIndex: 0,
+        };
+      });
+    }
   };
 
   const setTypedAnswer = (text: string) => setState((s) => ({ ...s, typedAnswer: text }));
@@ -365,20 +377,44 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const addQuestion = (q: Question) => {
-    setState((prev) => {
-      const updated = [q, ...prev.questions];
-      localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(updated));
-      return { ...prev, questions: updated };
-    });
+  const addQuestion = async (q: Question) => {
+    try {
+      const res = await fetch('/api/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(q),
+      });
+      if (!res.ok) throw new Error('Failed to create question');
+      const created = await res.json();
+      setState((prev) => ({
+        ...prev,
+        questions: [created, ...prev.questions],
+      }));
+    } catch (error) {
+      console.error('Failed to add question:', error);
+      throw error;
+    }
   };
 
-  const updateQuestion = (updatedQ: Question) => {
-    setState((prev) => {
-      const updated = prev.questions.map((q) => (q.id === updatedQ.id ? updatedQ : q));
-      localStorage.setItem(STORAGE_KEY_QUESTIONS, JSON.stringify(updated));
-      return { ...prev, questions: updated };
-    });
+  const updateQuestion = async (updatedQ: Question) => {
+    try {
+      const res = await fetch(`/api/questions/${updatedQ.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatedQ),
+      });
+      if (!res.ok) throw new Error('Failed to update question');
+      const updated = await res.json();
+      setState((prev) => ({
+        ...prev,
+        questions: prev.questions.map((q) => (q.id === updated.id ? updated : q)),
+      }));
+    } catch (error) {
+      console.error('Failed to update question:', error);
+      throw error;
+    }
   };
 
   return (
