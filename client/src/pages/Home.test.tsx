@@ -144,19 +144,22 @@ describe('Home page', () => {
     expect(await screen.findByText('Category')).toBeDefined();
   });
 
-  it('renders the "All Categories" button', async () => {
+  it('renders the "All" category button with a count', async () => {
     renderHome();
-    expect(await screen.findByRole('button', { name: /all categories/i })).toBeDefined();
+    expect(await screen.findByRole('button', { name: /^All\s*\(\d+\)$/ })).toBeDefined();
   });
 
   it('renders individual category buttons from loaded questions', async () => {
     renderHome();
-    await screen.findByRole('button', { name: /all categories/i });
     expect(
-      await screen.findByRole('button', { name: 'Geography' }, { timeout: 3000 })
+      await screen.findByRole('button', { name: /Geography\s*\(\d+\)/ }, { timeout: 3000 })
     ).toBeDefined();
-    expect(await screen.findByRole('button', { name: 'Science' }, { timeout: 3000 })).toBeDefined();
-    expect(await screen.findByRole('button', { name: 'History' }, { timeout: 3000 })).toBeDefined();
+    expect(
+      await screen.findByRole('button', { name: /Science\s*\(\d+\)/ }, { timeout: 3000 })
+    ).toBeDefined();
+    expect(
+      await screen.findByRole('button', { name: /History\s*\(\d+\)/ }, { timeout: 3000 })
+    ).toBeDefined();
   });
 
   it('renders the Team Setup section', () => {
