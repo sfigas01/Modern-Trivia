@@ -163,6 +163,25 @@ The build process:
 2. Bundles the Express server with esbuild → `dist/index.cjs`
 3. Optimizes and minifies for production
 
+### Question Quality Audit
+
+Run the question-database quality audit:
+
+```bash
+npm run audit:questions
+```
+
+This generates:
+
+- `reports/question-quality-report.json`
+- `reports/question-quality-report.md`
+
+For CI-style enforcement (fail if any high-severity findings are detected):
+
+```bash
+npm run audit:questions:strict
+```
+
 ## Project Structure
 
 ```
