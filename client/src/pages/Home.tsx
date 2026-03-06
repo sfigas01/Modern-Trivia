@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useGame } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield } from 'lucide-react';
+import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
@@ -16,6 +16,19 @@ export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState('');
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    state.questions.forEach((q) => {
+      counts[q.category] = (counts[q.category] || 0) + 1;
+    });
+    counts['All'] = state.questions.length;
+    return counts;
+  }, [state.questions]);
+
+  const totalNeeded = state.numRounds * state.teams.length;
+  const availableCount = categoryCounts[state.selectedCategory] || 0;
+  const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +154,7 @@ export default function Home() {
                     : ''
                 }`}
               >
-                All Categories
+                All ({categoryCounts['All'] || 0})
               </Button>
               {state.categories.filter((c) => c !== 'All').map((category) => (
                 <Button
@@ -154,7 +167,7 @@ export default function Home() {
                       : ''
                   }`}
                 >
-                  {category}
+                  {category} ({categoryCounts[category] || 0})
                 </Button>
               ))}
             </div>
@@ -186,6 +199,23 @@ export default function Home() {
         </Card>
 
         <div className="space-y-4">
+          {hasInsufficientQuestions && (
+            <div
+              className="flex items-start gap-3 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-200 text-sm"
+              data-testid="warning-insufficient-questions"
+            >
+              <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-yellow-300">Not enough questions</p>
+                <p className="mt-1">
+                  {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
+                  <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
+                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams).
+                  The game will use all {availableCount} available.
+                </p>
+              </div>
+            </div>
+          )}
           <Button
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
             disabled={state.teams.length < 2}
