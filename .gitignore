@@ -6,6 +6,7 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .claude/
+.codex/
 
 # Environment variables
 .env

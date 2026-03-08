@@ -1,0 +1,118 @@
+name: Question Quality Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 14 * * 1'
+
+jobs:
+  question-quality-audit:
+    name: Biweekly Question Quality Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine biweekly cadence
+        id: cadence
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run_audit=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Anchor date for biweekly runs (Monday, March 2, 2026 UTC).
+          anchor_date="2026-03-02"
+          today_utc="$(date -u +%Y-%m-%d)"
+          anchor_epoch="$(date -u -d "$anchor_date" +%s)"
+          today_epoch="$(date -u -d "$today_utc" +%s)"
+          diff_days="$(( (today_epoch - anchor_epoch) / 86400 ))"
+          diff_weeks="$(( diff_days / 7 ))"
+
+          if [ "$(( diff_weeks % 2 ))" -eq 0 ]; then
+            echo "run_audit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_audit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip non-biweekly run
+        if: steps.cadence.outputs.run_audit == 'false'
+        run: echo "Skipping this week; biweekly cadence check did not match."
+
+      - name: Checkout code
+        if: steps.cadence.outputs.run_audit == 'true'
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        if: steps.cadence.outputs.run_audit == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.cadence.outputs.run_audit == 'true'
+        run: npm ci
+
+      - name: Run question quality audit
+        if: steps.cadence.outputs.run_audit == 'true'
+        id: run_audit
+        env:
+          REPORT_JSON: ${{ runner.temp }}/question-quality-report.json
+          REPORT_MD: ${{ runner.temp }}/question-quality-report.md
+        run: |
+          set +e
+          npm run audit:questions -- --json "$REPORT_JSON" --markdown "$REPORT_MD" --fail-on-high
+          exit_code="$?"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Add run summary
+        if: steps.cadence.outputs.run_audit == 'true'
+        env:
+          REPORT_JSON: ${{ runner.temp }}/question-quality-report.json
+          REPORT_MD: ${{ runner.temp }}/question-quality-report.md
+          AUDIT_EXIT_CODE: ${{ steps.run_audit.outputs.exit_code }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs');
+          const path = process.env.REPORT_JSON;
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          const exitCode = process.env.AUDIT_EXIT_CODE || '1';
+
+          if (!fs.existsSync(path)) {
+            fs.appendFileSync(summaryPath, 'Question quality report was not generated.\n');
+            process.exit(0);
+          }
+
+          const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const lines = [
+            '## Question Quality Audit',
+            '',
+            `- Questions scanned: ${report.totalQuestions}`,
+            `- Flagged questions: ${report.flaggedQuestionCount}`,
+            `- High findings: ${report.findingsBySeverity.high}`,
+            `- Medium findings: ${report.findingsBySeverity.medium}`,
+            `- Low findings: ${report.findingsBySeverity.low}`,
+            `- Threshold result: ${exitCode === '0' ? 'PASS' : 'FAIL (high findings present)'}`,
+            '',
+            `Markdown report: ${process.env.REPORT_MD}`,
+          ];
+
+          fs.appendFileSync(summaryPath, `${lines.join('\n')}\n`);
+          EOF
+
+      - name: Upload question audit report
+        if: steps.cadence.outputs.run_audit == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: question-quality-audit-report
+          path: |
+            ${{ runner.temp }}/question-quality-report.json
+            ${{ runner.temp }}/question-quality-report.md
+
+      - name: Enforce high-severity threshold
+        if: steps.cadence.outputs.run_audit == 'true' && steps.run_audit.outputs.exit_code != '0'
+        run: |
+          echo "High-severity question-quality findings detected."
+          exit 1

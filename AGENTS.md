@@ -1,6 +1,6 @@
 # Modern Trivia Agent Manual (Shared)
 
-**Last updated:** 2026-03-01
+**Last updated:** 2026-03-06
 **Maintainer:** Modern Trivia maintainers (owner: Stephanie Figas)
 **Review cadence:** Monthly (or immediately after major workflow/tooling changes)
 
@@ -78,6 +78,17 @@ If Linear priority changes, update this section in all three shared files in the
 3. Do not leave abandoned dirty state in old worktrees/branches; either commit, stash with a clear dated message, or explicitly report why cleanup was not possible.
 4. Delete local branches that are fully merged into the target base branch; never delete unmerged branches without explicit user approval.
 5. Handoff should leave a clean working tree unless the user asked to preserve local changes; if anything remains, provide a concise inventory.
+
+### Worktree continuation guardrails
+
+1. Before continuing work in an existing worktree, verify it still maps to an active issue/task and has not already been completed.
+2. Treat the worktree as "do not continue" and warn the user when any of these are true:
+   - the current branch is already merged into the target base branch
+   - the linked PR is merged/closed, or the linked Linear issue is `Done`/`Canceled`
+   - the worktree has unrelated dirty changes from a different task and the user did not explicitly ask to preserve them
+   - issue-specific work is being done directly on `main` instead of an issue branch/worktree
+3. If a "do not continue" condition is hit, stop and provide a concise warning plus the recommended next step (new branch/worktree, cleanup, or explicit override).
+4. Do not silently continue after warning; require explicit user confirmation to override.
 
 ## Linear Parent Sync Rule
 
