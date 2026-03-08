@@ -236,7 +236,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Questions API
   app.get('/api/questions', async (req, res) => {
     try {
-      const { category, pillar, difficulty, excludeSeen, limit, shuffle, status } = req.query;
+      const { category, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
 
       const conditions = [];
       if (category && category !== 'All') {
@@ -248,13 +248,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (difficulty) {
         conditions.push(eq(questions.difficulty, difficulty as string));
       }
-      if (status) {
-        // Allow admins to query specifically by status
-        conditions.push(eq(questions.status, status as string));
-      } else {
-        // Default to only approved questions for gameplay
-        conditions.push(eq(questions.status, 'approved'));
-      }
+
+      // Always default to only approved questions for gameplay
+      conditions.push(eq(questions.status, 'approved'));
 
       // Exclude seen questions for authenticated users
       const userId = getUserId(req);
