@@ -173,6 +173,18 @@ Hard constraints:
 3. FreshPrints content must be recent.
 4. Verify nationality before assigning regional tags.
 
+## Permission Gate
+
+1. Ask for explicit approval before any major action:
+   - Implementing or changing product behavior
+   - Editing more than 1-2 source files
+   - Dependency changes, database migrations, or CI/workflow changes
+   - Any destructive git action (`reset --hard`, branch delete, force push, rebase)
+2. Do not ask for approval for minor actions:
+   - Read-only inspection commands
+   - Small git hygiene commands (`git status`, `git diff`, `git log`, `git worktree list`, `git branch --list`, `git add`)
+3. For major actions, pause and ask: "Proceed with <action>?"
+
 ## When Uncertain
 
 1. Flag uncertainty early.
