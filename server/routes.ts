@@ -235,7 +235,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Questions API
   app.get('/api/questions', async (req, res) => {
     try {
-      const { category, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
+      const { category, pillar, difficulty, excludeSeen, limit, shuffle, status } = req.query;
 
       const conditions = [];
       if (category && category !== 'All') {
@@ -246,6 +246,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       if (difficulty) {
         conditions.push(eq(questions.difficulty, difficulty as string));
+      }
+      if (status) {
+        // Allow admins to query specifically by status
+        conditions.push(eq(questions.status, status as string));
+      } else {
+        // Default to only approved questions for gameplay
+        conditions.push(eq(questions.status, 'approved'));
       }
 
       // Exclude seen questions for authenticated users
@@ -272,11 +279,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           .from(questions)
           .leftJoin(
             seenQuestions,
-            and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId)),
+            and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(
-            and(...conditions, isNull(seenQuestions.questionId)),
-          );
+          .where(and(...conditions, isNull(seenQuestions.questionId)));
 
         if (shuffle === 'true') {
           query.orderBy(sql`random()`);
@@ -381,6 +386,69 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error updating question:', error);
       res.status(500).json({ message: 'Failed to update question' });
+    }
+  });
+
+  // Staging API (Admin Only)
+  app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // By default, fetch questions that are not 'approved'
+      const pendingQuestions = await db
+        .select()
+        .from(questions)
+        .where(sql`${questions.status} != 'approved'`)
+        .orderBy(sql`${questions.createdAt} desc`);
+
+      res.json(pendingQuestions);
+    } catch (error) {
+      console.error('Error fetching staging questions:', error);
+      res.status(500).json({ message: 'Failed to fetch staging questions' });
+    }
+  });
+
+  app.post('/api/staging/generate', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { topic, count, pillar } = req.body;
+
+      if (!topic || !count || !pillar) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+
+      // In the future, this will call guardian.ts `generateQuestions`
+      // For now, we return a 501 Not Implemented or mock response until Codex finishes STE-8
+      res
+        .status(501)
+        .json({
+          message:
+            'Generation service via Guardian Lite is not yet implemented (waiting on STE-8).',
+        });
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      res.status(500).json({ message: 'Failed to generate questions' });
+    }
+  });
+
+  app.post('/api/staging/:id/promote', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [promoted] = await db
+        .update(questions)
+        .set({
+          status: 'approved',
+          updatedAt: new Date(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!promoted) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(promoted);
+    } catch (error) {
+      console.error('Error promoting question:', error);
+      res.status(500).json({ message: 'Failed to promote question' });
     }
   });
 
