@@ -51,6 +51,13 @@ export async function generateQuestions(
   pillar: string,
 ): Promise<PendingQuestion[]> {
   const normalizedCount = Math.max(1, Math.min(20, Math.floor(count || 1)));
+  const startedAt = Date.now();
+
+  console.info('[guardian] Generating questions', {
+    topic,
+    pillar,
+    count: normalizedCount,
+  });
 
   const prompt = `Generate ${normalizedCount} trivia questions about "${topic}" for the "${pillar}" pillar.
 
@@ -80,37 +87,70 @@ Rules:
 - Ensure all fields are filled and valid.
 - status must always be "pending".`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You generate structured trivia content. Always return valid JSON that matches the requested schema.',
-      },
-      { role: 'user', content: prompt },
-    ],
-    response_format: { type: 'json_object' },
-    max_tokens: 4096,
-  });
+  let content = '{}';
 
-  const content = response.choices[0]?.message?.content || '{}';
-  const parsedResponse = JSON.parse(content) as { questions?: unknown } | unknown[];
-  const rawQuestions = Array.isArray(parsedResponse)
-    ? parsedResponse
-    : Array.isArray(parsedResponse.questions)
-      ? parsedResponse.questions
-      : [];
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You generate structured trivia content. Always return valid JSON that matches the requested schema.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 4096,
+    });
 
-  const validated = rawQuestions.map((item) =>
-    insertQuestionWithPendingStatusSchema.parse(
-      normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar),
-    ),
-  ) as PendingQuestion[];
-
-  if (validated.length !== normalizedCount) {
-    throw new Error(`Expected ${normalizedCount} generated questions, got ${validated.length}`);
+    content = response.choices[0]?.message?.content || '{}';
+  } catch (error) {
+    console.error('[guardian] OpenAI request failed', {
+      topic,
+      pillar,
+      count: normalizedCount,
+      durationMs: Date.now() - startedAt,
+      error,
+    });
+    throw new Error('Failed to generate questions from OpenAI.', { cause: error });
   }
 
-  return validated;
+  try {
+    const parsedResponse = JSON.parse(content) as { questions?: unknown } | unknown[];
+    const rawQuestions = Array.isArray(parsedResponse)
+      ? parsedResponse
+      : Array.isArray(parsedResponse.questions)
+        ? parsedResponse.questions
+        : [];
+
+    const validated = rawQuestions.map((item) =>
+      insertQuestionWithPendingStatusSchema.parse(
+        normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar),
+      ),
+    ) as PendingQuestion[];
+
+    if (validated.length !== normalizedCount) {
+      throw new Error(`Expected ${normalizedCount} generated questions, got ${validated.length}`);
+    }
+
+    console.info('[guardian] Generated questions', {
+      topic,
+      pillar,
+      count: validated.length,
+      durationMs: Date.now() - startedAt,
+    });
+
+    return validated;
+  } catch (error) {
+    console.error('[guardian] Failed to parse/validate generated questions', {
+      topic,
+      pillar,
+      count: normalizedCount,
+      durationMs: Date.now() - startedAt,
+      contentPreview: content.slice(0, 300),
+      error,
+    });
+    throw new Error('Failed to parse or validate generated questions.', { cause: error });
+  }
 }
