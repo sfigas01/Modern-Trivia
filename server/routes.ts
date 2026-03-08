@@ -13,6 +13,7 @@ import {
 } from '@shared/schema';
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
+import { generateQuestions } from './lib/guardian';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
@@ -414,14 +415,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'Missing required parameters' });
       }
 
-      // In the future, this will call guardian.ts `generateQuestions`
-      // For now, we return a 501 Not Implemented or mock response until Codex finishes STE-8
-      res
-        .status(501)
-        .json({
-          message:
-            'Generation service via Guardian Lite is not yet implemented (waiting on STE-8).',
-        });
+      const generatedQuestions = await generateQuestions(topic, count, pillar);
+
+      const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
+
+      res.status(201).json({
+        message: 'Questions generated and added to staging successfully',
+        count: insertedQuestions.length,
+        questions: insertedQuestions,
+      });
     } catch (error) {
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
