@@ -409,7 +409,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  app.post('/api/staging/generate', isAuthenticated, isAdmin, async (req, res) => {
+  app.post('/api/staging/generate', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
     try {
       const { topic, count, pillar } = req.body;
 
