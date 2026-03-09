@@ -23,7 +23,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@hookform/resolvers": "^3.10.0",
+    "@hookform/resolvers": "^5.2.2",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@linear/sdk": "^55.2.1",
     "@radix-ui/react-accordion": "^1.2.12",
