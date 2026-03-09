@@ -417,6 +417,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'Missing required parameters' });
       }
 
+      const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'];
+      if (!VALID_PILLARS.includes(pillar)) {
+        return res
+          .status(400)
+          .json({ message: `Invalid pillar. Must be one of: ${VALID_PILLARS.join(', ')}` });
+      }
+
       const parsedCount = parseInt(String(count), 10);
       if (isNaN(parsedCount) || parsedCount < 1) {
         return res.status(400).json({ message: 'Count must be a valid positive number' });
