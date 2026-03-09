@@ -417,7 +417,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'Missing required parameters' });
       }
 
-      const generatedQuestions = await generateQuestions(topic, count, pillar);
+      const parsedCount = parseInt(String(count), 10);
+      if (isNaN(parsedCount) || parsedCount < 1) {
+        return res.status(400).json({ message: 'Count must be a valid positive number' });
+      }
+
+      const generatedQuestions = await generateQuestions(topic, parsedCount, pillar);
 
       const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
 
