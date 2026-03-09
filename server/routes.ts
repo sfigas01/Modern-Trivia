@@ -17,6 +17,14 @@ import { generateQuestions } from './lib/guardian';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
+const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+
+const stagingGenerateSchema = z.object({
+  topic: z.string().trim().min(1, 'Topic is required'),
+  count: z.coerce.number().int().min(1).max(20),
+  pillar: z.enum(VALID_PILLARS),
+});
+
 function getUserId(req: Request): string | undefined {
   return (req as any).user?.claims?.sub;
 }
@@ -411,25 +419,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post('/api/staging/generate', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
     try {
-      const { topic, count, pillar } = req.body;
-
-      if (!topic || !count || !pillar) {
-        return res.status(400).json({ message: 'Missing required parameters' });
+      const parsed = stagingGenerateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: 'Invalid generation parameters',
+          errors: parsed.error.errors,
+        });
       }
 
-      const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'];
-      if (!VALID_PILLARS.includes(pillar)) {
-        return res
-          .status(400)
-          .json({ message: `Invalid pillar. Must be one of: ${VALID_PILLARS.join(', ')}` });
-      }
-
-      const parsedCount = parseInt(String(count), 10);
-      if (isNaN(parsedCount) || parsedCount < 1) {
-        return res.status(400).json({ message: 'Count must be a valid positive number' });
-      }
-
-      const generatedQuestions = await generateQuestions(topic, parsedCount, pillar);
+      const { topic, count, pillar } = parsed.data;
+      const generatedQuestions = await generateQuestions(topic, count, pillar);
 
       const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
 
