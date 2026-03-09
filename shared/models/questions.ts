@@ -16,6 +16,8 @@ export const questions = pgTable('questions', {
   tags: jsonb('tags').$type<string[]>().notNull().default([]),
   sourceUrl: text('source_url'),
   sourceName: varchar('source_name'),
+  status: varchar('status', { length: 20 }).notNull().default('approved'), // 'draft' | 'pending' | 'approved' | 'rejected'
+  aiAnalysis: jsonb('ai_analysis'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
     .notNull()
@@ -26,6 +28,7 @@ export const questions = pgTable('questions', {
 export const insertQuestionSchema = createInsertSchema(questions, {
   difficulty: z.enum(['Easy', 'Medium', 'Hard']),
   pillar: z.enum(['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors']),
+  status: z.enum(['draft', 'pending', 'approved', 'rejected']).default('approved'),
   tags: z.array(z.string()).default([]),
   acceptableAnswers: z.array(z.string()).default([]),
 }).omit({ createdAt: true, updatedAt: true });
@@ -50,7 +53,7 @@ export const seenQuestions = pgTable(
   (table) => [
     primaryKey({ columns: [table.userId, table.questionId] }),
     index('idx_seen_questions_user').on(table.userId),
-  ],
+  ]
 );
 
 export type SeenQuestion = typeof seenQuestions.$inferSelect;

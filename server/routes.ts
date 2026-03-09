@@ -13,8 +13,17 @@ import {
 } from '@shared/schema';
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
+import { generateQuestions } from './lib/guardian';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
+
+const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+
+const stagingGenerateSchema = z.object({
+  topic: z.string().trim().min(1, 'Topic is required'),
+  count: z.coerce.number().int().min(1).max(20),
+  pillar: z.enum(VALID_PILLARS),
+});
 
 function getUserId(req: Request): string | undefined {
   return (req as any).user?.claims?.sub;
@@ -248,6 +257,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         conditions.push(eq(questions.difficulty, difficulty as string));
       }
 
+      // Always default to only approved questions for gameplay
+      conditions.push(eq(questions.status, 'approved'));
+
       // Exclude seen questions for authenticated users
       const userId = getUserId(req);
       const shouldExcludeSeen = excludeSeen === 'true' && userId;
@@ -272,11 +284,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           .from(questions)
           .leftJoin(
             seenQuestions,
-            and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId)),
+            and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(
-            and(...conditions, isNull(seenQuestions.questionId)),
-          );
+          .where(and(...conditions, isNull(seenQuestions.questionId)));
 
         if (shuffle === 'true') {
           query.orderBy(sql`random()`);
@@ -302,10 +312,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         results = await query;
       }
 
-      // Get distinct categories and pillars for UI
+      // Get distinct categories and pillars for UI (only from approved questions)
       const [allCategories, allPillars] = await Promise.all([
-        db.selectDistinct({ category: questions.category }).from(questions),
-        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+        db
+          .selectDistinct({ category: questions.category })
+          .from(questions)
+          .where(eq(questions.status, 'approved')),
+        db
+          .selectDistinct({ pillar: questions.pillar })
+          .from(questions)
+          .where(eq(questions.status, 'approved')),
       ]);
 
       res.json({
@@ -381,6 +397,73 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error updating question:', error);
       res.status(500).json({ message: 'Failed to update question' });
+    }
+  });
+
+  // Staging API (Admin Only)
+  app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // By default, fetch questions that are not 'approved'
+      const pendingQuestions = await db
+        .select()
+        .from(questions)
+        .where(sql`${questions.status} != 'approved'`)
+        .orderBy(sql`${questions.createdAt} desc`);
+
+      res.json(pendingQuestions);
+    } catch (error) {
+      console.error('Error fetching staging questions:', error);
+      res.status(500).json({ message: 'Failed to fetch staging questions' });
+    }
+  });
+
+  app.post('/api/staging/generate', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
+    try {
+      const parsed = stagingGenerateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: 'Invalid generation parameters',
+          errors: parsed.error.errors,
+        });
+      }
+
+      const { topic, count, pillar } = parsed.data;
+      const generatedQuestions = await generateQuestions(topic, count, pillar);
+
+      const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
+
+      res.status(201).json({
+        message: 'Questions generated and added to staging successfully',
+        count: insertedQuestions.length,
+        questions: insertedQuestions,
+      });
+    } catch (error) {
+      console.error('Error generating questions:', error);
+      res.status(500).json({ message: 'Failed to generate questions' });
+    }
+  });
+
+  app.post('/api/staging/:id/promote', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [promoted] = await db
+        .update(questions)
+        .set({
+          status: 'approved',
+          updatedAt: new Date(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!promoted) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(promoted);
+    } catch (error) {
+      console.error('Error promoting question:', error);
+      res.status(500).json({ message: 'Failed to promote question' });
     }
   });
 
