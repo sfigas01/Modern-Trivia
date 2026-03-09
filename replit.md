@@ -90,7 +90,7 @@ Use Conventional Commits: `<type>(<scope>): <description>`
 
 ## Linear Parent Sync
 
-When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-parent-sync.md` to sync the parent.
+When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-parent-sync.md` to sync the parent. This workflow verifies PR links, updates parent progress, and can be invoked standalone.
 
 ## Pull Requests
 
