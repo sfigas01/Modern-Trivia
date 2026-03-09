@@ -304,10 +304,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         results = await query;
       }
 
-      // Get distinct categories and pillars for UI
+      // Get distinct categories and pillars for UI (only from approved questions)
       const [allCategories, allPillars] = await Promise.all([
-        db.selectDistinct({ category: questions.category }).from(questions),
-        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+        db
+          .selectDistinct({ category: questions.category })
+          .from(questions)
+          .where(eq(questions.status, 'approved')),
+        db
+          .selectDistinct({ pillar: questions.pillar })
+          .from(questions)
+          .where(eq(questions.status, 'approved')),
       ]);
 
       res.json({
