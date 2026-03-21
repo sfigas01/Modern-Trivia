@@ -93,7 +93,7 @@ Rules:
 - Use unique ids.
 - Ensure all fields are filled and valid.
 - status must always be "pending".
-- tags must include a region tag (CA, US, or Global) and the pillar name.
+- tags must include a region tag (CA, US, or Global), the pillar name, and the category name.
 - sourceUrl MUST be a real, publicly accessible URL (Wikipedia, official government site, reputable encyclopedia, or authoritative reference) that directly supports the stated answer. Never use null, empty string, or a placeholder.
 - sourceName MUST be the human-readable name of that source (e.g. "Wikipedia", "Statistics Canada", "National Geographic"). Never use null or empty string.
 - If you cannot provide a verifiable source for a question, do not include that question — generate a different one instead.`;
