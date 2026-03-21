@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, MessageSquareWarning, Settings, PlusCircle, LogOut } from 'lucide-react';
+import { MessageSquareWarning, Settings, PlusCircle, LogOut, FlaskConical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {
@@ -12,6 +12,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const navItems = [
     { href: '/admin', icon: PlusCircle, label: 'Questions' },
+    { href: '/admin/staging', icon: FlaskConical, label: 'Staging' },
     { href: '/admin/disputes', icon: MessageSquareWarning, label: 'Disputes' },
     { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ];

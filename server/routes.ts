@@ -430,7 +430,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { topic, count, pillar } = parsed.data;
       const generatedQuestions = await generateQuestions(topic, count, pillar);
 
-      const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
+      const insertedQuestions = await db
+        .insert(questions)
+        .values(
+          generatedQuestions.map((q) => ({
+            ...q,
+            aiAnalysis: q.aiAnalysis,
+          })),
+        )
+        .returning();
 
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
@@ -464,6 +472,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error promoting question:', error);
       res.status(500).json({ message: 'Failed to promote question' });
+    }
+  });
+
+  app.post('/api/staging/:id/reject', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [rejected] = await db
+        .update(questions)
+        .set({
+          status: 'rejected',
+          updatedAt: new Date(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!rejected) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(rejected);
+    } catch (error) {
+      console.error('Error rejecting question:', error);
+      res.status(500).json({ message: 'Failed to reject question' });
     }
   });
 

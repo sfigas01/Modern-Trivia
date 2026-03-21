@@ -1,12 +1,19 @@
 import OpenAI from 'openai';
 import { insertQuestionSchema, type InsertQuestion } from '@shared/models/questions';
+import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
+import { batchFactCheck, type FactCheckResult } from './verifier';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-type PendingQuestion = InsertQuestion & { status: 'pending' };
+export interface QuestionAiAnalysis {
+  qaFindings: QuestionQualityFinding[];
+  factCheck: FactCheckResult;
+}
+
+type PendingQuestion = InsertQuestion & { status: 'pending'; aiAnalysis: QuestionAiAnalysis };
 
 const insertQuestionWithPendingStatusSchema = insertQuestionSchema.transform((question) => ({
   ...question,
@@ -85,7 +92,8 @@ Rules:
 - Return exactly ${normalizedCount} items.
 - Use unique ids.
 - Ensure all fields are filled and valid.
-- status must always be "pending".`;
+- status must always be "pending".
+- tags must include a region tag (CA, US, or Global) and the pillar name.`;
 
   let content = '{}';
 
@@ -116,19 +124,21 @@ Rules:
     throw new Error('Failed to generate questions from OpenAI.', { cause: error });
   }
 
+  let validated: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>[];
+
   try {
     const parsedResponse = JSON.parse(content) as { questions?: unknown } | unknown[];
     const rawQuestions = Array.isArray(parsedResponse)
       ? parsedResponse
-      : Array.isArray(parsedResponse.questions)
-        ? parsedResponse.questions
+      : Array.isArray((parsedResponse as { questions?: unknown }).questions)
+        ? (parsedResponse as { questions: unknown[] }).questions
         : [];
 
-    const validated = rawQuestions.map((item) =>
+    validated = rawQuestions.map((item) =>
       insertQuestionWithPendingStatusSchema.parse(
         normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar),
       ),
-    ) as PendingQuestion[];
+    );
 
     if (validated.length !== normalizedCount) {
       throw new Error(`Expected ${normalizedCount} generated questions, got ${validated.length}`);
@@ -140,8 +150,6 @@ Rules:
       count: validated.length,
       durationMs: Date.now() - startedAt,
     });
-
-    return validated;
   } catch (error) {
     console.error('[guardian] Failed to parse/validate generated questions', {
       topic,
@@ -153,4 +161,54 @@ Rules:
     });
     throw new Error('Failed to parse or validate generated questions.', { cause: error });
   }
+
+  // Run QA pipeline: static audit + AI fact-check (in parallel)
+  console.info('[guardian] Running QA pipeline', { count: validated.length });
+
+  const [auditReport, factCheckMap] = await Promise.all([
+    Promise.resolve(auditQuestionQuality(validated)),
+    batchFactCheck(
+      validated.map((q) => ({
+        id: q.id as string,
+        question: q.question,
+        answer: q.answer,
+        explanation: q.explanation,
+      })),
+    ),
+  ]);
+
+  // Build a per-question findings map from the audit report
+  const findingsByQuestionId = new Map<string, QuestionQualityFinding[]>();
+  for (const finding of auditReport.findings) {
+    const existing = findingsByQuestionId.get(finding.questionId) ?? [];
+    existing.push(finding);
+    findingsByQuestionId.set(finding.questionId, existing);
+  }
+
+  // Attach aiAnalysis to each question
+  const questionsWithAnalysis: PendingQuestion[] = validated.map((q) => {
+    const id = q.id as string;
+    const qaFindings = findingsByQuestionId.get(id) ?? [];
+    const factCheck = factCheckMap.get(id) ?? { verdict: 'flag' as const, confidence: 0, reason: 'No verdict returned.' };
+
+    return {
+      ...q,
+      status: 'pending' as const,
+      aiAnalysis: { qaFindings, factCheck },
+    };
+  });
+
+  console.info('[guardian] QA pipeline complete', {
+    topic,
+    pillar,
+    flaggedByQA: auditReport.flaggedQuestionCount,
+    factCheckSummary: {
+      pass: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'pass').length,
+      flag: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'flag').length,
+      fail: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'fail').length,
+    },
+    durationMs: Date.now() - startedAt,
+  });
+
+  return questionsWithAnalysis;
 }
