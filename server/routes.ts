@@ -421,6 +421,60 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin question browser — all questions, all statuses
+  app.get('/api/admin/questions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { status, category, pillar, search, limit: limitParam, offset: offsetParam } = req.query;
+
+      const conditions = [];
+      if (status && status !== 'all') {
+        conditions.push(eq(questions.status, status as string));
+      }
+      if (category && category !== 'all') {
+        conditions.push(eq(questions.category, category as string));
+      }
+      if (pillar && pillar !== 'all') {
+        conditions.push(eq(questions.pillar, pillar as string));
+      }
+      if (search && typeof search === 'string' && search.trim()) {
+        const term = `%${search.trim()}%`;
+        conditions.push(
+          sql`(${questions.question} ilike ${term} or ${questions.answer} ilike ${term} or ${questions.category} ilike ${term})`,
+        );
+      }
+
+      const pageLimit = Math.min(parseInt(limitParam as string, 10) || 50, 200);
+      const pageOffset = parseInt(offsetParam as string, 10) || 0;
+
+      const rows = await db
+        .select()
+        .from(questions)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(sql`${questions.createdAt} desc`)
+        .limit(pageLimit)
+        .offset(pageOffset);
+
+      const [totalResult, allCategories, allPillars] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(questions)
+          .then((r) => r[0]?.count ?? 0),
+        db.selectDistinct({ category: questions.category }).from(questions),
+        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+      ]);
+
+      res.json({
+        questions: rows,
+        total: totalResult,
+        categories: allCategories.map((c) => c.category).sort(),
+        pillars: allPillars.map((p) => p.pillar).sort(),
+      });
+    } catch (error) {
+      console.error('Error fetching admin questions:', error);
+      res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+  });
+
   // Staging API (Admin Only)
   app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
     try {
