@@ -385,20 +385,24 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
         findings,
         questionId,
         questionIndex,
-        'low',
+        'medium',
         'potentially_incorrect_or_unverifiable',
         'Explanation does not reference the answer and there is no source metadata to verify it.'
       );
     }
 
-    if (!sourceUrl && !sourceName) {
+    if (!sourceUrl || !sourceName) {
+      const missingFields = [
+        !sourceUrl && 'sourceUrl',
+        !sourceName && 'sourceName',
+      ].filter(Boolean).join(' and ');
       pushFinding(
         findings,
         questionId,
         questionIndex,
-        'low',
+        'medium',
         'missing_source_metadata',
-        'No source metadata (sourceUrl/sourceName) found; harder to verify answer correctness.'
+        `Missing ${missingFields}: every question must include a verifiable source URL and source name.`
       );
     }
   }
