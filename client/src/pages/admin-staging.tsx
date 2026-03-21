@@ -25,8 +25,29 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
-type Pillar = (typeof PILLARS)[number];
+const SINGLE_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+type SinglePillar = (typeof SINGLE_PILLARS)[number];
+type Pillar = SinglePillar | 'Mixed';
+
+const PILLAR_MIX: { pillar: SinglePillar; pct: number; label: string }[] = [
+  { pillar: 'TimeCapsule', pct: 0.30, label: 'TimeCapsule' },
+  { pillar: 'GlobalEh', pct: 0.30, label: 'GlobalEh' },
+  { pillar: 'FreshPrints', pct: 0.25, label: 'FreshPrints' },
+  { pillar: 'GreatOutdoors', pct: 0.15, label: 'GreatOutdoors' },
+];
+
+function allocateMixed(count: number): { pillar: SinglePillar; count: number }[] {
+  const items = PILLAR_MIX.map((t) => ({
+    pillar: t.pillar,
+    floored: Math.floor(t.pct * count),
+    remainder: (t.pct * count) % 1,
+    pct: t.pct,
+  }));
+  let remaining = count - items.reduce((s, t) => s + t.floored, 0);
+  items.sort((a, b) => b.remainder - a.remainder || b.pct - a.pct);
+  for (let i = 0; i < remaining; i++) items[i].floored++;
+  return items.filter((t) => t.floored > 0).map((t) => ({ pillar: t.pillar, count: t.floored }));
+}
 
 type FactCheckVerdict = 'pass' | 'flag' | 'fail';
 type QASeverity = 'high' | 'medium' | 'low';
@@ -267,9 +288,11 @@ export default function AdminStaging() {
 
   const [genForm, setGenForm] = useState({
     topic: '',
-    count: 5,
-    pillar: 'GlobalEh' as Pillar,
+    count: 10,
+    pillar: 'Mixed' as Pillar,
   });
+
+  const mixedBreakdown = genForm.pillar === 'Mixed' ? allocateMixed(genForm.count) : null;
 
   const fetchStaging = async () => {
     setLoading(true);
@@ -406,7 +429,7 @@ export default function AdminStaging() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="w-40 space-y-1">
+              <div className="w-48 space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">Pillar</label>
                 <Select
                   value={genForm.pillar}
@@ -417,13 +440,20 @@ export default function AdminStaging() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {PILLARS.map((p) => (
+                    <SelectItem value="Mixed">Mixed (30/30/25/15)</SelectItem>
+                    <div className="my-1 border-t border-white/10" />
+                    {SINGLE_PILLARS.map((p) => (
                       <SelectItem key={p} value={p}>
                         {p}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {mixedBreakdown && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {mixedBreakdown.map((b) => `${b.count} ${b.pillar}`).join(' · ')}
+                  </p>
+                )}
               </div>
               <Button
                 type="submit"

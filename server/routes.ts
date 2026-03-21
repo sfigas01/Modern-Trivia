@@ -18,11 +18,32 @@ import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+type SinglePillar = (typeof VALID_PILLARS)[number];
+
+const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
+  { pillar: 'TimeCapsule', pct: 0.30 },
+  { pillar: 'GlobalEh', pct: 0.30 },
+  { pillar: 'FreshPrints', pct: 0.25 },
+  { pillar: 'GreatOutdoors', pct: 0.15 },
+];
+
+function allocateMixed(count: number): { pillar: SinglePillar; count: number }[] {
+  const items = PILLAR_MIX.map((t) => ({
+    pillar: t.pillar,
+    floored: Math.floor(t.pct * count),
+    remainder: (t.pct * count) % 1,
+    pct: t.pct,
+  }));
+  let remaining = count - items.reduce((s, t) => s + t.floored, 0);
+  items.sort((a, b) => b.remainder - a.remainder || b.pct - a.pct);
+  for (let i = 0; i < remaining; i++) items[i].floored++;
+  return items.filter((t) => t.floored > 0).map((t) => ({ pillar: t.pillar, count: t.floored }));
+}
 
 const stagingGenerateSchema = z.object({
   topic: z.string().trim().min(1, 'Topic is required'),
   count: z.coerce.number().int().min(1).max(20),
-  pillar: z.enum(VALID_PILLARS),
+  pillar: z.union([z.enum(VALID_PILLARS), z.literal('Mixed')]),
 });
 
 function getUserId(req: Request): string | undefined {
@@ -428,12 +449,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const { topic, count, pillar } = parsed.data;
-      const generatedQuestions = await generateQuestions(topic, count, pillar);
+
+      let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
+
+      if (pillar === 'Mixed') {
+        const batches = allocateMixed(count);
+        console.info('[staging] Mixed generation', { topic, count, batches });
+        const results = await Promise.all(
+          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p)),
+        );
+        allGenerated = results.flat();
+      } else {
+        allGenerated = await generateQuestions(topic, count, pillar);
+      }
 
       const insertedQuestions = await db
         .insert(questions)
         .values(
-          generatedQuestions.map((q) => ({
+          allGenerated.map((q) => ({
             ...q,
             aiAnalysis: q.aiAnalysis,
           })),
