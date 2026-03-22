@@ -378,8 +378,8 @@ describe('GameProvider state machine', () => {
 
   it('reaches GAME_OVER when all questions are exhausted', async () => {
     // Use small numRounds so we have few questions to exhaust
-    // numRounds * teams = total questions; with numRounds=4 and 2 teams → 8 questions
-    const { result } = await setupAndStart({ numRounds: 4 });
+    // numRounds * teams * QUESTIONS_PER_TEAM_ROTATION = total questions; with numRounds=1 and 2 teams → 1*2*4=8 questions
+    const { result } = await setupAndStart({ numRounds: 1 });
     const totalQuestions = result.current.state.questions.length;
 
     for (let i = 0; i < totalQuestions; i++) {
@@ -432,10 +432,10 @@ describe('Full game happy path', () => {
   });
 
   it('plays a complete game: SETUP → questions → ROUND_SCORE → GAME_OVER with scores', async () => {
-    // Setup: 2 teams, 4 rounds → 8 total questions → exactly 1 round boundary at 8
-    const { result } = await setupAndStart({ numRounds: 4 });
+    // Setup: 2 teams, 2 rounds → 2*2*4=16 total questions → ROUND_SCORE at 8, GAME_OVER at 16
+    const { result } = await setupAndStart({ numRounds: 2 });
     const totalQuestions = result.current.state.questions.length;
-    expect(totalQuestions).toBe(8); // 4 rounds * 2 teams
+    expect(totalQuestions).toBe(16); // 2 rounds * 2 teams * 4 questions/turn
 
     let questionsAnswered = 0;
     while (result.current.state.phase !== 'GAME_OVER') {

@@ -76,7 +76,7 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-const QUESTIONS_PER_TEAM_ROTATION = 4;
+export const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 export const normalize = (str: string): string => {
   return str
@@ -208,7 +208,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
   const startGame = async () => {
-    const totalNeeded = state.numRounds * state.teams.length;
+    const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
     const categoryParam =
       state.selectedCategory !== 'All'
         ? `&category=${encodeURIComponent(state.selectedCategory)}`

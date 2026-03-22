@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { useGame } from '@/lib/store';
+import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export default function Home() {
     return counts;
   }, [state.questions]);
 
-  const totalNeeded = state.numRounds * state.teams.length;
+  const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
   const availableCount = categoryCounts[state.selectedCategory] || 0;
   const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
@@ -210,7 +210,7 @@ export default function Home() {
                 <p className="mt-1">
                   {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
                   <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
-                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams).
+                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn).
                   The game will use all {availableCount} available.
                 </p>
               </div>
