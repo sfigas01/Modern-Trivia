@@ -91,6 +91,7 @@ describe('auditQuestionQuality', () => {
         explanation: 'DNA stands for deoxyribonucleic acid.',
         tags: ['Global', 'Science', 'GlobalEh'],
         sourceName: 'Biology textbook',
+        sourceUrl: 'https://example.com/biology',
       },
     ]);
 
