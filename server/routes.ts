@@ -10,19 +10,42 @@ import {
   questions,
   seenQuestions,
   insertQuestionSchema,
+  questionEdits,
 } from '@shared/schema';
-import { eq, and, sql, isNull } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
+import { getAiFieldFix, type FixableField } from './lib/field-fix';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+type SinglePillar = (typeof VALID_PILLARS)[number];
+
+const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
+  { pillar: 'TimeCapsule', pct: 0.3 },
+  { pillar: 'GlobalEh', pct: 0.3 },
+  { pillar: 'FreshPrints', pct: 0.25 },
+  { pillar: 'GreatOutdoors', pct: 0.15 },
+];
+
+function allocateMixed(count: number): { pillar: SinglePillar; count: number }[] {
+  const items = PILLAR_MIX.map((t) => ({
+    pillar: t.pillar,
+    floored: Math.floor(t.pct * count),
+    remainder: (t.pct * count) % 1,
+    pct: t.pct,
+  }));
+  let remaining = count - items.reduce((s, t) => s + t.floored, 0);
+  items.sort((a, b) => b.remainder - a.remainder || b.pct - a.pct);
+  for (let i = 0; i < remaining; i++) items[i].floored++;
+  return items.filter((t) => t.floored > 0).map((t) => ({ pillar: t.pillar, count: t.floored }));
+}
 
 const stagingGenerateSchema = z.object({
   topic: z.string().trim().min(1, 'Topic is required'),
   count: z.coerce.number().int().min(1).max(20),
-  pillar: z.enum(VALID_PILLARS),
+  pillar: z.union([z.enum(VALID_PILLARS), z.literal('Mixed')]),
 });
 
 function getUserId(req: Request): string | undefined {
@@ -266,7 +289,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let results;
       if (shouldExcludeSeen) {
-        // LEFT JOIN to find unseen questions
+        // Escalating cooldown cycle: 1 month → 3 months → 5 months, repeating
+        const cooldownExpr = sql`
+          CASE (${seenQuestions.seenCount} - 1) % 3
+            WHEN 0 THEN INTERVAL '1 month'
+            WHEN 1 THEN INTERVAL '3 months'
+            WHEN 2 THEN INTERVAL '5 months'
+          END
+        `;
+
+        // LEFT JOIN to find unseen or cooldown-expired questions
         const query = db
           .select({
             id: questions.id,
@@ -286,10 +318,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             seenQuestions,
             and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(and(...conditions, isNull(seenQuestions.questionId)));
+          .where(
+            and(
+              ...conditions,
+              sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
+            )
+          );
 
+        // Prefer never-seen questions first; only backfill with
+        // cooldown-expired ones when unseen supply is exhausted.
         if (shuffle === 'true') {
-          query.orderBy(sql`random()`);
+          query.orderBy(
+            sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
+            sql`random()`
+          );
+        } else {
+          query.orderBy(sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`);
         }
         if (limit) {
           query.limit(parseInt(limit as string, 10));
@@ -347,10 +391,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'questionIds array is required' });
       }
 
+      // Upsert with replay guard: only bump seen_count if the last
+      // seen_at is more than 24 hours ago. This prevents duplicate
+      // submissions or client retries from inflating the count and
+      // pushing questions into longer cooldowns than warranted.
       await db
         .insert(seenQuestions)
         .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [seenQuestions.userId, seenQuestions.questionId],
+          set: {
+            seenCount: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN ${seenQuestions.seenCount} + 1
+              ELSE ${seenQuestions.seenCount}
+            END`,
+            seenAt: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN NOW()
+              ELSE ${seenQuestions.seenAt}
+            END`,
+          },
+        });
 
       res.json({ message: 'Questions marked as seen', count: questionIds.length });
     } catch (error) {
@@ -400,6 +462,197 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin question browser — all questions, all statuses
+  app.get('/api/admin/questions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const {
+        status,
+        category,
+        pillar,
+        search,
+        limit: limitParam,
+        offset: offsetParam,
+      } = req.query;
+
+      const conditions = [];
+      if (status && status !== 'all') {
+        conditions.push(eq(questions.status, status as string));
+      }
+      if (category && category !== 'all') {
+        conditions.push(eq(questions.category, category as string));
+      }
+      if (pillar && pillar !== 'all') {
+        conditions.push(eq(questions.pillar, pillar as string));
+      }
+      if (search && typeof search === 'string' && search.trim()) {
+        const term = `%${search.trim()}%`;
+        conditions.push(
+          sql`(${questions.question} ilike ${term} or ${questions.answer} ilike ${term} or ${questions.category} ilike ${term})`
+        );
+      }
+
+      const pageLimit = Math.min(parseInt(limitParam as string, 10) || 50, 200);
+      const pageOffset = parseInt(offsetParam as string, 10) || 0;
+
+      const rows = await db
+        .select()
+        .from(questions)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(sql`${questions.createdAt} desc`)
+        .limit(pageLimit)
+        .offset(pageOffset);
+
+      const [totalResult, allCategories, allPillars] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(questions)
+          .then((r) => r[0]?.count ?? 0),
+        db.selectDistinct({ category: questions.category }).from(questions),
+        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+      ]);
+
+      res.json({
+        questions: rows,
+        total: totalResult,
+        categories: allCategories.map((c) => c.category).sort(),
+        pillars: allPillars.map((p) => p.pillar).sort(),
+      });
+    } catch (error) {
+      console.error('Error fetching admin questions:', error);
+      res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+  });
+
+  // Edit a single field on a question and record it in the changelog
+  app.patch('/api/admin/questions/:id/field', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const {
+        field,
+        value,
+        aiSuggested = false,
+      } = req.body as {
+        field: string;
+        value: unknown;
+        aiSuggested?: boolean;
+      };
+
+      if (!field) return res.status(400).json({ message: 'field is required' });
+
+      // Fetch the current row to capture the old value
+      const [current] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+      if (!current) return res.status(404).json({ message: 'Question not found' });
+
+      const oldValue =
+        current[field as keyof typeof current] != null
+          ? JSON.stringify(current[field as keyof typeof current])
+          : null;
+
+      // Apply the update
+      const [updated] = await db
+        .update(questions)
+        .set({ [field]: value, updatedAt: new Date() } as Record<string, unknown>)
+        .where(eq(questions.id, id))
+        .returning();
+
+      // Record in changelog
+      await db.insert(questionEdits).values({
+        id: crypto.randomUUID(),
+        questionId: id,
+        field,
+        oldValue,
+        newValue: value != null ? JSON.stringify(value) : null,
+        changedBy: userId,
+        aiSuggested: Boolean(aiSuggested),
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error patching question field:', error);
+      res.status(500).json({ message: 'Failed to update field' });
+    }
+  });
+
+  // AI fix suggestion for a specific field
+  app.post(
+    '/api/admin/questions/:id/ai-fix',
+    isAuthenticated,
+    isAdmin,
+    aiLimiter,
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { field } = req.body as { field: string };
+
+        const FIXABLE = [
+          'sourceUrl',
+          'sourceName',
+          'explanation',
+          'tags',
+          'answer',
+          'question',
+          'acceptableAnswers',
+        ];
+        if (!field || !FIXABLE.includes(field)) {
+          return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
+        }
+
+        const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+        if (!q) return res.status(404).json({ message: 'Question not found' });
+
+        const suggestion = await getAiFieldFix(
+          {
+            id: q.id,
+            category: q.category,
+            difficulty: q.difficulty,
+            question: q.question,
+            answer: q.answer,
+            explanation: q.explanation,
+            pillar: q.pillar,
+            tags: (q.tags as string[]) ?? [],
+            sourceUrl: q.sourceUrl ?? null,
+            sourceName: q.sourceName ?? null,
+          },
+          field as FixableField
+        );
+
+        res.json({ suggestion });
+      } catch (error) {
+        console.error('Error getting AI field fix:', error);
+        res.status(500).json({ message: 'Failed to get AI suggestion' });
+      }
+    }
+  );
+
+  // Fetch the edit changelog for a question
+  app.get('/api/admin/questions/:id/edits', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const edits = await db
+        .select({
+          id: questionEdits.id,
+          questionId: questionEdits.questionId,
+          field: questionEdits.field,
+          oldValue: questionEdits.oldValue,
+          newValue: questionEdits.newValue,
+          aiSuggested: questionEdits.aiSuggested,
+          changedAt: questionEdits.changedAt,
+          changedBy: questionEdits.changedBy,
+        })
+        .from(questionEdits)
+        .where(eq(questionEdits.questionId, id))
+        .orderBy(sql`${questionEdits.changedAt} desc`)
+        .limit(50);
+      res.json(edits);
+    } catch (error) {
+      console.error('Error fetching question edits:', error);
+      res.status(500).json({ message: 'Failed to fetch edit history' });
+    }
+  });
+
   // Staging API (Admin Only)
   app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -428,9 +681,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const { topic, count, pillar } = parsed.data;
-      const generatedQuestions = await generateQuestions(topic, count, pillar);
 
-      const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
+      let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
+
+      if (pillar === 'Mixed') {
+        const batches = allocateMixed(count);
+        console.info('[staging] Mixed generation', { topic, count, batches });
+        const results = await Promise.all(
+          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p))
+        );
+        allGenerated = results.flat();
+      } else {
+        allGenerated = await generateQuestions(topic, count, pillar);
+      }
+
+      const insertedQuestions = await db
+        .insert(questions)
+        .values(
+          allGenerated.map((q) => ({
+            ...q,
+            aiAnalysis: q.aiAnalysis,
+          }))
+        )
+        .returning();
 
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
@@ -440,6 +713,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
+    }
+  });
+
+  // Bulk-promote all pending staging questions to approved
+  app.post('/api/staging/promote-all', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const promoted = await db
+        .update(questions)
+        .set({ status: 'approved', updatedAt: new Date() })
+        .where(eq(questions.status, 'pending'))
+        .returning({ id: questions.id });
+
+      console.info('[staging] Bulk promoted all pending questions', { count: promoted.length });
+      res.json({ count: promoted.length, ids: promoted.map((q) => q.id) });
+    } catch (error) {
+      console.error('Error bulk promoting questions:', error);
+      res.status(500).json({ message: 'Failed to promote all questions' });
     }
   });
 
@@ -464,6 +754,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error promoting question:', error);
       res.status(500).json({ message: 'Failed to promote question' });
+    }
+  });
+
+  app.post('/api/staging/:id/reject', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [rejected] = await db
+        .update(questions)
+        .set({
+          status: 'rejected',
+          updatedAt: new Date(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!rejected) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(rejected);
+    } catch (error) {
+      console.error('Error rejecting question:', error);
+      res.status(500).json({ message: 'Failed to reject question' });
     }
   });
 
