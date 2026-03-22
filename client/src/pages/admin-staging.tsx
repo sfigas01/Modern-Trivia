@@ -503,17 +503,13 @@ export default function AdminStaging() {
                   data-testid="toggle-auto-accept"
                 >
                   <Switch
-                    id="toggle-auto-accept"
                     checked={genForm.autoAccept}
                     onCheckedChange={(v) => setGenForm((f) => ({ ...f, autoAccept: v }))}
                   />
-                  <Label
-                    htmlFor="toggle-auto-accept"
-                    className="text-xs font-medium whitespace-nowrap flex items-center gap-1 cursor-pointer"
-                  >
+                  <span className="text-xs font-medium whitespace-nowrap flex items-center gap-1">
                     <Zap className="w-3 h-3" />
                     Auto Accept
-                  </Label>
+                  </span>
                 </div>
                 {genForm.autoAccept && (
                   <p className="text-xs text-primary/70 max-w-[140px] leading-tight">

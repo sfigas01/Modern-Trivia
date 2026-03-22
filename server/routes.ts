@@ -12,7 +12,7 @@ import {
   insertQuestionSchema,
   questionEdits,
 } from '@shared/schema';
-import { eq, and, sql, isNull } from 'drizzle-orm';
+import { eq, and, sql, isNull, inArray } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
@@ -649,7 +649,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const updated = await db
           .update(questions)
           .set({ status: 'approved', updatedAt: new Date() })
-          .where(sql`${questions.id} = ANY(${ids})`)
+          .where(inArray(questions.id, ids))
           .returning();
         autoAcceptedCount = updated.length;
         console.info('[staging] Auto-accepted', { count: autoAcceptedCount });
