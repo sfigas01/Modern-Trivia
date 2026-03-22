@@ -325,8 +325,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             )
           );
 
+        // Prefer never-seen questions first; only backfill with
+        // cooldown-expired ones when unseen supply is exhausted.
         if (shuffle === 'true') {
-          query.orderBy(sql`random()`);
+          query.orderBy(
+            sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
+            sql`random()`
+          );
+        } else {
+          query.orderBy(sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`);
         }
         if (limit) {
           query.limit(parseInt(limit as string, 10));
