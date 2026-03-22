@@ -109,9 +109,8 @@ function answerLooksNumeric(answer: string): boolean {
 }
 
 function isNumericQuestion(question: string): boolean {
-  const hasNumericPhrase = /\b(what year|which year|in what year|how many|how much|how old)\b/i.test(
-    question
-  );
+  const hasNumericPhrase =
+    /\b(what year|which year|in what year|how many|how much|how old)\b/i.test(question);
   const hasTemporalWhenLead =
     /^\s*when\s+(was|were|did|is|are|do|does|has|have|had|will|would|can|could)\b/i.test(question);
 
@@ -392,10 +391,9 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
     }
 
     if (!sourceUrl || !sourceName) {
-      const missingFields = [
-        !sourceUrl && 'sourceUrl',
-        !sourceName && 'sourceName',
-      ].filter(Boolean).join(' and ');
+      const missingFields = [!sourceUrl && 'sourceUrl', !sourceName && 'sourceName']
+        .filter(Boolean)
+        .join(' and ');
       pushFinding(
         findings,
         questionId,

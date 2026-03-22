@@ -39,7 +39,7 @@ interface GenerateQuestionInput {
 function normalizeCandidate(
   raw: GenerateQuestionInput,
   topic: string,
-  pillar: string,
+  pillar: string
 ): GenerateQuestionInput {
   return {
     ...raw,
@@ -97,7 +97,7 @@ function describeFailures(q: PendingQuestion): string[] {
 }
 
 async function runQaOnSingle(
-  q: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>,
+  q: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>
 ): Promise<PendingQuestion> {
   const id = q.id as string;
   const [auditReport, factCheckMap] = await Promise.all([
@@ -119,7 +119,7 @@ async function repairQuestion(
   original: PendingQuestion,
   topic: string,
   pillar: string,
-  failureReasons: string[],
+  failureReasons: string[]
 ): Promise<PendingQuestion | null> {
   const originalJson = JSON.stringify(
     {
@@ -136,7 +136,7 @@ async function repairQuestion(
       sourceName: original.sourceName,
     },
     null,
-    2,
+    2
   );
 
   const repairPrompt = `The following trivia question about "${topic}" for the "${pillar}" pillar failed quality checks.
@@ -172,11 +172,7 @@ ${QUESTION_RULES(pillar)}`;
     const content = response.choices[0]?.message?.content || '{}';
     const raw = JSON.parse(content) as GenerateQuestionInput;
 
-    const normalized = normalizeCandidate(
-      { ...raw, id: crypto.randomUUID() },
-      topic,
-      pillar,
-    );
+    const normalized = normalizeCandidate({ ...raw, id: crypto.randomUUID() }, topic, pillar);
     const validated = insertQuestionWithPendingStatusSchema.parse(normalized);
     const repaired = await runQaOnSingle(validated);
 
@@ -190,7 +186,8 @@ ${QUESTION_RULES(pillar)}`;
       return null;
     }
 
-    return { ...repaired, aiAnalysis: { ...repaired.aiAnalysis, repaired: true } };
+    const analysis = repaired.aiAnalysis as QuestionAiAnalysis;
+    return { ...repaired, aiAnalysis: { ...analysis, repaired: true } };
   } catch (error) {
     console.error('[guardian] Repair attempt failed', { originalId: original.id, error });
     return null;
@@ -200,7 +197,7 @@ ${QUESTION_RULES(pillar)}`;
 export async function generateQuestions(
   topic: string,
   count: number,
-  pillar: string,
+  pillar: string
 ): Promise<PendingQuestion[]> {
   const normalizedCount = Math.max(1, Math.min(20, Math.floor(count || 1)));
   const startedAt = Date.now();
@@ -264,8 +261,8 @@ ${QUESTION_RULES(pillar)}
 
     validated = rawQuestions.map((item) =>
       insertQuestionWithPendingStatusSchema.parse(
-        normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar),
-      ),
+        normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar)
+      )
     );
 
     if (validated.length !== normalizedCount) {
@@ -301,7 +298,7 @@ ${QUESTION_RULES(pillar)}
         question: q.question,
         answer: q.answer,
         explanation: q.explanation,
-      })),
+      }))
     ),
   ]);
 
@@ -364,7 +361,7 @@ ${QUESTION_RULES(pillar)}
     });
 
     const repairResults = await Promise.all(
-      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q))),
+      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q)))
     );
 
     let repairedCount = 0;

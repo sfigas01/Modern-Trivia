@@ -1,4 +1,14 @@
-import { pgTable, text, varchar, jsonb, timestamp, index, primaryKey, boolean } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  text,
+  varchar,
+  jsonb,
+  timestamp,
+  index,
+  primaryKey,
+  integer,
+  boolean,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { users } from './auth';
@@ -49,6 +59,7 @@ export const seenQuestions = pgTable(
       .notNull()
       .references(() => questions.id),
     seenAt: timestamp('seen_at').notNull().defaultNow(),
+    seenCount: integer('seen_count').notNull().default(1),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.questionId] }),
@@ -75,7 +86,7 @@ export const questionEdits = pgTable(
     aiSuggested: boolean('ai_suggested').notNull().default(false),
     changedAt: timestamp('changed_at').notNull().defaultNow(),
   },
-  (table) => [index('idx_question_edits_question').on(table.questionId)],
+  (table) => [index('idx_question_edits_question').on(table.questionId)]
 );
 
 export type QuestionEdit = typeof questionEdits.$inferSelect;

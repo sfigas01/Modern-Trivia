@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Inline field editing** — Hover any field in the admin question panel to reveal an edit pencil; saves via a single-field `PATCH` without touching other fields (STE-117)
 - **AI fix suggestions** — Fields flagged by QA show a `Fix with AI` button that calls a field-specific AI prompt and pre-fills the corrected value for admin review before saving (STE-117)
 - **Audit changelog** — Every field save writes an old→new record to a new `question_edits` table; the `ChangeLog` component in each question's detail panel shows full edit history with AI-assisted edits clearly badged (STE-117)
-- **Bulk Accept All** — Green *Accept All* button in the staging queue header promotes every pending question to approved in a single operation via `POST /api/staging/promote-all` (STE-118)
-- **Spoiler-free staging review** — Answers hidden by default in the staging queue with a per-card *Reveal answer* toggle, so reviewers can scan question text without spoiling answers (STE-118)
+- **Bulk Accept All** — Green _Accept All_ button in the staging queue header promotes every pending question to approved in a single operation via `POST /api/staging/promote-all` (STE-118)
+- **Spoiler-free staging review** — Answers hidden by default in the staging queue with a per-card _Reveal answer_ toggle, so reviewers can scan question text without spoiling answers (STE-118)
 - **Spoiler-free question browser** — Answer removed from the collapsed row summary in the admin question browser; still visible in the expanded edit panel (STE-118)
 
 ### Fixed

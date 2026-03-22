@@ -100,7 +100,7 @@ Return ONLY a JSON array of strings. Include the primary answer plus any valid a
 
 export async function getAiFieldFix(
   question: QuestionContext,
-  field: FixableField,
+  field: FixableField
 ): Promise<string> {
   const prompt = PROMPTS[field](question);
 
