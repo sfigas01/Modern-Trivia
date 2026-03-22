@@ -1,28 +1,52 @@
 import { db } from './db';
 import { questions } from '@shared/schema';
-import { count } from 'drizzle-orm';
 import seedData from './seed-data.json';
 
 function log(msg: string) {
-  const t = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
+  const t = new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
   console.log(`${t} [seed] ${msg}`);
 }
 
-export async function seedIfEmpty(): Promise<void> {
-  try {
-    const [{ value: total }] = await db.select({ value: count() }).from(questions);
-    if (total > 0) {
-      log(`Database already has ${total} questions — skipping seed`);
-      return;
-    }
+interface SeedRecord {
+  id: string;
+  category: string;
+  difficulty: string;
+  question: string;
+  answer: string;
+  acceptableAnswers: string[] | null;
+  explanation: string;
+  pillar: string;
+  tags: string[] | null;
+  sourceUrl: string | null;
+  sourceName: string | null;
+  status: string;
+  aiAnalysis: unknown;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
 
-    log(`Database is empty — seeding ${seedData.length} questions…`);
+const typedSeedData: SeedRecord[] = seedData as SeedRecord[];
+
+/**
+ * Upserts all approved seed questions into the database.
+ * Uses ON CONFLICT DO NOTHING so production-side edits are preserved.
+ * Runs on every startup — new questions added to seed-data.json will be
+ * inserted; existing ones (matched by id) are left untouched.
+ */
+export async function seedQuestions(): Promise<void> {
+  try {
+    log(`Upserting ${typedSeedData.length} seed questions…`);
 
     const BATCH = 50;
     let inserted = 0;
 
-    for (let i = 0; i < seedData.length; i += BATCH) {
-      const batch = (seedData as any[]).slice(i, i + BATCH).map((q: any) => ({
+    for (let i = 0; i < typedSeedData.length; i += BATCH) {
+      const batch = typedSeedData.slice(i, i + BATCH).map((q) => ({
         id: q.id,
         category: q.category,
         difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
@@ -30,21 +54,27 @@ export async function seedIfEmpty(): Promise<void> {
         answer: q.answer,
         acceptableAnswers: q.acceptableAnswers ?? [],
         explanation: q.explanation,
-        pillar: q.pillar,
+        pillar: q.pillar as 'GlobalEh' | 'FreshPrints' | 'TimeCapsule' | 'GreatOutdoors',
         tags: q.tags ?? [],
-        sourceUrl: q.sourceUrl ?? null,
-        sourceName: q.sourceName ?? null,
-        status: q.status ?? 'approved',
-        aiAnalysis: q.aiAnalysis ?? null,
+        sourceUrl: q.sourceUrl,
+        sourceName: q.sourceName,
+        status: q.status as 'approved' | 'pending' | 'rejected' | 'draft',
+        aiAnalysis: q.aiAnalysis,
         createdAt: q.createdAt ? new Date(q.createdAt) : new Date(),
         updatedAt: q.updatedAt ? new Date(q.updatedAt) : new Date(),
       }));
 
-      await db.insert(questions).values(batch).onConflictDoNothing();
-      inserted += batch.length;
+      const result = await db
+        .insert(questions)
+        .values(batch)
+        .onConflictDoNothing()
+        .returning({ id: questions.id });
+
+      inserted += result.length;
     }
 
-    log(`Seed complete — inserted ${inserted} questions`);
+    const skipped = typedSeedData.length - inserted;
+    log(`Seed complete — inserted ${inserted} new, ${skipped} already present`);
   } catch (err) {
     log(`Seed error: ${err}`);
   }
