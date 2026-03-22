@@ -335,12 +335,12 @@
   },
   {
     "id": "q31",
-    "category": "Tech",
+    "category": "Technology",
     "difficulty": "Medium",
     "question": "Which company was founded by Bill Gates and Paul Allen?",
     "answer": "Microsoft",
     "explanation": "Founded on April 4, 1975 in Albuquerque, New Mexico.",
-    "tags": ["US", "Tech", "TimeCapsule"],
+    "tags": ["US", "Technology", "TimeCapsule"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Microsoft",
     "sourceName": "Wikipedia"
   },
@@ -368,12 +368,12 @@
   },
   {
     "id": "q34",
-    "category": "General",
+    "category": "General Knowledge",
     "difficulty": "Easy",
     "question": "How many sides does a hexagon have?",
     "answer": "Six",
     "explanation": "From the Greek 'hex' meaning six.",
-    "tags": ["Global", "General", "GlobalEh"],
+    "tags": ["Global", "General Knowledge", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hexagon",
     "sourceName": "Wikipedia"
   },
@@ -533,12 +533,12 @@
   },
   {
     "id": "q49",
-    "category": "General",
+    "category": "General Knowledge",
     "difficulty": "Easy",
     "question": "What color do you get when you mix Red and Blue?",
     "answer": "Purple",
     "explanation": "Purple is a secondary color in the traditional RYB color model used in painting.",
-    "tags": ["Global", "General", "GlobalEh"],
+    "tags": ["Global", "General Knowledge", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Purple",
     "sourceName": "Wikipedia"
   },
