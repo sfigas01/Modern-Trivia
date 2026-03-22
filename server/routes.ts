@@ -10,10 +10,12 @@ import {
   questions,
   seenQuestions,
   insertQuestionSchema,
+  questionEdits,
 } from '@shared/schema';
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
+import { getAiFieldFix, type FixableField } from './lib/field-fix';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
@@ -472,6 +474,118 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error fetching admin questions:', error);
       res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+  });
+
+  // Edit a single field on a question and record it in the changelog
+  app.patch('/api/admin/questions/:id/field', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const { field, value, aiSuggested = false } = req.body as {
+        field: string;
+        value: unknown;
+        aiSuggested?: boolean;
+      };
+
+      if (!field) return res.status(400).json({ message: 'field is required' });
+
+      // Fetch the current row to capture the old value
+      const [current] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+      if (!current) return res.status(404).json({ message: 'Question not found' });
+
+      const oldValue =
+        current[field as keyof typeof current] != null
+          ? JSON.stringify(current[field as keyof typeof current])
+          : null;
+
+      // Apply the update
+      const [updated] = await db
+        .update(questions)
+        .set({ [field]: value, updatedAt: new Date() } as Record<string, unknown>)
+        .where(eq(questions.id, id))
+        .returning();
+
+      // Record in changelog
+      await db.insert(questionEdits).values({
+        id: crypto.randomUUID(),
+        questionId: id,
+        field,
+        oldValue,
+        newValue: value != null ? JSON.stringify(value) : null,
+        changedBy: userId,
+        aiSuggested: Boolean(aiSuggested),
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error patching question field:', error);
+      res.status(500).json({ message: 'Failed to update field' });
+    }
+  });
+
+  // AI fix suggestion for a specific field
+  app.post('/api/admin/questions/:id/ai-fix', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { field } = req.body as { field: string };
+
+      const FIXABLE = ['sourceUrl', 'sourceName', 'explanation', 'tags', 'answer', 'question', 'acceptableAnswers'];
+      if (!field || !FIXABLE.includes(field)) {
+        return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
+      }
+
+      const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+      if (!q) return res.status(404).json({ message: 'Question not found' });
+
+      const suggestion = await getAiFieldFix(
+        {
+          id: q.id,
+          category: q.category,
+          difficulty: q.difficulty,
+          question: q.question,
+          answer: q.answer,
+          explanation: q.explanation,
+          pillar: q.pillar,
+          tags: (q.tags as string[]) ?? [],
+          sourceUrl: q.sourceUrl ?? null,
+          sourceName: q.sourceName ?? null,
+        },
+        field as FixableField,
+      );
+
+      res.json({ suggestion });
+    } catch (error) {
+      console.error('Error getting AI field fix:', error);
+      res.status(500).json({ message: 'Failed to get AI suggestion' });
+    }
+  });
+
+  // Fetch the edit changelog for a question
+  app.get('/api/admin/questions/:id/edits', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const edits = await db
+        .select({
+          id: questionEdits.id,
+          questionId: questionEdits.questionId,
+          field: questionEdits.field,
+          oldValue: questionEdits.oldValue,
+          newValue: questionEdits.newValue,
+          aiSuggested: questionEdits.aiSuggested,
+          changedAt: questionEdits.changedAt,
+          changedBy: questionEdits.changedBy,
+        })
+        .from(questionEdits)
+        .where(eq(questionEdits.questionId, id))
+        .orderBy(sql`${questionEdits.changedAt} desc`)
+        .limit(50);
+      res.json(edits);
+    } catch (error) {
+      console.error('Error fetching question edits:', error);
+      res.status(500).json({ message: 'Failed to fetch edit history' });
     }
   });
 

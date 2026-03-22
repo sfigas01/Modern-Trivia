@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, jsonb, timestamp, index, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, jsonb, timestamp, index, primaryKey, boolean } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { users } from './auth';
@@ -57,3 +57,25 @@ export const seenQuestions = pgTable(
 );
 
 export type SeenQuestion = typeof seenQuestions.$inferSelect;
+
+// Question edits — changelog of every field-level change made by admins
+export const questionEdits = pgTable(
+  'question_edits',
+  {
+    id: varchar('id').primaryKey(),
+    questionId: varchar('question_id')
+      .notNull()
+      .references(() => questions.id, { onDelete: 'cascade' }),
+    field: varchar('field', { length: 50 }).notNull(),
+    oldValue: text('old_value'),
+    newValue: text('new_value'),
+    changedBy: varchar('changed_by')
+      .notNull()
+      .references(() => users.id),
+    aiSuggested: boolean('ai_suggested').notNull().default(false),
+    changedAt: timestamp('changed_at').notNull().defaultNow(),
+  },
+  (table) => [index('idx_question_edits_question').on(table.questionId)],
+);
+
+export type QuestionEdit = typeof questionEdits.$inferSelect;
