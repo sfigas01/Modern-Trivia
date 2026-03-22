@@ -384,14 +384,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'questionIds array is required' });
       }
 
+      // Upsert with replay guard: only bump seen_count if the last
+      // seen_at is more than 24 hours ago. This prevents duplicate
+      // submissions or client retries from inflating the count and
+      // pushing questions into longer cooldowns than warranted.
       await db
         .insert(seenQuestions)
         .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
         .onConflictDoUpdate({
           target: [seenQuestions.userId, seenQuestions.questionId],
           set: {
-            seenCount: sql`${seenQuestions.seenCount} + 1`,
-            seenAt: sql`NOW()`,
+            seenCount: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN ${seenQuestions.seenCount} + 1
+              ELSE ${seenQuestions.seenCount}
+            END`,
+            seenAt: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN NOW()
+              ELSE ${seenQuestions.seenAt}
+            END`,
           },
         });
 
