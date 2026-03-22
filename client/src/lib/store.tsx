@@ -146,14 +146,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     numRounds: 10,
   });
 
-  // Load questions from the database API (setup catalog only)
+  // Load questions from the database API whenever we enter SETUP phase
+  // (initial mount AND after resetGame() brings us back to SETUP)
   useEffect(() => {
+    if (state.phase !== 'SETUP') return;
     async function loadQuestions() {
       try {
         const res = await fetch('/api/questions', { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to load questions');
         const data = await res.json();
-        // Only apply if still in SETUP — avoid overwriting an active game
         setState((s) => {
           if (s.phase !== 'SETUP') return s;
           return {
@@ -167,7 +168,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }
     loadQuestions();
-  }, []);
+  }, [state.phase]);
 
   // Record only actually-presented questions as seen when game ends
   useEffect(() => {
