@@ -76,6 +76,9 @@ export async function seedQuestions(): Promise<void> {
     const skipped = typedSeedData.length - inserted;
     log(`Seed complete — inserted ${inserted} new, ${skipped} already present`);
   } catch (err) {
-    log(`Seed error: ${err}`);
+    // Log prominently so it's visible in deployment logs — the server
+    // continues starting up but production may be question-less until fixed.
+    console.error('[seed] CRITICAL: Seed failed — production may have no questions.');
+    console.error('[seed]', err);
   }
 }
