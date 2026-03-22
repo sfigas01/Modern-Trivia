@@ -5,6 +5,12 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.2] - 2026-03-22
+
+### Fixed
+
+- **Game ends too early — round count not fully applied** — `startGame()` calculated `totalNeeded = numRounds × teams`, missing the 4-questions-per-turn factor. With 2 teams and 10 rounds this fetched only 20 questions (~2.5 rounds) instead of 80 (10 full rounds). Fixed to `numRounds × teams × QUESTIONS_PER_TEAM_ROTATION`; the setup-screen "not enough questions" warning and unit tests updated to match (STE-126)
+
 ## [v0.4.1] - 2026-03-22
 
 ### Fixed
@@ -96,6 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Session handling uses memory store fallback when database is unavailable
 - Trivia questions updated with factual corrections and improved explanations
 
+[v0.4.2]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.2
 [v0.4.1]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.1
 [v0.4.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.3.0
