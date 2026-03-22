@@ -5,6 +5,22 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.0] - 2026-03-22
+
+### Added
+
+- **Inline field editing** — Hover any field in the admin question panel to reveal an edit pencil; saves via a single-field `PATCH` without touching other fields (STE-117)
+- **AI fix suggestions** — Fields flagged by QA show a `Fix with AI` button that calls a field-specific AI prompt and pre-fills the corrected value for admin review before saving (STE-117)
+- **Audit changelog** — Every field save writes an old→new record to a new `question_edits` table; the `ChangeLog` component in each question's detail panel shows full edit history with AI-assisted edits clearly badged (STE-117)
+- **Bulk Accept All** — Green *Accept All* button in the staging queue header promotes every pending question to approved in a single operation via `POST /api/staging/promote-all` (STE-118)
+- **Spoiler-free staging review** — Answers hidden by default in the staging queue with a per-card *Reveal answer* toggle, so reviewers can scan question text without spoiling answers (STE-118)
+- **Spoiler-free question browser** — Answer removed from the collapsed row summary in the admin question browser; still visible in the expanded edit panel (STE-118)
+
+### Fixed
+
+- Removed auto-accept toggle from the staging generate form — it was causing a React infinite render loop due to Radix UI `Switch` + `Label htmlFor` double-toggling (STE-118)
+- Bulk status update now uses `inArray()` instead of a raw SQL template, fixing a query-builder safety issue
+
 ## [v0.3.0] - 2026-03-07
 
 ### Added
@@ -73,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Session handling uses memory store fallback when database is unavailable
 - Trivia questions updated with factual corrections and improved explanations
 
+[v0.4.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.3.0
 [v0.2.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.1.0
