@@ -24,10 +24,8 @@ import {
   ThumbsDown,
   Eye,
   EyeOff,
-  Zap,
+  CheckCheck,
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SINGLE_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
@@ -319,8 +317,8 @@ export default function AdminStaging() {
     topic: '',
     count: 10,
     pillar: 'Mixed' as Pillar,
-    autoAccept: false,
   });
+  const [promotingAll, setPromotingAll] = useState(false);
 
   const mixedBreakdown = genForm.pillar === 'Mixed' ? allocateMixed(genForm.count) : null;
 
@@ -354,20 +352,13 @@ export default function AdminStaging() {
         const err = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(err.message || 'Generation failed');
       }
-      const data = await res.json() as { count: number; autoAccepted?: number };
-      if (genForm.autoAccept) {
-        toast({
-          title: 'Questions generated & approved',
-          description: `${data.count} question${data.count !== 1 ? 's' : ''} went live automatically — no spoilers!`,
-        });
-      } else {
-        toast({
-          title: 'Questions generated',
-          description: `${data.count} question${data.count !== 1 ? 's' : ''} added to staging with QA analysis.`,
-        });
-      }
+      const data = await res.json() as { count: number };
+      toast({
+        title: 'Questions generated',
+        description: `${data.count} question${data.count !== 1 ? 's' : ''} added to the review queue.`,
+      });
       setGenForm((f) => ({ ...f, topic: '' }));
-      if (!genForm.autoAccept) await fetchStaging();
+      await fetchStaging();
     } catch (err) {
       toast({
         title: 'Generation failed',
@@ -404,6 +395,28 @@ export default function AdminStaging() {
       toast({ title: 'Rejected', description: 'Question removed from staging.' });
     } catch {
       toast({ title: 'Error', description: 'Failed to reject question.', variant: 'destructive' });
+    }
+  };
+
+  const handlePromoteAll = async () => {
+    if (stagingQuestions.length === 0) return;
+    setPromotingAll(true);
+    try {
+      const res = await fetch('/api/staging/promote-all', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Promote all failed');
+      const data = await res.json() as { count: number };
+      setStagingQuestions([]);
+      toast({
+        title: 'All questions approved',
+        description: `${data.count} question${data.count !== 1 ? 's' : ''} are now live.`,
+      });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to approve all questions.', variant: 'destructive' });
+    } finally {
+      setPromotingAll(false);
     }
   };
 
@@ -492,32 +505,6 @@ export default function AdminStaging() {
                   </p>
                 )}
               </div>
-              {/* Auto Accept toggle */}
-              <div className="flex flex-col justify-end pb-0.5 space-y-1 shrink-0">
-                <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                    genForm.autoAccept
-                      ? 'border-primary/40 bg-primary/10 text-primary'
-                      : 'border-white/10 bg-white/5 text-muted-foreground'
-                  }`}
-                  data-testid="toggle-auto-accept"
-                >
-                  <Switch
-                    checked={genForm.autoAccept}
-                    onCheckedChange={(v) => setGenForm((f) => ({ ...f, autoAccept: v }))}
-                  />
-                  <span className="text-xs font-medium whitespace-nowrap flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    Auto Accept
-                  </span>
-                </div>
-                {genForm.autoAccept && (
-                  <p className="text-xs text-primary/70 max-w-[140px] leading-tight">
-                    Goes live instantly — no spoilers
-                  </p>
-                )}
-              </div>
-
               <Button
                 type="submit"
                 disabled={generating || !genForm.topic.trim()}
@@ -572,17 +559,35 @@ export default function AdminStaging() {
                 </div>
               )}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchStaging}
-              disabled={loading}
-              className="border-white/10"
-              data-testid="button-refresh-staging"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loaded ? 'Refresh' : 'Load Queue'}
-            </Button>
+            <div className="flex items-center gap-2">
+              {loaded && stagingQuestions.length > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handlePromoteAll}
+                  disabled={promotingAll || loading}
+                  className="bg-green-600 hover:bg-green-500 text-white border-0"
+                  data-testid="button-promote-all"
+                >
+                  {promotingAll ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCheck className="w-4 h-4 mr-2" />
+                  )}
+                  Accept All
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchStaging}
+                disabled={loading}
+                className="border-white/10"
+                data-testid="button-refresh-staging"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loaded ? 'Refresh' : 'Load Queue'}
+              </Button>
+            </div>
           </div>
 
           {!loaded && (

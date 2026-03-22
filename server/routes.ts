@@ -46,7 +46,6 @@ const stagingGenerateSchema = z.object({
   topic: z.string().trim().min(1, 'Topic is required'),
   count: z.coerce.number().int().min(1).max(20),
   pillar: z.union([z.enum(VALID_PILLARS), z.literal('Mixed')]),
-  autoAccept: z.boolean().optional().default(false),
 });
 
 function getUserId(req: Request): string | undefined {
@@ -617,13 +616,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         });
       }
 
-      const { topic, count, pillar, autoAccept } = parsed.data;
+      const { topic, count, pillar } = parsed.data;
 
       let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
 
       if (pillar === 'Mixed') {
         const batches = allocateMixed(count);
-        console.info('[staging] Mixed generation', { topic, count, batches, autoAccept });
+        console.info('[staging] Mixed generation', { topic, count, batches });
         const results = await Promise.all(
           batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p)),
         );
@@ -642,30 +641,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         )
         .returning();
 
-      // Auto-accept: immediately promote all generated questions to approved
-      let autoAcceptedCount = 0;
-      if (autoAccept && insertedQuestions.length > 0) {
-        const ids = insertedQuestions.map((q) => q.id);
-        const updated = await db
-          .update(questions)
-          .set({ status: 'approved', updatedAt: new Date() })
-          .where(inArray(questions.id, ids))
-          .returning();
-        autoAcceptedCount = updated.length;
-        console.info('[staging] Auto-accepted', { count: autoAcceptedCount });
-      }
-
       res.status(201).json({
-        message: autoAccept
-          ? `Questions generated and auto-approved successfully`
-          : 'Questions generated and added to staging successfully',
+        message: 'Questions generated and added to staging successfully',
         count: insertedQuestions.length,
-        autoAccepted: autoAcceptedCount,
-        questions: autoAccept ? [] : insertedQuestions,
+        questions: insertedQuestions,
       });
     } catch (error) {
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
+    }
+  });
+
+  // Bulk-promote all pending staging questions to approved
+  app.post('/api/staging/promote-all', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const promoted = await db
+        .update(questions)
+        .set({ status: 'approved', updatedAt: new Date() })
+        .where(eq(questions.status, 'pending'))
+        .returning({ id: questions.id });
+
+      console.info('[staging] Bulk promoted all pending questions', { count: promoted.length });
+      res.json({ count: promoted.length, ids: promoted.map((q) => q.id) });
+    } catch (error) {
+      console.error('Error bulk promoting questions:', error);
+      res.status(500).json({ message: 'Failed to promote all questions' });
     }
   });
 
