@@ -22,7 +22,12 @@ import {
   RefreshCw,
   ThumbsUp,
   ThumbsDown,
+  Eye,
+  EyeOff,
+  Zap,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SINGLE_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
@@ -123,6 +128,7 @@ function QuestionCard({
   onReject: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [answerVisible, setAnswerVisible] = useState(false);
   const [acting, setActing] = useState(false);
   const analysis = question.aiAnalysis;
   const health = overallHealth(question);
@@ -180,15 +186,38 @@ function QuestionCard({
             <p className="font-medium text-sm leading-snug" data-testid={`text-question-${question.id}`}>
               {question.question}
             </p>
-            <p className="text-sm text-primary mt-1 font-semibold">
-              Answer: {question.answer}
-            </p>
+            {/* Answer — hidden by default, reveal on demand */}
+            <div className="mt-1.5 flex items-center gap-2">
+              {answerVisible ? (
+                <>
+                  <p className="text-sm text-primary font-semibold" data-testid={`text-answer-${question.id}`}>
+                    {question.answer}
+                  </p>
+                  <button
+                    onClick={() => setAnswerVisible(false)}
+                    className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-0.5 transition-colors"
+                    data-testid={`button-hide-answer-${question.id}`}
+                  >
+                    <EyeOff className="w-3 h-3" /> Hide
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setAnswerVisible(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors border border-white/10 rounded px-2 py-0.5"
+                  data-testid={`button-reveal-answer-${question.id}`}
+                >
+                  <Eye className="w-3 h-3" /> Reveal answer
+                </button>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             className="shrink-0 text-muted-foreground hover:text-foreground"
             onClick={() => setExpanded((v) => !v)}
+            title="Show QA details"
             data-testid={`button-expand-${question.id}`}
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -290,6 +319,7 @@ export default function AdminStaging() {
     topic: '',
     count: 10,
     pillar: 'Mixed' as Pillar,
+    autoAccept: false,
   });
 
   const mixedBreakdown = genForm.pillar === 'Mixed' ? allocateMixed(genForm.count) : null;
@@ -324,13 +354,20 @@ export default function AdminStaging() {
         const err = await res.json().catch(() => ({})) as { message?: string };
         throw new Error(err.message || 'Generation failed');
       }
-      const data = await res.json() as { count: number };
-      toast({
-        title: 'Questions generated',
-        description: `${data.count} question${data.count !== 1 ? 's' : ''} added to staging with QA analysis.`,
-      });
+      const data = await res.json() as { count: number; autoAccepted?: number };
+      if (genForm.autoAccept) {
+        toast({
+          title: 'Questions generated & approved',
+          description: `${data.count} question${data.count !== 1 ? 's' : ''} went live automatically — no spoilers!`,
+        });
+      } else {
+        toast({
+          title: 'Questions generated',
+          description: `${data.count} question${data.count !== 1 ? 's' : ''} added to staging with QA analysis.`,
+        });
+      }
       setGenForm((f) => ({ ...f, topic: '' }));
-      await fetchStaging();
+      if (!genForm.autoAccept) await fetchStaging();
     } catch (err) {
       toast({
         title: 'Generation failed',
@@ -455,10 +492,40 @@ export default function AdminStaging() {
                   </p>
                 )}
               </div>
+              {/* Auto Accept toggle */}
+              <div className="flex flex-col justify-end pb-0.5 space-y-1 shrink-0">
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    genForm.autoAccept
+                      ? 'border-primary/40 bg-primary/10 text-primary'
+                      : 'border-white/10 bg-white/5 text-muted-foreground'
+                  }`}
+                  data-testid="toggle-auto-accept"
+                >
+                  <Switch
+                    id="toggle-auto-accept"
+                    checked={genForm.autoAccept}
+                    onCheckedChange={(v) => setGenForm((f) => ({ ...f, autoAccept: v }))}
+                  />
+                  <Label
+                    htmlFor="toggle-auto-accept"
+                    className="text-xs font-medium whitespace-nowrap flex items-center gap-1 cursor-pointer"
+                  >
+                    <Zap className="w-3 h-3" />
+                    Auto Accept
+                  </Label>
+                </div>
+                {genForm.autoAccept && (
+                  <p className="text-xs text-primary/70 max-w-[140px] leading-tight">
+                    Goes live instantly — no spoilers
+                  </p>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 disabled={generating || !genForm.topic.trim()}
-                className="shrink-0"
+                className="shrink-0 self-start mt-[22px]"
                 data-testid="button-generate-questions"
               >
                 {generating ? (
