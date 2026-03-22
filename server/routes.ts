@@ -11,7 +11,7 @@ import {
   seenQuestions,
   insertQuestionSchema,
 } from '@shared/schema';
-import { eq, and, sql, isNull } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { z } from 'zod';
@@ -266,7 +266,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let results;
       if (shouldExcludeSeen) {
-        // LEFT JOIN to find unseen questions
+        // Escalating cooldown cycle: 1 month → 3 months → 5 months, repeating
+        const cooldownExpr = sql`
+          CASE (${seenQuestions.seenCount} - 1) % 3
+            WHEN 0 THEN INTERVAL '1 month'
+            WHEN 1 THEN INTERVAL '3 months'
+            WHEN 2 THEN INTERVAL '5 months'
+          END
+        `;
+
+        // LEFT JOIN to find unseen or cooldown-expired questions
         const query = db
           .select({
             id: questions.id,
@@ -286,7 +295,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             seenQuestions,
             and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(and(...conditions, isNull(seenQuestions.questionId)));
+          .where(
+            and(
+              ...conditions,
+              sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
+            )
+          );
 
         if (shuffle === 'true') {
           query.orderBy(sql`random()`);
@@ -350,7 +364,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       await db
         .insert(seenQuestions)
         .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [seenQuestions.userId, seenQuestions.questionId],
+          set: {
+            seenCount: sql`${seenQuestions.seenCount} + 1`,
+            seenAt: sql`NOW()`,
+          },
+        });
 
       res.json({ message: 'Questions marked as seen', count: questionIds.length });
     } catch (error) {
