@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
 export default function Home() {
   const [_, setLocation] = useLocation();
@@ -28,7 +29,8 @@ export default function Home() {
 
   const totalNeeded = state.numRounds * state.teams.length;
   const availableCount = categoryCounts[state.selectedCategory] || 0;
-  const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
+  const hasInsufficientQuestions =
+    state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,20 +158,22 @@ export default function Home() {
               >
                 All ({categoryCounts['All'] || 0})
               </Button>
-              {state.categories.filter((c) => c !== 'All').map((category) => (
-                <Button
-                  key={category}
-                  variant={state.selectedCategory === category ? 'default' : 'outline'}
-                  onClick={() => setCategory(category)}
-                  className={`border-white/10 hover:bg-white/10 ${
-                    state.selectedCategory === category
-                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                      : ''
-                  }`}
-                >
-                  {category} ({categoryCounts[category] || 0})
-                </Button>
-              ))}
+              {state.categories
+                .filter((c) => c !== 'All')
+                .map((category) => (
+                  <Button
+                    key={category}
+                    variant={state.selectedCategory === category ? 'default' : 'outline'}
+                    onClick={() => setCategory(category)}
+                    className={`border-white/10 hover:bg-white/10 ${
+                      state.selectedCategory === category
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        : ''
+                    }`}
+                  >
+                    {category} ({categoryCounts[category] || 0})
+                  </Button>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -208,10 +212,13 @@ export default function Home() {
               <div>
                 <p className="font-semibold text-yellow-300">Not enough questions</p>
                 <p className="mt-1">
-                  {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
-                  <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
-                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams).
-                  The game will use all {availableCount} available.
+                  {state.selectedCategory === 'All'
+                    ? 'All categories have'
+                    : `"${state.selectedCategory}" has`}{' '}
+                  only <span className="font-bold">{availableCount}</span> question
+                  {availableCount !== 1 ? 's' : ''}, but your setup needs{' '}
+                  <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds ×{' '}
+                  {state.teams.length} teams). The game will use all {availableCount} available.
                 </p>
               </div>
             </div>
@@ -224,6 +231,10 @@ export default function Home() {
           >
             START GAME
           </Button>
+
+          <div className="flex justify-center mt-2 mb-4">
+            <ThemeSwitcher />
+          </div>
 
           <div className="flex justify-center gap-4 items-center flex-wrap">
             {isAuthenticated && isAdmin && (

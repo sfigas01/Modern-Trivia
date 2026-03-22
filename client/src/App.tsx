@@ -2,6 +2,7 @@ import { Switch, Route } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { GameProvider } from '@/lib/store';
+import { ThemeProvider } from '@/lib/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Home from '@/pages/Home';
 import Game from '@/pages/Game';
@@ -25,14 +26,16 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <GameProvider>
-        <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
-          <Router />
-          <Toaster />
-        </div>
-      </GameProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <GameProvider>
+          <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary selection:text-primary-foreground">
+            <Router />
+            <Toaster />
+          </div>
+        </GameProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

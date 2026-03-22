@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --font-sans: 'DM Sans', sans-serif;
   --font-display: 'Outfit', sans-serif;
 
@@ -57,4 +57,169 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold tracking-tight;
   }
+}
+
+/* ===================================================================
+   RETRO ARCADE SKIN
+   SNES-inspired pixel aesthetic — Mario World style, pixel fonts, flat cards
+   =================================================================== */
+
+[data-theme="retro-arcade"] {
+  /* Fonts */
+  --font-sans: 'VT323', monospace;
+  --font-display: 'Press Start 2P', cursive;
+
+  /* Sharp pixel corners */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+
+  /* SNES Color Palette */
+  --color-background: hsl(230 30% 8%);
+  --color-foreground: hsl(120 100% 50%);
+
+  --color-card: hsla(230, 25%, 10%, 0.9);
+  --color-card-foreground: hsl(120 100% 50%);
+
+  --color-popover: hsl(230 25% 12%);
+  --color-popover-foreground: hsl(120 100% 50%);
+
+  --color-primary: hsl(120 100% 50%);
+  --color-primary-foreground: hsl(230 30% 8%);
+
+  --color-secondary: hsl(230 20% 18%);
+  --color-secondary-foreground: hsl(0 0% 100%);
+
+  --color-muted: hsl(230 15% 20%);
+  --color-muted-foreground: hsl(0 0% 60%);
+
+  --color-accent: hsl(210 100% 50%);
+  --color-accent-foreground: hsl(0 0% 100%);
+
+  --color-destructive: hsl(0 100% 50%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+
+  --color-border: hsl(120 100% 35%);
+  --color-input: hsl(230 20% 18%);
+  --color-ring: hsl(120 100% 50%);
+
+  /* Difficulty Colors — NES bright */
+  --color-difficulty-easy: hsl(120 100% 40%);
+  --color-difficulty-medium: hsl(50 100% 50%);
+  --color-difficulty-hard: hsl(0 100% 50%);
+}
+
+/* --- Glassmorphism → Solid pixel cards --- */
+[data-theme="retro-arcade"] .bg-white\/5,
+[data-theme="retro-arcade"] .bg-white\/10 {
+  background-color: var(--color-card);
+}
+
+[data-theme="retro-arcade"] .border-white\/5,
+[data-theme="retro-arcade"] .border-white\/10,
+[data-theme="retro-arcade"] .border-white\/20 {
+  border-color: var(--color-border);
+  border-width: 3px;
+  border-style: solid;
+}
+
+[data-theme="retro-arcade"] .backdrop-blur-md,
+[data-theme="retro-arcade"] .backdrop-blur-sm {
+  backdrop-filter: none;
+}
+
+/* --- Kill gradient text, use flat color --- */
+[data-theme="retro-arcade"] .bg-clip-text {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  color: var(--color-primary);
+}
+
+/* --- Kill glow shadows --- */
+[data-theme="retro-arcade"] [class*="shadow-\[0_0_"] {
+  box-shadow: none;
+}
+
+/* --- Dark overlays → retro navy --- */
+[data-theme="retro-arcade"] .bg-black\/80 {
+  background-color: hsla(230, 30%, 8%, 0.95);
+}
+[data-theme="retro-arcade"] .bg-black\/20 {
+  background-color: hsla(230, 30%, 8%, 0.4);
+}
+
+/* --- Kill decorative background blurs --- */
+[data-theme="retro-arcade"] .blur-\[120px\] {
+  filter: none;
+  opacity: 0;
+}
+
+/* --- CRT Scanline Overlay --- */
+[data-theme="retro-arcade"] body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.35;
+}
+
+/* --- Mobile-friendly pixel font sizing --- */
+[data-theme="retro-arcade"] h1 {
+  font-size: clamp(1rem, 4vw, 2.5rem);
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+[data-theme="retro-arcade"] h2 {
+  font-size: clamp(0.85rem, 3vw, 1.75rem);
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+[data-theme="retro-arcade"] h3 {
+  font-size: clamp(0.75rem, 2.5vw, 1.25rem);
+  line-height: 1.5;
+}
+
+/* --- VT323 body text needs slightly larger base for readability --- */
+[data-theme="retro-arcade"] body {
+  font-size: 1.125rem;
+  letter-spacing: 0.03em;
+  background-image: url('/retro-bg.png');
+  background-size: cover;
+  background-position: bottom center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* --- Semi-transparent overlay so content stays readable over bg --- */
+[data-theme="retro-arcade"] .min-h-screen {
+  background-color: hsla(230, 30%, 8%, 0.55);
+}
+
+/* --- Chunky borders on cards --- */
+[data-theme="retro-arcade"] [class*="rounded-"] {
+  border-radius: 0 !important;
+}
+
+/* --- Retro input styling --- */
+[data-theme="retro-arcade"] input,
+[data-theme="retro-arcade"] textarea,
+[data-theme="retro-arcade"] select {
+  border-width: 2px;
+  border-color: var(--color-border);
+  background-color: var(--color-input);
+  color: var(--color-foreground);
 }
