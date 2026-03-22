@@ -560,8 +560,7 @@ function QuestionRow({ q: initialQ, onUpdated }: { q: Question; onUpdated: (upda
           </div>
           <p className="text-sm text-foreground truncate">{q.question}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Answer: <span className="text-primary">{q.answer}</span>
-            {' · '}{new Date(q.createdAt).toLocaleDateString()}
+            {new Date(q.createdAt).toLocaleDateString()}
             {q.sourceUrl
               ? <span className="text-green-400 ml-2">✓ source</span>
               : <span className="text-red-400 ml-2">✗ no source</span>}
