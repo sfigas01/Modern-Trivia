@@ -43,7 +43,7 @@ export default function Admin() {
 
     const newQuestion: Question = {
       id: crypto.randomUUID(),
-      category: formData.category || 'General',
+      category: formData.category || 'General Knowledge',
       difficulty: formData.difficulty,
       question: formData.question,
       answer: formData.answer,

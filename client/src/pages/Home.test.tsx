@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Home from './Home';
 import { GameProvider } from '@/lib/store';
@@ -100,7 +100,13 @@ vi.mock('framer-motion', () => ({
   motion: {
     div: React.forwardRef(
       (
-        { children, ...props }: React.HTMLAttributes<HTMLDivElement>,
+        {
+          children,
+          layout: _layout,
+          ...props
+        }: React.HTMLAttributes<HTMLDivElement> & {
+          layout?: boolean;
+        },
         ref: React.Ref<HTMLDivElement>
       ) => (
         <div ref={ref} {...props}>
@@ -180,5 +186,21 @@ describe('Home page', () => {
     expect(screen.getByText('10')).toBeDefined();
     expect(screen.getByText('15')).toBeDefined();
     expect(screen.getByText('20')).toBeDefined();
+  });
+
+  it('warns when the selected setup needs more questions than are available', async () => {
+    renderHome();
+
+    const input = screen.getByPlaceholderText('Enter team name...');
+    const form = input.closest('form');
+    expect(form).not.toBeNull();
+
+    fireEvent.change(input, { target: { value: 'Alpha' } });
+    fireEvent.submit(form!);
+
+    fireEvent.change(input, { target: { value: 'Bravo' } });
+    fireEvent.submit(form!);
+
+    expect(await screen.findByTestId('warning-insufficient-questions')).toBeDefined();
   });
 });

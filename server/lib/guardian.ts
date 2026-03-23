@@ -1,12 +1,20 @@
 import OpenAI from 'openai';
 import { insertQuestionSchema, type InsertQuestion } from '@shared/models/questions';
+import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
+import { batchFactCheck, type FactCheckResult } from './verifier';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-type PendingQuestion = InsertQuestion & { status: 'pending' };
+export interface QuestionAiAnalysis {
+  qaFindings: QuestionQualityFinding[];
+  factCheck: FactCheckResult;
+  repaired?: boolean;
+}
+
+type PendingQuestion = InsertQuestion & { status: 'pending'; aiAnalysis: QuestionAiAnalysis };
 
 const insertQuestionWithPendingStatusSchema = insertQuestionSchema.transform((question) => ({
   ...question,
@@ -31,7 +39,7 @@ interface GenerateQuestionInput {
 function normalizeCandidate(
   raw: GenerateQuestionInput,
   topic: string,
-  pillar: string,
+  pillar: string
 ): GenerateQuestionInput {
   return {
     ...raw,
@@ -45,10 +53,151 @@ function normalizeCandidate(
   };
 }
 
+const QUESTION_JSON_SCHEMA = (pillar: string) => `{
+  "id": "uuid",
+  "category": "string",
+  "difficulty": "Easy | Medium | Hard",
+  "question": "string",
+  "answer": "string",
+  "acceptableAnswers": ["string"],
+  "explanation": "string",
+  "pillar": "${pillar}",
+  "tags": ["string"],
+  "sourceUrl": "https://...",
+  "sourceName": "string",
+  "status": "pending"
+}`;
+
+const QUESTION_RULES = (pillar: string) => `Rules:
+- Use a unique UUID as id.
+- Ensure all fields are filled and valid.
+- status must always be "pending".
+- tags must include a region tag (CA, US, or Global), the pillar name, and the category name.
+- sourceUrl MUST be a real, publicly accessible URL (Wikipedia, official government site, reputable encyclopedia, or authoritative reference) that directly supports the stated answer. Never use null, empty string, or a placeholder.
+- sourceName MUST be the human-readable name of that source (e.g. "Wikipedia", "Statistics Canada", "National Geographic"). Never use null or empty string.
+- If you cannot provide a verifiable source for a question, write a different question instead.
+- pillar must be "${pillar}".`;
+
+function isHardFailure(q: PendingQuestion): boolean {
+  return (
+    q.aiAnalysis.factCheck.verdict === 'fail' ||
+    q.aiAnalysis.qaFindings.some((f) => f.severity === 'high')
+  );
+}
+
+function describeFailures(q: PendingQuestion): string[] {
+  const reasons: string[] = [];
+  if (q.aiAnalysis.factCheck.verdict === 'fail') {
+    reasons.push(`Fact-check FAIL: ${q.aiAnalysis.factCheck.reason}`);
+  }
+  for (const finding of q.aiAnalysis.qaFindings.filter((f) => f.severity === 'high')) {
+    reasons.push(`QA high-severity [${finding.rule}]: ${finding.message}`);
+  }
+  return reasons;
+}
+
+async function runQaOnSingle(
+  q: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>
+): Promise<PendingQuestion> {
+  const id = q.id as string;
+  const [auditReport, factCheckMap] = await Promise.all([
+    Promise.resolve(auditQuestionQuality([q])),
+    batchFactCheck([{ id, question: q.question, answer: q.answer, explanation: q.explanation }]),
+  ]);
+
+  const qaFindings = auditReport.findings.filter((f) => f.questionId === id);
+  const factCheck = factCheckMap.get(id) ?? {
+    verdict: 'flag' as const,
+    confidence: 0,
+    reason: 'No verdict returned.',
+  };
+
+  return { ...q, status: 'pending' as const, aiAnalysis: { qaFindings, factCheck } };
+}
+
+async function repairQuestion(
+  original: PendingQuestion,
+  topic: string,
+  pillar: string,
+  failureReasons: string[]
+): Promise<PendingQuestion | null> {
+  const originalJson = JSON.stringify(
+    {
+      id: original.id,
+      category: original.category,
+      difficulty: original.difficulty,
+      question: original.question,
+      answer: original.answer,
+      acceptableAnswers: original.acceptableAnswers,
+      explanation: original.explanation,
+      pillar: original.pillar,
+      tags: original.tags,
+      sourceUrl: original.sourceUrl,
+      sourceName: original.sourceName,
+    },
+    null,
+    2
+  );
+
+  const repairPrompt = `The following trivia question about "${topic}" for the "${pillar}" pillar failed quality checks.
+
+Original question:
+${originalJson}
+
+Failures found:
+${failureReasons.map((r, i) => `${i + 1}. ${r}`).join('\n')}
+
+Please return a corrected version of this question that fixes ALL of the failures above. If the answer itself is factually wrong, either correct it or replace the question entirely with a different fact about "${topic}". Keep the same pillar, difficulty, and general topic area.
+
+Return valid JSON for exactly ONE question using this schema:
+${QUESTION_JSON_SCHEMA(pillar)}
+
+${QUESTION_RULES(pillar)}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You repair and correct trivia questions. Always return valid JSON for exactly one question matching the requested schema.',
+        },
+        { role: 'user', content: repairPrompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 1024,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const raw = JSON.parse(content) as GenerateQuestionInput;
+
+    const normalized = normalizeCandidate({ ...raw, id: crypto.randomUUID() }, topic, pillar);
+    const validated = insertQuestionWithPendingStatusSchema.parse(normalized);
+    const repaired = await runQaOnSingle(validated);
+
+    if (isHardFailure(repaired)) {
+      console.warn('[guardian] Repaired question still fails QA — dropping', {
+        originalId: original.id,
+        repairedId: repaired.id,
+        factVerdict: repaired.aiAnalysis.factCheck.verdict,
+        highFindings: repaired.aiAnalysis.qaFindings.filter((f) => f.severity === 'high').length,
+      });
+      return null;
+    }
+
+    const analysis = repaired.aiAnalysis as QuestionAiAnalysis;
+    return { ...repaired, aiAnalysis: { ...analysis, repaired: true } };
+  } catch (error) {
+    console.error('[guardian] Repair attempt failed', { originalId: original.id, error });
+    return null;
+  }
+}
+
 export async function generateQuestions(
   topic: string,
   count: number,
-  pillar: string,
+  pillar: string
 ): Promise<PendingQuestion[]> {
   const normalizedCount = Math.max(1, Math.min(20, Math.floor(count || 1)));
   const startedAt = Date.now();
@@ -64,28 +213,12 @@ export async function generateQuestions(
 Return only valid JSON in this exact envelope:
 {
   "questions": [
-    {
-      "id": "uuid",
-      "category": "string",
-      "difficulty": "Easy | Medium | Hard",
-      "question": "string",
-      "answer": "string",
-      "acceptableAnswers": ["string"],
-      "explanation": "string",
-      "pillar": "${pillar}",
-      "tags": ["string"],
-      "sourceUrl": "string or null",
-      "sourceName": "string or null",
-      "status": "pending"
-    }
+    ${QUESTION_JSON_SCHEMA(pillar)}
   ]
 }
 
-Rules:
-- Return exactly ${normalizedCount} items.
-- Use unique ids.
-- Ensure all fields are filled and valid.
-- status must always be "pending".`;
+${QUESTION_RULES(pillar)}
+- Return exactly ${normalizedCount} items.`;
 
   let content = '{}';
 
@@ -116,19 +249,21 @@ Rules:
     throw new Error('Failed to generate questions from OpenAI.', { cause: error });
   }
 
+  let validated: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>[];
+
   try {
     const parsedResponse = JSON.parse(content) as { questions?: unknown } | unknown[];
     const rawQuestions = Array.isArray(parsedResponse)
       ? parsedResponse
-      : Array.isArray(parsedResponse.questions)
-        ? parsedResponse.questions
+      : Array.isArray((parsedResponse as { questions?: unknown }).questions)
+        ? (parsedResponse as { questions: unknown[] }).questions
         : [];
 
-    const validated = rawQuestions.map((item) =>
+    validated = rawQuestions.map((item) =>
       insertQuestionWithPendingStatusSchema.parse(
-        normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar),
-      ),
-    ) as PendingQuestion[];
+        normalizeCandidate((item ?? {}) as GenerateQuestionInput, topic, pillar)
+      )
+    );
 
     if (validated.length !== normalizedCount) {
       throw new Error(`Expected ${normalizedCount} generated questions, got ${validated.length}`);
@@ -140,8 +275,6 @@ Rules:
       count: validated.length,
       durationMs: Date.now() - startedAt,
     });
-
-    return validated;
   } catch (error) {
     console.error('[guardian] Failed to parse/validate generated questions', {
       topic,
@@ -153,4 +286,105 @@ Rules:
     });
     throw new Error('Failed to parse or validate generated questions.', { cause: error });
   }
+
+  // Run QA pipeline: static audit + AI fact-check (in parallel)
+  console.info('[guardian] Running QA pipeline', { count: validated.length });
+
+  const [auditReport, factCheckMap] = await Promise.all([
+    Promise.resolve(auditQuestionQuality(validated)),
+    batchFactCheck(
+      validated.map((q) => ({
+        id: q.id as string,
+        question: q.question,
+        answer: q.answer,
+        explanation: q.explanation,
+      }))
+    ),
+  ]);
+
+  // Build a per-question findings map from the audit report
+  const findingsByQuestionId = new Map<string, QuestionQualityFinding[]>();
+  for (const finding of auditReport.findings) {
+    const existing = findingsByQuestionId.get(finding.questionId) ?? [];
+    existing.push(finding);
+    findingsByQuestionId.set(finding.questionId, existing);
+  }
+
+  // Attach aiAnalysis to each question
+  const questionsWithAnalysis: PendingQuestion[] = validated.map((q) => {
+    const id = q.id as string;
+    const qaFindings = findingsByQuestionId.get(id) ?? [];
+    const factCheck = factCheckMap.get(id) ?? {
+      verdict: 'flag' as const,
+      confidence: 0,
+      reason: 'No verdict returned.',
+    };
+
+    return {
+      ...q,
+      status: 'pending' as const,
+      aiAnalysis: { qaFindings, factCheck },
+    };
+  });
+
+  console.info('[guardian] QA pipeline complete', {
+    topic,
+    pillar,
+    flaggedByQA: auditReport.flaggedQuestionCount,
+    factCheckSummary: {
+      pass: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'pass').length,
+      flag: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'flag').length,
+      fail: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'fail').length,
+    },
+    durationMs: Date.now() - startedAt,
+  });
+
+  // --- Repair pass ---
+  // Identify hard failures: fact-check 'fail' or any high-severity QA finding.
+  // Attempt to auto-repair each one in parallel. Questions that can't be repaired are dropped.
+  const passing: PendingQuestion[] = [];
+  const toRepair: PendingQuestion[] = [];
+
+  for (const q of questionsWithAnalysis) {
+    if (isHardFailure(q)) {
+      toRepair.push(q);
+    } else {
+      passing.push(q);
+    }
+  }
+
+  if (toRepair.length > 0) {
+    console.info('[guardian] Repair pass starting', {
+      topic,
+      pillar,
+      failCount: toRepair.length,
+    });
+
+    const repairResults = await Promise.all(
+      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q)))
+    );
+
+    let repairedCount = 0;
+    let droppedCount = 0;
+
+    for (const result of repairResults) {
+      if (result !== null) {
+        passing.push(result);
+        repairedCount++;
+      } else {
+        droppedCount++;
+      }
+    }
+
+    console.info('[guardian] Repair pass complete', {
+      topic,
+      pillar,
+      repairedCount,
+      droppedCount,
+      finalCount: passing.length,
+      durationMs: Date.now() - startedAt,
+    });
+  }
+
+  return passing;
 }

@@ -190,7 +190,7 @@ audit(content): complete factual accuracy review of q1-q50
 
 ## Categories in Use
 
-Geography, Science, History, Music, Sports, Pop Culture, Entertainment, Food, Nature, Literature, Technology/Tech, General/General Knowledge, Space, Government, Culture
+Geography, Science, History, Music, Sports, Pop Culture, Entertainment, Food, Nature, Literature, Technology, General Knowledge, Space, Government, Culture
 
 ---
 
