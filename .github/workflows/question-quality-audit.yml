@@ -104,7 +104,7 @@ jobs:
 
       - name: Upload question audit report
         if: steps.cadence.outputs.run_audit == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: question-quality-audit-report
           path: |
