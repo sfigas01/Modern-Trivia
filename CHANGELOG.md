@@ -5,6 +5,18 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Game page smoke test** — Added a UI-level gameplay test that walks through question, reveal, round score, next round, and game over
+- **Husky pre-push hook** — Runs `npm test` before pushes so gameplay regressions are caught locally before branches reach GitHub
+
+### Changed
+
+- Expanded game mechanics regression coverage to verify full-question consumption before `GAME_OVER`, guard against duplicate score advancement, and cover short question-pool scenarios
+- Extended setup-screen regression coverage to keep the insufficient-question warning visible during game configuration
+
 ## [v0.3.0] - 2026-03-07
 
 ### Added
