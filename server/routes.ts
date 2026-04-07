@@ -14,6 +14,9 @@ import {
 import { eq, and, sql, isNull } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
+import { auditQuestionQuality } from './lib/question-quality-audit';
+import { detectDuplicates } from './lib/duplicate-detector';
+import { batchFactCheck } from './lib/verifier';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
@@ -464,6 +467,98 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error promoting question:', error);
       res.status(500).json({ message: 'Failed to promote question' });
+    }
+  });
+
+  // Quality Sweep (Admin Only)
+  const sweepRequestSchema = z.object({
+    skipFactCheck: z.boolean().optional().default(false),
+    skipDuplicates: z.boolean().optional().default(false),
+  });
+
+  app.post('/api/admin/quality-sweep', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
+    try {
+      const parsed = sweepRequestSchema.parse(req.body);
+      const { skipFactCheck, skipDuplicates } = parsed;
+
+      // 1. Fetch all approved questions
+      const allQuestions = await db
+        .select()
+        .from(questions)
+        .where(eq(questions.status, 'approved'));
+
+      if (allQuestions.length === 0) {
+        return res.json({
+          generatedAt: new Date().toISOString(),
+          totalQuestions: 0,
+          audit: {
+            generatedAt: new Date().toISOString(),
+            totalQuestions: 0,
+            totalFindings: 0,
+            flaggedQuestionCount: 0,
+            findingsBySeverity: { high: 0, medium: 0, low: 0 },
+            findingsByRule: {},
+            findings: [],
+          },
+          duplicates: null,
+          factCheck: null,
+          recommendations: ['No approved questions found in the database.'],
+        });
+      }
+
+      // 2. Static audit (instant)
+      const audit = auditQuestionQuality(allQuestions);
+
+      // 3. Duplicate detection (GPT-4o for conceptual pairs only)
+      const duplicates = skipDuplicates ? null : await detectDuplicates(allQuestions);
+
+      // 4. Fact-checking (GPT-4o per question)
+      const factCheck = skipFactCheck ? null : await batchFactCheck(allQuestions);
+
+      // 5. Compute recommendations
+      const recommendations: string[] = [];
+      if (audit.findingsBySeverity.high > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.high} high-severity audit finding(s) — fix before next release.`
+        );
+      }
+      if (audit.findingsBySeverity.medium > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.medium} medium-severity audit finding(s) — review and improve.`
+        );
+      }
+      if (duplicates && duplicates.duplicatesFound.length > 0) {
+        recommendations.push(
+          `${duplicates.duplicatesFound.length} duplicate pair(s) found — remove or merge the lower-quality version of each pair.`
+        );
+      }
+      if (factCheck) {
+        const failures = factCheck.results.filter((r) => r.verdict === 'fail').length;
+        const flags = factCheck.results.filter((r) => r.verdict === 'flag').length;
+        if (failures > 0) {
+          recommendations.push(`${failures} question(s) failed fact-check — review immediately.`);
+        }
+        if (flags > 0) {
+          recommendations.push(
+            `${flags} question(s) flagged by fact-check — verify before next release.`
+          );
+        }
+      }
+      if (recommendations.length === 0) {
+        recommendations.push('No critical issues found. All approved questions passed the sweep.');
+      }
+
+      res.json({
+        generatedAt: new Date().toISOString(),
+        totalQuestions: allQuestions.length,
+        audit,
+        duplicates,
+        factCheck,
+        recommendations,
+      });
+    } catch (error) {
+      console.error('Error running quality sweep:', error);
+      res.status(500).json({ message: 'Quality sweep failed' });
     }
   });
 

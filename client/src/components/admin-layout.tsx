@@ -1,6 +1,13 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, MessageSquareWarning, Settings, PlusCircle, LogOut } from 'lucide-react';
+import {
+  LayoutDashboard,
+  MessageSquareWarning,
+  Settings,
+  PlusCircle,
+  LogOut,
+  ScanSearch,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {
@@ -13,6 +20,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const navItems = [
     { href: '/admin', icon: PlusCircle, label: 'Questions' },
     { href: '/admin/disputes', icon: MessageSquareWarning, label: 'Disputes' },
+    { href: '/admin/quality-sweep', icon: ScanSearch, label: 'Quality Sweep' },
     { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 
