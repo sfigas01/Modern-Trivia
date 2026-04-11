@@ -12,6 +12,9 @@ export * from './models/chat';
 // Export question models (questions DB + seen-question tracking)
 export * from './models/questions';
 
+// Export quality sweep API types
+export * from './models/quality-sweep';
+
 // Disputes table for QA logging
 export const disputes = pgTable('disputes', {
   id: varchar('id')
