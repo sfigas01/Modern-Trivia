@@ -72,6 +72,7 @@ interface GameContextType {
   resetGame: () => void;
   addQuestion: (q: Question) => Promise<void>;
   updateQuestion: (q: Question) => Promise<void>;
+  deleteQuestion: (id: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -216,7 +217,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(
         `/api/questions?shuffle=true&limit=${totalNeeded}&excludeSeen=true${categoryParam}`,
-        { credentials: 'include' },
+        { credentials: 'include' }
       );
       if (!res.ok) throw new Error('Failed to fetch game questions');
       const data = await res.json();
@@ -418,6 +419,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteQuestion = async (id: string) => {
+    try {
+      const res = await fetch(`/api/questions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete question');
+      setState((prev) => ({
+        ...prev,
+        questions: prev.questions.filter((q) => q.id !== id),
+      }));
+    } catch (error) {
+      console.error('Failed to delete question:', error);
+      throw error;
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -436,6 +454,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         resetGame,
         addQuestion,
         updateQuestion,
+        deleteQuestion,
       }}
     >
       {children}
