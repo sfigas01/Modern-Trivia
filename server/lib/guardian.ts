@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
-import { insertQuestionSchema, type InsertQuestion } from '@shared/models/questions';
+import { insertQuestionSchema, type InsertQuestion, type Question } from '@shared/models/questions';
 import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
-import { batchFactCheck, type FactCheckResult } from './verifier';
+import { batchFactCheck, type FactCheckVerdict } from './verifier';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -10,7 +10,7 @@ const openai = new OpenAI({
 
 export interface QuestionAiAnalysis {
   qaFindings: QuestionQualityFinding[];
-  factCheck: FactCheckResult;
+  factCheck: FactCheckVerdict;
   repaired?: boolean;
 }
 
@@ -100,13 +100,14 @@ async function runQaOnSingle(
   q: ReturnType<typeof insertQuestionWithPendingStatusSchema.parse>
 ): Promise<PendingQuestion> {
   const id = q.id as string;
-  const [auditReport, factCheckMap] = await Promise.all([
+  const [auditReport, factCheckReport] = await Promise.all([
     Promise.resolve(auditQuestionQuality([q])),
-    batchFactCheck([{ id, question: q.question, answer: q.answer, explanation: q.explanation }]),
+    batchFactCheck([{ ...q, id } as unknown as Question]),
   ]);
 
   const qaFindings = auditReport.findings.filter((f) => f.questionId === id);
-  const factCheck = factCheckMap.get(id) ?? {
+  const factCheck: FactCheckVerdict = factCheckReport.results.find((r) => r.questionId === id) ?? {
+    questionId: id,
     verdict: 'flag' as const,
     confidence: 0,
     reason: 'No verdict returned.',
@@ -290,16 +291,9 @@ ${QUESTION_RULES(pillar)}
   // Run QA pipeline: static audit + AI fact-check (in parallel)
   console.info('[guardian] Running QA pipeline', { count: validated.length });
 
-  const [auditReport, factCheckMap] = await Promise.all([
+  const [auditReport, factCheckReport] = await Promise.all([
     Promise.resolve(auditQuestionQuality(validated)),
-    batchFactCheck(
-      validated.map((q) => ({
-        id: q.id as string,
-        question: q.question,
-        answer: q.answer,
-        explanation: q.explanation,
-      }))
-    ),
+    batchFactCheck(validated as unknown as Question[]),
   ]);
 
   // Build a per-question findings map from the audit report
@@ -314,7 +308,10 @@ ${QUESTION_RULES(pillar)}
   const questionsWithAnalysis: PendingQuestion[] = validated.map((q) => {
     const id = q.id as string;
     const qaFindings = findingsByQuestionId.get(id) ?? [];
-    const factCheck = factCheckMap.get(id) ?? {
+    const factCheck: FactCheckVerdict = factCheckReport.results.find(
+      (r) => r.questionId === id
+    ) ?? {
+      questionId: id,
       verdict: 'flag' as const,
       confidence: 0,
       reason: 'No verdict returned.',
@@ -332,9 +329,9 @@ ${QUESTION_RULES(pillar)}
     pillar,
     flaggedByQA: auditReport.flaggedQuestionCount,
     factCheckSummary: {
-      pass: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'pass').length,
-      flag: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'flag').length,
-      fail: Array.from(factCheckMap.values()).filter((v) => v.verdict === 'fail').length,
+      pass: factCheckReport.results.filter((v) => v.verdict === 'pass').length,
+      flag: factCheckReport.results.filter((v) => v.verdict === 'flag').length,
+      fail: factCheckReport.results.filter((v) => v.verdict === 'fail').length,
     },
     durationMs: Date.now() - startedAt,
   });

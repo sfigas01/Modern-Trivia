@@ -15,6 +15,9 @@ export * from './models/questions';
 // Export quality sweep API types
 export * from './models/quality-sweep';
 
+// Export quality sweep dismissals (DB table)
+export * from './models/quality-sweep-dismissals';
+
 // Disputes table for QA logging
 export const disputes = pgTable('disputes', {
   id: varchar('id')

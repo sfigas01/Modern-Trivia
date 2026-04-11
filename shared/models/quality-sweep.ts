@@ -87,3 +87,26 @@ export interface QualitySweepReport {
   factCheck: FactCheckReport | null;
   recommendations: string[];
 }
+
+// --- Dismissals API ---
+
+export type QualityFindingType = 'static' | 'duplicate' | 'fact_check';
+
+export interface DismissFindingRequest {
+  questionId: string;
+  findingType: QualityFindingType;
+  findingKey: string;
+  reason?: string;
+}
+
+export interface DismissFindingResponse {
+  id: string;
+}
+
+// Build the stable per-pair key used for duplicate dismissals.
+// Sorting ensures the same key regardless of (A, B) order.
+export function duplicatePairKey(idA: string, idB: string): string {
+  return idA < idB ? `${idA}::${idB}` : `${idB}::${idA}`;
+}
+
+export const FACT_CHECK_FINDING_KEY = 'fact_check';

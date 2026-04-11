@@ -1,29 +1,39 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { ScanSearch, Play, LogIn, Shield } from 'lucide-react';
+import { ScanSearch, Play, LogIn, Shield, Check, Pencil, Trash2, Save, X } from 'lucide-react';
 import { AdminLayout } from '@/components/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
-import type {
-  QualitySweepReport,
-  QuestionQualityFinding,
-  DuplicateMatch,
-  FactCheckVerdict,
+import { useGame, type Question } from '@/lib/store';
+import {
+  duplicatePairKey,
+  FACT_CHECK_FINDING_KEY,
+  type DismissFindingRequest,
+  type DuplicateMatch,
+  type FactCheckVerdict,
+  type QualityFindingType,
+  type QualitySweepReport,
+  type QuestionQualityFinding,
 } from '@shared/models/quality-sweep';
 
 function truncate(text: string, max = 80): string {
@@ -48,254 +58,198 @@ function MatchTypeBadge({ type }: { type: string }) {
   return <Badge variant={variant}>{label}</Badge>;
 }
 
-// --- Report section components ---
+// --- Edit draft state ---
 
-function SummarySection({ report }: { report: QualitySweepReport }) {
-  return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader>
-        <CardTitle className="text-lg">Summary</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Questions scanned</p>
-            <p className="text-2xl font-bold">{report.totalQuestions}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">High findings</p>
-            <p className="text-2xl font-bold text-red-400">
-              {report.audit.findingsBySeverity.high}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Medium findings</p>
-            <p className="text-2xl font-bold text-yellow-400">
-              {report.audit.findingsBySeverity.medium}
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Duplicates</p>
-            <p className="text-2xl font-bold">
-              {report.duplicates ? report.duplicates.duplicatesFound.length : '—'}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+type EditField = 'question' | 'answer' | 'explanation';
+
+interface EditDraft {
+  question: string;
+  answer: string;
+  explanation: string;
+  touched: Record<EditField, boolean>;
 }
 
-function RecommendationsSection({ recommendations }: { recommendations: string[] }) {
-  return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader>
-        <CardTitle className="text-lg">Recommendations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="list-disc list-inside space-y-1 text-sm">
-          {recommendations.map((rec, i) => (
-            <li key={i}>{rec}</li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-function DuplicatesSection({ duplicates }: { duplicates: DuplicateMatch[] }) {
-  if (duplicates.length === 0) {
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Duplicates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No duplicates found.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader>
-        <CardTitle className="text-lg">
-          Duplicates ({duplicates.length} pair{duplicates.length !== 1 ? 's' : ''})
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Type</TableHead>
-              <TableHead>Score</TableHead>
-              <TableHead>Question A</TableHead>
-              <TableHead>Question B</TableHead>
-              <TableHead>AI Reasoning</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {duplicates.map((match, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <MatchTypeBadge type={match.matchType} />
-                </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {match.similarityScore.toFixed(2)}
-                </TableCell>
-                <TableCell className="max-w-[200px]">
-                  <p className="text-xs text-muted-foreground mb-1">{match.questionIdA}</p>
-                  <p className="text-sm">{truncate(match.questionTextA)}</p>
-                </TableCell>
-                <TableCell className="max-w-[200px]">
-                  <p className="text-xs text-muted-foreground mb-1">{match.questionIdB}</p>
-                  <p className="text-sm">{truncate(match.questionTextB)}</p>
-                </TableCell>
-                <TableCell className="max-w-[200px] text-sm">
-                  {match.aiReasoning ? truncate(match.aiReasoning) : '—'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AuditFindingsSection({ findings }: { findings: QuestionQualityFinding[] }) {
-  const grouped = {
-    high: findings.filter((f) => f.severity === 'high'),
-    medium: findings.filter((f) => f.severity === 'medium'),
-    low: findings.filter((f) => f.severity === 'low'),
+function buildDraft(q: Question): EditDraft {
+  return {
+    question: q.question,
+    answer: q.answer,
+    explanation: q.explanation ?? '',
+    touched: { question: false, answer: false, explanation: false },
   };
+}
 
-  if (findings.length === 0) {
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Static Audit Findings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No static audit findings.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+// --- Action button group (used by every finding row) ---
 
+interface ActionRowProps {
+  questionId: string;
+  onAccept: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  busy: boolean;
+  isEditing: boolean;
+}
+
+function ActionRow({ questionId, onAccept, onEdit, onDelete, busy, isEditing }: ActionRowProps) {
   return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader>
-        <CardTitle className="text-lg">Static Audit Findings ({findings.length})</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {(['high', 'medium', 'low'] as const).map((severity) => {
-          const group = grouped[severity];
-          if (group.length === 0) return null;
-          return (
-            <div key={severity}>
-              <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                <SeverityBadge severity={severity} />
-                {group.length} finding{group.length !== 1 ? 's' : ''}
-              </h4>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Question ID</TableHead>
-                    <TableHead>Rule</TableHead>
-                    <TableHead>Message</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {group.map((finding, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-mono text-xs">{finding.questionId}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{finding.rule}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{finding.message}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+    <div className="flex flex-wrap gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
+        onClick={onAccept}
+        disabled={busy}
+        data-testid={`button-accept-${questionId}`}
+      >
+        <Check className="w-3 h-3 mr-1" /> Accept
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-500"
+        onClick={onEdit}
+        disabled={busy || isEditing}
+        data-testid={`button-edit-${questionId}`}
+      >
+        <Pencil className="w-3 h-3 mr-1" /> Edit
+      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-red-500/30 hover:bg-red-500/10 hover:text-red-500"
+            disabled={busy}
+            data-testid={`button-delete-${questionId}`}
+          >
+            <Trash2 className="w-3 h-3 mr-1" /> Delete
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this question?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the question from the database. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={onDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
-function FactCheckSection({ results }: { results: FactCheckVerdict[] }) {
-  const actionable = results
-    .filter((r) => r.verdict === 'fail' || r.verdict === 'flag')
-    .sort((a, b) => (a.verdict === 'fail' ? -1 : 1) - (b.verdict === 'fail' ? -1 : 1));
+// --- Inline editor (3 fields) ---
 
-  if (actionable.length === 0) {
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Fact-Check Results</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">All questions passed fact-check.</p>
-        </CardContent>
-      </Card>
-    );
-  }
+interface InlineEditorProps {
+  draft: EditDraft;
+  onChange: (field: EditField, value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  busy: boolean;
+  questionId: string;
+}
 
+function InlineEditor({ draft, onChange, onSave, onCancel, busy, questionId }: InlineEditorProps) {
   return (
-    <Card className="bg-white/5 border-white/10">
-      <CardHeader>
-        <CardTitle className="text-lg">
-          Fact-Check Results ({actionable.length} need attention)
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Question ID</TableHead>
-              <TableHead>Verdict</TableHead>
-              <TableHead>Confidence</TableHead>
-              <TableHead>Reason</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {actionable.map((result, i) => (
-              <TableRow key={i}>
-                <TableCell className="font-mono text-xs">{result.questionId}</TableCell>
-                <TableCell>
-                  <VerdictBadge verdict={result.verdict} />
-                </TableCell>
-                <TableCell className="font-mono text-sm">{result.confidence}%</TableCell>
-                <TableCell className="text-sm max-w-[400px]">{result.reason}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="mt-3 p-3 rounded-md border border-amber-500/20 bg-amber-500/5 space-y-3">
+      <p className="text-[10px] uppercase tracking-wide text-amber-500 font-semibold">
+        Editing question
+      </p>
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase text-muted-foreground">Question</p>
+        <Textarea
+          value={draft.question}
+          onChange={(e) => onChange('question', e.target.value)}
+          className="min-h-[60px] text-xs"
+          data-testid={`edit-question-${questionId}`}
+        />
+      </div>
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase text-muted-foreground">Answer</p>
+        <Input
+          value={draft.answer}
+          onChange={(e) => onChange('answer', e.target.value)}
+          className="text-xs"
+          data-testid={`edit-answer-${questionId}`}
+        />
+      </div>
+      <div className="space-y-1">
+        <p className="text-[10px] uppercase text-muted-foreground">Explanation</p>
+        <Textarea
+          value={draft.explanation}
+          onChange={(e) => onChange('explanation', e.target.value)}
+          className="min-h-[60px] text-xs"
+          data-testid={`edit-explanation-${questionId}`}
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" onClick={onSave} disabled={busy} data-testid={`save-${questionId}`}>
+          <Save className="w-3 h-3 mr-1" />
+          {busy ? 'Saving...' : 'Save'}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onCancel}
+          disabled={busy}
+          data-testid={`cancel-${questionId}`}
+        >
+          <X className="w-3 h-3 mr-1" /> Cancel
+        </Button>
+      </div>
+    </div>
   );
 }
 
-// --- Main page component ---
+// --- Main page ---
+
+interface RemovedFindings {
+  static: Set<string>; // `${questionId}::${rule}`
+  duplicate: Set<string>; // pair key
+  factCheck: Set<string>; // questionId
+  deletedQuestionIds: Set<string>;
+}
 
 export default function AdminQualitySweep() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const { state, updateQuestion, deleteQuestion } = useGame();
 
   const [skipFactCheck, setSkipFactCheck] = useState(false);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [report, setReport] = useState<QualitySweepReport | null>(null);
 
+  const [removed, setRemoved] = useState<RemovedFindings>({
+    static: new Set(),
+    duplicate: new Set(),
+    factCheck: new Set(),
+    deletedQuestionIds: new Set(),
+  });
+
+  // Edit drafts keyed by `${editKey}` (unique per finding row)
+  const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
   const handleRunSweep = async () => {
     setIsRunning(true);
     setReport(null);
+    setRemoved({
+      static: new Set(),
+      duplicate: new Set(),
+      factCheck: new Set(),
+      deletedQuestionIds: new Set(),
+    });
+    setEditDrafts({});
+    setEditingKey(null);
     try {
       const response = await apiRequest('POST', '/api/admin/quality-sweep', {
         skipFactCheck,
@@ -321,7 +275,502 @@ export default function AdminQualitySweep() {
     }
   };
 
-  // Auth guards — same pattern as admin-settings.tsx
+  // --- Action handlers ---
+
+  const dismissOnServer = async (req: DismissFindingRequest) => {
+    await apiRequest('POST', '/api/admin/quality-sweep/dismiss', req);
+  };
+
+  const handleAccept = async (
+    findingType: QualityFindingType,
+    questionId: string,
+    findingKey: string,
+    editKey: string
+  ) => {
+    setBusyKey(editKey);
+    try {
+      await dismissOnServer({ questionId, findingType, findingKey });
+      setRemoved((prev) => {
+        const next = { ...prev };
+        if (findingType === 'static') {
+          next.static = new Set(prev.static).add(`${questionId}::${findingKey}`);
+        } else if (findingType === 'duplicate') {
+          next.duplicate = new Set(prev.duplicate).add(findingKey);
+        } else {
+          next.factCheck = new Set(prev.factCheck).add(questionId);
+        }
+        return next;
+      });
+      toast({ title: 'Finding dismissed', description: 'It will not appear in future sweeps.' });
+    } catch (error) {
+      toast({
+        title: 'Dismiss failed',
+        description: error instanceof Error ? error.message : 'Could not dismiss finding.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleStartEdit = (editKey: string, questionId: string) => {
+    const sourceQ = state.questions.find((q) => q.id === questionId);
+    if (!sourceQ) {
+      toast({
+        title: 'Question not loaded',
+        description: 'The question is not in the local catalog. Reload the app and retry.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setEditDrafts((prev) => ({ ...prev, [editKey]: buildDraft(sourceQ) }));
+    setEditingKey(editKey);
+  };
+
+  const handleDraftChange = (editKey: string, field: EditField, value: string) => {
+    setEditDrafts((prev) => {
+      const existing = prev[editKey];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [editKey]: {
+          ...existing,
+          [field]: value,
+          touched: { ...existing.touched, [field]: true },
+        },
+      };
+    });
+  };
+
+  const handleSaveEdit = async (editKey: string, questionId: string) => {
+    const draft = editDrafts[editKey];
+    if (!draft) return;
+    const sourceQ = state.questions.find((q) => q.id === questionId);
+    if (!sourceQ) return;
+
+    if (!draft.question.trim() || !draft.answer.trim()) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Question and answer are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setBusyKey(editKey);
+    try {
+      await updateQuestion({
+        ...sourceQ,
+        question: draft.question.trim(),
+        answer: draft.answer.trim(),
+        explanation: draft.explanation.trim() || sourceQ.explanation,
+      });
+      setEditingKey(null);
+      setEditDrafts((prev) => {
+        const next = { ...prev };
+        delete next[editKey];
+        return next;
+      });
+      toast({ title: 'Question updated', description: 'The fix has been saved.' });
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'Could not update question.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const handleCancelEdit = (editKey: string) => {
+    setEditingKey(null);
+    setEditDrafts((prev) => {
+      const next = { ...prev };
+      delete next[editKey];
+      return next;
+    });
+  };
+
+  const handleDelete = async (editKey: string, questionId: string) => {
+    setBusyKey(editKey);
+    try {
+      await deleteQuestion(questionId);
+      setRemoved((prev) => ({
+        ...prev,
+        deletedQuestionIds: new Set(prev.deletedQuestionIds).add(questionId),
+      }));
+      toast({ title: 'Question deleted' });
+    } catch (error) {
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Could not delete question.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  // --- Filtering helpers (apply local removals on top of server report) ---
+
+  const visibleStaticFindings = (findings: QuestionQualityFinding[]) =>
+    findings.filter(
+      (f) =>
+        !removed.deletedQuestionIds.has(f.questionId) &&
+        !removed.static.has(`${f.questionId}::${f.rule}`)
+    );
+
+  const visibleDuplicates = (matches: DuplicateMatch[]) =>
+    matches.filter((m) => {
+      if (
+        removed.deletedQuestionIds.has(m.questionIdA) ||
+        removed.deletedQuestionIds.has(m.questionIdB)
+      ) {
+        return false;
+      }
+      return !removed.duplicate.has(duplicatePairKey(m.questionIdA, m.questionIdB));
+    });
+
+  const visibleFactCheck = (results: FactCheckVerdict[]) =>
+    results.filter(
+      (r) => !removed.deletedQuestionIds.has(r.questionId) && !removed.factCheck.has(r.questionId)
+    );
+
+  // --- Section renderers ---
+
+  function SummarySection({ report }: { report: QualitySweepReport }) {
+    const visibleAuditCount = visibleStaticFindings(report.audit.findings).length;
+    const visibleHigh = visibleStaticFindings(report.audit.findings).filter(
+      (f) => f.severity === 'high'
+    ).length;
+    const visibleMedium = visibleStaticFindings(report.audit.findings).filter(
+      (f) => f.severity === 'medium'
+    ).length;
+    const visibleDupCount = report.duplicates
+      ? visibleDuplicates(report.duplicates.duplicatesFound).length
+      : null;
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Questions scanned</p>
+              <p className="text-2xl font-bold">{report.totalQuestions}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Open findings</p>
+              <p className="text-2xl font-bold">{visibleAuditCount}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">High</p>
+              <p className="text-2xl font-bold text-red-400">{visibleHigh}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Medium</p>
+              <p className="text-2xl font-bold text-yellow-400">{visibleMedium}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Duplicates</p>
+              <p className="text-2xl font-bold">{visibleDupCount ?? '—'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function FindingRow({
+    editKey,
+    questionId,
+    findingType,
+    findingKey,
+    children,
+  }: {
+    editKey: string;
+    questionId: string;
+    findingType: QualityFindingType;
+    findingKey: string;
+    children: React.ReactNode;
+  }) {
+    const isEditing = editingKey === editKey;
+    const draft = editDrafts[editKey];
+    const busy = busyKey === editKey;
+    return (
+      <div className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]">
+        {children}
+        <ActionRow
+          questionId={questionId}
+          onAccept={() => handleAccept(findingType, questionId, findingKey, editKey)}
+          onEdit={() => handleStartEdit(editKey, questionId)}
+          onDelete={() => handleDelete(editKey, questionId)}
+          busy={busy}
+          isEditing={isEditing}
+        />
+        {isEditing && draft && (
+          <InlineEditor
+            draft={draft}
+            questionId={questionId}
+            busy={busy}
+            onChange={(field, value) => handleDraftChange(editKey, field, value)}
+            onSave={() => handleSaveEdit(editKey, questionId)}
+            onCancel={() => handleCancelEdit(editKey)}
+          />
+        )}
+      </div>
+    );
+  }
+
+  function AuditFindingsSection({ findings }: { findings: QuestionQualityFinding[] }) {
+    const visible = visibleStaticFindings(findings);
+    const grouped = {
+      high: visible.filter((f) => f.severity === 'high'),
+      medium: visible.filter((f) => f.severity === 'medium'),
+      low: visible.filter((f) => f.severity === 'low'),
+    };
+
+    if (visible.length === 0) {
+      return (
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="text-lg">Static Audit Findings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">No static audit findings.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">Static Audit Findings ({visible.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {(['high', 'medium', 'low'] as const).map((severity) => {
+            const group = grouped[severity];
+            if (group.length === 0) return null;
+            return (
+              <div key={severity} className="space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <SeverityBadge severity={severity} />
+                  {group.length} finding{group.length !== 1 ? 's' : ''}
+                </h4>
+                <div className="space-y-2">
+                  {group.map((finding) => {
+                    const editKey = `static::${finding.questionId}::${finding.rule}`;
+                    return (
+                      <FindingRow
+                        key={editKey}
+                        editKey={editKey}
+                        questionId={finding.questionId}
+                        findingType="static"
+                        findingKey={finding.rule}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline">{finding.rule}</Badge>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {finding.questionId}
+                            </span>
+                          </div>
+                          <p className="text-sm">{finding.message}</p>
+                        </div>
+                      </FindingRow>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function DuplicatesSection({ duplicates }: { duplicates: DuplicateMatch[] }) {
+    const visible = visibleDuplicates(duplicates);
+    if (visible.length === 0) {
+      return (
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="text-lg">Duplicates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">No duplicates found.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Duplicates ({visible.length} pair{visible.length !== 1 ? 's' : ''})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {visible.map((match) => {
+            const pairKey = duplicatePairKey(match.questionIdA, match.questionIdB);
+            const editKeyA = `dup::${pairKey}::A`;
+            const editKeyB = `dup::${pairKey}::B`;
+            const isAEditing = editingKey === editKeyA;
+            const isBEditing = editingKey === editKeyB;
+            const busyA = busyKey === editKeyA;
+            const busyB = busyKey === editKeyB;
+
+            return (
+              <div
+                key={pairKey}
+                className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]"
+              >
+                <div className="flex items-center gap-2 flex-wrap">
+                  <MatchTypeBadge type={match.matchType} />
+                  <span className="text-xs font-mono">
+                    score {match.similarityScore.toFixed(2)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
+                    onClick={() =>
+                      handleAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
+                    }
+                    disabled={busyKey === `dup::${pairKey}`}
+                    data-testid={`button-accept-pair-${pairKey}`}
+                  >
+                    <Check className="w-3 h-3 mr-1" /> Accept pair
+                  </Button>
+                </div>
+                {match.aiReasoning && (
+                  <p className="text-xs text-muted-foreground italic">
+                    AI: {truncate(match.aiReasoning, 200)}
+                  </p>
+                )}
+                <div className="grid md:grid-cols-2 gap-3">
+                  {/* Side A */}
+                  <div className="border border-white/10 rounded p-2 space-y-2">
+                    <p className="font-mono text-[10px] text-muted-foreground">
+                      {match.questionIdA}
+                    </p>
+                    <p className="text-sm">{match.questionTextA}</p>
+                    <p className="text-xs text-muted-foreground">A: {match.answerA}</p>
+                    <ActionRow
+                      questionId={match.questionIdA}
+                      onAccept={() =>
+                        handleAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
+                      }
+                      onEdit={() => handleStartEdit(editKeyA, match.questionIdA)}
+                      onDelete={() => handleDelete(editKeyA, match.questionIdA)}
+                      busy={busyA}
+                      isEditing={isAEditing}
+                    />
+                    {isAEditing && editDrafts[editKeyA] && (
+                      <InlineEditor
+                        draft={editDrafts[editKeyA]}
+                        questionId={match.questionIdA}
+                        busy={busyA}
+                        onChange={(field, value) => handleDraftChange(editKeyA, field, value)}
+                        onSave={() => handleSaveEdit(editKeyA, match.questionIdA)}
+                        onCancel={() => handleCancelEdit(editKeyA)}
+                      />
+                    )}
+                  </div>
+                  {/* Side B */}
+                  <div className="border border-white/10 rounded p-2 space-y-2">
+                    <p className="font-mono text-[10px] text-muted-foreground">
+                      {match.questionIdB}
+                    </p>
+                    <p className="text-sm">{match.questionTextB}</p>
+                    <p className="text-xs text-muted-foreground">A: {match.answerB}</p>
+                    <ActionRow
+                      questionId={match.questionIdB}
+                      onAccept={() =>
+                        handleAccept('duplicate', match.questionIdB, pairKey, `dup::${pairKey}`)
+                      }
+                      onEdit={() => handleStartEdit(editKeyB, match.questionIdB)}
+                      onDelete={() => handleDelete(editKeyB, match.questionIdB)}
+                      busy={busyB}
+                      isEditing={isBEditing}
+                    />
+                    {isBEditing && editDrafts[editKeyB] && (
+                      <InlineEditor
+                        draft={editDrafts[editKeyB]}
+                        questionId={match.questionIdB}
+                        busy={busyB}
+                        onChange={(field, value) => handleDraftChange(editKeyB, field, value)}
+                        onSave={() => handleSaveEdit(editKeyB, match.questionIdB)}
+                        onCancel={() => handleCancelEdit(editKeyB)}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function FactCheckSection({ results }: { results: FactCheckVerdict[] }) {
+    const actionable = visibleFactCheck(
+      results.filter((r) => r.verdict === 'fail' || r.verdict === 'flag')
+    );
+    if (actionable.length === 0) {
+      return (
+        <Card className="bg-white/5 border-white/10">
+          <CardHeader>
+            <CardTitle className="text-lg">Fact-Check Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">All questions passed fact-check.</p>
+          </CardContent>
+        </Card>
+      );
+    }
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">
+            Fact-Check Results ({actionable.length} need attention)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {actionable.map((result) => {
+            const editKey = `fc::${result.questionId}`;
+            return (
+              <FindingRow
+                key={editKey}
+                editKey={editKey}
+                questionId={result.questionId}
+                findingType="fact_check"
+                findingKey={FACT_CHECK_FINDING_KEY}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <VerdictBadge verdict={result.verdict} />
+                    <span className="text-xs font-mono">{result.confidence}%</span>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {result.questionId}
+                    </span>
+                  </div>
+                  <p className="text-sm">{result.reason}</p>
+                </div>
+              </FindingRow>
+            );
+          })}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Auth guards
   if (authLoading || adminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -461,7 +910,21 @@ export default function AdminQualitySweep() {
             </div>
 
             <SummarySection report={report} />
-            <RecommendationsSection recommendations={report.recommendations} />
+
+            {report.recommendations.length > 0 && (
+              <Card className="bg-white/5 border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-lg">Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {report.recommendations.map((rec, i) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
             {report.duplicates && (
               <DuplicatesSection duplicates={report.duplicates.duplicatesFound} />
