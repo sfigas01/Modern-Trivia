@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { ScanSearch, Play, LogIn, Shield, Check, Pencil, Trash2, Save, X, Eye, EyeOff } from 'lucide-react';
+import { ScanSearch, Play, LogIn, Shield, Check, Pencil, Trash2, Save, X, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { AdminLayout } from '@/components/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,7 @@ import {
   type QualityFindingType,
   type QualitySweepReport,
   type QuestionQualityFinding,
+  type QuestionSnapshot,
 } from '@shared/models/quality-sweep';
 
 function truncate(text: string, max = 80): string {
@@ -78,6 +79,141 @@ function HiddenAnswer({ answer }: { answer: string }) {
         {revealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
       </button>
     </span>
+  );
+}
+
+// --- Proposed fix display ---
+
+function ProposedFixDisplay({
+  rule,
+  fix,
+}: {
+  rule: string;
+  fix: Record<string, unknown>;
+}) {
+  if (rule === 'missing_required_tags') {
+    const currentTags = (fix.currentTags as string[]) ?? [];
+    const missingRegion = fix.missingRegion as boolean;
+    const missingPillar = fix.missingPillar as boolean;
+    const validRegionTags = (fix.validRegionTags as string[]) ?? [];
+    const validPillarTags = (fix.validPillarTags as string[]) ?? [];
+    return (
+      <div className="space-y-2 text-xs">
+        <div>
+          <p className="text-[10px] uppercase text-muted-foreground mb-1">Current tags</p>
+          <div className="flex gap-1 flex-wrap">
+            {currentTags.length > 0 ? (
+              currentTags.map((t) => (
+                <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">{t}</span>
+              ))
+            ) : (
+              <span className="text-muted-foreground italic">none</span>
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase text-muted-foreground mb-1">Needs to add</p>
+          <div className="space-y-1">
+            {missingRegion && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-muted-foreground w-12 shrink-0">Region:</span>
+                {validRegionTags.map((t) => (
+                  <span key={t} className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-mono">{t}</span>
+                ))}
+              </div>
+            )}
+            {missingPillar && (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-muted-foreground w-12 shrink-0">Pillar:</span>
+                {validPillarTags.map((t) => (
+                  <span key={t} className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">{t}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (rule === 'category_tag_mismatch') {
+    const currentTags = (fix.currentTags as string[]) ?? [];
+    const addTag = fix.addTag as string;
+    return (
+      <div className="space-y-2 text-xs">
+        <div>
+          <p className="text-[10px] uppercase text-muted-foreground mb-1">Current tags</p>
+          <div className="flex gap-1 flex-wrap">
+            {currentTags.map((t) => (
+              <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">{t}</span>
+            ))}
+            {currentTags.length === 0 && <span className="text-muted-foreground italic">none</span>}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase text-muted-foreground mb-1">Proposed fix</p>
+          <div className="flex items-center gap-1">
+            <span className="text-muted-foreground">Add:</span>
+            <span className="px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 font-mono">{addTag}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (rule === 'missing_source_metadata') {
+    const missingFields = (fix.missingFields as string[]) ?? [];
+    return (
+      <div className="text-xs">
+        <p className="text-[10px] uppercase text-muted-foreground mb-1">Missing fields</p>
+        <div className="flex gap-1 flex-wrap">
+          {missingFields.map((f) => (
+            <span key={f} className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-mono">{f}</span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ExpandableDetails({
+  finding,
+  snapshot,
+}: {
+  finding: QuestionQualityFinding;
+  snapshot?: QuestionSnapshot;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = snapshot && (finding.proposedFix || snapshot.answer);
+  if (!hasDetails) return null;
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-white transition-colors mt-1"
+        data-testid={`button-expand-finding-${finding.questionId}-${finding.rule}`}
+      >
+        {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {open ? 'Hide details' : 'Show details'}
+      </button>
+      {open && (
+        <div className="mt-2 pt-2 border-t border-white/10 space-y-3">
+          <div>
+            <p className="text-[10px] uppercase text-muted-foreground mb-1">Answer</p>
+            <HiddenAnswer answer={snapshot.answer} />
+          </div>
+          {finding.proposedFix && (
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground mb-1">Proposed fix</p>
+              <ProposedFixDisplay rule={finding.rule} fix={finding.proposedFix} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -586,6 +722,7 @@ export default function AdminQualitySweep() {
                 <div className="space-y-2">
                   {group.map((finding) => {
                     const editKey = `static::${finding.questionId}::${finding.rule}`;
+                    const snapshot = report?.questionsById?.[finding.questionId];
                     return (
                       <FindingRow
                         key={editKey}
@@ -594,14 +731,20 @@ export default function AdminQualitySweep() {
                         findingType="static"
                         findingKey={finding.rule}
                       >
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge variant="outline">{finding.rule}</Badge>
                             <span className="font-mono text-xs text-muted-foreground">
                               {finding.questionId}
                             </span>
                           </div>
-                          <p className="text-sm">{finding.message}</p>
+                          {snapshot && (
+                            <p className="text-sm font-medium text-white/90 leading-snug">
+                              {snapshot.question}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground">{finding.message}</p>
+                          <ExpandableDetails finding={finding} snapshot={snapshot} />
                         </div>
                       </FindingRow>
                     );

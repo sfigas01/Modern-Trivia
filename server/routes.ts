@@ -951,6 +951,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         recommendations.push('No critical issues found. All approved questions passed the sweep.');
       }
 
+      // Build a snapshot map for all flagged questions so the frontend can
+      // show question text, hidden answer, and current state without extra fetches.
+      const flaggedIds = new Set<string>([
+        ...audit.findings.map((f) => f.questionId),
+        ...(factCheck?.results.map((r) => r.questionId) ?? []),
+        ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
+      ]);
+      const questionsById: Record<string, { question: string; answer: string; tags: string[]; category: string; pillar: string }> = {};
+      for (const q of allQuestions) {
+        if (flaggedIds.has(q.id)) {
+          questionsById[q.id] = {
+            question: q.question,
+            answer: q.answer,
+            tags: (q.tags as string[]) ?? [],
+            category: q.category,
+            pillar: q.pillar,
+          };
+        }
+      }
+
       res.json({
         generatedAt: new Date().toISOString(),
         totalQuestions: allQuestions.length,
@@ -958,6 +978,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         duplicates,
         factCheck,
         recommendations,
+        questionsById,
       });
     } catch (error) {
       console.error('Error running quality sweep:', error);

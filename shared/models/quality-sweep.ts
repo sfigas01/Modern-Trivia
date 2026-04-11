@@ -26,6 +26,15 @@ export interface QuestionQualityFinding {
   severity: QuestionQualitySeverity;
   rule: QuestionQualityRule;
   message: string;
+  proposedFix?: Record<string, unknown>;
+}
+
+export interface QuestionSnapshot {
+  question: string;
+  answer: string;
+  tags: string[];
+  category: string;
+  pillar: string;
 }
 
 export interface QuestionQualityAuditReport {
@@ -86,6 +95,7 @@ export interface QualitySweepReport {
   duplicates: DuplicateDetectionReport | null;
   factCheck: FactCheckReport | null;
   recommendations: string[];
+  questionsById: Record<string, QuestionSnapshot>;
 }
 
 // --- Dismissals API ---
