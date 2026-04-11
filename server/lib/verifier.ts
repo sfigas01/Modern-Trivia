@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 
-import { batchProcess } from '../replit_integrations/batch';
 import type { Question } from '@shared/models/questions';
 
 const openai = new OpenAI({
@@ -21,73 +20,136 @@ export interface FactCheckReport {
 }
 
 interface RawVerdict {
+  id?: string;
   verdict?: string;
   confidence?: number;
   reason?: string;
 }
 
-async function factCheckOne(question: Question): Promise<FactCheckVerdict> {
-  const prompt = `You are a trivia fact-checker. Evaluate the accuracy of the following trivia question and answer.
+const BATCH_SIZE = 50;
 
-Question: "${question.question}"
-Answer: "${question.answer}"
-Explanation: "${question.explanation}"
+async function factCheckBatch(batch: Question[]): Promise<FactCheckVerdict[]> {
+  if (batch.length === 0) return [];
 
-Respond with JSON:
+  const prompt = `You are a trivia fact-checker. Review each question and verify factual accuracy.
+
+For each question return one of:
+- "pass"  — question, answer, and explanation are all factually correct and unambiguous
+- "flag"  — likely correct but uncertain, minor wording concern, or hard to verify
+- "fail"  — factually wrong, misleading, or the answer is clearly incorrect
+
+Return valid JSON:
 {
-  "verdict": "pass" | "flag" | "fail",
-  "confidence": 0-100,
-  "reason": "short explanation"
+  "results": [
+    {
+      "id": "<question id>",
+      "verdict": "pass" | "flag" | "fail",
+      "confidence": 0-100,
+      "reason": "one sentence explaining the verdict"
+    }
+  ]
 }
 
-Guidelines:
-- "pass": Factually correct and unambiguous
-- "flag": Possibly outdated, ambiguous, or could use verification
-- "fail": Clearly incorrect or misleading`;
+Questions to review:
+${JSON.stringify(
+  batch.map((q) => ({
+    id: q.id,
+    question: q.question,
+    answer: q.answer,
+    explanation: q.explanation,
+  })),
+  null,
+  2
+)}`;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You are a fact-checking assistant for a trivia game. Always respond with valid JSON.',
-      },
-      { role: 'user', content: prompt },
-    ],
-    response_format: { type: 'json_object' },
-    max_tokens: 512,
-  });
-
-  const content = response.choices[0]?.message?.content || '{}';
+  const startedAt = Date.now();
+  console.info('[verifier] Fact-checking batch', { count: batch.length });
 
   try {
-    const parsed = JSON.parse(content) as RawVerdict;
-    const verdict =
-      parsed.verdict === 'pass' || parsed.verdict === 'fail' ? parsed.verdict : 'flag';
-    return {
-      questionId: question.id,
-      verdict,
-      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 50,
-      reason: typeof parsed.reason === 'string' ? parsed.reason : 'No reason provided.',
-    };
-  } catch {
-    return {
-      questionId: question.id,
-      verdict: 'flag',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a trivia fact-checking assistant. Always respond with valid JSON that matches the requested schema exactly.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 4096,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const parsed = JSON.parse(content) as { results?: RawVerdict[] };
+    const rawResults = Array.isArray(parsed.results) ? parsed.results : [];
+
+    const resultMap = new Map<string, FactCheckVerdict>();
+    for (const raw of rawResults) {
+      const id = typeof raw.id === 'string' ? raw.id : '';
+      if (!id) continue;
+      const verdict = (['pass', 'flag', 'fail'] as const).includes(raw.verdict as 'pass' | 'flag' | 'fail')
+        ? (raw.verdict as 'pass' | 'flag' | 'fail')
+        : 'flag';
+      resultMap.set(id, {
+        questionId: id,
+        verdict,
+        confidence: typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
+        reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
+      });
+    }
+
+    console.info('[verifier] Batch complete', {
+      count: batch.length,
+      returned: resultMap.size,
+      durationMs: Date.now() - startedAt,
+    });
+
+    // Fill in any questions the model missed
+    return batch.map(
+      (q) =>
+        resultMap.get(q.id) ?? {
+          questionId: q.id,
+          verdict: 'flag' as const,
+          confidence: 0,
+          reason: 'No verdict returned by fact-checker.',
+        }
+    );
+  } catch (error) {
+    console.error('[verifier] Batch fact-check failed', { error });
+    return batch.map((q) => ({
+      questionId: q.id,
+      verdict: 'flag' as const,
       confidence: 0,
-      reason: 'Failed to parse AI response.',
-    };
+      reason: 'Fact-check could not be completed.',
+    }));
   }
 }
 
 export async function batchFactCheck(questions: Question[]): Promise<FactCheckReport> {
-  const results = await batchProcess(questions, (question) => factCheckOne(question), {
-    concurrency: 3,
-  });
+  if (questions.length === 0) {
+    return { totalChecked: 0, results: [] };
+  }
+
+  console.info('[verifier] Running batch fact-check', { count: questions.length });
+
+  // Split into chunks and process each with a single GPT-4o call
+  const chunks: Question[][] = [];
+  for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+    chunks.push(questions.slice(i, i + BATCH_SIZE));
+  }
+
+  // Process chunks sequentially to avoid rate limits
+  const allResults: FactCheckVerdict[] = [];
+  for (const chunk of chunks) {
+    const chunkResults = await factCheckBatch(chunk);
+    allResults.push(...chunkResults);
+  }
+
+  console.info('[verifier] Full fact-check complete', { total: allResults.length });
 
   return {
     totalChecked: questions.length,
-    results,
+    results: allResults,
   };
 }
