@@ -1,6 +1,13 @@
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
-import { MessageSquareWarning, Settings, PlusCircle, LogOut, FlaskConical, Library } from 'lucide-react';
+import {
+  MessageSquareWarning,
+  Settings,
+  PlusCircle,
+  LogOut,
+  FlaskConical,
+  Library,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {

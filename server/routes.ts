@@ -12,7 +12,7 @@ import {
   insertQuestionSchema,
   questionEdits,
 } from '@shared/schema';
-import { eq, and, sql, isNull, inArray } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
@@ -23,8 +23,8 @@ const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'
 type SinglePillar = (typeof VALID_PILLARS)[number];
 
 const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
-  { pillar: 'TimeCapsule', pct: 0.30 },
-  { pillar: 'GlobalEh', pct: 0.30 },
+  { pillar: 'TimeCapsule', pct: 0.3 },
+  { pillar: 'GlobalEh', pct: 0.3 },
   { pillar: 'FreshPrints', pct: 0.25 },
   { pillar: 'GreatOutdoors', pct: 0.15 },
 ];
@@ -289,7 +289,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let results;
       if (shouldExcludeSeen) {
-        // LEFT JOIN to find unseen questions
+        // Escalating cooldown cycle: 1 month → 3 months → 5 months, repeating
+        const cooldownExpr = sql`
+          CASE (${seenQuestions.seenCount} - 1) % 3
+            WHEN 0 THEN INTERVAL '1 month'
+            WHEN 1 THEN INTERVAL '3 months'
+            WHEN 2 THEN INTERVAL '5 months'
+          END
+        `;
+
+        // LEFT JOIN to find unseen or cooldown-expired questions
         const query = db
           .select({
             id: questions.id,
@@ -309,10 +318,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             seenQuestions,
             and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(and(...conditions, isNull(seenQuestions.questionId)));
+          .where(
+            and(
+              ...conditions,
+              sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
+            )
+          );
 
+        // Prefer never-seen questions first; only backfill with
+        // cooldown-expired ones when unseen supply is exhausted.
         if (shuffle === 'true') {
-          query.orderBy(sql`random()`);
+          query.orderBy(
+            sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
+            sql`random()`
+          );
+        } else {
+          query.orderBy(sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`);
         }
         if (limit) {
           query.limit(parseInt(limit as string, 10));
@@ -370,10 +391,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'questionIds array is required' });
       }
 
+      // Upsert with replay guard: only bump seen_count if the last
+      // seen_at is more than 24 hours ago. This prevents duplicate
+      // submissions or client retries from inflating the count and
+      // pushing questions into longer cooldowns than warranted.
       await db
         .insert(seenQuestions)
         .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [seenQuestions.userId, seenQuestions.questionId],
+          set: {
+            seenCount: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN ${seenQuestions.seenCount} + 1
+              ELSE ${seenQuestions.seenCount}
+            END`,
+            seenAt: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN NOW()
+              ELSE ${seenQuestions.seenAt}
+            END`,
+          },
+        });
 
       res.json({ message: 'Questions marked as seen', count: questionIds.length });
     } catch (error) {
@@ -426,7 +465,14 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Admin question browser — all questions, all statuses
   app.get('/api/admin/questions', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { status, category, pillar, search, limit: limitParam, offset: offsetParam } = req.query;
+      const {
+        status,
+        category,
+        pillar,
+        search,
+        limit: limitParam,
+        offset: offsetParam,
+      } = req.query;
 
       const conditions = [];
       if (status && status !== 'all') {
@@ -441,7 +487,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       if (search && typeof search === 'string' && search.trim()) {
         const term = `%${search.trim()}%`;
         conditions.push(
-          sql`(${questions.question} ilike ${term} or ${questions.answer} ilike ${term} or ${questions.category} ilike ${term})`,
+          sql`(${questions.question} ilike ${term} or ${questions.answer} ilike ${term} or ${questions.category} ilike ${term})`
         );
       }
 
@@ -484,7 +530,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const userId = getUserId(req);
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-      const { field, value, aiSuggested = false } = req.body as {
+      const {
+        field,
+        value,
+        aiSuggested = false,
+      } = req.body as {
         field: string;
         value: unknown;
         aiSuggested?: boolean;
@@ -527,41 +577,55 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // AI fix suggestion for a specific field
-  app.post('/api/admin/questions/:id/ai-fix', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { field } = req.body as { field: string };
+  app.post(
+    '/api/admin/questions/:id/ai-fix',
+    isAuthenticated,
+    isAdmin,
+    aiLimiter,
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { field } = req.body as { field: string };
 
-      const FIXABLE = ['sourceUrl', 'sourceName', 'explanation', 'tags', 'answer', 'question', 'acceptableAnswers'];
-      if (!field || !FIXABLE.includes(field)) {
-        return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
+        const FIXABLE = [
+          'sourceUrl',
+          'sourceName',
+          'explanation',
+          'tags',
+          'answer',
+          'question',
+          'acceptableAnswers',
+        ];
+        if (!field || !FIXABLE.includes(field)) {
+          return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
+        }
+
+        const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+        if (!q) return res.status(404).json({ message: 'Question not found' });
+
+        const suggestion = await getAiFieldFix(
+          {
+            id: q.id,
+            category: q.category,
+            difficulty: q.difficulty,
+            question: q.question,
+            answer: q.answer,
+            explanation: q.explanation,
+            pillar: q.pillar,
+            tags: (q.tags as string[]) ?? [],
+            sourceUrl: q.sourceUrl ?? null,
+            sourceName: q.sourceName ?? null,
+          },
+          field as FixableField
+        );
+
+        res.json({ suggestion });
+      } catch (error) {
+        console.error('Error getting AI field fix:', error);
+        res.status(500).json({ message: 'Failed to get AI suggestion' });
       }
-
-      const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
-      if (!q) return res.status(404).json({ message: 'Question not found' });
-
-      const suggestion = await getAiFieldFix(
-        {
-          id: q.id,
-          category: q.category,
-          difficulty: q.difficulty,
-          question: q.question,
-          answer: q.answer,
-          explanation: q.explanation,
-          pillar: q.pillar,
-          tags: (q.tags as string[]) ?? [],
-          sourceUrl: q.sourceUrl ?? null,
-          sourceName: q.sourceName ?? null,
-        },
-        field as FixableField,
-      );
-
-      res.json({ suggestion });
-    } catch (error) {
-      console.error('Error getting AI field fix:', error);
-      res.status(500).json({ message: 'Failed to get AI suggestion' });
     }
-  });
+  );
 
   // Fetch the edit changelog for a question
   app.get('/api/admin/questions/:id/edits', isAuthenticated, isAdmin, async (req, res) => {
@@ -624,7 +688,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const batches = allocateMixed(count);
         console.info('[staging] Mixed generation', { topic, count, batches });
         const results = await Promise.all(
-          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p)),
+          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p))
         );
         allGenerated = results.flat();
       } else {
@@ -637,7 +701,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           allGenerated.map((q) => ({
             ...q,
             aiAnalysis: q.aiAnalysis,
-          })),
+          }))
         )
         .returning();
 

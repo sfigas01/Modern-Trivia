@@ -28,7 +28,7 @@ interface RawVerdict {
 }
 
 export async function batchFactCheck(
-  questions: QuestionInput[],
+  questions: QuestionInput[]
 ): Promise<Map<string, FactCheckResult>> {
   const results = new Map<string, FactCheckResult>();
 
@@ -57,7 +57,16 @@ Return valid JSON:
 }
 
 Questions to review:
-${JSON.stringify(questions.map((q) => ({ id: q.id, question: q.question, answer: q.answer, explanation: q.explanation })), null, 2)}`;
+${JSON.stringify(
+  questions.map((q) => ({
+    id: q.id,
+    question: q.question,
+    answer: q.answer,
+    explanation: q.explanation,
+  })),
+  null,
+  2
+)}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -83,7 +92,8 @@ ${JSON.stringify(questions.map((q) => ({ id: q.id, question: q.question, answer:
       const verdict = (['pass', 'flag', 'fail'] as const).includes(raw.verdict as FactCheckVerdict)
         ? (raw.verdict as FactCheckVerdict)
         : 'flag';
-      const confidence = typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50;
+      const confidence =
+        typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50;
       const reason = typeof raw.reason === 'string' ? raw.reason : 'No reason provided.';
 
       if (id) {
@@ -99,13 +109,21 @@ ${JSON.stringify(questions.map((q) => ({ id: q.id, question: q.question, answer:
   } catch (error) {
     console.error('[verifier] Batch fact-check failed', { error });
     for (const q of questions) {
-      results.set(q.id, { verdict: 'flag', confidence: 0, reason: 'Fact-check could not be completed.' });
+      results.set(q.id, {
+        verdict: 'flag',
+        confidence: 0,
+        reason: 'Fact-check could not be completed.',
+      });
     }
   }
 
   for (const q of questions) {
     if (!results.has(q.id)) {
-      results.set(q.id, { verdict: 'flag', confidence: 0, reason: 'No verdict returned by fact-checker.' });
+      results.set(q.id, {
+        verdict: 'flag',
+        confidence: 0,
+        reason: 'No verdict returned by fact-checker.',
+      });
     }
   }
 

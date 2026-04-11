@@ -33,8 +33,8 @@ type SinglePillar = (typeof SINGLE_PILLARS)[number];
 type Pillar = SinglePillar | 'Mixed';
 
 const PILLAR_MIX: { pillar: SinglePillar; pct: number; label: string }[] = [
-  { pillar: 'TimeCapsule', pct: 0.30, label: 'TimeCapsule' },
-  { pillar: 'GlobalEh', pct: 0.30, label: 'GlobalEh' },
+  { pillar: 'TimeCapsule', pct: 0.3, label: 'TimeCapsule' },
+  { pillar: 'GlobalEh', pct: 0.3, label: 'GlobalEh' },
   { pillar: 'FreshPrints', pct: 0.25, label: 'FreshPrints' },
   { pillar: 'GreatOutdoors', pct: 0.15, label: 'GreatOutdoors' },
 ];
@@ -112,7 +112,8 @@ function overallHealth(q: StagingQuestion): 'clean' | 'warn' | 'fail' {
   if (!q.aiAnalysis) return 'warn';
   const { qaFindings, factCheck } = q.aiAnalysis;
   if (factCheck.verdict === 'fail' || qaFindings.some((f) => f.severity === 'high')) return 'fail';
-  if (factCheck.verdict === 'flag' || qaFindings.some((f) => f.severity === 'medium')) return 'warn';
+  if (factCheck.verdict === 'flag' || qaFindings.some((f) => f.severity === 'medium'))
+    return 'warn';
   return 'clean';
 }
 
@@ -170,8 +171,7 @@ function QuestionCard({
                   data-testid={`fact-check-verdict-${question.id}`}
                 >
                   {verdictIcon(analysis.factCheck.verdict)}
-                  AI: {analysis.factCheck.verdict}
-                  {' '}({analysis.factCheck.confidence}%)
+                  AI: {analysis.factCheck.verdict} ({analysis.factCheck.confidence}%)
                 </span>
               )}
               {analysis && analysis.qaFindings.length > 0 && (
@@ -181,14 +181,20 @@ function QuestionCard({
                 </span>
               )}
             </div>
-            <p className="font-medium text-sm leading-snug" data-testid={`text-question-${question.id}`}>
+            <p
+              className="font-medium text-sm leading-snug"
+              data-testid={`text-question-${question.id}`}
+            >
               {question.question}
             </p>
             {/* Answer — hidden by default, reveal on demand */}
             <div className="mt-1.5 flex items-center gap-2">
               {answerVisible ? (
                 <>
-                  <p className="text-sm text-primary font-semibold" data-testid={`text-answer-${question.id}`}>
+                  <p
+                    className="text-sm text-primary font-semibold"
+                    data-testid={`text-answer-${question.id}`}
+                  >
                     {question.answer}
                   </p>
                   <button
@@ -257,7 +263,9 @@ function QuestionCard({
                           className={`flex items-start gap-2 text-xs p-2 rounded-md border ${severityBadgeClass(finding.severity)}`}
                           data-testid={`qa-finding-${question.id}-${i}`}
                         >
-                          <span className="font-semibold uppercase shrink-0">{finding.severity}</span>
+                          <span className="font-semibold uppercase shrink-0">
+                            {finding.severity}
+                          </span>
                           <span>{finding.message}</span>
                         </div>
                       ))}
@@ -331,7 +339,11 @@ export default function AdminStaging() {
       setStagingQuestions(data.filter((q) => q.status === 'pending'));
       setLoaded(true);
     } catch {
-      toast({ title: 'Error', description: 'Could not load staging queue.', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Could not load staging queue.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -349,10 +361,10 @@ export default function AdminStaging() {
         body: JSON.stringify(genForm),
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({})) as { message?: string };
+        const err = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(err.message || 'Generation failed');
       }
-      const data = await res.json() as { count: number };
+      const data = (await res.json()) as { count: number };
       toast({
         title: 'Questions generated',
         description: `${data.count} question${data.count !== 1 ? 's' : ''} added to the review queue.`,
@@ -407,14 +419,18 @@ export default function AdminStaging() {
         credentials: 'include',
       });
       if (!res.ok) throw new Error('Promote all failed');
-      const data = await res.json() as { count: number };
+      const data = (await res.json()) as { count: number };
       setStagingQuestions([]);
       toast({
         title: 'All questions approved',
         description: `${data.count} question${data.count !== 1 ? 's' : ''} are now live.`,
       });
     } catch {
-      toast({ title: 'Error', description: 'Failed to approve all questions.', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Failed to approve all questions.',
+        variant: 'destructive',
+      });
     } finally {
       setPromotingAll(false);
     }
@@ -467,7 +483,10 @@ export default function AdminStaging() {
                   onValueChange={(v) => setGenForm((f) => ({ ...f, count: Number(v) }))}
                   disabled={generating}
                 >
-                  <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-generate-count">
+                  <SelectTrigger
+                    className="bg-white/5 border-white/10"
+                    data-testid="select-generate-count"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -486,7 +505,10 @@ export default function AdminStaging() {
                   onValueChange={(v) => setGenForm((f) => ({ ...f, pillar: v as Pillar }))}
                   disabled={generating}
                 >
-                  <SelectTrigger className="bg-white/5 border-white/10" data-testid="select-generate-pillar">
+                  <SelectTrigger
+                    className="bg-white/5 border-white/10"
+                    data-testid="select-generate-pillar"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

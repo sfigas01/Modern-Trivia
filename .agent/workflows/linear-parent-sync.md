@@ -9,6 +9,7 @@ Sync a parent issue in Linear after completing a sub-issue. Ensures the parent r
 ## Inputs
 
 If invoked standalone, determine the sub-issue from:
+
 1. A sub-issue ID provided by the user, OR
 2. The Linear issue linked to the current branch (parse from branch name `STE-XX`)
 

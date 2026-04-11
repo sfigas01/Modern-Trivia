@@ -6,88 +6,91 @@ import { Badge } from '@/components/ui/badge';
 
 export function ApresMidnight() {
   const teams = [
-    { id: 1, name: "Northern Lights", active: true },
-    { id: 2, name: "Maple Squad", active: false }
+    { id: 1, name: 'Northern Lights', active: true },
+    { id: 2, name: 'Maple Squad', active: false },
   ];
 
   const categories = [
-    { name: "All", count: 200, selected: true },
-    { name: "Geography", count: 45, selected: false },
-    { name: "Sports", count: 32, selected: false },
-    { name: "Science", count: 51, selected: false },
-    { name: "History", count: 48, selected: false },
-    { name: "Entertainment", count: 62, selected: false },
-    { name: "Music", count: 38, selected: false },
-    { name: "Food", count: 24, selected: false },
-    { name: "Nature", count: 31, selected: false }
+    { name: 'All', count: 200, selected: true },
+    { name: 'Geography', count: 45, selected: false },
+    { name: 'Sports', count: 32, selected: false },
+    { name: 'Science', count: 51, selected: false },
+    { name: 'History', count: 48, selected: false },
+    { name: 'Entertainment', count: 62, selected: false },
+    { name: 'Music', count: 38, selected: false },
+    { name: 'Food', count: 24, selected: false },
+    { name: 'Nature', count: 31, selected: false },
   ];
 
   const rounds = [
     { value: 5, selected: false },
     { value: 10, selected: true },
     { value: 15, selected: false },
-    { value: 20, selected: false }
+    { value: 20, selected: false },
   ];
 
   return (
-    <div 
+    <div
       className="min-h-screen w-full flex justify-center py-12 px-4 relative overflow-hidden font-['DM_Sans'] text-[#f5e6c8]"
       style={{
         backgroundColor: '#1a1410',
-        backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(212, 168, 83, 0.08) 0%, rgba(26, 20, 16, 0) 70%)'
+        backgroundImage:
+          'radial-gradient(circle at 50% 30%, rgba(212, 168, 83, 0.08) 0%, rgba(26, 20, 16, 0) 70%)',
       }}
     >
       <div className="w-full max-w-md flex flex-col gap-8 relative z-10">
-        
         {/* Header */}
         <div className="flex flex-col items-center text-center space-y-3 mt-4">
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className="bg-[#241e17] text-[#d4a853] border-[#3d3020] font-medium tracking-wide"
           >
             Not Started
           </Badge>
-          <h1 
+          <h1
             className="text-5xl font-bold tracking-normal font-['Playfair_Display']"
             style={{ color: '#f5e6c8', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
           >
             TRIVIA CLASH
           </h1>
-          <p className="text-sm tracking-[0.2em] font-medium uppercase" style={{ color: '#9a8068' }}>
+          <p
+            className="text-sm tracking-[0.2em] font-medium uppercase"
+            style={{ color: '#9a8068' }}
+          >
             The Competitive Party Game
           </p>
         </div>
 
         {/* Team Setup Card */}
-        <div 
+        <div
           className="rounded-[16px] p-6 shadow-xl"
           style={{ backgroundColor: '#241e17', border: '1px solid #3d3020' }}
         >
           <h2 className="text-xl font-['Playfair_Display'] mb-4 text-[#f5e6c8]">Teams</h2>
-          
+
           <div className="flex gap-2 mb-6">
-            <Input 
-              placeholder="Enter team name..." 
+            <Input
+              placeholder="Enter team name..."
               className="bg-[#1a1410] border-[#3d3020] text-[#f5e6c8] placeholder:text-[#9a8068] focus-visible:ring-[#d4a853] h-11 rounded-xl"
             />
-            <Button 
-              className="bg-[#d4a853] hover:bg-[#b88c3a] text-[#1a1410] h-11 w-11 p-0 rounded-xl transition-colors"
-            >
+            <Button className="bg-[#d4a853] hover:bg-[#b88c3a] text-[#1a1410] h-11 w-11 p-0 rounded-xl transition-colors">
               <Plus className="h-5 w-5" />
             </Button>
           </div>
 
           <div className="space-y-3">
             {teams.map((team) => (
-              <div 
+              <div
                 key={team.id}
                 className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                  team.active 
-                    ? 'border-[#d4a853] bg-[rgba(212,168,83,0.1)] shadow-[0_0_15px_rgba(212,168,83,0.05)]' 
+                  team.active
+                    ? 'border-[#d4a853] bg-[rgba(212,168,83,0.1)] shadow-[0_0_15px_rgba(212,168,83,0.05)]'
                     : 'border-[#3d3020] bg-[#1a1410]'
                 }`}
               >
-                <span className={`font-medium ${team.active ? 'text-[#d4a853]' : 'text-[#e0c9a3]'}`}>
+                <span
+                  className={`font-medium ${team.active ? 'text-[#d4a853]' : 'text-[#e0c9a3]'}`}
+                >
                   {team.name}
                 </span>
                 <button className="text-[#9a8068] hover:text-[#d4a853] transition-colors p-1 rounded-md hover:bg-[#241e17]">
@@ -99,7 +102,7 @@ export function ApresMidnight() {
         </div>
 
         {/* Category Card */}
-        <div 
+        <div
           className="rounded-[16px] p-6 shadow-xl"
           style={{ backgroundColor: '#241e17', border: '1px solid #3d3020' }}
         >
@@ -107,7 +110,7 @@ export function ApresMidnight() {
             <h2 className="text-xl font-['Playfair_Display'] text-[#f5e6c8]">Category</h2>
             <span className="text-sm text-[#9a8068] font-medium">Select one</span>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-3">
             {categories.map((cat) => (
               <button
@@ -128,25 +131,27 @@ export function ApresMidnight() {
         </div>
 
         {/* Rounds Card */}
-        <div 
+        <div
           className="rounded-[16px] p-6 shadow-xl"
           style={{ backgroundColor: '#241e17', border: '1px solid #3d3020' }}
         >
-           <h2 className="text-xl font-['Playfair_Display'] mb-4 text-[#f5e6c8]">Questions per Team</h2>
-           <div className="grid grid-cols-4 gap-3">
-             {rounds.map((round) => (
-               <button
-                 key={round.value}
-                 className={`py-3 rounded-xl border text-lg font-medium transition-all duration-200 ${
-                   round.selected
+          <h2 className="text-xl font-['Playfair_Display'] mb-4 text-[#f5e6c8]">
+            Questions per Team
+          </h2>
+          <div className="grid grid-cols-4 gap-3">
+            {rounds.map((round) => (
+              <button
+                key={round.value}
+                className={`py-3 rounded-xl border text-lg font-medium transition-all duration-200 ${
+                  round.selected
                     ? 'bg-[#d4a853] border-[#d4a853] text-[#1a1410] shadow-[0_2px_10px_rgba(212,168,83,0.2)]'
                     : 'bg-[#1a1410] border-[#3d3020] text-[#e0c9a3] hover:border-[#d4a853] hover:bg-[rgba(212,168,83,0.05)]'
-                 }`}
-               >
-                 {round.value}
-               </button>
-             ))}
-           </div>
+                }`}
+              >
+                {round.value}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Warning Banner */}
@@ -159,10 +164,10 @@ export function ApresMidnight() {
         </div>
 
         {/* Start Button */}
-        <Button 
+        <Button
           className="w-full h-16 text-xl font-bold tracking-wide rounded-[16px] bg-[#d4a853] text-[#1a1410] hover:bg-[#e6bb69] transition-all"
           style={{
-            boxShadow: '0 8px 30px rgba(212, 168, 83, 0.3), inset 0 2px 0 rgba(255,255,255,0.2)'
+            boxShadow: '0 8px 30px rgba(212, 168, 83, 0.3), inset 0 2px 0 rgba(255,255,255,0.2)',
           }}
         >
           START GAME
@@ -178,7 +183,6 @@ export function ApresMidnight() {
             Admin Panel
           </button>
         </div>
-
       </div>
     </div>
   );
