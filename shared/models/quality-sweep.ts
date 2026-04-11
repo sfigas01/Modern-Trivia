@@ -35,6 +35,7 @@ export interface QuestionSnapshot {
   tags: string[];
   category: string;
   pillar: string;
+  hasSource: boolean;
 }
 
 export interface QuestionQualityAuditReport {

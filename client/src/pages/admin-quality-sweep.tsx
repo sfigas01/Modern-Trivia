@@ -161,6 +161,28 @@ function ProposedFixDisplay({
     );
   }
 
+  if (rule === 'subjective_prompt') {
+    const subjectivePart = fix.subjectivePart as string | undefined;
+    const proposedQuestion = fix.proposedQuestion as string | undefined;
+    if (!subjectivePart && !proposedQuestion) return null;
+    return (
+      <div className="space-y-2 text-xs">
+        {subjectivePart && (
+          <div>
+            <p className="text-[10px] uppercase text-muted-foreground mb-1">Subjective phrase</p>
+            <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-medium">&ldquo;{subjectivePart}&rdquo;</span>
+          </div>
+        )}
+        {proposedQuestion && (
+          <div>
+            <p className="text-[10px] uppercase text-muted-foreground mb-1">Proposed rewrite</p>
+            <p className="text-sm text-white/90 leading-snug">{proposedQuestion}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (rule === 'missing_source_metadata') {
     const missingFields = (fix.missingFields as string[]) ?? [];
     return (
@@ -886,7 +908,13 @@ export default function AdminQualitySweep() {
 
   function FactCheckSection({ results }: { results: FactCheckVerdict[] }) {
     const actionable = visibleFactCheck(
-      results.filter((r) => r.verdict === 'fail' || r.verdict === 'flag')
+      results.filter((r) => {
+        if (r.verdict === 'pass') return false;
+        if (r.verdict === 'fail') return true;
+        // flag: only if high-confidence OR question has no source
+        const snapshot = report?.questionsById?.[r.questionId];
+        return r.confidence > 95 || (snapshot ? !snapshot.hasSource : true);
+      })
     );
     if (actionable.length === 0) {
       return (
@@ -906,10 +934,14 @@ export default function AdminQualitySweep() {
           <CardTitle className="text-lg">
             Fact-Check Results ({actionable.length} need attention)
           </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Showing fails and high-confidence flags (&gt;95%) or questions without a source.
+          </p>
         </CardHeader>
         <CardContent className="space-y-2">
           {actionable.map((result) => {
             const editKey = `fc::${result.questionId}`;
+            const snapshot = report?.questionsById?.[result.questionId];
             return (
               <FindingRow
                 key={editKey}
@@ -918,15 +950,28 @@ export default function AdminQualitySweep() {
                 findingType="fact_check"
                 findingKey={FACT_CHECK_FINDING_KEY}
               >
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <VerdictBadge verdict={result.verdict} />
                     <span className="text-xs font-mono">{result.confidence}%</span>
                     <span className="font-mono text-xs text-muted-foreground">
                       {result.questionId}
                     </span>
+                    {snapshot && !snapshot.hasSource && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">no source</span>
+                    )}
                   </div>
-                  <p className="text-sm">{result.reason}</p>
+                  {snapshot && (
+                    <p className="text-sm font-medium text-white/90 leading-snug">
+                      {snapshot.question}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">{result.reason}</p>
+                  {snapshot && (
+                    <div className="pt-1">
+                      <HiddenAnswer answer={snapshot.answer} />
+                    </div>
+                  )}
                 </div>
               </FindingRow>
             );

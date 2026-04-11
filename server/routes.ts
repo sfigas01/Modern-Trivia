@@ -847,6 +847,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // 2. Static audit (instant)
       const auditRaw = auditQuestionQuality(allQuestions);
 
+      // 2.5 Enrich subjective_prompt findings with AI-identified subjective phrase + rewrite
+      const { enrichSubjectiveFindings } = await import('./lib/subjectivity-enricher');
+      await enrichSubjectiveFindings(auditRaw.findings, allQuestions);
+
       // 3. Duplicate detection (GPT-4o for conceptual pairs only)
       const duplicatesRaw = skipDuplicates ? null : await detectDuplicates(allQuestions);
 
@@ -958,7 +962,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ...(factCheck?.results.map((r) => r.questionId) ?? []),
         ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
       ]);
-      const questionsById: Record<string, { question: string; answer: string; tags: string[]; category: string; pillar: string }> = {};
+      const questionsById: Record<string, { question: string; answer: string; tags: string[]; category: string; pillar: string; hasSource: boolean }> = {};
       for (const q of allQuestions) {
         if (flaggedIds.has(q.id)) {
           questionsById[q.id] = {
@@ -967,6 +971,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             tags: (q.tags as string[]) ?? [],
             category: q.category,
             pillar: q.pillar,
+            hasSource: !!(q.sourceUrl && q.sourceName),
           };
         }
       }
