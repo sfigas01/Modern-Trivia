@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from 'express';
+import { enrichSubjectiveFindings } from './lib/subjectivity-enricher';
 import { createServer, type Server } from 'http';
 import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integrations/auth';
 import { db } from './db';
@@ -848,7 +849,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const auditRaw = auditQuestionQuality(allQuestions);
 
       // 2.5 Enrich subjective_prompt findings with AI-identified subjective phrase + rewrite
-      const { enrichSubjectiveFindings } = await import('./lib/subjectivity-enricher');
       await enrichSubjectiveFindings(auditRaw.findings, allQuestions);
 
       // 3. Duplicate detection (GPT-4o for conceptual pairs only)
@@ -962,7 +962,17 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ...(factCheck?.results.map((r) => r.questionId) ?? []),
         ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
       ]);
-      const questionsById: Record<string, { question: string; answer: string; tags: string[]; category: string; pillar: string; hasSource: boolean }> = {};
+      const questionsById: Record<
+        string,
+        {
+          question: string;
+          answer: string;
+          tags: string[];
+          category: string;
+          pillar: string;
+          hasSource: boolean;
+        }
+      > = {};
       for (const q of allQuestions) {
         if (flaggedIds.has(q.id)) {
           questionsById[q.id] = {
