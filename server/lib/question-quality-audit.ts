@@ -33,6 +33,7 @@ export interface QuestionQualityFinding {
   severity: QuestionQualitySeverity;
   rule: QuestionQualityRule;
   message: string;
+  proposedFix?: Record<string, unknown>;
 }
 
 export interface QuestionQualityAuditReport {
@@ -159,15 +160,10 @@ function pushFinding(
   questionIndex: number,
   severity: QuestionQualitySeverity,
   rule: QuestionQualityRule,
-  message: string
+  message: string,
+  proposedFix?: Record<string, unknown>
 ) {
-  findings.push({
-    questionId,
-    questionIndex,
-    severity,
-    rule,
-    message,
-  });
+  findings.push({ questionId, questionIndex, severity, rule, message, ...(proposedFix ? { proposedFix } : {}) });
 }
 
 export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQualityAuditReport {
@@ -269,7 +265,14 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
           questionIndex,
           'medium',
           'missing_required_tags',
-          'Tags should include both a region tag (CA/US/Global) and a pillar tag.'
+          'Tags should include both a region tag (CA/US/Global) and a pillar tag.',
+          {
+            currentTags: tags,
+            missingRegion: !hasRegionTag,
+            missingPillar: !hasPillarTag,
+            validRegionTags: ['CA', 'US', 'Global'],
+            validPillarTags: ['TimeCapsule', 'GlobalEh', 'FreshPrints', 'GreatOutdoors'],
+          }
         );
       }
 
@@ -280,7 +283,8 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
           questionIndex,
           'medium',
           'category_tag_mismatch',
-          `Category "${category}" is not present in tags.`
+          `Category "${category}" is not present in tags.`,
+          { currentTags: tags, addTag: category }
         );
       }
     }
@@ -391,16 +395,15 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
     }
 
     if (!sourceUrl || !sourceName) {
-      const missingFields = [!sourceUrl && 'sourceUrl', !sourceName && 'sourceName']
-        .filter(Boolean)
-        .join(' and ');
+      const missingFieldsList = ([!sourceUrl && 'sourceUrl', !sourceName && 'sourceName'] as (string | false)[]).filter(Boolean) as string[];
       pushFinding(
         findings,
         questionId,
         questionIndex,
         'medium',
         'missing_source_metadata',
-        `Missing ${missingFields}: every question must include a verifiable source URL and source name.`
+        `Missing ${missingFieldsList.join(' and ')}: every question must include a verifiable source URL and source name.`,
+        { missingFields: missingFieldsList }
       );
     }
   }

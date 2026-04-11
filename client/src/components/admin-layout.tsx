@@ -7,6 +7,7 @@ import {
   LogOut,
   FlaskConical,
   Library,
+  ScanSearch,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -22,6 +23,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/staging', icon: FlaskConical, label: 'Staging' },
     { href: '/admin/questions', icon: Library, label: 'Review Questions' },
     { href: '/admin/disputes', icon: MessageSquareWarning, label: 'Disputes' },
+    { href: '/admin/quality-sweep', icon: ScanSearch, label: 'Quality Sweep' },
     { href: '/admin/settings', icon: Settings, label: 'Settings' },
   ];
 

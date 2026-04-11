@@ -72,11 +72,12 @@ interface GameContextType {
   resetGame: () => void;
   addQuestion: (q: Question) => Promise<void>;
   updateQuestion: (q: Question) => Promise<void>;
+  deleteQuestion: (id: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-const QUESTIONS_PER_TEAM_ROTATION = 4;
+export const QUESTIONS_PER_TEAM_ROTATION = 4;
 
 export const normalize = (str: string): string => {
   return str
@@ -146,14 +147,15 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     numRounds: 10,
   });
 
-  // Load questions from the database API (setup catalog only)
+  // Load questions from the database API whenever we enter SETUP phase
+  // (initial mount AND after resetGame() brings us back to SETUP)
   useEffect(() => {
+    if (state.phase !== 'SETUP') return;
     async function loadQuestions() {
       try {
         const res = await fetch('/api/questions', { credentials: 'include' });
         if (!res.ok) throw new Error('Failed to load questions');
         const data = await res.json();
-        // Only apply if still in SETUP — avoid overwriting an active game
         setState((s) => {
           if (s.phase !== 'SETUP') return s;
           return {
@@ -167,7 +169,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       }
     }
     loadQuestions();
-  }, []);
+  }, [state.phase]);
 
   // Record only actually-presented questions as seen when game ends
   useEffect(() => {
@@ -207,7 +209,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
   const startGame = async () => {
-    const totalNeeded = state.numRounds * state.teams.length;
+    const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
     const categoryParam =
       state.selectedCategory !== 'All'
         ? `&category=${encodeURIComponent(state.selectedCategory)}`
@@ -216,7 +218,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(
         `/api/questions?shuffle=true&limit=${totalNeeded}&excludeSeen=true${categoryParam}`,
-        { credentials: 'include' },
+        { credentials: 'include' }
       );
       if (!res.ok) throw new Error('Failed to fetch game questions');
       const data = await res.json();
@@ -418,6 +420,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteQuestion = async (id: string) => {
+    try {
+      const res = await fetch(`/api/questions/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete question');
+      setState((prev) => ({
+        ...prev,
+        questions: prev.questions.filter((q) => q.id !== id),
+      }));
+    } catch (error) {
+      console.error('Failed to delete question:', error);
+      throw error;
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -436,6 +455,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         resetGame,
         addQuestion,
         updateQuestion,
+        deleteQuestion,
       }}
     >
       {children}

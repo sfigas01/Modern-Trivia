@@ -1,23 +1,22 @@
 import OpenAI from 'openai';
 
+import type { Question } from '@shared/models/questions';
+
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-export type FactCheckVerdict = 'pass' | 'flag' | 'fail';
-
-export interface FactCheckResult {
-  verdict: FactCheckVerdict;
+export interface FactCheckVerdict {
+  questionId: string;
+  verdict: 'pass' | 'flag' | 'fail';
   confidence: number;
   reason: string;
 }
 
-interface QuestionInput {
-  id: string;
-  question: string;
-  answer: string;
-  explanation: string;
+export interface FactCheckReport {
+  totalChecked: number;
+  results: FactCheckVerdict[];
 }
 
 interface RawVerdict {
@@ -27,15 +26,10 @@ interface RawVerdict {
   reason?: string;
 }
 
-export async function batchFactCheck(
-  questions: QuestionInput[]
-): Promise<Map<string, FactCheckResult>> {
-  const results = new Map<string, FactCheckResult>();
+const BATCH_SIZE = 50;
 
-  if (questions.length === 0) return results;
-
-  const startedAt = Date.now();
-  console.info('[verifier] Running batch fact-check', { count: questions.length });
+async function factCheckBatch(batch: Question[]): Promise<FactCheckVerdict[]> {
+  if (batch.length === 0) return [];
 
   const prompt = `You are a trivia fact-checker. Review each question and verify factual accuracy.
 
@@ -58,7 +52,7 @@ Return valid JSON:
 
 Questions to review:
 ${JSON.stringify(
-  questions.map((q) => ({
+  batch.map((q) => ({
     id: q.id,
     question: q.question,
     answer: q.answer,
@@ -67,6 +61,9 @@ ${JSON.stringify(
   null,
   2
 )}`;
+
+  const startedAt = Date.now();
+  console.info('[verifier] Fact-checking batch', { count: batch.length });
 
   try {
     const response = await openai.chat.completions.create({
@@ -80,52 +77,79 @@ ${JSON.stringify(
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 2048,
+      max_tokens: 4096,
     });
 
     const content = response.choices[0]?.message?.content || '{}';
     const parsed = JSON.parse(content) as { results?: RawVerdict[] };
     const rawResults = Array.isArray(parsed.results) ? parsed.results : [];
 
+    const resultMap = new Map<string, FactCheckVerdict>();
     for (const raw of rawResults) {
       const id = typeof raw.id === 'string' ? raw.id : '';
-      const verdict = (['pass', 'flag', 'fail'] as const).includes(raw.verdict as FactCheckVerdict)
-        ? (raw.verdict as FactCheckVerdict)
+      if (!id) continue;
+      const verdict = (['pass', 'flag', 'fail'] as const).includes(raw.verdict as 'pass' | 'flag' | 'fail')
+        ? (raw.verdict as 'pass' | 'flag' | 'fail')
         : 'flag';
-      const confidence =
-        typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50;
-      const reason = typeof raw.reason === 'string' ? raw.reason : 'No reason provided.';
-
-      if (id) {
-        results.set(id, { verdict, confidence, reason });
-      }
+      resultMap.set(id, {
+        questionId: id,
+        verdict,
+        confidence: typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
+        reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
+      });
     }
 
-    console.info('[verifier] Batch fact-check complete', {
-      count: questions.length,
-      returned: results.size,
+    console.info('[verifier] Batch complete', {
+      count: batch.length,
+      returned: resultMap.size,
       durationMs: Date.now() - startedAt,
     });
+
+    // Fill in any questions the model missed
+    return batch.map(
+      (q) =>
+        resultMap.get(q.id) ?? {
+          questionId: q.id,
+          verdict: 'flag' as const,
+          confidence: 0,
+          reason: 'No verdict returned by fact-checker.',
+        }
+    );
   } catch (error) {
     console.error('[verifier] Batch fact-check failed', { error });
-    for (const q of questions) {
-      results.set(q.id, {
-        verdict: 'flag',
-        confidence: 0,
-        reason: 'Fact-check could not be completed.',
-      });
-    }
+    return batch.map((q) => ({
+      questionId: q.id,
+      verdict: 'flag' as const,
+      confidence: 0,
+      reason: 'Fact-check could not be completed.',
+    }));
+  }
+}
+
+export async function batchFactCheck(questions: Question[]): Promise<FactCheckReport> {
+  if (questions.length === 0) {
+    return { totalChecked: 0, results: [] };
   }
 
-  for (const q of questions) {
-    if (!results.has(q.id)) {
-      results.set(q.id, {
-        verdict: 'flag',
-        confidence: 0,
-        reason: 'No verdict returned by fact-checker.',
-      });
-    }
+  console.info('[verifier] Running batch fact-check', { count: questions.length });
+
+  // Split into chunks and process each with a single GPT-4o call
+  const chunks: Question[][] = [];
+  for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+    chunks.push(questions.slice(i, i + BATCH_SIZE));
   }
 
-  return results;
+  // Process chunks sequentially to avoid rate limits
+  const allResults: FactCheckVerdict[] = [];
+  for (const chunk of chunks) {
+    const chunkResults = await factCheckBatch(chunk);
+    allResults.push(...chunkResults);
+  }
+
+  console.info('[verifier] Full fact-check complete', { total: allResults.length });
+
+  return {
+    totalChecked: questions.length,
+    results: allResults,
+  };
 }

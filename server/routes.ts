@@ -11,11 +11,16 @@ import {
   seenQuestions,
   insertQuestionSchema,
   questionEdits,
+  questionQualitySweepDismissals,
+  duplicatePairKey,
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
+import { auditQuestionQuality } from './lib/question-quality-audit';
+import { detectDuplicates } from './lib/duplicate-detector';
+import { batchFactCheck } from './lib/verifier';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
@@ -653,6 +658,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Delete a question (admin only). Cascades to seen_questions and
+  // question_quality_sweep_dismissals via FK on delete cascade.
+  app.delete('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Clean up seen_questions rows that don't have ON DELETE CASCADE.
+      await db.delete(seenQuestions).where(eq(seenQuestions.questionId, id));
+
+      const deleted = await db.delete(questions).where(eq(questions.id, id)).returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      res.status(500).json({ message: 'Failed to delete question' });
+    }
+  });
+
   // Staging API (Admin Only)
   app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -778,6 +805,242 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error rejecting question:', error);
       res.status(500).json({ message: 'Failed to reject question' });
+    }
+  });
+
+  // Quality Sweep (Admin Only)
+  const sweepRequestSchema = z.object({
+    skipFactCheck: z.boolean().optional().default(false),
+    skipDuplicates: z.boolean().optional().default(false),
+  });
+
+  app.post('/api/admin/quality-sweep', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
+    try {
+      const parsed = sweepRequestSchema.parse(req.body);
+      const { skipFactCheck, skipDuplicates } = parsed;
+
+      // 1. Fetch all approved questions
+      const allQuestions = await db
+        .select()
+        .from(questions)
+        .where(eq(questions.status, 'approved'));
+
+      if (allQuestions.length === 0) {
+        return res.json({
+          generatedAt: new Date().toISOString(),
+          totalQuestions: 0,
+          audit: {
+            generatedAt: new Date().toISOString(),
+            totalQuestions: 0,
+            totalFindings: 0,
+            flaggedQuestionCount: 0,
+            findingsBySeverity: { high: 0, medium: 0, low: 0 },
+            findingsByRule: {},
+            findings: [],
+          },
+          duplicates: null,
+          factCheck: null,
+          recommendations: ['No approved questions found in the database.'],
+        });
+      }
+
+      // 2. Static audit (instant)
+      const auditRaw = auditQuestionQuality(allQuestions);
+
+      // 2.5 Enrich subjective_prompt findings with AI-identified subjective phrase + rewrite
+      const { enrichSubjectiveFindings } = await import('./lib/subjectivity-enricher');
+      await enrichSubjectiveFindings(auditRaw.findings, allQuestions);
+
+      // 3. Duplicate detection (GPT-4o for conceptual pairs only)
+      const duplicatesRaw = skipDuplicates ? null : await detectDuplicates(allQuestions);
+
+      // 4. Fact-checking (GPT-4o per question)
+      const factCheckRaw = skipFactCheck ? null : await batchFactCheck(allQuestions);
+
+      // 4.5 Filter out previously-dismissed findings
+      const dismissals = await db.select().from(questionQualitySweepDismissals);
+      const dismissedStatic = new Set(
+        dismissals
+          .filter((d) => d.findingType === 'static')
+          .map((d) => `${d.questionId}::${d.findingKey}`)
+      );
+      const dismissedDuplicates = new Set(
+        dismissals.filter((d) => d.findingType === 'duplicate').map((d) => d.findingKey)
+      );
+      const dismissedFactCheck = new Set(
+        dismissals.filter((d) => d.findingType === 'fact_check').map((d) => d.questionId)
+      );
+
+      const filteredFindings = auditRaw.findings.filter(
+        (f) => !dismissedStatic.has(`${f.questionId}::${f.rule}`)
+      );
+      const recountedSeverity: Record<'high' | 'medium' | 'low', number> = {
+        high: 0,
+        medium: 0,
+        low: 0,
+      };
+      const recountedRule: Record<string, number> = {};
+      for (const ruleKey of Object.keys(auditRaw.findingsByRule)) {
+        recountedRule[ruleKey] = 0;
+      }
+      for (const f of filteredFindings) {
+        recountedSeverity[f.severity]++;
+        recountedRule[f.rule] = (recountedRule[f.rule] ?? 0) + 1;
+      }
+      const audit = {
+        ...auditRaw,
+        findings: filteredFindings,
+        totalFindings: filteredFindings.length,
+        flaggedQuestionCount: new Set(filteredFindings.map((f) => f.questionId)).size,
+        findingsBySeverity: recountedSeverity,
+        findingsByRule: recountedRule as typeof auditRaw.findingsByRule,
+      };
+
+      const duplicates = duplicatesRaw
+        ? (() => {
+            const filtered = duplicatesRaw.duplicatesFound.filter(
+              (m) => !dismissedDuplicates.has(duplicatePairKey(m.questionIdA, m.questionIdB))
+            );
+            const byType: Record<'exact' | 'near_duplicate' | 'conceptual', number> = {
+              exact: 0,
+              near_duplicate: 0,
+              conceptual: 0,
+            };
+            for (const m of filtered) byType[m.matchType]++;
+            return {
+              ...duplicatesRaw,
+              duplicatesFound: filtered,
+              duplicatesByType: byType,
+            };
+          })()
+        : null;
+
+      const factCheck = factCheckRaw
+        ? {
+            ...factCheckRaw,
+            results: factCheckRaw.results.filter((r) => !dismissedFactCheck.has(r.questionId)),
+          }
+        : null;
+
+      // 5. Compute recommendations
+      const recommendations: string[] = [];
+      if (audit.findingsBySeverity.high > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.high} high-severity audit finding(s) — fix before next release.`
+        );
+      }
+      if (audit.findingsBySeverity.medium > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.medium} medium-severity audit finding(s) — review and improve.`
+        );
+      }
+      if (duplicates && duplicates.duplicatesFound.length > 0) {
+        recommendations.push(
+          `${duplicates.duplicatesFound.length} duplicate pair(s) found — remove or merge the lower-quality version of each pair.`
+        );
+      }
+      if (factCheck) {
+        const failures = factCheck.results.filter((r) => r.verdict === 'fail').length;
+        const flags = factCheck.results.filter((r) => r.verdict === 'flag').length;
+        if (failures > 0) {
+          recommendations.push(`${failures} question(s) failed fact-check — review immediately.`);
+        }
+        if (flags > 0) {
+          recommendations.push(
+            `${flags} question(s) flagged by fact-check — verify before next release.`
+          );
+        }
+      }
+      if (recommendations.length === 0) {
+        recommendations.push('No critical issues found. All approved questions passed the sweep.');
+      }
+
+      // Build a snapshot map for all flagged questions so the frontend can
+      // show question text, hidden answer, and current state without extra fetches.
+      const flaggedIds = new Set<string>([
+        ...audit.findings.map((f) => f.questionId),
+        ...(factCheck?.results.map((r) => r.questionId) ?? []),
+        ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
+      ]);
+      const questionsById: Record<string, { question: string; answer: string; tags: string[]; category: string; pillar: string; hasSource: boolean }> = {};
+      for (const q of allQuestions) {
+        if (flaggedIds.has(q.id)) {
+          questionsById[q.id] = {
+            question: q.question,
+            answer: q.answer,
+            tags: (q.tags as string[]) ?? [],
+            category: q.category,
+            pillar: q.pillar,
+            hasSource: !!(q.sourceUrl && q.sourceName),
+          };
+        }
+      }
+
+      res.json({
+        generatedAt: new Date().toISOString(),
+        totalQuestions: allQuestions.length,
+        audit,
+        duplicates,
+        factCheck,
+        recommendations,
+        questionsById,
+      });
+    } catch (error) {
+      console.error('Error running quality sweep:', error);
+      res.status(500).json({ message: 'Quality sweep failed' });
+    }
+  });
+
+  // Dismiss a quality-sweep finding so it stops appearing in future sweeps.
+  const dismissRequestSchema = z.object({
+    questionId: z.string().min(1),
+    findingType: z.enum(['static', 'duplicate', 'fact_check']),
+    findingKey: z.string().min(1),
+    reason: z.string().optional(),
+  });
+
+  app.post('/api/admin/quality-sweep/dismiss', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const parsed = dismissRequestSchema.parse(req.body);
+      const userId = getUserId(req);
+
+      // Idempotent: on conflict (unique index), return the existing row.
+      const [row] = await db
+        .insert(questionQualitySweepDismissals)
+        .values({
+          questionId: parsed.questionId,
+          findingType: parsed.findingType,
+          findingKey: parsed.findingKey,
+          reason: parsed.reason,
+          dismissedBy: userId,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (row) {
+        return res.json({ id: row.id });
+      }
+
+      // Conflict — fetch the existing row to return its id.
+      const [existing] = await db
+        .select()
+        .from(questionQualitySweepDismissals)
+        .where(
+          and(
+            eq(questionQualitySweepDismissals.questionId, parsed.questionId),
+            eq(questionQualitySweepDismissals.findingType, parsed.findingType),
+            eq(questionQualitySweepDismissals.findingKey, parsed.findingKey)
+          )
+        )
+        .limit(1);
+
+      res.json({ id: existing?.id ?? '' });
+    } catch (error) {
+      console.error('Error dismissing finding:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(422).json({ message: 'Invalid dismiss request', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to dismiss finding' });
     }
   });
 

@@ -1,0 +1,5898 @@
+[
+  {
+    "id": "q1",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "What is the capital city of Canada?",
+    "answer": "Ottawa",
+    "acceptableAnswers": [],
+    "explanation": "Ottawa was chosen as the capital on December 31, 1857 by Queen Victoria.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ottawa",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.007012",
+    "updatedAt": "2026-03-06T18:57:09.755"
+  },
+  {
+    "id": "q2",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "Which US state is known as the 'Sunshine State'?",
+    "answer": "Florida",
+    "acceptableAnswers": [
+      "FL"
+    ],
+    "explanation": "Florida officially adopted 'The Sunshine State' nickname in 1970 when the state legislature included it on license plates.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Florida",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.012279",
+    "updatedAt": "2026-03-06T18:57:10.605"
+  },
+  {
+    "id": "q3",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What represents the 'K' in the periodic table?",
+    "answer": "Potassium",
+    "acceptableAnswers": [
+      "K"
+    ],
+    "explanation": "The symbol K comes from the Latin word 'Kalium'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Potassium",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.016368",
+    "updatedAt": "2026-03-06T18:57:10.609"
+  },
+  {
+    "id": "q4",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "Who was the first Prime Minister of Canada?",
+    "answer": "Sir John A. Macdonald",
+    "acceptableAnswers": [
+      "John A Macdonald",
+      "Macdonald",
+      "John Macdonald"
+    ],
+    "explanation": "He served as the first Prime Minister of Canada from 1867 to 1873.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.020648",
+    "updatedAt": "2026-03-06T18:57:10.613"
+  },
+  {
+    "id": "q5",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "In which year was the Declaration of Independence signed?",
+    "answer": "1776",
+    "acceptableAnswers": [],
+    "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "History"
+    ],
+    "sourceUrl": "https://www.archives.gov/milestone-documents/declaration-of-independence",
+    "sourceName": "National Archives",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.024649",
+    "updatedAt": "2026-03-06T18:57:10.616"
+  },
+  {
+    "id": "q6",
+    "category": "Pop Culture",
+    "difficulty": "Easy",
+    "question": "Which Canadian rapper released the album 'Views'?",
+    "answer": "Drake",
+    "acceptableAnswers": [],
+    "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album. Major album tracks include 'One Dance' and 'Controlla'.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Pop Culture"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Views_(album)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.029049",
+    "updatedAt": "2026-03-06T18:57:10.62"
+  },
+  {
+    "id": "q7",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "Which city hosted the 2010 Winter Olympics?",
+    "answer": "Vancouver",
+    "acceptableAnswers": [],
+    "explanation": "Vancouver, Canada hosted the XXI Olympic Winter Games.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/2010_Winter_Olympics",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.033338",
+    "updatedAt": "2026-03-06T18:57:10.623"
+  },
+  {
+    "id": "q8",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "What is the national summer sport of Canada?",
+    "answer": "Lacrosse",
+    "acceptableAnswers": [],
+    "explanation": "While Hockey is the national winter sport, Lacrosse is the official national summer sport of Canada.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/National_Sports_of_Canada_Act",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.037074",
+    "updatedAt": "2026-03-06T18:57:10.627"
+  },
+  {
+    "id": "q9",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the longest river in the United States?",
+    "answer": "Missouri River",
+    "acceptableAnswers": [],
+    "explanation": "The Missouri River is about 2,341 miles long, slightly longer than the Mississippi River at 2,340 miles.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Missouri_River",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.041169",
+    "updatedAt": "2026-03-06T18:57:10.631"
+  },
+  {
+    "id": "q10",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which TV show is set in the fictional city of Springfield?",
+    "answer": "The Simpsons",
+    "acceptableAnswers": [],
+    "explanation": "The Simpsons is the longest-running American animated series and longest-running American sitcom.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Simpsons",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.045562",
+    "updatedAt": "2026-03-06T18:57:10.633"
+  },
+  {
+    "id": "q11",
+    "category": "General Knowledge",
+    "difficulty": "Medium",
+    "question": "What is the currency of Japan?",
+    "answer": "Yen",
+    "acceptableAnswers": [],
+    "explanation": "The Japanese Yen is the third most traded currency in the foreign exchange market.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "General Knowledge"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Japanese_yen",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.049412",
+    "updatedAt": "2026-03-06T18:57:10.636"
+  },
+  {
+    "id": "q12",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the hardest natural substance on Earth?",
+    "answer": "Diamond",
+    "acceptableAnswers": [],
+    "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure. They rank 10 on the Mohs hardness scale.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Diamond",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.053113",
+    "updatedAt": "2026-03-06T18:57:10.64"
+  },
+  {
+    "id": "q13",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "Which province joined Canada last?",
+    "answer": "Newfoundland and Labrador",
+    "acceptableAnswers": [],
+    "explanation": "They joined Confederation on March 31, 1949, becoming Canada's tenth province.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.055985",
+    "updatedAt": "2026-03-06T18:57:10.643"
+  },
+  {
+    "id": "q14",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "Which U.S. president who served four terms is not depicted on Mount Rushmore?",
+    "answer": "Franklin D. Roosevelt",
+    "acceptableAnswers": [
+      "FDR",
+      "Franklin Roosevelt"
+    ],
+    "explanation": "The four presidents on Mount Rushmore are George Washington, Thomas Jefferson, Theodore Roosevelt, and Abraham Lincoln. Franklin D. Roosevelt is not depicted.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Rushmore",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.059781",
+    "updatedAt": "2026-03-06T18:57:10.646"
+  },
+  {
+    "id": "q15",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "Poutine originated in which Canadian province?",
+    "answer": "Quebec",
+    "acceptableAnswers": [],
+    "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.064189",
+    "updatedAt": "2026-03-06T18:57:10.65"
+  },
+  {
+    "id": "q16",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "What year was the first iPhone released?",
+    "answer": "2007",
+    "acceptableAnswers": [],
+    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007, and it went on sale June 29, 2007.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.067894",
+    "updatedAt": "2026-03-06T18:57:10.653"
+  },
+  {
+    "id": "q17",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "How many time zones does Canada have?",
+    "answer": "Six",
+    "acceptableAnswers": [],
+    "explanation": "Pacific, Mountain, Central, Eastern, Atlantic, and Newfoundland.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Time_in_Canada",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.071852",
+    "updatedAt": "2026-03-06T18:57:10.657"
+  },
+  {
+    "id": "q18",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "Who was the 16th President of the United States?",
+    "answer": "Abraham Lincoln",
+    "acceptableAnswers": [],
+    "explanation": "He served from 1861 to 1865 during the American Civil War.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Abraham_Lincoln",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.075457",
+    "updatedAt": "2026-03-06T18:57:10.659"
+  },
+  {
+    "id": "q19",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "What is the national animal of the United States?",
+    "answer": "Bald Eagle",
+    "acceptableAnswers": [],
+    "explanation": "The Bald Eagle was adopted as the national bird in 1782.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bald_eagle",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.078593",
+    "updatedAt": "2026-03-06T18:57:10.662"
+  },
+  {
+    "id": "q20",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "What is the national animal of Canada?",
+    "answer": "Beaver",
+    "acceptableAnswers": [],
+    "explanation": "The North American Beaver became an official symbol of Canada in 1975.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/North_American_beaver",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.081748",
+    "updatedAt": "2026-03-06T18:57:10.665"
+  },
+  {
+    "id": "q21",
+    "category": "Space",
+    "difficulty": "Medium",
+    "question": "Which planet is known as the Red Planet?",
+    "answer": "Mars",
+    "acceptableAnswers": [],
+    "explanation": "Iron oxide prevalent on its surface gives it a reddish appearance.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Space"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mars",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.08476",
+    "updatedAt": "2026-03-06T18:57:10.667"
+  },
+  {
+    "id": "q22",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "question": "Who wrote 'The Handmaid's Tale'?",
+    "answer": "Margaret Atwood",
+    "acceptableAnswers": [],
+    "explanation": "Margaret Atwood is a celebrated Canadian author. The novel was published in 1985.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.088019",
+    "updatedAt": "2026-03-06T18:57:10.672"
+  },
+  {
+    "id": "q23",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "Which city is known as the 'Big Apple'?",
+    "answer": "New York City",
+    "acceptableAnswers": [],
+    "explanation": "The nickname was popularized in the 1920s by sports writer John J. Fitz Gerald.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Big_Apple",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.091567",
+    "updatedAt": "2026-03-06T18:57:10.676"
+  },
+  {
+    "id": "q24",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "In which sport would you perform a 'slam dunk'?",
+    "answer": "Basketball",
+    "acceptableAnswers": [],
+    "explanation": "Basketball was invented by Canadian James Naismith in 1891.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slam_dunk",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.094798",
+    "updatedAt": "2026-03-06T18:57:10.679"
+  },
+  {
+    "id": "q25",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Ryan Reynolds was born in which Canadian city?",
+    "answer": "Vancouver",
+    "acceptableAnswers": [],
+    "explanation": "He was born in Vancouver, British Columbia on October 23, 1976.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.097807",
+    "updatedAt": "2026-03-06T18:57:10.682"
+  },
+  {
+    "id": "q26",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the smallest US state by area?",
+    "answer": "Rhode Island",
+    "acceptableAnswers": [],
+    "explanation": "Rhode Island is about 1,545 square miles. Despite its name, it is not an island.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rhode_Island",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.100974",
+    "updatedAt": "2026-03-06T18:57:10.685"
+  },
+  {
+    "id": "q27",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "H2O is the chemical formula for what?",
+    "answer": "Water",
+    "acceptableAnswers": [],
+    "explanation": "Two hydrogen atoms and one oxygen atom.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Water",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.104273",
+    "updatedAt": "2026-03-06T18:57:10.687"
+  },
+  {
+    "id": "q28",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which American singer is known as the 'King of Pop'?",
+    "answer": "Michael Jackson",
+    "acceptableAnswers": [],
+    "explanation": "He is regarded as one of the most significant cultural figures of the 20th century.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Michael_Jackson",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.107338",
+    "updatedAt": "2026-03-06T18:57:10.69"
+  },
+  {
+    "id": "q29",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the largest province in Canada by area?",
+    "answer": "Quebec",
+    "acceptableAnswers": [],
+    "explanation": "Quebec covers about 1.5 million km². Nunavut is larger, but it is a territory, not a province.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Quebec",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.110675",
+    "updatedAt": "2026-03-06T18:57:10.693"
+  },
+  {
+    "id": "q30",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "In which year did the War of 1812 end?",
+    "answer": "1815",
+    "acceptableAnswers": [],
+    "explanation": "The Treaty of Ghent was signed December 24, 1814, but fighting continued into 1815, including the Battle of New Orleans.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "History",
+      "CA"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/War_of_1812",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.113788",
+    "updatedAt": "2026-03-06T18:57:10.697"
+  },
+  {
+    "id": "q31",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "Which company was founded by Bill Gates and Paul Allen?",
+    "answer": "Microsoft",
+    "acceptableAnswers": [],
+    "explanation": "Founded on April 4, 1975 in Albuquerque, New Mexico.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Microsoft",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.116824",
+    "updatedAt": "2026-03-21T21:44:31.274302"
+  },
+  {
+    "id": "q32",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Celine Dion is from which Canadian province?",
+    "answer": "Quebec",
+    "acceptableAnswers": [],
+    "explanation": "She was born on March 30, 1968 in Charlemagne, Quebec.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Celine_Dion",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.119944",
+    "updatedAt": "2026-03-06T18:57:10.702"
+  },
+  {
+    "id": "q33",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the capital of California?",
+    "answer": "Sacramento",
+    "acceptableAnswers": [],
+    "explanation": "Sacramento became California's state capital in 1854. It's not Los Angeles or San Francisco!",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sacramento,_California",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.123428",
+    "updatedAt": "2026-03-06T18:57:10.705"
+  },
+  {
+    "id": "q34",
+    "category": "General Knowledge",
+    "difficulty": "Easy",
+    "question": "How many sides does a hexagon have?",
+    "answer": "Six",
+    "acceptableAnswers": [],
+    "explanation": "From the Greek 'hex' meaning six.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "General Knowledge"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hexagon",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.126431",
+    "updatedAt": "2026-03-21T21:44:35.404316"
+  },
+  {
+    "id": "q35",
+    "category": "Food",
+    "difficulty": "Medium",
+    "question": "What is the main ingredient in Guacamole?",
+    "answer": "Avocado",
+    "acceptableAnswers": [],
+    "explanation": "It's an avocado-based dip, spread, or salad originating from Mexico.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Guacamole",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.12961",
+    "updatedAt": "2026-03-06T18:57:10.711"
+  },
+  {
+    "id": "q36",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "The CN Tower is located in which city?",
+    "answer": "Toronto",
+    "acceptableAnswers": [],
+    "explanation": "It held the record for the world's tallest free-standing structure for 32 years (1975-2007).",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/CN_Tower",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.132775",
+    "updatedAt": "2026-03-06T18:57:10.714"
+  },
+  {
+    "id": "q37",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "Which ocean is on the West Coast of the US and Canada?",
+    "answer": "Pacific Ocean",
+    "acceptableAnswers": [],
+    "explanation": "It is the largest and deepest of Earth's oceanic divisions, covering about 63 million square miles.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.135816",
+    "updatedAt": "2026-03-06T18:57:10.716"
+  },
+  {
+    "id": "q38",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "Which team won the first ever Super Bowl?",
+    "answer": "Green Bay Packers",
+    "acceptableAnswers": [],
+    "explanation": "They defeated the Kansas City Chiefs 35-10 on January 15, 1967.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_I",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.138875",
+    "updatedAt": "2026-03-06T18:57:10.72"
+  },
+  {
+    "id": "q39",
+    "category": "Nature",
+    "difficulty": "Medium",
+    "question": "What is the largest mammal in the world?",
+    "answer": "Blue Whale",
+    "acceptableAnswers": [],
+    "explanation": "They can grow up to 100 feet long and weigh as much as 200 tons.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_whale",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.1423",
+    "updatedAt": "2026-03-06T18:57:10.723"
+  },
+  {
+    "id": "q40",
+    "category": "Culture",
+    "difficulty": "Medium",
+    "question": "Tim Hortons is famous for what two items?",
+    "answer": "Coffee and Donuts",
+    "acceptableAnswers": [],
+    "explanation": "Founded in 1964 in Hamilton, Ontario by Canadian hockey player Tim Horton.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Culture"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tim_Hortons",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.145611",
+    "updatedAt": "2026-03-06T18:57:10.725"
+  },
+  {
+    "id": "q41",
+    "category": "Government",
+    "difficulty": "Hard",
+    "question": "How many senators are in the US Senate?",
+    "answer": "100",
+    "acceptableAnswers": [],
+    "explanation": "Two for each of the 50 states, serving six-year terms.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Government"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/United_States_Senate",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.148953",
+    "updatedAt": "2026-03-06T18:57:10.728"
+  },
+  {
+    "id": "q42",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What is the speed of light approximately?",
+    "answer": "299,792 km/s",
+    "acceptableAnswers": [],
+    "explanation": "Often approximated as 300,000 km/s. Light travels at exactly 299,792,458 meters per second in a vacuum.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Speed_of_light",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.152476",
+    "updatedAt": "2026-03-06T18:57:10.837"
+  },
+  {
+    "id": "q43",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "What are the two official languages of Canada?",
+    "answer": "English and French",
+    "acceptableAnswers": [],
+    "explanation": "Canada became officially bilingual at the federal level with the Official Languages Act of 1969.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Official_Languages_Act_(Canada)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.155747",
+    "updatedAt": "2026-03-06T18:57:10.84"
+  },
+  {
+    "id": "q44",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "Which Great Lake is the only one located entirely within the US?",
+    "answer": "Lake Michigan",
+    "acceptableAnswers": [],
+    "explanation": "The other four Great Lakes (Superior, Huron, Erie, Ontario) are shared with Canada.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Michigan",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.158624",
+    "updatedAt": "2026-03-06T18:57:10.843"
+  },
+  {
+    "id": "q45",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Who played Iron Man in the Marvel Cinematic Universe?",
+    "answer": "Robert Downey Jr.",
+    "acceptableAnswers": [],
+    "explanation": "He kicked off the MCU in Iron Man (2008) and played Tony Stark until Avengers: Endgame (2019).",
+    "pillar": "FreshPrints",
+    "tags": [
+      "US",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robert_Downey_Jr.",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.161787",
+    "updatedAt": "2026-03-06T18:57:10.846"
+  },
+  {
+    "id": "q46",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "Which Canadian hockey player is known as 'The Great One'?",
+    "answer": "Wayne Gretzky",
+    "acceptableAnswers": [],
+    "explanation": "He holds over 60 NHL records including most career goals (894) and assists (1,963).",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wayne_Gretzky",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.164969",
+    "updatedAt": "2026-03-06T18:57:10.849"
+  },
+  {
+    "id": "q47",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the powerhouse of the cell?",
+    "answer": "Mitochondria",
+    "acceptableAnswers": [],
+    "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP) through cellular respiration.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mitochondrion",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.168725",
+    "updatedAt": "2026-03-06T18:57:10.852"
+  },
+  {
+    "id": "q48",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the capital of Texas?",
+    "answer": "Austin",
+    "acceptableAnswers": [],
+    "explanation": "Austin has been the state capital since 1839. 'Keep Austin Weird' is the city's unofficial slogan.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Austin,_Texas",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.172398",
+    "updatedAt": "2026-03-06T18:57:10.855"
+  },
+  {
+    "id": "q49",
+    "category": "General Knowledge",
+    "difficulty": "Easy",
+    "question": "What color do you get when you mix Red and Blue?",
+    "answer": "Purple",
+    "acceptableAnswers": [],
+    "explanation": "Purple is a secondary color in the traditional RYB color model used in painting.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "General Knowledge"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Purple",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.17534",
+    "updatedAt": "2026-03-21T21:44:35.404316"
+  },
+  {
+    "id": "q50",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the northernmost permanent settlement in the world?",
+    "answer": "Alert, Nunavut",
+    "acceptableAnswers": [],
+    "explanation": "Alert is located at 82°30'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.178365",
+    "updatedAt": "2026-03-06T18:57:10.86"
+  },
+  {
+    "id": "q51",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "In what year did Canada become a nation?",
+    "answer": "1867",
+    "acceptableAnswers": [],
+    "explanation": "Confederation occurred on July 1, 1867, now celebrated as Canada Day.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.181346",
+    "updatedAt": "2026-03-06T18:57:10.862"
+  },
+  {
+    "id": "q52",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which Canadian artist performed the halftime show at Super Bowl LV?",
+    "answer": "The Weeknd",
+    "acceptableAnswers": [],
+    "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida. Super Bowl LIV (54) in 2020 featured Shakira and Jennifer Lopez.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LV_halftime_show",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.184469",
+    "updatedAt": "2026-03-06T18:57:10.865"
+  },
+  {
+    "id": "q53",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "How many Stanley Cups has Canada's Toronto Maple Leafs won?",
+    "answer": "13",
+    "acceptableAnswers": [],
+    "explanation": "Their last championship was in 1967, the longest active drought in the NHL.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.187514",
+    "updatedAt": "2026-03-06T18:57:10.868"
+  },
+  {
+    "id": "q54",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What is the chemical symbol for Gold?",
+    "answer": "Au",
+    "acceptableAnswers": [],
+    "explanation": "Au comes from the Latin word 'aurum', meaning 'shining dawn'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Gold",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.190697",
+    "updatedAt": "2026-03-06T18:57:10.871"
+  },
+  {
+    "id": "q55",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the tallest mountain in North America?",
+    "answer": "Denali",
+    "acceptableAnswers": [
+      "Mount Denali",
+      "Mt. Denali"
+    ],
+    "explanation": "Denali in Alaska stands at 20,310 feet (6,190 meters). It was formerly known as Mount McKinley.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Denali",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.194037",
+    "updatedAt": "2026-03-06T18:57:10.875"
+  },
+  {
+    "id": "q56",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "Maple syrup comes from which tree?",
+    "answer": "Sugar Maple",
+    "acceptableAnswers": [],
+    "explanation": "The sugar maple (Acer saccharum) is the primary source of maple syrup and is Canada's national tree.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sugar_maple",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.19722",
+    "updatedAt": "2026-03-06T18:57:10.879"
+  },
+  {
+    "id": "q57",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which British actor stars as Batman in 'The Batman' (2022)?",
+    "answer": "Robert Pattinson",
+    "acceptableAnswers": [],
+    "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He is British and starred in 'The Batman' (2022).",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://www.britannica.com/facts/Robert-Pattinson",
+    "sourceName": "Britannica",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.200567",
+    "updatedAt": "2026-03-06T18:57:10.882"
+  },
+  {
+    "id": "q58",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "Who discovered insulin and won a Nobel Prize for Medicine?",
+    "answer": "Frederick Banting",
+    "acceptableAnswers": [],
+    "explanation": "Sir Frederick Banting was a Canadian physician who shared the 1923 Nobel Prize with John Macleod for the discovery of insulin.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Frederick_Banting",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.204652",
+    "updatedAt": "2026-03-06T18:57:10.886"
+  },
+  {
+    "id": "q59",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "What is the world's largest freshwater lake?",
+    "answer": "Lake Superior",
+    "acceptableAnswers": [],
+    "explanation": "Lake Superior is the largest freshwater lake by surface area (31,700 sq mi), shared between Canada and the United States.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Superior",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.207916",
+    "updatedAt": "2026-03-06T18:57:10.888"
+  },
+  {
+    "id": "q60",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "question": "Who wrote 'Anne of Green Gables'?",
+    "answer": "Lucy Maud Montgomery",
+    "acceptableAnswers": [],
+    "explanation": "L.M. Montgomery was a Canadian author born in Clifton, Prince Edward Island. The novel was published in 1908.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Anne_of_Green_Gables",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.212208",
+    "updatedAt": "2026-03-06T18:57:10.891"
+  },
+  {
+    "id": "q61",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "Which Canadian city is known as the 'City of Festivals'?",
+    "answer": "Montreal",
+    "acceptableAnswers": [],
+    "explanation": "Montreal hosts over 100 festivals annually including the Montreal Jazz Festival and Just for Laughs.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Montreal",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.215456",
+    "updatedAt": "2026-03-06T18:57:10.893"
+  },
+  {
+    "id": "q62",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What gas do plants absorb for photosynthesis?",
+    "answer": "Carbon Dioxide",
+    "acceptableAnswers": [
+      "CO2",
+      "CO2"
+    ],
+    "explanation": "Plants use CO2 and sunlight to create glucose and release oxygen.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.219327",
+    "updatedAt": "2026-03-06T18:57:10.896"
+  },
+  {
+    "id": "q63",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "Which Canadian tennis player won the US Open in 2019?",
+    "answer": "Bianca Andreescu",
+    "acceptableAnswers": [],
+    "explanation": "Andreescu defeated Serena Williams 6–3, 7–5 in the final, becoming the first Canadian to win a Grand Slam singles title.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bianca_Andreescu",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.223452",
+    "updatedAt": "2026-03-06T18:57:10.899"
+  },
+  {
+    "id": "q64",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which Canadian actor is known for the TV series 'Schitt's Creek'?",
+    "answer": "Dan Levy",
+    "acceptableAnswers": [],
+    "explanation": "Dan Levy co-created the show with his father Eugene Levy. It won 9 Emmy Awards in 2020.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Schitt%27s_Creek",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.226884",
+    "updatedAt": "2026-03-06T18:57:10.902"
+  },
+  {
+    "id": "q65",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "In which year did the Titanic sink?",
+    "answer": "1912",
+    "acceptableAnswers": [],
+    "explanation": "RMS Titanic struck an iceberg on April 14, 1912 and sank in the early morning of April 15. Over 1,500 people died.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sinking_of_the_Titanic",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.230238",
+    "updatedAt": "2026-03-06T18:57:10.904"
+  },
+  {
+    "id": "q66",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the capital of Australia?",
+    "answer": "Canberra",
+    "acceptableAnswers": [],
+    "explanation": "Canberra was chosen in 1908 as a compromise between Sydney and Melbourne, and became the capital in 1927.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canberra",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.232801",
+    "updatedAt": "2026-03-06T18:57:10.907"
+  },
+  {
+    "id": "q67",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which Canadian singer-songwriter wrote 'Hallelujah'?",
+    "answer": "Leonard Cohen",
+    "acceptableAnswers": [],
+    "explanation": "Leonard Cohen was born in Montreal and originally released 'Hallelujah' on his 1984 album 'Various Positions'.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hallelujah_(Leonard_Cohen_song)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.235952",
+    "updatedAt": "2026-03-06T18:57:10.91"
+  },
+  {
+    "id": "q68",
+    "category": "Food",
+    "difficulty": "Medium",
+    "question": "What is the national dish of Canada?",
+    "answer": "Poutine",
+    "acceptableAnswers": [],
+    "explanation": "Poutine consists of French fries topped with cheese curds and brown gravy. It originated in Quebec in the late 1950s.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.238957",
+    "updatedAt": "2026-03-06T18:57:10.913"
+  },
+  {
+    "id": "q69",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "How many bones does an adult human have?",
+    "answer": "206",
+    "acceptableAnswers": [],
+    "explanation": "Babies are born with about 270 bones, but some fuse together as they grow into adults.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Human_skeleton",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.241865",
+    "updatedAt": "2026-03-06T18:57:10.915"
+  },
+  {
+    "id": "q70",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Canadian comedy troupe created 'Kids in the Hall'?",
+    "answer": "The Kids in the Hall",
+    "acceptableAnswers": [],
+    "explanation": "The Kids in the Hall is a Canadian sketch comedy group formed in 1984. Their TV series aired from 1988-1995.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Kids_in_the_Hall",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.244793",
+    "updatedAt": "2026-03-06T18:57:10.918"
+  },
+  {
+    "id": "q71",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "What year did Canada first win an Olympic gold medal?",
+    "answer": "1904",
+    "acceptableAnswers": [],
+    "explanation": "Étienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_1904_Summer_Olympics",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.247873",
+    "updatedAt": "2026-03-06T18:57:10.921"
+  },
+  {
+    "id": "q72",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "Who was the first European to reach North America?",
+    "answer": "Leif Erikson",
+    "acceptableAnswers": [],
+    "explanation": "The Viking explorer reached North America around 1000 AD, establishing a settlement at L'Anse aux Meadows in Newfoundland.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Leif_Erikson",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.250892",
+    "updatedAt": "2026-03-06T18:57:10.923"
+  },
+  {
+    "id": "q73",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the capital of France?",
+    "answer": "Paris",
+    "acceptableAnswers": [],
+    "explanation": "Paris is located on the Seine River and has been France's capital since 987 AD.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Paris",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.253865",
+    "updatedAt": "2026-03-06T18:57:10.925"
+  },
+  {
+    "id": "q74",
+    "category": "Nature",
+    "difficulty": "Hard",
+    "question": "What is the largest land animal on Earth?",
+    "answer": "African Elephant",
+    "acceptableAnswers": [],
+    "explanation": "Adult male African bush elephants can weigh up to 14,000 pounds (6,350 kg) and stand up to 13 feet tall.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/African_elephant",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.256973",
+    "updatedAt": "2026-03-06T18:57:10.928"
+  },
+  {
+    "id": "q75",
+    "category": "Literature",
+    "difficulty": "Easy",
+    "question": "Who wrote the Harry Potter series?",
+    "answer": "J.K. Rowling",
+    "acceptableAnswers": [],
+    "explanation": "J.K. Rowling is a British author who published the first Harry Potter book in 1997.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Potter",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.26034",
+    "updatedAt": "2026-03-06T18:57:10.931"
+  },
+  {
+    "id": "q76",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "In what year did the internet become publicly available?",
+    "answer": "1991",
+    "acceptableAnswers": [],
+    "explanation": "Tim Berners-Lee released the World Wide Web to the public on August 6, 1991 at CERN.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/World_Wide_Web",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.263746",
+    "updatedAt": "2026-03-06T18:57:10.934"
+  },
+  {
+    "id": "q77",
+    "category": "Music",
+    "difficulty": "Hard",
+    "question": "Which British rock band released the iconic album 'The Wall' in 1979?",
+    "answer": "Pink Floyd",
+    "acceptableAnswers": [],
+    "explanation": "Pink Floyd is a British rock band formed in London in 1965. 'The Wall' is one of rock's most acclaimed concept albums.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pink_Floyd",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.267005",
+    "updatedAt": "2026-03-06T18:57:10.937"
+  },
+  {
+    "id": "q78",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "How many Olympic sports are there in the Summer Olympics?",
+    "answer": "32",
+    "acceptableAnswers": [],
+    "explanation": "The 2024 Paris Olympics featured 32 sports. The number of sports varies with each Olympic Games.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Summer_Olympic_Games",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.270698",
+    "updatedAt": "2026-03-06T18:57:10.94"
+  },
+  {
+    "id": "q79",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "Which Canadian province has the highest population?",
+    "answer": "Ontario",
+    "acceptableAnswers": [],
+    "explanation": "Ontario is home to over 15 million people, about 38% of Canada's total population.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ontario",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.27369",
+    "updatedAt": "2026-03-06T18:57:10.942"
+  },
+  {
+    "id": "q80",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the largest organ in the human body?",
+    "answer": "Skin",
+    "acceptableAnswers": [],
+    "explanation": "The skin covers about 20 square feet in adults and weighs about 8 pounds.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Human_skin",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.276676",
+    "updatedAt": "2026-03-06T18:57:10.946"
+  },
+  {
+    "id": "q81",
+    "category": "Entertainment",
+    "difficulty": "Hard",
+    "question": "Which American actress plays Black Widow in Marvel films?",
+    "answer": "Scarlett Johansson",
+    "acceptableAnswers": [],
+    "explanation": "Scarlett Johansson is an American actress born in New York City. She has played Natasha Romanoff/Black Widow since 2010.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Scarlett_Johansson",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.279647",
+    "updatedAt": "2026-03-06T18:57:10.948"
+  },
+  {
+    "id": "q82",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "What year did the Berlin Wall fall?",
+    "answer": "1989",
+    "acceptableAnswers": [],
+    "explanation": "The Berlin Wall fell on November 9, 1989, symbolizing the end of the Cold War division of Europe.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Fall_of_the_Berlin_Wall",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.2829",
+    "updatedAt": "2026-03-06T18:57:10.95"
+  },
+  {
+    "id": "q83",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "What is a Nanaimo bar?",
+    "answer": "A chocolate dessert",
+    "acceptableAnswers": [
+      "Chocolate bar",
+      "Canadian candy"
+    ],
+    "explanation": "It's a no-bake three-layer dessert bar originating from Nanaimo, British Columbia with a custard-flavored middle layer.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nanaimo_bar",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.285877",
+    "updatedAt": "2026-03-06T18:57:10.954"
+  },
+  {
+    "id": "q84",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the smallest independent country in the world?",
+    "answer": "Vatican City",
+    "acceptableAnswers": [],
+    "explanation": "Vatican City is about 0.44 square kilometers (110 acres), entirely surrounded by Rome, Italy.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vatican_City",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.28877",
+    "updatedAt": "2026-03-06T18:57:10.956"
+  },
+  {
+    "id": "q85",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "Which NHL team is known as the Maple Leafs?",
+    "answer": "Toronto",
+    "acceptableAnswers": [],
+    "explanation": "The Toronto Maple Leafs were founded in 1917 and play in the Atlantic Division of the Eastern Conference.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.291766",
+    "updatedAt": "2026-03-06T18:57:10.958"
+  },
+  {
+    "id": "q86",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "question": "Who wrote 'One Hundred Years of Solitude'?",
+    "answer": "Gabriel García Márquez",
+    "acceptableAnswers": [],
+    "explanation": "García Márquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/One_Hundred_Years_of_Solitude",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.294804",
+    "updatedAt": "2026-03-06T18:57:10.96"
+  },
+  {
+    "id": "q87",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What element has the atomic number 1?",
+    "answer": "Hydrogen",
+    "acceptableAnswers": [],
+    "explanation": "Hydrogen is the lightest element and makes up about 75% of all matter in the universe.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.298021",
+    "updatedAt": "2026-03-06T18:57:10.963"
+  },
+  {
+    "id": "q88",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which British artist sings 'Watermelon Sugar'?",
+    "answer": "Harry Styles",
+    "acceptableAnswers": [],
+    "explanation": "Harry Styles is a British singer born in Redditch, England. 'Watermelon Sugar' was released in 2019 from his album 'Fine Line'.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Styles",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.300907",
+    "updatedAt": "2026-03-06T18:57:10.965"
+  },
+  {
+    "id": "q89",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "In which year did the Titanic sink?",
+    "answer": "1912",
+    "acceptableAnswers": [],
+    "explanation": "Over 1,500 people died when RMS Titanic sank on April 15, 1912 after hitting an iceberg.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.304414",
+    "updatedAt": "2026-03-06T18:57:10.968"
+  },
+  {
+    "id": "q90",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "What is the capital of Italy?",
+    "answer": "Rome",
+    "acceptableAnswers": [],
+    "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Città Eterna).",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rome",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.309034",
+    "updatedAt": "2026-03-06T18:57:10.971"
+  },
+  {
+    "id": "q91",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Australian actor played Wolverine in the X-Men films?",
+    "answer": "Hugh Jackman",
+    "acceptableAnswers": [],
+    "explanation": "Hugh Jackman is an Australian actor born in Sydney. He played Wolverine in nine X-Men films from 2000-2024.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hugh_Jackman",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.312749",
+    "updatedAt": "2026-03-06T18:57:10.974"
+  },
+  {
+    "id": "q92",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "How many gold medals did Canadian sprinter Andre De Grasse win at the 2016 Olympics?",
+    "answer": "0",
+    "acceptableAnswers": [],
+    "explanation": "De Grasse won three medals: 1 silver and 2 bronze.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Andre_De_Grasse",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.31574",
+    "updatedAt": "2026-03-06T18:57:10.977"
+  },
+  {
+    "id": "q93",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "How many legs does a spider have?",
+    "answer": "8",
+    "acceptableAnswers": [],
+    "explanation": "All spiders are arachnids with eight legs.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Spider",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.319169",
+    "updatedAt": "2026-03-06T18:57:10.98"
+  },
+  {
+    "id": "q94",
+    "category": "Food",
+    "difficulty": "Hard",
+    "question": "What is a Buxton cake?",
+    "answer": "A Canadian pastry",
+    "acceptableAnswers": [
+      "Pastry",
+      "Dessert"
+    ],
+    "explanation": "A traditional Canadian dessert from the early 20th century.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_cuisine",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.32224",
+    "updatedAt": "2026-03-06T18:57:10.983"
+  },
+  {
+    "id": "q95",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the rarest blood type?",
+    "answer": "Rh-null",
+    "acceptableAnswers": [],
+    "explanation": "Only a handful of people worldwide have this blood type.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rh_blood_group_system",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.325055",
+    "updatedAt": "2026-03-06T18:57:10.986"
+  },
+  {
+    "id": "q96",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "In which year did Canada get its own flag?",
+    "answer": "1965",
+    "acceptableAnswers": [],
+    "explanation": "The Maple Leaf flag was officially adopted on February 15, 1965.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.32793",
+    "updatedAt": "2026-03-06T18:57:10.989"
+  },
+  {
+    "id": "q97",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the capital of Brazil?",
+    "answer": "Brasília",
+    "acceptableAnswers": [],
+    "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bras%C3%ADlia",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.330754",
+    "updatedAt": "2026-03-06T18:57:10.991"
+  },
+  {
+    "id": "q98",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which Scottish artist sings 'Someone You Loved'?",
+    "answer": "Lewis Capaldi",
+    "acceptableAnswers": [],
+    "explanation": "Lewis Capaldi is a Scottish singer-songwriter from Whitburn, West Lothian. 'Someone You Loved' reached #1 in the UK and US in 2019.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Lewis_Capaldi",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.333756",
+    "updatedAt": "2026-03-06T18:57:10.994"
+  },
+  {
+    "id": "q99",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "What streaming service did Netflix originate as?",
+    "answer": "DVD rental by mail",
+    "acceptableAnswers": [],
+    "explanation": "Netflix started in 1997 as a mail-based DVD rental service.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Netflix",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.336651",
+    "updatedAt": "2026-03-06T18:57:10.997"
+  },
+  {
+    "id": "q100",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "How many players are on a Canadian hockey team on the ice?",
+    "answer": "6",
+    "acceptableAnswers": [],
+    "explanation": "Five skaters and one goaltender.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.339452",
+    "updatedAt": "2026-03-06T18:57:11"
+  },
+  {
+    "id": "q101",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "Who was the first Canadian Prime Minister?",
+    "answer": "Sir John A. Macdonald",
+    "acceptableAnswers": [],
+    "explanation": "He led from 1867 to 1873 and 1878 to 1891.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.342503",
+    "updatedAt": "2026-03-06T18:57:11.002"
+  },
+  {
+    "id": "q102",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What gas makes up most of Earth's atmosphere?",
+    "answer": "Nitrogen",
+    "acceptableAnswers": [],
+    "explanation": "Nitrogen comprises about 78% of the air we breathe.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Atmosphere_of_Earth",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.347665",
+    "updatedAt": "2026-03-06T18:57:11.004"
+  },
+  {
+    "id": "q103",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "Which Canadian province has the smallest population?",
+    "answer": "Prince Edward Island",
+    "acceptableAnswers": [],
+    "explanation": "Prince Edward Island has the smallest population of any Canadian province, with approximately 170,000 residents. Note: Nunavut has fewer people but is a territory, not a province.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.352509",
+    "updatedAt": "2026-03-06T18:57:11.007"
+  },
+  {
+    "id": "q104",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "question": "Who wrote 'The Odyssey'?",
+    "answer": "Homer",
+    "acceptableAnswers": [],
+    "explanation": "Homer was an ancient Greek poet.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Odyssey",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.356631",
+    "updatedAt": "2026-03-06T18:57:11.01"
+  },
+  {
+    "id": "q105",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Canadian actor stars in the TV show 'Letterkenny'?",
+    "answer": "Jared Keeso",
+    "acceptableAnswers": [],
+    "explanation": "Keeso created and stars in the comedy series.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Letterkenny_(TV_series)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.361665",
+    "updatedAt": "2026-03-06T18:57:11.013"
+  },
+  {
+    "id": "q106",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which Canadian artist released the acclaimed album 'Blue' in 1971?",
+    "answer": "Joni Mitchell",
+    "acceptableAnswers": [],
+    "explanation": "Joni Mitchell is a Canadian singer-songwriter from Alberta. 'Blue' (1971) is considered one of the greatest albums of all time. Note: 'Take Me Home' is a Cher album (1979), not Joni Mitchell.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.365472",
+    "updatedAt": "2026-03-06T18:57:11.015"
+  },
+  {
+    "id": "q107",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "Which Canadian tennis player reached the Wimbledon finals?",
+    "answer": "Milos Raonic",
+    "acceptableAnswers": [],
+    "explanation": "Raonic reached the Wimbledon final in 2016.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Milos_Raonic",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.370115",
+    "updatedAt": "2026-03-06T18:57:11.018"
+  },
+  {
+    "id": "q108",
+    "category": "Food",
+    "difficulty": "Medium",
+    "question": "What is butter tart filling made from?",
+    "answer": "Butter, brown sugar, and eggs",
+    "acceptableAnswers": [],
+    "explanation": "This is a traditional Canadian dessert.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Butter_tart",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.373347",
+    "updatedAt": "2026-03-06T18:57:11.021"
+  },
+  {
+    "id": "q109",
+    "category": "Nature",
+    "difficulty": "Medium",
+    "question": "What is the deepest ocean trench?",
+    "answer": "Mariana Trench",
+    "acceptableAnswers": [],
+    "explanation": "Located in the Western Pacific, it reaches nearly 11 km deep.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mariana_Trench",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.378171",
+    "updatedAt": "2026-03-06T18:57:11.023"
+  },
+  {
+    "id": "q110",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "What is the symbol for Iron in the periodic table?",
+    "answer": "Fe",
+    "acceptableAnswers": [],
+    "explanation": "Fe comes from the Latin word 'ferrum'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Iron",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.381473",
+    "updatedAt": "2026-03-06T18:57:11.026"
+  },
+  {
+    "id": "q111",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "In which year did Canada abolish slavery?",
+    "answer": "1834",
+    "acceptableAnswers": [],
+    "explanation": "The Slavery Abolition Act was passed throughout the British Empire.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Slavery_Abolition_Act_1833",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.384451",
+    "updatedAt": "2026-03-06T18:57:11.028"
+  },
+  {
+    "id": "q112",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the longest river in Canada?",
+    "answer": "Mackenzie River",
+    "acceptableAnswers": [],
+    "explanation": "The Mackenzie River flows through northern Canada.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mackenzie_River",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.387677",
+    "updatedAt": "2026-03-06T18:57:11.031"
+  },
+  {
+    "id": "q113",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which Barbadian musician performed at the Super Bowl LVII halftime show in 2023?",
+    "answer": "Rihanna",
+    "acceptableAnswers": [],
+    "explanation": "Rihanna is from Saint Michael, Barbados. She performed at Super Bowl LVII in Glendale, Arizona on February 12, 2023.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LVII_halftime_show",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.390208",
+    "updatedAt": "2026-03-06T18:57:11.033"
+  },
+  {
+    "id": "q114",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "What year did the Vancouver Canucks join the NHL?",
+    "answer": "1970",
+    "acceptableAnswers": [],
+    "explanation": "The Canucks have been a major NHL team since then.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Vancouver_Canucks",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.393288",
+    "updatedAt": "2026-03-06T18:57:11.035"
+  },
+  {
+    "id": "q115",
+    "category": "Literature",
+    "difficulty": "Easy",
+    "question": "Who wrote 'Alice in Wonderland'?",
+    "answer": "Lewis Carroll",
+    "acceptableAnswers": [],
+    "explanation": "The British author created the iconic tale.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alice%27s_Adventures_in_Wonderland",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.396507",
+    "updatedAt": "2026-03-06T18:57:11.038"
+  },
+  {
+    "id": "q116",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the boiling point of water in Fahrenheit?",
+    "answer": "212",
+    "acceptableAnswers": [],
+    "explanation": "At sea level, water boils at 212°F or 100°C.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.399547",
+    "updatedAt": "2026-03-06T18:57:11.04"
+  },
+  {
+    "id": "q117",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which Canadian band performed at Live Aid in 1985?",
+    "answer": "Rush",
+    "acceptableAnswers": [],
+    "explanation": "The prog rock band is from Toronto.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Rush_(band)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.402702",
+    "updatedAt": "2026-03-06T18:57:11.043"
+  },
+  {
+    "id": "q118",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "What is the capital of Japan?",
+    "answer": "Tokyo",
+    "acceptableAnswers": [],
+    "explanation": "Tokyo is the most populous metropolitan area in the world.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.405738",
+    "updatedAt": "2026-03-06T18:57:11.045"
+  },
+  {
+    "id": "q119",
+    "category": "Nature",
+    "difficulty": "Hard",
+    "question": "What is the fastest land animal?",
+    "answer": "Cheetah",
+    "acceptableAnswers": [],
+    "explanation": "Cheetahs can reach speeds of over 70 mph.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.408763",
+    "updatedAt": "2026-03-06T18:57:11.048"
+  },
+  {
+    "id": "q120",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "What is a Beaver Tail in Canadian cuisine?",
+    "answer": "A pastry dessert",
+    "acceptableAnswers": [],
+    "explanation": "It's a fried dough pastry traditionally served at Canadian fairs.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/BeaverTails",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.41167",
+    "updatedAt": "2026-03-06T18:57:11.051"
+  },
+  {
+    "id": "q121",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Canadian show aired on Nickelodeon called 'Drake & Josh'?",
+    "answer": "Actually American",
+    "acceptableAnswers": [],
+    "explanation": "Despite some Canadian involvement, it's primarily American.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Drake_%26_Josh",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.414526",
+    "updatedAt": "2026-03-06T18:57:11.053"
+  },
+  {
+    "id": "q122",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "When was the Canadian Constitution patriated?",
+    "answer": "1982",
+    "acceptableAnswers": [],
+    "explanation": "Canada officially adopted its own constitution on April 17, 1982.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Patriation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.417444",
+    "updatedAt": "2026-03-06T18:57:11.056"
+  },
+  {
+    "id": "q123",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "In which sport do you serve and volley?",
+    "answer": "Tennis",
+    "acceptableAnswers": [],
+    "explanation": "Tennis is played on courts worldwide.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tennis",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.420397",
+    "updatedAt": "2026-03-06T18:57:11.058"
+  },
+  {
+    "id": "q124",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What is the most abundant element in the universe?",
+    "answer": "Hydrogen",
+    "acceptableAnswers": [],
+    "explanation": "Hydrogen makes up about 75% of all matter.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.42394",
+    "updatedAt": "2026-03-06T18:57:11.061"
+  },
+  {
+    "id": "q125",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the capital of New Zealand?",
+    "answer": "Wellington",
+    "acceptableAnswers": [],
+    "explanation": "Despite being smaller than Auckland, Wellington is the capital.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wellington",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.426248",
+    "updatedAt": "2026-03-06T18:57:11.063"
+  },
+  {
+    "id": "q126",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "question": "Who wrote 'The Great Gatsby'?",
+    "answer": "F. Scott Fitzgerald",
+    "acceptableAnswers": [],
+    "explanation": "Fitzgerald wrote this American classic in 1925.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Great_Gatsby",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.429055",
+    "updatedAt": "2026-03-06T18:57:11.066"
+  },
+  {
+    "id": "q127",
+    "category": "Music",
+    "difficulty": "Hard",
+    "question": "Which Canadian jazz pianist was nicknamed the 'Maharaja of the keyboard'?",
+    "answer": "Oscar Peterson",
+    "acceptableAnswers": [],
+    "explanation": "Oscar Peterson, born in Montreal, was a legendary Canadian jazz pianist known as the 'Maharaja of the keyboard.'",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Oscar_Peterson",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.431945",
+    "updatedAt": "2026-03-06T18:57:11.069"
+  },
+  {
+    "id": "q128",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which Canadian actor is known for 'Trailer Park Boys'?",
+    "answer": "Robb Wells",
+    "acceptableAnswers": [],
+    "explanation": "Robb Wells plays Ricky in the comedy series. Mike Smith plays Bubbles, and John Paul Tremblay plays Julian.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Robb_Wells",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.434613",
+    "updatedAt": "2026-03-06T18:57:11.072"
+  },
+  {
+    "id": "q129",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "How many times has Canada hosted the Summer Olympics?",
+    "answer": "1",
+    "acceptableAnswers": [],
+    "explanation": "Canada hosted the Summer Olympics once, in Montreal in 1976. Vancouver 2010 was the Winter Olympics.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/1976_Summer_Olympics",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.437885",
+    "updatedAt": "2026-03-06T18:57:11.074"
+  },
+  {
+    "id": "q130",
+    "category": "Food",
+    "difficulty": "Hard",
+    "question": "What ingredient makes Canadian bacon different from regular bacon?",
+    "answer": "It comes from pork loin",
+    "acceptableAnswers": [],
+    "explanation": "Canadian bacon is back bacon from the loin, not belly.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Back_bacon",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.440862",
+    "updatedAt": "2026-03-06T18:57:11.077"
+  },
+  {
+    "id": "q131",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "What year was the Canadian flag officially adopted?",
+    "answer": "1965",
+    "acceptableAnswers": [],
+    "explanation": "The maple leaf flag replaced the Union Jack on February 15.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.444042",
+    "updatedAt": "2026-03-06T18:57:11.08"
+  },
+  {
+    "id": "q132",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "What is the freezing point of water in Celsius?",
+    "answer": "0",
+    "acceptableAnswers": [],
+    "explanation": "Water freezes at 0°C or 32°F.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Melting_point",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.446997",
+    "updatedAt": "2026-03-06T18:57:11.083"
+  },
+  {
+    "id": "q133",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "Which Canadian city is farthest north?",
+    "answer": "Alert",
+    "acceptableAnswers": [],
+    "explanation": "Alert, Nunavut is the northernmost settlement.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.449511",
+    "updatedAt": "2026-03-06T18:57:11.085"
+  },
+  {
+    "id": "q134",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "How many species of bears are there?",
+    "answer": "8",
+    "acceptableAnswers": [],
+    "explanation": "Including polar, grizzly, black, panda, and others.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bear",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.452367",
+    "updatedAt": "2026-03-06T18:57:11.087"
+  },
+  {
+    "id": "q135",
+    "category": "Entertainment",
+    "difficulty": "Hard",
+    "question": "Who created the TV series 'The X-Files'?",
+    "answer": "Chris Carter",
+    "acceptableAnswers": [],
+    "explanation": "Chris Carter is an American writer and producer born in Bellflower, California. He created The X-Files in 1993.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Chris_Carter_(screenwriter)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.455241",
+    "updatedAt": "2026-03-06T18:57:11.09"
+  },
+  {
+    "id": "q136",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which Canadian band is known for 'Smells Like Teen Spirit'?",
+    "answer": "Not a Canadian band",
+    "acceptableAnswers": [],
+    "explanation": "Nirvana was from Seattle, Washington.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nirvana_(band)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.457982",
+    "updatedAt": "2026-03-06T18:57:11.092"
+  },
+  {
+    "id": "q137",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "How many Winter Olympic Games has Canada hosted?",
+    "answer": "2",
+    "acceptableAnswers": [],
+    "explanation": "Canada has hosted the Winter Olympics twice: Calgary in 1988 and Vancouver in 2010.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_Winter_Olympics",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.460875",
+    "updatedAt": "2026-03-06T18:57:11.095"
+  },
+  {
+    "id": "q138",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "question": "Who wrote 'Crime and Punishment'?",
+    "answer": "Fyodor Dostoevsky",
+    "acceptableAnswers": [],
+    "explanation": "The Russian author wrote this psychological novel.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Crime_and_Punishment",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.46355",
+    "updatedAt": "2026-03-06T18:57:11.097"
+  },
+  {
+    "id": "q139",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "How many provinces and territories does Canada have?",
+    "answer": "13",
+    "acceptableAnswers": [],
+    "explanation": "10 provinces and 3 territories.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Provinces_and_territories_of_Canada",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.466732",
+    "updatedAt": "2026-03-06T18:57:11.1"
+  },
+  {
+    "id": "q140",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the chemical formula for table salt?",
+    "answer": "NaCl",
+    "acceptableAnswers": [],
+    "explanation": "Sodium chloride is the most common salt.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sodium_chloride",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.46944",
+    "updatedAt": "2026-03-06T18:57:11.102"
+  },
+  {
+    "id": "q141",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "In which year did Canada gain independence from Britain?",
+    "answer": "1867",
+    "acceptableAnswers": [],
+    "explanation": "Confederation in 1867 marked the creation of the Dominion.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.472183",
+    "updatedAt": "2026-03-06T18:57:11.105"
+  },
+  {
+    "id": "q142",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Canadian actor played Deadpool?",
+    "answer": "Ryan Reynolds",
+    "acceptableAnswers": [],
+    "explanation": "Reynolds is from Vancouver and starred in the Marvel films.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.474877",
+    "updatedAt": "2026-03-06T18:57:11.107"
+  },
+  {
+    "id": "q143",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "What country is known for sushi?",
+    "answer": "Japan",
+    "acceptableAnswers": [],
+    "explanation": "Sushi originated in Japan centuries ago.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Sushi",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.477714",
+    "updatedAt": "2026-03-06T18:57:11.11"
+  },
+  {
+    "id": "q144",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "How many players does a baseball team have on the field?",
+    "answer": "9",
+    "acceptableAnswers": [],
+    "explanation": "Eight players in the field plus a pitcher.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Baseball",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.480638",
+    "updatedAt": "2026-03-06T18:57:11.112"
+  },
+  {
+    "id": "q145",
+    "category": "Nature",
+    "difficulty": "Medium",
+    "question": "What is the tallest living tree?",
+    "answer": "Hyperion",
+    "acceptableAnswers": [],
+    "explanation": "Hyperion is a coast redwood in California.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hyperion_(tree)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.483433",
+    "updatedAt": "2026-03-06T18:57:11.115"
+  },
+  {
+    "id": "q146",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which Canadian singer-songwriter released 'Blue'?",
+    "answer": "Joni Mitchell",
+    "acceptableAnswers": [],
+    "explanation": "This iconic 1971 album is considered one of the greatest albums of all time.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.486256",
+    "updatedAt": "2026-03-06T18:57:11.118"
+  },
+  {
+    "id": "q147",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the second-largest country in the world by area?",
+    "answer": "Canada",
+    "acceptableAnswers": [],
+    "explanation": "Only Russia is larger.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.48916",
+    "updatedAt": "2026-03-06T18:57:11.121"
+  },
+  {
+    "id": "q148",
+    "category": "Literature",
+    "difficulty": "Easy",
+    "question": "Who wrote 'Pride and Prejudice'?",
+    "answer": "Jane Austen",
+    "acceptableAnswers": [],
+    "explanation": "Austen was a British novelist from the 19th century.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pride_and_Prejudice",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.491935",
+    "updatedAt": "2026-03-06T18:57:11.123"
+  },
+  {
+    "id": "q149",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "How many planets are in our solar system?",
+    "answer": "8",
+    "acceptableAnswers": [],
+    "explanation": "Pluto was reclassified as a dwarf planet in 2006.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Solar_System",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.494816",
+    "updatedAt": "2026-03-06T18:57:11.126"
+  },
+  {
+    "id": "q150",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which American actor voices Metro Man in 'Megamind'?",
+    "answer": "Brad Pitt",
+    "acceptableAnswers": [],
+    "explanation": "Brad Pitt is an American actor from Shawnee, Oklahoma. He voiced Metro Man in the 2010 animated film 'Megamind'.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Megamind",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.497747",
+    "updatedAt": "2026-03-06T18:57:11.128"
+  },
+  {
+    "id": "q151",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "Which Canadian curler won an Olympic gold medal?",
+    "answer": "Brad Gushue",
+    "acceptableAnswers": [],
+    "explanation": "Brad Gushue won gold in men's curling at the 2006 Turin Olympics, becoming the first Newfoundlander to win Olympic gold. He also won bronze at the 2022 Beijing Olympics.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Brad_Gushue",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.500727",
+    "updatedAt": "2026-03-06T18:57:11.131"
+  },
+  {
+    "id": "q152",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "What year did Canada approve same-sex marriage?",
+    "answer": "2005",
+    "acceptableAnswers": [],
+    "explanation": "Canada was the fourth country to legalize same-sex marriage.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Same-sex_marriage_in_Canada",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.503626",
+    "updatedAt": "2026-03-06T18:57:11.134"
+  },
+  {
+    "id": "q153",
+    "category": "Food",
+    "difficulty": "Medium",
+    "question": "What is Montreal-style bagel?",
+    "answer": "A boiled and baked bagel",
+    "acceptableAnswers": [],
+    "explanation": "Montreal bagels are smaller and sweeter than New York bagels.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Montreal-style_bagel",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.50675",
+    "updatedAt": "2026-03-06T18:57:11.136"
+  },
+  {
+    "id": "q154",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What is the most common element in the Earth's crust?",
+    "answer": "Oxygen",
+    "acceptableAnswers": [],
+    "explanation": "Oxygen makes up about 46% of Earth's crust.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Abundance_of_elements_in_Earth%27s_crust",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.510196",
+    "updatedAt": "2026-03-06T18:57:11.139"
+  },
+  {
+    "id": "q155",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the smallest province in Canada by area?",
+    "answer": "Prince Edward Island",
+    "acceptableAnswers": [],
+    "explanation": "PEI is only about 5,600 square kilometers.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.51324",
+    "updatedAt": "2026-03-06T18:57:11.142"
+  },
+  {
+    "id": "q156",
+    "category": "Music",
+    "difficulty": "Hard",
+    "question": "Which Canadian musician won a Grammy for 'Immigrant Song'?",
+    "answer": "Not a Canadian",
+    "acceptableAnswers": [],
+    "explanation": "Led Zeppelin's 'Immigrant Song' was by a British band.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Immigrant_Song",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.516053",
+    "updatedAt": "2026-03-06T18:57:11.145"
+  },
+  {
+    "id": "q157",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which American actor starred as Percy Jackson in the original film series?",
+    "answer": "Logan Lerman",
+    "acceptableAnswers": [],
+    "explanation": "Logan Lerman is an American actor from Beverly Hills, California. He starred in 'Percy Jackson & the Olympians: The Lightning Thief' (2010) and its sequel.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Logan_Lerman",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.51897",
+    "updatedAt": "2026-03-06T18:57:11.147"
+  },
+  {
+    "id": "q158",
+    "category": "Nature",
+    "difficulty": "Hard",
+    "question": "What type of mammal lays eggs?",
+    "answer": "Monotreme",
+    "acceptableAnswers": [
+      "Platypus",
+      "Echidna"
+    ],
+    "explanation": "Monotremes are egg-laying mammals. There are five species: the platypus and four species of echidna. All are found in Australia and New Guinea.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Monotreme",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.521894",
+    "updatedAt": "2026-03-06T18:57:11.15"
+  },
+  {
+    "id": "q159",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "question": "Who wrote 'The Catcher in the Rye'?",
+    "answer": "J.D. Salinger",
+    "acceptableAnswers": [],
+    "explanation": "Salinger wrote this classic American novel.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Catcher_in_the_Rye",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.524936",
+    "updatedAt": "2026-03-06T18:57:11.152"
+  },
+  {
+    "id": "q160",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "Which Canadian figure skater won two Olympic silver medals?",
+    "answer": "Elvis Stojko",
+    "acceptableAnswers": [],
+    "explanation": "Elvis Stojko won silver medals at both the 1994 Lillehammer and 1998 Nagano Olympics. He is a three-time World champion (1994, 1995, 1997).",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Elvis_Stojko",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.527164",
+    "updatedAt": "2026-03-06T18:57:11.155"
+  },
+  {
+    "id": "q161",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "What year did World War II end?",
+    "answer": "1945",
+    "acceptableAnswers": [],
+    "explanation": "Japan surrendered in September 1945.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/World_War_II",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.529896",
+    "updatedAt": "2026-03-06T18:57:11.158"
+  },
+  {
+    "id": "q162",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "What is the capital of Mexico?",
+    "answer": "Mexico City",
+    "acceptableAnswers": [],
+    "explanation": "Mexico City is one of the largest cities in the world.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mexico_City",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.532631",
+    "updatedAt": "2026-03-06T18:57:11.16"
+  },
+  {
+    "id": "q163",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "What is the symbol for Silver in the periodic table?",
+    "answer": "Ag",
+    "acceptableAnswers": [],
+    "explanation": "Ag comes from the Latin word 'argentum'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Silver",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.535821",
+    "updatedAt": "2026-03-06T18:57:11.163"
+  },
+  {
+    "id": "q164",
+    "category": "Entertainment",
+    "difficulty": "Hard",
+    "question": "Which British-American director made 'Inception' and 'The Dark Knight' trilogy?",
+    "answer": "Christopher Nolan",
+    "acceptableAnswers": [],
+    "explanation": "Christopher Nolan was born in London, England and holds dual British-American citizenship. He is known for films like 'Inception', 'Interstellar', and 'The Dark Knight' trilogy.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Christopher_Nolan",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.538351",
+    "updatedAt": "2026-03-06T18:57:11.166"
+  },
+  {
+    "id": "q165",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which Canadian band released 'Hotel California'?",
+    "answer": "Not a Canadian band",
+    "acceptableAnswers": [],
+    "explanation": "The Eagles were an American rock band.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hotel_California_(Eagles_album)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.541246",
+    "updatedAt": "2026-03-06T18:57:11.168"
+  },
+  {
+    "id": "q166",
+    "category": "Food",
+    "difficulty": "Hard",
+    "question": "What is Poutine Royale?",
+    "answer": "Poutine with gravy and meat",
+    "acceptableAnswers": [],
+    "explanation": "A variation of poutine with added protein.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "CA",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.544029",
+    "updatedAt": "2026-03-06T18:57:11.171"
+  },
+  {
+    "id": "q167",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "How many players are in a soccer team on the field?",
+    "answer": "11",
+    "acceptableAnswers": [],
+    "explanation": "Including the goalkeeper.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Association_football",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.546969",
+    "updatedAt": "2026-03-06T18:57:11.174"
+  },
+  {
+    "id": "q168",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "Which four provinces formed Canada at Confederation in 1867?",
+    "answer": "Ontario, Quebec, Nova Scotia, New Brunswick",
+    "acceptableAnswers": [
+      "Ontario, Quebec, New Brunswick, Nova Scotia"
+    ],
+    "explanation": "On July 1, 1867, Ontario, Quebec, Nova Scotia, and New Brunswick united to form the Dominion of Canada. Ontario and Quebec were created from the former Province of Canada.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.550007",
+    "updatedAt": "2026-03-06T18:57:11.176"
+  },
+  {
+    "id": "q169",
+    "category": "Nature",
+    "difficulty": "Medium",
+    "question": "What do you call a baby kangaroo?",
+    "answer": "Joey",
+    "acceptableAnswers": [],
+    "explanation": "Young kangaroos are called joeys.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Kangaroo",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.553275",
+    "updatedAt": "2026-03-06T18:57:11.179"
+  },
+  {
+    "id": "q170",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "question": "Who wrote 'War and Peace'?",
+    "answer": "Leo Tolstoy",
+    "acceptableAnswers": [],
+    "explanation": "Tolstoy was a Russian author.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/War_and_Peace",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.555952",
+    "updatedAt": "2026-03-06T18:57:11.181"
+  },
+  {
+    "id": "q171",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "What is the westernmost province of Canada?",
+    "answer": "British Columbia",
+    "acceptableAnswers": [],
+    "explanation": "BC is on the Pacific coast.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/British_Columbia",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.558747",
+    "updatedAt": "2026-03-06T18:57:11.184"
+  },
+  {
+    "id": "q172",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What is DNA?",
+    "answer": "Deoxyribonucleic acid",
+    "acceptableAnswers": [],
+    "explanation": "DNA carries genetic instructions for life.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/DNA",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.561447",
+    "updatedAt": "2026-03-06T18:57:11.186"
+  },
+  {
+    "id": "q173",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which British actor played Batman in 'The Dark Knight' trilogy?",
+    "answer": "Christian Bale",
+    "acceptableAnswers": [],
+    "explanation": "Christian Bale was born in Haverfordwest, Wales. He played Batman in Christopher Nolan's Dark Knight trilogy (2005-2012). Note: Bale was NOT in 'Inception' - that film starred Leonardo DiCaprio.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Christian_Bale",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.563737",
+    "updatedAt": "2026-03-06T18:57:11.189"
+  },
+  {
+    "id": "q174",
+    "category": "Music",
+    "difficulty": "Medium",
+    "question": "Which Canadian musician was part of Nickelback?",
+    "answer": "Chad Kroeger",
+    "acceptableAnswers": [],
+    "explanation": "Chad Kroeger is the lead singer of Nickelback. He was born and raised in Hanna, Alberta, where the band formed in 1995. They later relocated to Vancouver, British Columbia.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nickelback",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.566613",
+    "updatedAt": "2026-03-06T18:57:11.192"
+  },
+  {
+    "id": "q175",
+    "category": "Sports",
+    "difficulty": "Hard",
+    "question": "How many teams are in the NHL?",
+    "answer": "32",
+    "acceptableAnswers": [],
+    "explanation": "The NHL expanded to 32 teams in recent years.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/National_Hockey_League",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.568956",
+    "updatedAt": "2026-03-06T18:57:11.195"
+  },
+  {
+    "id": "q176",
+    "category": "Food",
+    "difficulty": "Easy",
+    "question": "Which dish was declared Britain's 'true national dish' by Foreign Secretary Robin Cook in 2001?",
+    "answer": "Chicken Tikka Masala",
+    "acceptableAnswers": [],
+    "explanation": "Chicken Tikka Masala was declared a 'true British national dish' by UK Foreign Secretary Robin Cook in 2001. It was likely invented in Glasgow, Scotland in the 1970s. India has no official national dish.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Food"
+    ],
+    "sourceUrl": "https://www.britannica.com/topic/chicken-tikka-masala",
+    "sourceName": "Britannica",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.571736",
+    "updatedAt": "2026-03-06T18:57:11.198"
+  },
+  {
+    "id": "q177",
+    "category": "History",
+    "difficulty": "Medium",
+    "question": "What year did Canada join the United Nations?",
+    "answer": "1945",
+    "acceptableAnswers": [],
+    "explanation": "Canada was a founding member of the UN.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canada_and_the_United_Nations",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.574573",
+    "updatedAt": "2026-03-06T18:57:11.2"
+  },
+  {
+    "id": "q178",
+    "category": "Nature",
+    "difficulty": "Easy",
+    "question": "How many legs does an octopus have?",
+    "answer": "8",
+    "acceptableAnswers": [],
+    "explanation": "All octopuses have eight arms/legs.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Octopus",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.577425",
+    "updatedAt": "2026-03-06T18:57:11.203"
+  },
+  {
+    "id": "q179",
+    "category": "Literature",
+    "difficulty": "Easy",
+    "question": "Who wrote 'The Lord of the Rings'?",
+    "answer": "J.R.R. Tolkien",
+    "acceptableAnswers": [],
+    "explanation": "Tolkien was a British author and philologist.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Lord_of_the_Rings",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.580312",
+    "updatedAt": "2026-03-06T18:57:11.206"
+  },
+  {
+    "id": "q180",
+    "category": "Geography",
+    "difficulty": "Medium",
+    "question": "What is the easternmost province of Canada?",
+    "answer": "Newfoundland and Labrador",
+    "acceptableAnswers": [],
+    "explanation": "It is the most eastern point of North America.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.582681",
+    "updatedAt": "2026-03-06T18:57:11.209"
+  },
+  {
+    "id": "q181",
+    "category": "Science",
+    "difficulty": "Hard",
+    "question": "What does RNA stand for?",
+    "answer": "Ribonucleic acid",
+    "acceptableAnswers": [],
+    "explanation": "RNA is a key molecule in all living cells.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/RNA",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.585562",
+    "updatedAt": "2026-03-06T18:57:11.211"
+  },
+  {
+    "id": "q182",
+    "category": "Entertainment",
+    "difficulty": "Medium",
+    "question": "Which Canadian actress stars in 'Orphan Black'?",
+    "answer": "Tatiana Maslany",
+    "acceptableAnswers": [],
+    "explanation": "Tatiana Maslany is from Regina, Saskatchewan. She won an Emmy Award for Outstanding Lead Actress in a Drama Series in 2016 for 'Orphan Black', plus two Critics' Choice Awards and five Canadian Screen Awards. She was nominated for a Golden Globe in 2014 but did not win.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tatiana_Maslany",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.588459",
+    "updatedAt": "2026-03-06T18:57:11.214"
+  },
+  {
+    "id": "q183",
+    "category": "Music",
+    "difficulty": "Hard",
+    "question": "Which British rock band is known for the album 'Absolution' and songs like 'Hysteria'?",
+    "answer": "Muse",
+    "acceptableAnswers": [],
+    "explanation": "Muse is a British rock band formed in Teignmouth, Devon, England in 1994. 'Hysteria' is from their 2003 album 'Absolution'.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Muse_(band)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.591334",
+    "updatedAt": "2026-03-06T18:57:11.217"
+  },
+  {
+    "id": "q184",
+    "category": "Sports",
+    "difficulty": "Easy",
+    "question": "How many periods does a hockey game have?",
+    "answer": "3",
+    "acceptableAnswers": [],
+    "explanation": "Each period lasts 20 minutes.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.594656",
+    "updatedAt": "2026-03-06T18:57:11.22"
+  },
+  {
+    "id": "q185",
+    "category": "Food",
+    "difficulty": "Medium",
+    "question": "What is the main ingredient in hummus?",
+    "answer": "Chickpeas",
+    "acceptableAnswers": [],
+    "explanation": "Hummus is made from pureed chickpeas.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Hummus",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.597492",
+    "updatedAt": "2026-03-06T18:57:11.222"
+  },
+  {
+    "id": "q186",
+    "category": "History",
+    "difficulty": "Easy",
+    "question": "What year did the Titanic sink?",
+    "answer": "1912",
+    "acceptableAnswers": [],
+    "explanation": "It sank on April 15, 1912.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.60019",
+    "updatedAt": "2026-03-06T18:57:11.225"
+  },
+  {
+    "id": "q187",
+    "category": "Nature",
+    "difficulty": "Hard",
+    "question": "What is the smallest bird in the world?",
+    "answer": "Bee hummingbird",
+    "acceptableAnswers": [],
+    "explanation": "It weighs less than 2 grams.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Bee_hummingbird",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.603363",
+    "updatedAt": "2026-03-06T18:57:11.228"
+  },
+  {
+    "id": "q188",
+    "category": "Literature",
+    "difficulty": "Medium",
+    "question": "Who wrote 'Jane Eyre'?",
+    "answer": "Charlotte Brontë",
+    "acceptableAnswers": [],
+    "explanation": "Brontë was a British novelist.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Jane_Eyre",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.605701",
+    "updatedAt": "2026-03-06T18:57:11.23"
+  },
+  {
+    "id": "q189",
+    "category": "Geography",
+    "difficulty": "Hard",
+    "question": "Which Asian country has the same name as its capital city?",
+    "answer": "Singapore",
+    "acceptableAnswers": [],
+    "explanation": "Singapore is both a city and a country.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Singapore",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.608699",
+    "updatedAt": "2026-03-06T18:57:11.233"
+  },
+  {
+    "id": "q190",
+    "category": "Science",
+    "difficulty": "Easy",
+    "question": "What is the chemical symbol for Copper?",
+    "answer": "Cu",
+    "acceptableAnswers": [],
+    "explanation": "Cu comes from the Latin word 'cuprum'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Copper",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.61156",
+    "updatedAt": "2026-03-06T18:57:11.235"
+  },
+  {
+    "id": "q191",
+    "category": "Entertainment",
+    "difficulty": "Hard",
+    "question": "Which Canadian filmmaker directed 'Telefilm'?",
+    "answer": "David Cronenberg",
+    "acceptableAnswers": [],
+    "explanation": "Cronenberg is a legendary Canadian director.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/David_Cronenberg",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.614535",
+    "updatedAt": "2026-03-06T18:57:11.238"
+  },
+  {
+    "id": "q192",
+    "category": "Music",
+    "difficulty": "Easy",
+    "question": "Which Canadian musician released 'I'm Like a Bird'?",
+    "answer": "Nelly Furtado",
+    "acceptableAnswers": [],
+    "explanation": "Furtado is from Victoria, BC.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "CA",
+      "Music"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nelly_Furtado",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.617562",
+    "updatedAt": "2026-03-06T18:57:11.24"
+  },
+  {
+    "id": "q193",
+    "category": "Sports",
+    "difficulty": "Medium",
+    "question": "How many holes does a golf course have?",
+    "answer": "18",
+    "acceptableAnswers": [],
+    "explanation": "Standard golf courses have 18 holes.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Sports"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Golf_course",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.620597",
+    "updatedAt": "2026-03-06T18:57:11.242"
+  },
+  {
+    "id": "q194",
+    "category": "Food",
+    "difficulty": "Hard",
+    "question": "What is the main ingredient in tempura?",
+    "answer": "Battered and fried",
+    "acceptableAnswers": [],
+    "explanation": "Tempura is a Japanese battered and deep-fried dish.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Food"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Tempura",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.623412",
+    "updatedAt": "2026-03-06T18:57:11.244"
+  },
+  {
+    "id": "q195",
+    "category": "History",
+    "difficulty": "Hard",
+    "question": "What year did Confederation happen in Canada?",
+    "answer": "1867",
+    "acceptableAnswers": [],
+    "explanation": "July 1, 1867 marks the birth of modern Canada.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "History"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.627806",
+    "updatedAt": "2026-03-06T18:57:11.247"
+  },
+  {
+    "id": "q196",
+    "category": "Nature",
+    "difficulty": "Medium",
+    "question": "What is the largest reptile in the world?",
+    "answer": "Saltwater crocodile",
+    "acceptableAnswers": [],
+    "explanation": "They can reach lengths of over 20 feet.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Nature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Saltwater_crocodile",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.630118",
+    "updatedAt": "2026-03-06T18:57:11.249"
+  },
+  {
+    "id": "q197",
+    "category": "Literature",
+    "difficulty": "Hard",
+    "question": "Who wrote 'Moby Dick'?",
+    "answer": "Herman Melville",
+    "acceptableAnswers": [],
+    "explanation": "Melville wrote this American epic.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Literature"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Moby-Dick",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.632859",
+    "updatedAt": "2026-03-06T18:57:11.252"
+  },
+  {
+    "id": "q198",
+    "category": "Geography",
+    "difficulty": "Easy",
+    "question": "What is the capital of Spain?",
+    "answer": "Madrid",
+    "acceptableAnswers": [],
+    "explanation": "Madrid is the largest city in Spain.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Geography"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Madrid",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.635716",
+    "updatedAt": "2026-03-06T18:57:11.254"
+  },
+  {
+    "id": "q199",
+    "category": "Science",
+    "difficulty": "Medium",
+    "question": "What is the process by which plants make their own food?",
+    "answer": "Photosynthesis",
+    "acceptableAnswers": [],
+    "explanation": "Plants convert sunlight into chemical energy.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "Science"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.638946",
+    "updatedAt": "2026-03-06T18:57:11.257"
+  },
+  {
+    "id": "q200",
+    "category": "Entertainment",
+    "difficulty": "Easy",
+    "question": "Which Canadian actor is known for 'Degrassi'?",
+    "answer": "Nina Dobrev",
+    "acceptableAnswers": [],
+    "explanation": "Dobrev played Mia in the Canadian teen drama.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "CA",
+      "Entertainment"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Nina_Dobrev",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": null,
+    "createdAt": "2026-03-06T14:18:01.641722",
+    "updatedAt": "2026-03-06T18:57:11.259"
+  },
+  {
+    "id": "5b7a9b70-d0c4-4f02-b244-41d1684ea5b9",
+    "category": "pop culture",
+    "difficulty": "Medium",
+    "question": "What artist broke the record for most Grammy awards in history in 2023?",
+    "answer": "Beyoncé",
+    "acceptableAnswers": [
+      "Beyoncé",
+      "Beyonce"
+    ],
+    "explanation": "Beyoncé set a new record for the most Grammy wins in 2023, showcasing her immense achievements in music and pop culture.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://www.grammy.com/",
+    "sourceName": "Grammy",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Beyoncé indeed set the record for the most Grammy wins in history at the 2023 Grammy Awards.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"pop culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "5b7a9b70-d0c4-4f02-b244-41d1684ea5b9",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T21:59:36.479273",
+    "updatedAt": "2026-03-21T22:00:16.051"
+  },
+  {
+    "id": "b9326882-7d7f-4645-a435-d9e0827d3a94",
+    "category": "pop culture",
+    "difficulty": "Medium",
+    "question": "Which Marvel superhero movie became the highest-grossing movie of all time in 2019?",
+    "answer": "Avengers: Endgame",
+    "acceptableAnswers": [
+      "Avengers: Endgame",
+      "Endgame"
+    ],
+    "explanation": "'Avengers: Endgame' dethroned 'Avatar' in 2019 as the highest-grossing movie globally, solidifying Marvel’s dominance in pop culture.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://www.boxofficemojo.com/",
+    "sourceName": "Box Office Mojo",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "'Avengers: Endgame' surpassed 'Avatar' in 2019 to become the highest-grossing movie globally at that time.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"pop culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "b9326882-7d7f-4645-a435-d9e0827d3a94",
+          "questionIndex": 4
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T21:59:36.479273",
+    "updatedAt": "2026-03-21T22:01:18.64"
+  },
+  {
+    "id": "326319af-bcd9-47d0-bb90-8fd9419a70d0",
+    "category": "pop culture",
+    "difficulty": "Hard",
+    "question": "The famous Kardashian family launched their reality TV show in which year?",
+    "answer": "2007",
+    "acceptableAnswers": [
+      "2007"
+    ],
+    "explanation": "'Keeping Up with the Kardashians' first aired in 2007, making the Kardashians a household name across pop culture.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "US",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://www.eonline.com/",
+    "sourceName": "E! Online",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "'Keeping Up with the Kardashians' premiered in 2007, which is widely reported and supported by credible sources.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"pop culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "326319af-bcd9-47d0-bb90-8fd9419a70d0",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T21:59:36.479273",
+    "updatedAt": "2026-03-21T22:00:42.731"
+  },
+  {
+    "id": "1e3cc8ed-7105-4a64-bbc7-97b19f573e8d",
+    "category": "pop culture",
+    "difficulty": "Easy",
+    "question": "Which popular streaming service released the hit show 'Stranger Things'?",
+    "answer": "Netflix",
+    "acceptableAnswers": [
+      "Netflix"
+    ],
+    "explanation": "'Stranger Things' is one of Netflix's most successful original series, known for its 1980s nostalgia and supernatural themes.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": null,
+    "sourceName": null,
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The show 'Stranger Things' is conclusively known to be a Netflix production.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"pop culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "1e3cc8ed-7105-4a64-bbc7-97b19f573e8d",
+          "questionIndex": 1
+        },
+        {
+          "rule": "missing_source_metadata",
+          "message": "No source metadata (sourceUrl/sourceName) found; harder to verify answer correctness.",
+          "severity": "low",
+          "questionId": "1e3cc8ed-7105-4a64-bbc7-97b19f573e8d",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T21:59:36.479273",
+    "updatedAt": "2026-03-21T22:00:05.122"
+  },
+  {
+    "id": "b1d8456f-78c3-493b-82ff-877c4912e627",
+    "category": "Pop Culture",
+    "difficulty": "Medium",
+    "question": "Which 1990s TV show starred Will Smith as a young man from West Philadelphia sent to live with his wealthy relatives in Bel-Air?",
+    "answer": "The Fresh Prince of Bel-Air",
+    "acceptableAnswers": [
+      "Fresh Prince",
+      "The Fresh Prince of Bel-Air"
+    ],
+    "explanation": "The show 'The Fresh Prince of Bel-Air' was a sitcom that aired from 1990 to 1996, starring Will Smith. It became an iconic part of pop culture and highlighted numerous social themes through humor and drama.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Fresh_Prince_of_Bel-Air",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are all factually accurate and unambiguous; 'The Fresh Prince of Bel-Air' is indeed the correct show that matches the description provided.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Pop Culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "b1d8456f-78c3-493b-82ff-877c4912e627",
+          "questionIndex": 1
+        },
+        {
+          "rule": "missing_source_metadata",
+          "message": "No source metadata (sourceUrl/sourceName) found; harder to verify answer correctness.",
+          "severity": "low",
+          "questionId": "b1d8456f-78c3-493b-82ff-877c4912e627",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T22:17:35.148086",
+    "updatedAt": "2026-03-22T00:44:14.265"
+  },
+  {
+    "id": "b7a5e361-e21a-4f7f-958f-01824c7d2c43",
+    "category": "Pop Culture",
+    "difficulty": "Medium",
+    "question": "Which TV show popularized the phrase 'pivot!' during a comedic furniture-moving scene?",
+    "answer": "Friends",
+    "acceptableAnswers": [
+      "Friends",
+      "Friends TV show"
+    ],
+    "explanation": "The phrase 'pivot!' became a popular meme after a hilarious scene in Friends where Ross tries to move a sofa upstairs.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "TimeCapsule",
+      "TV"
+    ],
+    "sourceUrl": "https://www.imdb.com/title/tt0108778/",
+    "sourceName": "IMDb",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The 'pivot!' scene is correctly attributed to Friends and has become a widely recognized pop culture reference.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Pop Culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "b7a5e361-e21a-4f7f-958f-01824c7d2c43",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T22:17:35.148086",
+    "updatedAt": "2026-03-21T23:27:54.168"
+  },
+  {
+    "id": "dae14391-12d2-41e3-a466-cf307f257640",
+    "category": "Pop Culture",
+    "difficulty": "Hard",
+    "question": "Which famous album released in 1982 remains the best-selling album of all time?",
+    "answer": "Thriller",
+    "acceptableAnswers": [
+      "Thriller",
+      "Michael Jackson's Thriller"
+    ],
+    "explanation": "Michael Jackson's Thriller, released in 1982, is widely regarded as one of the greatest albums ever and holds the record for best-selling album globally.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "Music"
+    ],
+    "sourceUrl": "https://www.riaa.com/",
+    "sourceName": "RIAA",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Michael Jackson's Thriller is confirmed as the best-selling album of all time and was released in 1982.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Pop Culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "dae14391-12d2-41e3-a466-cf307f257640",
+          "questionIndex": 2
+        },
+        {
+          "rule": "subjective_prompt",
+          "message": "Question uses subjective wording that may not have a single correct answer.",
+          "severity": "medium",
+          "questionId": "dae14391-12d2-41e3-a466-cf307f257640",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T22:17:35.148086",
+    "updatedAt": "2026-03-21T23:27:52.119"
+  },
+  {
+    "id": "d9f32768-6afd-4a82-9444-3dfebc8234b8",
+    "category": "pop culture",
+    "difficulty": "Medium",
+    "question": "Which famous music festival, often regarded as a symbol of outdoor communal experiences, first took place in 1969 in New York state?",
+    "answer": "Woodstock",
+    "acceptableAnswers": [
+      "Woodstock",
+      "The Woodstock Festival"
+    ],
+    "explanation": "The Woodstock Festival, held in August 1969, became a cultural milestone representing peace, love, and music. Over 400,000 people gathered outdoors for the iconic event.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "US",
+      "GreatOutdoors"
+    ],
+    "sourceUrl": "https://www.history.com/topics/1960s/woodstock",
+    "sourceName": "History.com",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are all factually accurate. Woodstock did take place in 1969 in New York and is widely regarded as a symbol of outdoor communal experiences.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"pop culture\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "d9f32768-6afd-4a82-9444-3dfebc8234b8",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T22:17:35.148086",
+    "updatedAt": "2026-03-21T23:28:01.351"
+  },
+  {
+    "id": "3b22ff25-18f0-4717-875f-570f977420f2",
+    "category": "Technology",
+    "difficulty": "Hard",
+    "question": "What Canadian company was credited for inventing the first practical quantum computer in 2007?",
+    "answer": "D-Wave Systems",
+    "acceptableAnswers": [
+      "D-Wave",
+      "D-Wave Systems"
+    ],
+    "explanation": "D-Wave Systems, based in Canada, developed the first commercially available quantum computer in 2007, marking a significant advancement in quantum computing technology.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "CA",
+      "GlobalEh",
+      "quantum computing",
+      "technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/D-Wave_Systems",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "D-Wave Systems is credited with creating the first commercially available quantum computer in 2007, but there is some debate regarding whether it qualifies as a 'practical' quantum computer due to its specific use cases and limitations.",
+        "verdict": "flag",
+        "confidence": 80
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "3b22ff25-18f0-4717-875f-570f977420f2",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:26:31.214"
+  },
+  {
+    "id": "f65d0966-b571-49bd-b0fb-bb54c3f1315a",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "What is the name of the world's first general-purpose electronic computer?",
+    "answer": "ENIAC",
+    "acceptableAnswers": [
+      "Electronic Numerical Integrator and Computer",
+      "ENIAC"
+    ],
+    "explanation": "The ENIAC, short for Electronic Numerical Integrator and Computer, was developed in 1945 and is considered the first general-purpose electronic computer. It was used initially by the US Army for calculating artillery firing tables.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Technology",
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://www.britannica.com/technology/ENIAC",
+    "sourceName": "Britannica",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The ENIAC, developed in 1945, is widely recognized as the world's first general-purpose electronic computer, as correctly described in the question and explanation.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:26:42.941"
+  },
+  {
+    "id": "3c23319c-94f5-458e-a12a-abedf5af8328",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "Which company developed the Android operating system before it was acquired by Google?",
+    "answer": "Android Inc.",
+    "acceptableAnswers": [
+      "Android Inc.",
+      "Android Incorporated"
+    ],
+    "explanation": "The Android operating system was initially developed by Android Inc. in 2003. The company was later acquired by Google in 2005 to expand its mobile technology efforts.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Technology",
+      "Global",
+      "FreshPrints"
+    ],
+    "sourceUrl": "https://www.britannica.com/technology/Android-operating-system",
+    "sourceName": "Britannica",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Android Inc. was the developer of the Android operating system before being acquired by Google in 2005, making the question and explanation factually correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:26:59.38"
+  },
+  {
+    "id": "3bd7cd9c-f053-47cd-8b44-f4bb9e2910cb",
+    "category": "technology",
+    "difficulty": "Hard",
+    "question": "What was the primary programming language used to create the original World Wide Web?",
+    "answer": "HTML",
+    "acceptableAnswers": [
+      "HTML",
+      "HyperText Markup Language"
+    ],
+    "explanation": "HTML (HyperText Markup Language) was developed by Tim Berners-Lee in 1991 as the foundation for the World Wide Web, allowing the creation and linking of web pages.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/HTML",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "HTML was indeed created by Tim Berners-Lee in 1991 as the foundation for the World Wide Web, and the explanation is correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "3bd7cd9c-f053-47cd-8b44-f4bb9e2910cb",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:26:38.514"
+  },
+  {
+    "id": "b631df87-5c95-4b8b-93c4-99c14e4a4b5c",
+    "category": "technology",
+    "difficulty": "Medium",
+    "question": "What technology is commonly used in outdoor navigation and relies on a network of orbiting satellites to determine location?",
+    "answer": "Global Positioning System (GPS)",
+    "acceptableAnswers": [
+      "GPS",
+      "Global Positioning System"
+    ],
+    "explanation": "GPS, or Global Positioning System, is a satellite-based navigation system that provides geolocation and time information to a GPS receiver anywhere on or near the Earth where there is an unobstructed line of sight to four or more GPS satellites.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "GreatOutdoors"
+    ],
+    "sourceUrl": "https://www.nasa.gov/directorates/heo/scan/communications/policy/GPS_history",
+    "sourceName": "NASA",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are factually correct and unambiguous; GPS is indeed a satellite-based system used for outdoor navigation and determining location.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "b631df87-5c95-4b8b-93c4-99c14e4a4b5c",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:27:21.746"
+  },
+  {
+    "id": "a1e5c510-8e98-4289-8b6d-a565739c0e1b",
+    "category": "technology",
+    "difficulty": "Easy",
+    "question": "What year was the first iPhone released?",
+    "answer": "2007",
+    "acceptableAnswers": [
+      "2007"
+    ],
+    "explanation": "Apple released the first iPhone on June 29, 2007, revolutionizing the smartphone industry with its touchscreen interface and app ecosystem.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The first iPhone was indeed released on June 29, 2007, and the explanation is accurate.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "a1e5c510-8e98-4289-8b6d-a565739c0e1b",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:27:31.64"
+  },
+  {
+    "id": "1e957a0f-4bdd-4977-b758-980c8b1f1e14",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "What is the name of the programming language created by Guido van Rossum in 1991 that emphasizes readability and simplicity?",
+    "answer": "Python",
+    "acceptableAnswers": [
+      "Python",
+      "python programming language"
+    ],
+    "explanation": "Python is a popular programming language designed by Guido van Rossum in 1991, known for its readable syntax and ease of use. It is widely used in web development, data science, and automation.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "programming",
+      "technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are factually accurate and correctly name Python and its creator, Guido van Rossum, as well as describe its key features.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "1e957a0f-4bdd-4977-b758-980c8b1f1e14",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:27:39.378"
+  },
+  {
+    "id": "0c491d82-fe64-45d4-842d-f3c83bc0bcbf",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "Which company co-founded by Steve Jobs introduced the first iPhone in 2007?",
+    "answer": "Apple",
+    "acceptableAnswers": [
+      "Apple",
+      "Apple Inc."
+    ],
+    "explanation": "Apple, co-founded by Steve Jobs, launched the first iPhone in 2007, revolutionizing mobile technology by combining phone, internet, and multimedia functionalities in one device.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "US",
+      "GlobalEh",
+      "technology",
+      "smartphones"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/History_of_the_iPhone",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation correctly state that Apple, co-founded by Steve Jobs, introduced the first iPhone in 2007.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "0c491d82-fe64-45d4-842d-f3c83bc0bcbf",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:04:14.107005",
+    "updatedAt": "2026-03-21T23:27:45.676"
+  },
+  {
+    "id": "f0c9e4b2-cf34-4629-b0ad-aa89a8adc9c0",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "What portable advanced navigation technology is commonly used by hikers and outdoor enthusiasts to pinpoint locations without cellular service?",
+    "answer": "GPS device",
+    "acceptableAnswers": [
+      "GPS device",
+      "Global Positioning System",
+      "GPS"
+    ],
+    "explanation": "GPS devices use satellite signals to provide accurate location tracking, making them essential for outdoor activities in remote areas where cellular service is unavailable.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "GreatOutdoors",
+      "Technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Global_Positioning_System",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are factually accurate, as GPS devices rely on satellite technology and do not require cellular service.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:23:49.096"
+  },
+  {
+    "id": "d56e8b41-c88b-4abd-ae8d-bf5f1a72ea1e",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "Which company is commonly credited with developing the first smartphone?",
+    "answer": "IBM",
+    "acceptableAnswers": [
+      "IBM",
+      "IBM Simon"
+    ],
+    "explanation": "IBM Simon, introduced in 1994, is widely recognized as the world's first smartphone due to its ability to combine telephony and PDA features.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IBM_Simon",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "IBM Simon, introduced in 1994, is correctly recognized as the first smartphone as it combined telephony and PDA features.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "d56e8b41-c88b-4abd-ae8d-bf5f1a72ea1e",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:24:15.25"
+  },
+  {
+    "id": "387b64b3-761d-46b0-ad90-4b4ece5a2bbc",
+    "category": "Technology",
+    "difficulty": "Hard",
+    "question": "What was the name of the first commercial computer sold in 1951?",
+    "answer": "UNIVAC I",
+    "acceptableAnswers": [
+      "UNIVAC I",
+      "UNIVAC"
+    ],
+    "explanation": "The UNIVAC I (Universal Automatic Computer I) was created by J. Presper Eckert and John Mauchly and became the first commercial computer available for general purpose use.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "TimeCapsule"
+    ],
+    "sourceUrl": "https://www.computerhistory.org/timeline/computers/",
+    "sourceName": "Computer History Museum",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The UNIVAC I was the first commercial computer sold in 1951, and the explanation aligns with well-documented historical accounts.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "387b64b3-761d-46b0-ad90-4b4ece5a2bbc",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:24:25.776"
+  },
+  {
+    "id": "3f4d9d1c-2b72-4eff-b9a4-0f92c95a4df1",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "Which company developed the iPhone?",
+    "answer": "Apple",
+    "acceptableAnswers": [
+      "Apple Inc.",
+      "Apple"
+    ],
+    "explanation": "Apple is the creator of the iPhone, first released in 2007, which revolutionized the smartphone industry.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "Technology"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The answer and explanation are factually correct; Apple developed the iPhone.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:25:57.582"
+  },
+  {
+    "id": "a7f5e81f-7b21-4f32-8a77-798d9f503e1e",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "What does the acronym 'HTTP' stand for in web technology?",
+    "answer": "HyperText Transfer Protocol",
+    "acceptableAnswers": [
+      "HyperText Transfer Protocol"
+    ],
+    "explanation": "HTTP stands for HyperText Transfer Protocol, a foundational technology for transferring data over the web.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "Internet"
+    ],
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/HTTP",
+    "sourceName": "Mozilla Developer Network",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "HTTP does indeed stand for HyperText Transfer Protocol, widely accepted in web technology.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "a7f5e81f-7b21-4f32-8a77-798d9f503e1e",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:26:20.48"
+  },
+  {
+    "id": "923d6e0b-b8a9-4125-92af-6876b870e17f",
+    "category": "Technology",
+    "difficulty": "Hard",
+    "question": "Who is credited with inventing the World Wide Web?",
+    "answer": "Tim Berners-Lee",
+    "acceptableAnswers": [
+      "Sir Tim Berners-Lee",
+      "Tim Berners-Lee"
+    ],
+    "explanation": "Tim Berners-Lee invented the World Wide Web in 1989, creating the first web browser and server.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "Internet"
+    ],
+    "sourceUrl": "https://webfoundation.org/about/vision/history-of-the-web/",
+    "sourceName": "World Wide Web Foundation",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Tim Berners-Lee is universally credited with inventing the World Wide Web in 1989.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "923d6e0b-b8a9-4125-92af-6876b870e17f",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:26:23.342"
+  },
+  {
+    "id": "447be981-3075-403d-8323-d7dbf019bb63",
+    "category": "Technology",
+    "difficulty": "Medium",
+    "question": "Which company released the first smartphone known as the Simon Personal Communicator?",
+    "answer": "IBM",
+    "acceptableAnswers": [
+      "IBM",
+      "International Business Machines"
+    ],
+    "explanation": "IBM introduced the Simon Personal Communicator in 1994, often referred to as the first true smartphone because it combined telephone and PDA features.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "TimeCapsule"
+    ],
+    "sourceUrl": "https://www.computerhistory.org/revolution/mobile-computing/18/320",
+    "sourceName": "Computer History Museum",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "IBM released the Simon Personal Communicator in 1994, and it is widely recognized as the first smartphone, making the answer and explanation correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "447be981-3075-403d-8323-d7dbf019bb63",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:23:22.024"
+  },
+  {
+    "id": "8e71fca2-52f0-4c89-9b60-aff72a9fc4f5",
+    "category": "Technology",
+    "difficulty": "Hard",
+    "question": "Which programming language, designed by Bjarne Stroustrup, is widely used for system programming and game development?",
+    "answer": "C++",
+    "acceptableAnswers": [
+      "C++"
+    ],
+    "explanation": "C++, developed by Bjarne Stroustrup in 1985, is a powerful language known for its utility in system programming and high-performance applications, including game development.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/C%2B%2B",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "C++ is widely known as a language designed by Bjarne Stroustrup in 1985 and is commonly used for system programming and game development.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "8e71fca2-52f0-4c89-9b60-aff72a9fc4f5",
+          "questionIndex": 3
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:23:44.324"
+  },
+  {
+    "id": "dc5ffb12-3a51-41ad-af9d-db8ca629b9a1",
+    "category": "Technology",
+    "difficulty": "Easy",
+    "question": "What year was the World Wide Web made publicly available?",
+    "answer": "1991",
+    "acceptableAnswers": [
+      "1991",
+      "Nineteen ninety-one"
+    ],
+    "explanation": "The World Wide Web, developed by Tim Berners-Lee, was made publicly accessible in 1991, revolutionizing how people access and share information.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule"
+    ],
+    "sourceUrl": "https://www.w3.org/History.html",
+    "sourceName": "World Wide Web Consortium (W3C)",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The World Wide Web was indeed made publicly accessible in 1991, and the explanation is factually accurate.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "category_tag_mismatch",
+          "message": "Category \"Technology\" is not present in tags.",
+          "severity": "medium",
+          "questionId": "dc5ffb12-3a51-41ad-af9d-db8ca629b9a1",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-21T23:22:35.595783",
+    "updatedAt": "2026-03-21T23:23:31.593"
+  },
+  {
+    "id": "4d35602b-a912-4749-8c94-bf63318e468e",
+    "category": "Art",
+    "difficulty": "Easy",
+    "question": "Which artist is known for the painting of the 'Mona Lisa'?",
+    "answer": "Leonardo da Vinci",
+    "acceptableAnswers": [
+      "Da Vinci",
+      "Leonardo",
+      "Leonardo di ser Piero da Vinci"
+    ],
+    "explanation": "Leonardo da Vinci is renowned for painting the 'Mona Lisa', one of the world's most famous artworks, noted for its mysterious expression.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "Art"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Mona_Lisa",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are accurate; Leonardo da Vinci is universally recognized as the painter of the 'Mona Lisa'.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:34:05.778204",
+    "updatedAt": "2026-03-21T23:35:08.715"
+  },
+  {
+    "id": "a5e8232c-6d24-42a4-82b6-b0de6a09858b",
+    "category": "art",
+    "difficulty": "Easy",
+    "question": "Which famous French Impressionist artist often painted outdoor scenes that highlighted natural light?",
+    "answer": "Claude Monet",
+    "acceptableAnswers": [
+      "Monet",
+      "Claude Monet"
+    ],
+    "explanation": "Claude Monet was a leading figure in the Impressionist movement, known for his outdoor paintings that captured the effects of natural light, such as 'Impression, Sunrise' and his series on water lilies.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "GreatOutdoors",
+      "art"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Claude_Monet",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are accurate as Claude Monet was a prominent French Impressionist artist recognized for his outdoor scenes emphasizing natural light.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:34:05.778204",
+    "updatedAt": "2026-03-21T23:34:53.86"
+  },
+  {
+    "id": "bb85f522-8c93-47f9-8bc7-1a4bde5d5c1a",
+    "category": "Art",
+    "difficulty": "Medium",
+    "question": "Who painted the famous artwork 'The Persistence of Memory' featuring melting clocks?",
+    "answer": "Salvador Dalí",
+    "acceptableAnswers": [
+      "Dalí",
+      "Salvador Dali",
+      "Salvador Felipe Jacinto Dalí i Domènech"
+    ],
+    "explanation": "'The Persistence of Memory' is a 1931 surrealist painting by Salvador Dalí, depicting melting clocks as a symbol of the fluidity of time.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "Art"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Persistence_of_Memory",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are all correct; Salvador Dalí is indeed the painter of 'The Persistence of Memory'.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:34:05.778204",
+    "updatedAt": "2026-03-21T23:35:06.892"
+  },
+  {
+    "id": "e6a6cb1e-5b7b-4286-8739-2dc4574d596c",
+    "category": "Art",
+    "difficulty": "Medium",
+    "question": "Who painted the famous artwork known as 'The Starry Night'?",
+    "answer": "Vincent van Gogh",
+    "acceptableAnswers": [
+      "Vincent van Gogh",
+      "Van Gogh",
+      "Vincent"
+    ],
+    "explanation": "'The Starry Night' is one of Vincent van Gogh's most iconic paintings, created in 1889 while he was staying at the asylum of Saint-Paul-de-Mausole in Saint-Rémy-de-Provence, France.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "Art"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Starry_Night",
+    "sourceName": "Test Source Name",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are all factually accurate and unambiguous.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:34:05.778204",
+    "updatedAt": "2026-03-22T00:37:41.865"
+  },
+  {
+    "id": "ed90d802-23e0-4df0-b3a5-fad9a9c16b0c",
+    "category": "art",
+    "difficulty": "Medium",
+    "question": "Which famous art movement, originating in the early 20th century, is known for its emphasis on dreams and the unconscious mind?",
+    "answer": "Surrealism",
+    "acceptableAnswers": [
+      "Surrealism"
+    ],
+    "explanation": "Surrealism is an art movement that began in the early 20th century, emphasizing illogical scenes, dream-like imagery, and the workings of the unconscious mind. Key figures include Salvador Dalí, René Magritte, and André Breton.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "art"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Surrealism",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation correctly identify Surrealism as the early 20th-century art movement emphasizing dreams and the unconscious mind, with accurate context provided.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-21T23:34:05.778204",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "21a00359-7f2a-4daa-9b17-3db4474c64d1",
+    "category": "Movies",
+    "difficulty": "Easy",
+    "question": "What film directed by Steven Spielberg features a young boy befriending an alien who wants to 'phone home'?",
+    "answer": "E.T. the Extra-Terrestrial",
+    "acceptableAnswers": [
+      "E.T. the Extra-Terrestrial",
+      "E.T.",
+      "ET"
+    ],
+    "explanation": "Released in 1982, Steven Spielberg’s 'E.T. the Extra-Terrestrial' became an iconic family film about friendship and understanding, with a young boy helping a stranded alien return to its home planet.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "US",
+      "FreshPrints",
+      "Movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/E.T._the_Extra-Terrestrial",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are accurate; Spielberg directed E.T. in 1982, and its main plot involves a boy befriending an alien and helping it return home.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "56098d89-8936-43cc-a02b-14bd2a84f111",
+    "category": "Movies",
+    "difficulty": "Medium",
+    "question": "What movie is set in the fictional country of Wakanda and became the first superhero film to be nominated for Best Picture at the Academy Awards?",
+    "answer": "Black Panther",
+    "acceptableAnswers": [
+      "Black Panther"
+    ],
+    "explanation": "Released in 2018, 'Black Panther' was the first superhero film to receive an Academy Award nomination for Best Picture. It is set in Wakanda, a fictional African nation with advanced technology.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "Movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Black_Panther_(film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "'Black Panther' is correctly identified as the first superhero film nominated for Best Picture, and Wakanda is accurately described as a fictional country central to the film.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "subjective_prompt",
+          "message": "Question uses subjective wording that may not have a single correct answer.",
+          "severity": "medium",
+          "questionId": "56098d89-8936-43cc-a02b-14bd2a84f111",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "8adbb064-d146-475f-8914-4aa6072869ef",
+    "category": "Movies",
+    "difficulty": "Hard",
+    "question": "Which 1927 film is considered the first feature-length 'talkie' and revolutionized the film industry?",
+    "answer": "The Jazz Singer",
+    "acceptableAnswers": [
+      "The Jazz Singer"
+    ],
+    "explanation": "Released in 1927, 'The Jazz Singer' is regarded as the first movie with synchronized dialogue and songs, marking the transition from silent films to 'talkies' and changing the future of cinema.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "US",
+      "FreshPrints",
+      "Movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Jazz_Singer",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The Jazz Singer is historically recognized as the first feature-length 'talkie' with synchronized sound, released in 1927, aligning with the given information.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "0b7775a7-96e6-4037-9e73-069d9e02e1c7",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which movie follows a dog named Buck as he navigates the Alaskan wilderness, forming a bond with a man named John Thornton?",
+    "answer": "The Call of the Wild",
+    "acceptableAnswers": [
+      "The Call of the Wild"
+    ],
+    "explanation": "The 2020 film 'The Call of the Wild,' based on Jack London's novel, features Buck, a sled dog, as he experiences life in the Alaskan wilderness and forms a deep bond with John Thornton. The movie captures themes of survival and connection with nature.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "US",
+      "GreatOutdoors",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Call_of_the_Wild_(2020_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "repaired": true,
+      "factCheck": {
+        "reason": "The movie 'The Call of the Wild' accurately follows the story of Buck and his connection with John Thornton, based on Jack London's novel, as stated in the explanation.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "d528c1d5-4523-42c3-869d-ec6c6f6fd78e",
+    "category": "movies",
+    "difficulty": "Easy",
+    "question": "Which movie features the iconic line, 'I'll be back,' spoken by Arnold Schwarzenegger?",
+    "answer": "The Terminator",
+    "acceptableAnswers": [
+      "The Terminator"
+    ],
+    "explanation": "Arnold Schwarzenegger delivers the famous line 'I'll be back' in the 1984 science fiction classic 'The Terminator,' directed by James Cameron.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Terminator",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The quote 'I'll be back' was indeed delivered by Arnold Schwarzenegger in 'The Terminator' (1984), and the explanation is accurate.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "e62f1c86-351b-4456-8536-b053808f7edd",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "What was the first feature-length animated movie ever released?",
+    "answer": "Snow White and the Seven Dwarfs",
+    "acceptableAnswers": [
+      "Snow White and the Seven Dwarfs",
+      "Snow White"
+    ],
+    "explanation": "'Snow White and the Seven Dwarfs,' released in 1937 by Walt Disney Productions, holds the distinction of being the first-ever feature-length animated movie.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Snow_White_and_the_Seven_Dwarfs_(1937_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "'Snow White and the Seven Dwarfs' (1937) was the first feature-length animated movie, and the explanation is correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "caac18aa-576a-4f64-9335-ab78f8474236",
+    "category": "movies",
+    "difficulty": "Hard",
+    "question": "Which director is responsible for the groundbreaking 1927 film, 'Metropolis,' a pioneering work in science fiction cinema?",
+    "answer": "Fritz Lang",
+    "acceptableAnswers": [
+      "Fritz Lang"
+    ],
+    "explanation": "'Metropolis,' directed by Fritz Lang in 1927, is regarded as one of the most influential science fiction films in cinematic history. It introduced themes of dystopian future and class struggle.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Metropolis_(1927_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Fritz Lang directed 'Metropolis' in 1927, and it is widely recognized as a seminal science fiction film. The explanation is correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "733a7d08-6d33-4de2-be2c-f3e2d048feaf",
+    "category": "movies",
+    "difficulty": "Easy",
+    "question": "Which 1997 movie featured the iconic phrase, 'I'm the king of the world!'?",
+    "answer": "Titanic",
+    "acceptableAnswers": [
+      "Titanic (1997)"
+    ],
+    "explanation": "This line was famously shouted by Leonardo DiCaprio's character, Jack Dawson, in James Cameron's 1997 blockbuster 'Titanic'.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic_(1997_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "This quote is accurately attributed to Leonardo DiCaprio's character, Jack Dawson, in the 1997 film 'Titanic' as described.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "92c758c9-c11b-4519-b836-b6eafa1f06cf",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "What is the highest-grossing movie of all time, adjusted for inflation?",
+    "answer": "Gone with the Wind",
+    "acceptableAnswers": [
+      "Gone with the Wind (1939)"
+    ],
+    "explanation": "When adjusted for inflation, the 1939 movie 'Gone with the Wind' remains the highest-grossing film of all time due to its enduring popularity.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_highest-grossing_films#Highest-grossing_films_adjusted_for_inflation",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Based on inflation-adjusted figures, 'Gone with the Wind' is widely considered the highest-grossing movie of all time.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "8481f9bb-9956-4024-a2dc-eb8f454db45e",
+    "category": "movies",
+    "difficulty": "Hard",
+    "question": "Who directed the 1927 science fiction classic 'Metropolis'?",
+    "answer": "Fritz Lang",
+    "acceptableAnswers": [
+      "Fritz Lang"
+    ],
+    "explanation": "'Metropolis' is a highly influential science fiction film, and its visionary director, Fritz Lang, is often credited for helping to define the genre in cinema.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Metropolis_(1927_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Fritz Lang is the correct and historically established director of the 1927 science fiction film 'Metropolis'.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:44:45.745262",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "e4602c67-1dbc-4aad-a5b9-3a9e35b35402",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "What was the first animated film to ever be nominated for the Best Picture Oscar?",
+    "answer": "Beauty and the Beast",
+    "acceptableAnswers": [
+      "Beauty and the Beast (1991)",
+      "Beauty and the Beast"
+    ],
+    "explanation": "Released in 1991, Disney's 'Beauty and the Beast' was the first-ever animated film to receive a nomination for Best Picture at the Academy Awards, a significant milestone for animated filmmaking.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://www.oscars.org/oscars/ceremonies/1992",
+    "sourceName": "The Oscars (Academy of Motion Picture Arts and Sciences)",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Beauty and the Beast was indeed the first animated film to be nominated for Best Picture at the Academy Awards in 1991, and the explanation is accurate.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "subjective_prompt",
+          "message": "Question uses subjective wording that may not have a single correct answer.",
+          "severity": "medium",
+          "questionId": "e4602c67-1dbc-4aad-a5b9-3a9e35b35402",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-22T00:58:30.997096",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "5d675ce1-dd38-4e3b-9a64-b6b37cbe7d0d",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which 2015 movie centers around a man stranded alone on Mars and his battle to survive in the harsh, isolated environment?",
+    "answer": "The Martian",
+    "acceptableAnswers": [
+      "The Martian (2015)",
+      "The Martian"
+    ],
+    "explanation": "The movie 'The Martian,' directed by Ridley Scott, follows astronaut Mark Watney as he uses his ingenuity and knowledge of science to survive after being mistakenly left behind on Mars. It focuses on themes of survival in an extreme environment.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "GreatOutdoors",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/The_Martian_(film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "repaired": true,
+      "factCheck": {
+        "reason": "The question, answer, and explanation are all factually accurate regarding the 2015 movie 'The Martian.'",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:58:30.997096",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "8db345b7-8d7e-4075-b298-d599d49c79dc",
+    "category": "movies",
+    "difficulty": "Hard",
+    "question": "Which actor starred in and directed the 1995 historical drama 'Braveheart'?",
+    "answer": "Mel Gibson",
+    "acceptableAnswers": [
+      "Mel Gibson"
+    ],
+    "explanation": "Mel Gibson not only played the lead role of William Wallace in the epic historical drama 'Braveheart,' but he also directed the movie, which went on to win the Academy Award for Best Picture and Best Director.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://www.britannica.com/topic/Braveheart",
+    "sourceName": "Encyclopaedia Britannica",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Mel Gibson both starred in and directed Braveheart (1995), and the film won major Academy Awards including Best Picture and Best Director.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:58:30.997096",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "04f2d2b9-d892-4c81-b18d-01ffb8f15bee",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which Canadian director is known for films such as 'Titanic', 'Avatar', and 'The Terminator'?",
+    "answer": "James Cameron",
+    "acceptableAnswers": [
+      "James Cameron"
+    ],
+    "explanation": "James Cameron, born in Kapuskasing, Ontario, is a world-renowned Canadian filmmaker famous for directing blockbuster hits such as 'Titanic' (1997), 'Avatar' (2009), and 'The Terminator' series.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "GlobalEh",
+      "movies",
+      "CA"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/James_Cameron",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "James Cameron is indeed a Canadian filmmaker known for directing 'Titanic', 'Avatar', and 'The Terminator', and the explanation is factually accurate.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:58:30.997096",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "d9307d08-4d9a-4b8e-8b4e-06c85b963829",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "What is the highest-grossing movie of all time without adjusting for inflation?",
+    "answer": "Avatar",
+    "acceptableAnswers": [
+      "Avatar",
+      "James Cameron's Avatar"
+    ],
+    "explanation": "James Cameron's 2009 science-fiction epic 'Avatar' holds the title of the highest-grossing movie of all time, generating massive box office revenue worldwide.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_highest-grossing_films",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "'Avatar' was the highest-grossing movie for many years, but as of October 2023, 'Avatar: The Way of Water' and other contenders (e.g., 'Avengers: Endgame') might have surpassed it depending on updated box office figures.",
+        "verdict": "flag",
+        "confidence": 80
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T00:58:30.997096",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "7bb2a8a3-9774-45b5-b5a1-d603d0733cde",
+    "category": "movies",
+    "difficulty": "Easy",
+    "question": "Which 2007 movie follows a man who abandons his possessions to live in the Alaskan wilderness, inspired by a true story?",
+    "answer": "Into the Wild",
+    "acceptableAnswers": [
+      "Into the Wild"
+    ],
+    "explanation": "\"Into the Wild\" is based on the true story of Christopher McCandless, a man who sought freedom in the wilderness and whose journey was documented in a book by Jon Krakauer before being adapted into the film.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "US",
+      "GreatOutdoors",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Into_the_Wild_(film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are factually accurate; the movie 'Into the Wild' is based on Christopher McCandless's true story.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:06:04.105909",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "2b0024ef-f5c8-4da2-927b-3d5e999cd5a7",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which Quentin Tarantino movie features a mysterious briefcase as a central plot element?",
+    "answer": "Pulp Fiction",
+    "acceptableAnswers": [
+      "Pulp Fiction"
+    ],
+    "explanation": "In Quentin Tarantino's film 'Pulp Fiction', the briefcase serves as a mysterious plot device, driving intrigue as its contents are never revealed.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pulp_Fiction",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The reference to the mysterious briefcase in 'Pulp Fiction' is accurate and widely recognized as a central plot element.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:06:04.105909",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "3f3d2dfa-6ed8-4e15-af7f-10fcf0ea4903",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "What was the first feature-length animated film ever released?",
+    "answer": "Snow White and the Seven Dwarfs",
+    "acceptableAnswers": [
+      "Snow White and the Seven Dwarfs",
+      "Snow White"
+    ],
+    "explanation": "Snow White and the Seven Dwarfs, released by Walt Disney in 1937, is considered the first feature-length animated film in cinematic history.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Snow_White_and_the_Seven_Dwarfs_(1937_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Snow White and the Seven Dwarfs, released in 1937, is widely recognized as the first feature-length animated film in cinematic history.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:06:04.105909",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "5f08bd8a-5801-45dc-bec0-26ec753e49b0",
+    "category": "movies",
+    "difficulty": "Hard",
+    "question": "Which silent film was the first movie to win the Academy Award for Best Picture?",
+    "answer": "Wings",
+    "acceptableAnswers": [
+      "Wings"
+    ],
+    "explanation": "Wings, a silent World War I drama released in 1927, was the first movie to win the Academy Award for Best Picture at the inaugural Oscars in 1929.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "US",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Wings_(1927_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Wings won the first-ever Academy Award for Best Picture at the inaugural ceremony in 1929, and it is indeed a silent film.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "subjective_prompt",
+          "message": "Question uses subjective wording that may not have a single correct answer.",
+          "severity": "medium",
+          "questionId": "5f08bd8a-5801-45dc-bec0-26ec753e49b0",
+          "questionIndex": 2
+        }
+      ]
+    },
+    "createdAt": "2026-03-22T01:06:04.105909",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "5d3c1f91-4ab0-4c4e-9aa7-4b30a6f32dcf",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which movie won the Academy Award for Best Picture in 1994?",
+    "answer": "Forrest Gump",
+    "acceptableAnswers": [
+      "Forrest Gump"
+    ],
+    "explanation": "Forrest Gump, directed by Robert Zemeckis and starring Tom Hanks, won the Oscar for Best Picture at the 67th Academy Awards in 1994.",
+    "pillar": "GlobalEh",
+    "tags": [
+      "Global",
+      "GlobalEh",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/67th_Academy_Awards",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "Forrest Gump did win the Best Picture Oscar at the 67th Academy Awards in 1994, and the explanation is correct.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": [
+        {
+          "rule": "subjective_prompt",
+          "message": "Question uses subjective wording that may not have a single correct answer.",
+          "severity": "medium",
+          "questionId": "5d3c1f91-4ab0-4c4e-9aa7-4b30a6f32dcf",
+          "questionIndex": 1
+        }
+      ]
+    },
+    "createdAt": "2026-03-22T01:06:04.105909",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "5a2a1df4-7d37-4f3d-84dd-b29c8986b3e2",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which movie, released in 1985, features a time-traveling DeLorean car?",
+    "answer": "Back to the Future",
+    "acceptableAnswers": [
+      "Back to the Future"
+    ],
+    "explanation": "'Back to the Future' is a 1985 science fiction film in which the protagonist, Marty McFly, travels through time using a DeLorean car modified by his friend Dr. Emmett Brown.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Back_to_the_Future",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation about the movie 'Back to the Future' are factually correct, referencing the time-traveling DeLorean and the events of the 1985 film.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:11:59.903564",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "4d4b0f7c-f2b7-4add-bac6-5fdb36e8b694",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which movie directed by Sean Penn revolves around the story of a young man who travels into the Alaskan wilderness and is based on true events?",
+    "answer": "Into the Wild",
+    "acceptableAnswers": [
+      "Into the Wild"
+    ],
+    "explanation": "The film 'Into the Wild,' directed by Sean Penn, is based on Jon Krakauer's book of the same name. It tells the story of Christopher McCandless, a young man who ventured into the Alaskan wilderness seeking a simpler life.",
+    "pillar": "GreatOutdoors",
+    "tags": [
+      "Global",
+      "GreatOutdoors",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Into_the_Wild_(film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation are factually correct as 'Into the Wild' was directed by Sean Penn and based on the true story of Christopher McCandless as detailed in Jon Krakauer's book.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:11:59.903564",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "0ab9da7e-45b7-41f9-a7f2-d2df5a7c5e8b",
+    "category": "movies",
+    "difficulty": "Easy",
+    "question": "What 1997 film features the famous line, 'I'm the king of the world'?",
+    "answer": "Titanic",
+    "acceptableAnswers": [
+      "Titanic"
+    ],
+    "explanation": "In the 1997 epic romance film 'Titanic', the character Jack Dawson, played by Leonardo DiCaprio, says the memorable line while standing on the ship's bow.",
+    "pillar": "TimeCapsule",
+    "tags": [
+      "Global",
+      "TimeCapsule",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic_(1997_film)",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question, answer, and explanation about the film 'Titanic' are accurate and match the iconic line spoken by the character Jack Dawson in the 1997 movie.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:11:59.903564",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  },
+  {
+    "id": "d14e2f08-3f8c-42d8-89e5-4a996a4ceb4b",
+    "category": "movies",
+    "difficulty": "Medium",
+    "question": "Which 1994 movie directed by Quentin Tarantino revitalized John Travolta's career?",
+    "answer": "Pulp Fiction",
+    "acceptableAnswers": [
+      "Pulp Fiction"
+    ],
+    "explanation": "Directed by Quentin Tarantino, 'Pulp Fiction' is widely regarded as a groundbreaking moment in cinematic history. Its success reinvigorated John Travolta's career, earning him widespread acclaim.",
+    "pillar": "FreshPrints",
+    "tags": [
+      "Global",
+      "FreshPrints",
+      "movies"
+    ],
+    "sourceUrl": "https://en.wikipedia.org/wiki/Pulp_Fiction",
+    "sourceName": "Wikipedia",
+    "status": "approved",
+    "aiAnalysis": {
+      "factCheck": {
+        "reason": "The question and explanation correctly state that 'Pulp Fiction' was directed by Quentin Tarantino in 1994 and revitalized John Travolta's career.",
+        "verdict": "pass",
+        "confidence": 100
+      },
+      "qaFindings": []
+    },
+    "createdAt": "2026-03-22T01:11:59.903564",
+    "updatedAt": "2026-03-22T01:12:18.46"
+  }
+]
