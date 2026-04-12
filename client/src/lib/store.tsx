@@ -402,12 +402,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuestion = async (updatedQ: Question) => {
     try {
-      const res = await fetch(`/api/questions/${updatedQ.id}`, {
+      const opts = {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        credentials: 'include' as const,
         body: JSON.stringify(updatedQ),
-      });
+      };
+      let res = await fetch(`/api/questions/${updatedQ.id}`, opts);
+
+      if (res.status === 401) {
+        await fetch('/api/auth/user', { credentials: 'include' });
+        res = await fetch(`/api/questions/${updatedQ.id}`, opts);
+      }
+
+      if (res.status === 401) {
+        throw new Error('Session expired — please reload the page and sign in again.');
+      }
       if (!res.ok) throw new Error('Failed to update question');
       const updated = await res.json();
       setState((prev) => ({
@@ -422,10 +432,22 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
 
   const deleteQuestion = async (id: string) => {
     try {
-      const res = await fetch(`/api/questions/${id}`, {
+      let res = await fetch(`/api/questions/${id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
+
+      if (res.status === 401) {
+        await fetch('/api/auth/user', { credentials: 'include' });
+        res = await fetch(`/api/questions/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+      }
+
+      if (res.status === 401) {
+        throw new Error('Session expired — please reload the page and sign in again.');
+      }
       if (!res.ok) throw new Error('Failed to delete question');
       setState((prev) => ({
         ...prev,
