@@ -37,9 +37,17 @@ import {
   type QuestionSnapshot,
 } from '@shared/models/quality-sweep';
 
+// ---------------------------------------------------------------------------
+// Pure helpers
+// ---------------------------------------------------------------------------
+
 function truncate(text: string, max = 80): string {
   return text.length > max ? `${text.slice(0, max)}...` : text;
 }
+
+// ---------------------------------------------------------------------------
+// Small display components (no state coupling to parent)
+// ---------------------------------------------------------------------------
 
 function SeverityBadge({ severity }: { severity: string }) {
   const variant =
@@ -81,8 +89,6 @@ function HiddenAnswer({ answer }: { answer: string }) {
     </span>
   );
 }
-
-// --- Proposed fix display ---
 
 function ProposedFixDisplay({
   rule,
@@ -239,7 +245,9 @@ function ExpandableDetails({
   );
 }
 
-// --- Edit draft state ---
+// ---------------------------------------------------------------------------
+// Edit state types
+// ---------------------------------------------------------------------------
 
 type EditField = 'question' | 'answer' | 'explanation';
 
@@ -259,7 +267,25 @@ function buildDraft(q: Question): EditDraft {
   };
 }
 
-// --- Action button group (used by every finding row) ---
+// ---------------------------------------------------------------------------
+// Shared edit-action props (passed down to every section)
+// ---------------------------------------------------------------------------
+
+interface EditActions {
+  editingKey: string | null;
+  editDrafts: Record<string, EditDraft>;
+  busyKey: string | null;
+  onAccept: (findingType: QualityFindingType, questionId: string, findingKey: string, editKey: string) => void;
+  onStartEdit: (editKey: string, questionId: string) => void;
+  onDraftChange: (editKey: string, field: EditField, value: string) => void;
+  onSaveEdit: (editKey: string, questionId: string) => void;
+  onCancelEdit: (editKey: string) => void;
+  onDelete: (editKey: string, questionId: string) => void;
+}
+
+// ---------------------------------------------------------------------------
+// ActionRow
+// ---------------------------------------------------------------------------
 
 interface ActionRowProps {
   questionId: string;
@@ -324,7 +350,9 @@ function ActionRow({ questionId, onAccept, onEdit, onDelete, busy, isEditing }: 
   );
 }
 
-// --- Inline editor (3 fields) ---
+// ---------------------------------------------------------------------------
+// InlineEditor
+// ---------------------------------------------------------------------------
 
 interface InlineEditorProps {
   draft: EditDraft;
@@ -387,14 +415,463 @@ function InlineEditor({ draft, onChange, onSave, onCancel, busy, questionId }: I
   );
 }
 
-// --- Main page ---
+// ---------------------------------------------------------------------------
+// FindingRow — wraps any finding with edit/delete/accept actions
+// ---------------------------------------------------------------------------
+
+interface FindingRowProps {
+  editKey: string;
+  questionId: string;
+  findingType: QualityFindingType;
+  findingKey: string;
+  children: React.ReactNode;
+  actions: EditActions;
+}
+
+function FindingRow({ editKey, questionId, findingType, findingKey, children, actions }: FindingRowProps) {
+  const isEditing = actions.editingKey === editKey;
+  const draft = actions.editDrafts[editKey];
+  const busy = actions.busyKey === editKey;
+  return (
+    <div className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]">
+      {children}
+      <ActionRow
+        questionId={questionId}
+        onAccept={() => actions.onAccept(findingType, questionId, findingKey, editKey)}
+        onEdit={() => actions.onStartEdit(editKey, questionId)}
+        onDelete={() => actions.onDelete(editKey, questionId)}
+        busy={busy}
+        isEditing={isEditing}
+      />
+      {isEditing && draft && (
+        <InlineEditor
+          draft={draft}
+          questionId={questionId}
+          busy={busy}
+          onChange={(field, value) => actions.onDraftChange(editKey, field, value)}
+          onSave={() => actions.onSaveEdit(editKey, questionId)}
+          onCancel={() => actions.onCancelEdit(editKey)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Removed-findings state type
+// ---------------------------------------------------------------------------
 
 interface RemovedFindings {
-  static: Set<string>; // `${questionId}::${rule}`
-  duplicate: Set<string>; // pair key
-  factCheck: Set<string>; // questionId
+  static: Set<string>;
+  duplicate: Set<string>;
+  factCheck: Set<string>;
   deletedQuestionIds: Set<string>;
 }
+
+// ---------------------------------------------------------------------------
+// Visibility filter helpers (pure — no hooks)
+// ---------------------------------------------------------------------------
+
+function filterStaticFindings(findings: QuestionQualityFinding[], removed: RemovedFindings) {
+  return findings.filter(
+    (f) =>
+      !removed.deletedQuestionIds.has(f.questionId) &&
+      !removed.static.has(`${f.questionId}::${f.rule}`)
+  );
+}
+
+function filterDuplicates(matches: DuplicateMatch[], removed: RemovedFindings) {
+  return matches.filter((m) => {
+    if (
+      removed.deletedQuestionIds.has(m.questionIdA) ||
+      removed.deletedQuestionIds.has(m.questionIdB)
+    ) {
+      return false;
+    }
+    return !removed.duplicate.has(duplicatePairKey(m.questionIdA, m.questionIdB));
+  });
+}
+
+function filterFactCheck(results: FactCheckVerdict[], removed: RemovedFindings) {
+  return results.filter(
+    (r) => !removed.deletedQuestionIds.has(r.questionId) && !removed.factCheck.has(r.questionId)
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SummarySection
+// ---------------------------------------------------------------------------
+
+function SummarySection({
+  report,
+  removed,
+}: {
+  report: QualitySweepReport;
+  removed: RemovedFindings;
+}) {
+  const visible = filterStaticFindings(report.audit.findings, removed);
+  const visibleHigh = visible.filter((f) => f.severity === 'high').length;
+  const visibleMedium = visible.filter((f) => f.severity === 'medium').length;
+  const visibleDupCount = report.duplicates
+    ? filterDuplicates(report.duplicates.duplicatesFound, removed).length
+    : null;
+  return (
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader>
+        <CardTitle className="text-lg">Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Questions scanned</p>
+            <p className="text-2xl font-bold">{report.totalQuestions}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Open findings</p>
+            <p className="text-2xl font-bold">{visible.length}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">High</p>
+            <p className="text-2xl font-bold text-red-400">{visibleHigh}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Medium</p>
+            <p className="text-2xl font-bold text-yellow-400">{visibleMedium}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">Duplicates</p>
+            <p className="text-2xl font-bold">{visibleDupCount ?? '—'}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AuditFindingsSection
+// ---------------------------------------------------------------------------
+
+function AuditFindingsSection({
+  findings,
+  removed,
+  questionsById,
+  actions,
+}: {
+  findings: QuestionQualityFinding[];
+  removed: RemovedFindings;
+  questionsById: Record<string, QuestionSnapshot> | undefined;
+  actions: EditActions;
+}) {
+  const visible = filterStaticFindings(findings, removed);
+  const grouped = {
+    high: visible.filter((f) => f.severity === 'high'),
+    medium: visible.filter((f) => f.severity === 'medium'),
+    low: visible.filter((f) => f.severity === 'low'),
+  };
+
+  if (visible.length === 0) {
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">Static Audit Findings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">No static audit findings.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader>
+        <CardTitle className="text-lg">Static Audit Findings ({visible.length})</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {(['high', 'medium', 'low'] as const).map((severity) => {
+          const group = grouped[severity];
+          if (group.length === 0) return null;
+          return (
+            <div key={severity} className="space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <SeverityBadge severity={severity} />
+                {group.length} finding{group.length !== 1 ? 's' : ''}
+              </h4>
+              <div className="space-y-2">
+                {group.map((finding) => {
+                  const editKey = `static::${finding.questionId}::${finding.rule}`;
+                  const snapshot = questionsById?.[finding.questionId];
+                  return (
+                    <FindingRow
+                      key={editKey}
+                      editKey={editKey}
+                      questionId={finding.questionId}
+                      findingType="static"
+                      findingKey={finding.rule}
+                      actions={actions}
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline">{finding.rule}</Badge>
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {finding.questionId}
+                          </span>
+                        </div>
+                        {snapshot && (
+                          <p className="text-sm font-medium text-white/90 leading-snug">
+                            {snapshot.question}
+                          </p>
+                        )}
+                        <p className="text-sm text-muted-foreground">{finding.message}</p>
+                        <ExpandableDetails finding={finding} snapshot={snapshot} />
+                      </div>
+                    </FindingRow>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DuplicatesSection
+// ---------------------------------------------------------------------------
+
+function DuplicatesSection({
+  duplicates,
+  removed,
+  actions,
+}: {
+  duplicates: DuplicateMatch[];
+  removed: RemovedFindings;
+  actions: EditActions;
+}) {
+  const visible = filterDuplicates(duplicates, removed);
+
+  if (visible.length === 0) {
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">Duplicates</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">No duplicates found.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader>
+        <CardTitle className="text-lg">
+          Duplicates ({visible.length} pair{visible.length !== 1 ? 's' : ''})
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {visible.map((match) => {
+          const pairKey = duplicatePairKey(match.questionIdA, match.questionIdB);
+          const editKeyA = `dup::${pairKey}::A`;
+          const editKeyB = `dup::${pairKey}::B`;
+          const isAEditing = actions.editingKey === editKeyA;
+          const isBEditing = actions.editingKey === editKeyB;
+          const busyA = actions.busyKey === editKeyA;
+          const busyB = actions.busyKey === editKeyB;
+
+          return (
+            <div
+              key={pairKey}
+              className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]"
+            >
+              <div className="flex items-center gap-2 flex-wrap">
+                <MatchTypeBadge type={match.matchType} />
+                <span className="text-xs font-mono">
+                  score {match.similarityScore.toFixed(2)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
+                  onClick={() =>
+                    actions.onAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
+                  }
+                  disabled={actions.busyKey === `dup::${pairKey}`}
+                  data-testid={`button-accept-pair-${pairKey}`}
+                >
+                  <Check className="w-3 h-3 mr-1" /> Accept pair
+                </Button>
+              </div>
+              {match.aiReasoning && (
+                <p className="text-xs text-muted-foreground italic">
+                  AI: {truncate(match.aiReasoning, 200)}
+                </p>
+              )}
+              <div className="grid md:grid-cols-2 gap-3">
+                {/* Side A */}
+                <div className="border border-white/10 rounded p-2 space-y-2">
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    {match.questionIdA}
+                  </p>
+                  <p className="text-sm">{match.questionTextA}</p>
+                  <HiddenAnswer answer={match.answerA} />
+                  <ActionRow
+                    questionId={match.questionIdA}
+                    onAccept={() =>
+                      actions.onAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
+                    }
+                    onEdit={() => actions.onStartEdit(editKeyA, match.questionIdA)}
+                    onDelete={() => actions.onDelete(editKeyA, match.questionIdA)}
+                    busy={busyA}
+                    isEditing={isAEditing}
+                  />
+                  {isAEditing && actions.editDrafts[editKeyA] && (
+                    <InlineEditor
+                      draft={actions.editDrafts[editKeyA]}
+                      questionId={match.questionIdA}
+                      busy={busyA}
+                      onChange={(field, value) => actions.onDraftChange(editKeyA, field, value)}
+                      onSave={() => actions.onSaveEdit(editKeyA, match.questionIdA)}
+                      onCancel={() => actions.onCancelEdit(editKeyA)}
+                    />
+                  )}
+                </div>
+                {/* Side B */}
+                <div className="border border-white/10 rounded p-2 space-y-2">
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    {match.questionIdB}
+                  </p>
+                  <p className="text-sm">{match.questionTextB}</p>
+                  <HiddenAnswer answer={match.answerB} />
+                  <ActionRow
+                    questionId={match.questionIdB}
+                    onAccept={() =>
+                      actions.onAccept('duplicate', match.questionIdB, pairKey, `dup::${pairKey}`)
+                    }
+                    onEdit={() => actions.onStartEdit(editKeyB, match.questionIdB)}
+                    onDelete={() => actions.onDelete(editKeyB, match.questionIdB)}
+                    busy={busyB}
+                    isEditing={isBEditing}
+                  />
+                  {isBEditing && actions.editDrafts[editKeyB] && (
+                    <InlineEditor
+                      draft={actions.editDrafts[editKeyB]}
+                      questionId={match.questionIdB}
+                      busy={busyB}
+                      onChange={(field, value) => actions.onDraftChange(editKeyB, field, value)}
+                      onSave={() => actions.onSaveEdit(editKeyB, match.questionIdB)}
+                      onCancel={() => actions.onCancelEdit(editKeyB)}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FactCheckSection
+// ---------------------------------------------------------------------------
+
+function FactCheckSection({
+  results,
+  removed,
+  questionsById,
+  actions,
+}: {
+  results: FactCheckVerdict[];
+  removed: RemovedFindings;
+  questionsById: Record<string, QuestionSnapshot> | undefined;
+  actions: EditActions;
+}) {
+  const actionable = filterFactCheck(
+    results.filter((r) => {
+      if (r.verdict === 'pass') return false;
+      if (r.verdict === 'fail') return true;
+      const snapshot = questionsById?.[r.questionId];
+      return r.confidence > 95 || (snapshot ? !snapshot.hasSource : true);
+    }),
+    removed
+  );
+
+  if (actionable.length === 0) {
+    return (
+      <Card className="bg-white/5 border-white/10">
+        <CardHeader>
+          <CardTitle className="text-lg">Fact-Check Results</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">All questions passed fact-check.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader>
+        <CardTitle className="text-lg">
+          Fact-Check Results ({actionable.length} need attention)
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Showing fails and high-confidence flags (&gt;95%) or questions without a source.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {actionable.map((result) => {
+          const editKey = `fc::${result.questionId}`;
+          const snapshot = questionsById?.[result.questionId];
+          return (
+            <FindingRow
+              key={editKey}
+              editKey={editKey}
+              questionId={result.questionId}
+              findingType="fact_check"
+              findingKey={FACT_CHECK_FINDING_KEY}
+              actions={actions}
+            >
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <VerdictBadge verdict={result.verdict} />
+                  <span className="text-xs font-mono">{result.confidence}%</span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {result.questionId}
+                  </span>
+                  {snapshot && !snapshot.hasSource && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">no source</span>
+                  )}
+                </div>
+                {snapshot && (
+                  <p className="text-sm font-medium text-white/90 leading-snug">
+                    {snapshot.question}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">{result.reason}</p>
+                {snapshot && (
+                  <div className="pt-1">
+                    <HiddenAnswer answer={snapshot.answer} />
+                  </div>
+                )}
+              </div>
+            </FindingRow>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 
 export default function AdminQualitySweep() {
   const [_, setLocation] = useLocation();
@@ -415,7 +892,6 @@ export default function AdminQualitySweep() {
     deletedQuestionIds: new Set(),
   });
 
-  // Edit drafts keyed by `${editKey}` (unique per finding row)
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -455,8 +931,6 @@ export default function AdminQualitySweep() {
       setIsRunning(false);
     }
   };
-
-  // --- Action handlers ---
 
   const dismissOnServer = async (req: DismissFindingRequest) => {
     await apiRequest('POST', '/api/admin/quality-sweep/dismiss', req);
@@ -593,393 +1067,17 @@ export default function AdminQualitySweep() {
     }
   };
 
-  // --- Filtering helpers (apply local removals on top of server report) ---
-
-  const visibleStaticFindings = (findings: QuestionQualityFinding[]) =>
-    findings.filter(
-      (f) =>
-        !removed.deletedQuestionIds.has(f.questionId) &&
-        !removed.static.has(`${f.questionId}::${f.rule}`)
-    );
-
-  const visibleDuplicates = (matches: DuplicateMatch[]) =>
-    matches.filter((m) => {
-      if (
-        removed.deletedQuestionIds.has(m.questionIdA) ||
-        removed.deletedQuestionIds.has(m.questionIdB)
-      ) {
-        return false;
-      }
-      return !removed.duplicate.has(duplicatePairKey(m.questionIdA, m.questionIdB));
-    });
-
-  const visibleFactCheck = (results: FactCheckVerdict[]) =>
-    results.filter(
-      (r) => !removed.deletedQuestionIds.has(r.questionId) && !removed.factCheck.has(r.questionId)
-    );
-
-  // --- Section renderers ---
-
-  function SummarySection({ report }: { report: QualitySweepReport }) {
-    const visibleAuditCount = visibleStaticFindings(report.audit.findings).length;
-    const visibleHigh = visibleStaticFindings(report.audit.findings).filter(
-      (f) => f.severity === 'high'
-    ).length;
-    const visibleMedium = visibleStaticFindings(report.audit.findings).filter(
-      (f) => f.severity === 'medium'
-    ).length;
-    const visibleDupCount = report.duplicates
-      ? visibleDuplicates(report.duplicates.duplicatesFound).length
-      : null;
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Questions scanned</p>
-              <p className="text-2xl font-bold">{report.totalQuestions}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Open findings</p>
-              <p className="text-2xl font-bold">{visibleAuditCount}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">High</p>
-              <p className="text-2xl font-bold text-red-400">{visibleHigh}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Medium</p>
-              <p className="text-2xl font-bold text-yellow-400">{visibleMedium}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Duplicates</p>
-              <p className="text-2xl font-bold">{visibleDupCount ?? '—'}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  function FindingRow({
-    editKey,
-    questionId,
-    findingType,
-    findingKey,
-    children,
-  }: {
-    editKey: string;
-    questionId: string;
-    findingType: QualityFindingType;
-    findingKey: string;
-    children: React.ReactNode;
-  }) {
-    const isEditing = editingKey === editKey;
-    const draft = editDrafts[editKey];
-    const busy = busyKey === editKey;
-    return (
-      <div className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]">
-        {children}
-        <ActionRow
-          questionId={questionId}
-          onAccept={() => handleAccept(findingType, questionId, findingKey, editKey)}
-          onEdit={() => handleStartEdit(editKey, questionId)}
-          onDelete={() => handleDelete(editKey, questionId)}
-          busy={busy}
-          isEditing={isEditing}
-        />
-        {isEditing && draft && (
-          <InlineEditor
-            draft={draft}
-            questionId={questionId}
-            busy={busy}
-            onChange={(field, value) => handleDraftChange(editKey, field, value)}
-            onSave={() => handleSaveEdit(editKey, questionId)}
-            onCancel={() => handleCancelEdit(editKey)}
-          />
-        )}
-      </div>
-    );
-  }
-
-  function AuditFindingsSection({ findings }: { findings: QuestionQualityFinding[] }) {
-    const visible = visibleStaticFindings(findings);
-    const grouped = {
-      high: visible.filter((f) => f.severity === 'high'),
-      medium: visible.filter((f) => f.severity === 'medium'),
-      low: visible.filter((f) => f.severity === 'low'),
-    };
-
-    if (visible.length === 0) {
-      return (
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader>
-            <CardTitle className="text-lg">Static Audit Findings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">No static audit findings.</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">Static Audit Findings ({visible.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {(['high', 'medium', 'low'] as const).map((severity) => {
-            const group = grouped[severity];
-            if (group.length === 0) return null;
-            return (
-              <div key={severity} className="space-y-3">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <SeverityBadge severity={severity} />
-                  {group.length} finding{group.length !== 1 ? 's' : ''}
-                </h4>
-                <div className="space-y-2">
-                  {group.map((finding) => {
-                    const editKey = `static::${finding.questionId}::${finding.rule}`;
-                    const snapshot = report?.questionsById?.[finding.questionId];
-                    return (
-                      <FindingRow
-                        key={editKey}
-                        editKey={editKey}
-                        questionId={finding.questionId}
-                        findingType="static"
-                        findingKey={finding.rule}
-                      >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline">{finding.rule}</Badge>
-                            <span className="font-mono text-xs text-muted-foreground">
-                              {finding.questionId}
-                            </span>
-                          </div>
-                          {snapshot && (
-                            <p className="text-sm font-medium text-white/90 leading-snug">
-                              {snapshot.question}
-                            </p>
-                          )}
-                          <p className="text-sm text-muted-foreground">{finding.message}</p>
-                          <ExpandableDetails finding={finding} snapshot={snapshot} />
-                        </div>
-                      </FindingRow>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  function DuplicatesSection({ duplicates }: { duplicates: DuplicateMatch[] }) {
-    const visible = visibleDuplicates(duplicates);
-    if (visible.length === 0) {
-      return (
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader>
-            <CardTitle className="text-lg">Duplicates</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">No duplicates found.</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Duplicates ({visible.length} pair{visible.length !== 1 ? 's' : ''})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {visible.map((match) => {
-            const pairKey = duplicatePairKey(match.questionIdA, match.questionIdB);
-            const editKeyA = `dup::${pairKey}::A`;
-            const editKeyB = `dup::${pairKey}::B`;
-            const isAEditing = editingKey === editKeyA;
-            const isBEditing = editingKey === editKeyB;
-            const busyA = busyKey === editKeyA;
-            const busyB = busyKey === editKeyB;
-
-            return (
-              <div
-                key={pairKey}
-                className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <MatchTypeBadge type={match.matchType} />
-                  <span className="text-xs font-mono">
-                    score {match.similarityScore.toFixed(2)}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="ml-auto border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
-                    onClick={() =>
-                      handleAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
-                    }
-                    disabled={busyKey === `dup::${pairKey}`}
-                    data-testid={`button-accept-pair-${pairKey}`}
-                  >
-                    <Check className="w-3 h-3 mr-1" /> Accept pair
-                  </Button>
-                </div>
-                {match.aiReasoning && (
-                  <p className="text-xs text-muted-foreground italic">
-                    AI: {truncate(match.aiReasoning, 200)}
-                  </p>
-                )}
-                <div className="grid md:grid-cols-2 gap-3">
-                  {/* Side A */}
-                  <div className="border border-white/10 rounded p-2 space-y-2">
-                    <p className="font-mono text-[10px] text-muted-foreground">
-                      {match.questionIdA}
-                    </p>
-                    <p className="text-sm">{match.questionTextA}</p>
-                    <HiddenAnswer answer={match.answerA} />
-                    <ActionRow
-                      questionId={match.questionIdA}
-                      onAccept={() =>
-                        handleAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
-                      }
-                      onEdit={() => handleStartEdit(editKeyA, match.questionIdA)}
-                      onDelete={() => handleDelete(editKeyA, match.questionIdA)}
-                      busy={busyA}
-                      isEditing={isAEditing}
-                    />
-                    {isAEditing && editDrafts[editKeyA] && (
-                      <InlineEditor
-                        draft={editDrafts[editKeyA]}
-                        questionId={match.questionIdA}
-                        busy={busyA}
-                        onChange={(field, value) => handleDraftChange(editKeyA, field, value)}
-                        onSave={() => handleSaveEdit(editKeyA, match.questionIdA)}
-                        onCancel={() => handleCancelEdit(editKeyA)}
-                      />
-                    )}
-                  </div>
-                  {/* Side B */}
-                  <div className="border border-white/10 rounded p-2 space-y-2">
-                    <p className="font-mono text-[10px] text-muted-foreground">
-                      {match.questionIdB}
-                    </p>
-                    <p className="text-sm">{match.questionTextB}</p>
-                    <HiddenAnswer answer={match.answerB} />
-                    <ActionRow
-                      questionId={match.questionIdB}
-                      onAccept={() =>
-                        handleAccept('duplicate', match.questionIdB, pairKey, `dup::${pairKey}`)
-                      }
-                      onEdit={() => handleStartEdit(editKeyB, match.questionIdB)}
-                      onDelete={() => handleDelete(editKeyB, match.questionIdB)}
-                      busy={busyB}
-                      isEditing={isBEditing}
-                    />
-                    {isBEditing && editDrafts[editKeyB] && (
-                      <InlineEditor
-                        draft={editDrafts[editKeyB]}
-                        questionId={match.questionIdB}
-                        busy={busyB}
-                        onChange={(field, value) => handleDraftChange(editKeyB, field, value)}
-                        onSave={() => handleSaveEdit(editKeyB, match.questionIdB)}
-                        onCancel={() => handleCancelEdit(editKeyB)}
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  function FactCheckSection({ results }: { results: FactCheckVerdict[] }) {
-    const actionable = visibleFactCheck(
-      results.filter((r) => {
-        if (r.verdict === 'pass') return false;
-        if (r.verdict === 'fail') return true;
-        // flag: only if high-confidence OR question has no source
-        const snapshot = report?.questionsById?.[r.questionId];
-        return r.confidence > 95 || (snapshot ? !snapshot.hasSource : true);
-      })
-    );
-    if (actionable.length === 0) {
-      return (
-        <Card className="bg-white/5 border-white/10">
-          <CardHeader>
-            <CardTitle className="text-lg">Fact-Check Results</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">All questions passed fact-check.</p>
-          </CardContent>
-        </Card>
-      );
-    }
-    return (
-      <Card className="bg-white/5 border-white/10">
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Fact-Check Results ({actionable.length} need attention)
-          </CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Showing fails and high-confidence flags (&gt;95%) or questions without a source.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {actionable.map((result) => {
-            const editKey = `fc::${result.questionId}`;
-            const snapshot = report?.questionsById?.[result.questionId];
-            return (
-              <FindingRow
-                key={editKey}
-                editKey={editKey}
-                questionId={result.questionId}
-                findingType="fact_check"
-                findingKey={FACT_CHECK_FINDING_KEY}
-              >
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <VerdictBadge verdict={result.verdict} />
-                    <span className="text-xs font-mono">{result.confidence}%</span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {result.questionId}
-                    </span>
-                    {snapshot && !snapshot.hasSource && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">no source</span>
-                    )}
-                  </div>
-                  {snapshot && (
-                    <p className="text-sm font-medium text-white/90 leading-snug">
-                      {snapshot.question}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">{result.reason}</p>
-                  {snapshot && (
-                    <div className="pt-1">
-                      <HiddenAnswer answer={snapshot.answer} />
-                    </div>
-                  )}
-                </div>
-              </FindingRow>
-            );
-          })}
-        </CardContent>
-      </Card>
-    );
-  }
+  const editActions: EditActions = {
+    editingKey,
+    editDrafts,
+    busyKey,
+    onAccept: handleAccept,
+    onStartEdit: handleStartEdit,
+    onDraftChange: handleDraftChange,
+    onSaveEdit: handleSaveEdit,
+    onCancelEdit: handleCancelEdit,
+    onDelete: handleDelete,
+  };
 
   // Auth guards
   if (authLoading || adminLoading) {
@@ -1062,7 +1160,6 @@ export default function AdminQualitySweep() {
           </p>
         </div>
 
-        {/* Controls */}
         <Card className="bg-white/5 border-white/10">
           <CardHeader>
             <CardTitle>Sweep Options</CardTitle>
@@ -1110,7 +1207,6 @@ export default function AdminQualitySweep() {
           </CardContent>
         </Card>
 
-        {/* Report */}
         {report && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1120,7 +1216,7 @@ export default function AdminQualitySweep() {
               </p>
             </div>
 
-            <SummarySection report={report} />
+            <SummarySection report={report} removed={removed} />
 
             {report.recommendations.length > 0 && (
               <Card className="bg-white/5 border-white/10">
@@ -1138,12 +1234,28 @@ export default function AdminQualitySweep() {
             )}
 
             {report.duplicates && (
-              <DuplicatesSection duplicates={report.duplicates.duplicatesFound} />
+              <DuplicatesSection
+                duplicates={report.duplicates.duplicatesFound}
+                removed={removed}
+                actions={editActions}
+              />
             )}
 
-            <AuditFindingsSection findings={report.audit.findings} />
+            <AuditFindingsSection
+              findings={report.audit.findings}
+              removed={removed}
+              questionsById={report.questionsById}
+              actions={editActions}
+            />
 
-            {report.factCheck && <FactCheckSection results={report.factCheck.results} />}
+            {report.factCheck && (
+              <FactCheckSection
+                results={report.factCheck.results}
+                removed={removed}
+                questionsById={report.questionsById}
+                actions={editActions}
+              />
+            )}
           </div>
         )}
       </div>
