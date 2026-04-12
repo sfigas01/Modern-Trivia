@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { sql } from 'drizzle-orm';
 import { db } from './db';
 import { questions } from '@shared/schema';
 
@@ -43,6 +44,17 @@ function loadSeedData(): SeedRecord[] {
 
 export async function seedQuestions(): Promise<void> {
   try {
+    // First-run bootstrap only: if the questions table already has rows, the
+    // database is the source of truth (admin-curated edits/deletes via Quality
+    // Sweep, etc.). Re-seeding from seed-data.json would silently revert those
+    // deletes on every boot/republish — see STE-145.
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(questions);
+
+    if (count > 0) {
+      log(`Skipping seed — questions table already has ${count} rows.`);
+      return;
+    }
+
     const seedData = loadSeedData();
     if (seedData.length === 0) return;
 
@@ -84,21 +96,5 @@ export async function seedQuestions(): Promise<void> {
   } catch (err) {
     console.error('[seed] CRITICAL: Seed failed — production may have no questions.');
     console.error('[seed]', err);
-  }
-}
-
-export function removeFromSeedData(questionId: string): boolean {
-  try {
-    if (!existsSync(SEED_PATH)) return false;
-    const data: SeedRecord[] = JSON.parse(readFileSync(SEED_PATH, 'utf-8'));
-    const before = data.length;
-    const filtered = data.filter((q) => q.id !== questionId);
-    if (filtered.length === before) return false;
-    writeFileSync(SEED_PATH, JSON.stringify(filtered, null, 2) + '\n', 'utf-8');
-    log(`Removed ${questionId} from seed-data.json (${before} → ${filtered.length})`);
-    return true;
-  } catch (err) {
-    console.error(`[seed] Failed to remove ${questionId} from seed-data.json:`, err);
-    return false;
   }
 }

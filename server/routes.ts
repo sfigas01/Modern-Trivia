@@ -16,7 +16,6 @@ import {
   duplicatePairKey,
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { removeFromSeedData } from './seed';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
@@ -675,12 +674,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(404).json({ message: 'Question not found' });
       }
 
-      const removedFromSeed = removeFromSeedData(id);
-      if (!removedFromSeed) {
-        console.warn(`[delete] Question ${id} deleted from DB but was not in seed-data.json (or file write failed).`);
-      }
-
-      res.json({ success: true, removedFromSeed });
+      res.json({ success: true });
     } catch (error) {
       console.error('Error deleting question:', error);
       res.status(500).json({ message: 'Failed to delete question' });
