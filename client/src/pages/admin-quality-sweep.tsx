@@ -14,6 +14,7 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  ListFilter,
 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -48,6 +49,7 @@ import {
   type QualityFindingType,
   type QualitySweepReport,
   type QuestionQualityFinding,
+  type QuestionQualityRule,
   type QuestionSnapshot,
 } from '@shared/models/quality-sweep';
 
@@ -581,6 +583,42 @@ interface RemovedFindings {
 }
 
 // ---------------------------------------------------------------------------
+// Issue-type filter state
+// ---------------------------------------------------------------------------
+
+interface IssueTypeFilter {
+  showAudit: boolean;
+  showDuplicates: boolean;
+  showFactCheck: boolean;
+  auditRules: Set<QuestionQualityRule>;
+}
+
+const RULE_LABELS: Record<QuestionQualityRule, string> = {
+  missing_required_field: 'Missing Required Field',
+  duplicate_question_id: 'Duplicate Question ID',
+  invalid_difficulty: 'Invalid Difficulty',
+  missing_required_tags: 'Missing Required Tags',
+  category_tag_mismatch: 'Category/Tag Mismatch',
+  answer_leakage: 'Answer Leakage',
+  subjective_prompt: 'Subjective Prompt',
+  ambiguous_prompt_format: 'Ambiguous Prompt',
+  multi_answer_mismatch: 'Multi-Answer Mismatch',
+  answer_type_mismatch: 'Answer Type Mismatch',
+  potentially_incorrect_or_unverifiable: 'Potentially Incorrect',
+  missing_source_metadata: 'Missing Source Metadata',
+};
+
+function buildDefaultFilter(report: QualitySweepReport): IssueTypeFilter {
+  const auditRules = new Set<QuestionQualityRule>(report.audit.findings.map((f) => f.rule));
+  return {
+    showAudit: true,
+    showDuplicates: true,
+    showFactCheck: true,
+    auditRules,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Visibility filter helpers (pure — no hooks)
 // ---------------------------------------------------------------------------
 
@@ -611,22 +649,199 @@ function filterFactCheck(results: FactCheckVerdict[], removed: RemovedFindings) 
 }
 
 // ---------------------------------------------------------------------------
+// FilterBar
+// ---------------------------------------------------------------------------
+
+function FilterBar({
+  report,
+  removed,
+  filter,
+  setFilter,
+}: {
+  report: QualitySweepReport;
+  removed: RemovedFindings;
+  filter: IssueTypeFilter;
+  setFilter: (fn: (prev: IssueTypeFilter) => IssueTypeFilter) => void;
+}) {
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+
+  const visibleAudit = filterStaticFindings(report.audit.findings, removed);
+  const visibleDups = report.duplicates
+    ? filterDuplicates(report.duplicates.duplicatesFound, removed)
+    : [];
+  const visibleFc = report.factCheck ? filterFactCheck(report.factCheck.results, removed) : [];
+
+  const auditCount = visibleAudit.length;
+  const dupCount = visibleDups.length;
+  const fcCount = visibleFc.length;
+
+  // Count findings per audit rule (post-removal, pre-filter)
+  const ruleCounts = new Map<QuestionQualityRule, number>();
+  for (const f of visibleAudit) {
+    ruleCounts.set(f.rule, (ruleCounts.get(f.rule) ?? 0) + 1);
+  }
+  const presentRules = Array.from(ruleCounts.keys()).sort((a, b) =>
+    RULE_LABELS[a].localeCompare(RULE_LABELS[b])
+  );
+
+  const toggleCategory = (key: 'showAudit' | 'showDuplicates' | 'showFactCheck') => {
+    setFilter((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleRule = (rule: QuestionQualityRule) => {
+    setFilter((prev) => {
+      const next = new Set(prev.auditRules);
+      if (next.has(rule)) {
+        next.delete(rule);
+      } else {
+        next.add(rule);
+      }
+      return { ...prev, auditRules: next };
+    });
+  };
+
+  const selectAllRules = () => {
+    setFilter((prev) => ({ ...prev, auditRules: new Set(presentRules) }));
+  };
+
+  const clearAllRules = () => {
+    setFilter((prev) => ({ ...prev, auditRules: new Set() }));
+  };
+
+  return (
+    <Card className="bg-white/5 border-white/10">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ListFilter className="w-5 h-5" />
+          Filter Findings
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {auditCount > 0 && (
+            <Button
+              size="sm"
+              variant={filter.showAudit ? 'default' : 'outline'}
+              onClick={() => toggleCategory('showAudit')}
+              data-testid="filter-toggle-audit"
+            >
+              Audit Findings
+              <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                {auditCount}
+              </Badge>
+            </Button>
+          )}
+          {dupCount > 0 && (
+            <Button
+              size="sm"
+              variant={filter.showDuplicates ? 'default' : 'outline'}
+              onClick={() => toggleCategory('showDuplicates')}
+              data-testid="filter-toggle-duplicates"
+            >
+              Duplicates
+              <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                {dupCount}
+              </Badge>
+            </Button>
+          )}
+          {fcCount > 0 && (
+            <Button
+              size="sm"
+              variant={filter.showFactCheck ? 'default' : 'outline'}
+              onClick={() => toggleCategory('showFactCheck')}
+              data-testid="filter-toggle-factcheck"
+            >
+              Fact-Check
+              <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                {fcCount}
+              </Badge>
+            </Button>
+          )}
+        </div>
+
+        {filter.showAudit && presentRules.length >= 2 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setRulesExpanded((v) => !v)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-white transition-colors"
+              data-testid="filter-expand-rules"
+            >
+              {rulesExpanded ? (
+                <ChevronUp className="w-3 h-3" />
+              ) : (
+                <ChevronDown className="w-3 h-3" />
+              )}
+              {rulesExpanded ? 'Hide' : 'Show'} audit rule filters
+            </button>
+            {rulesExpanded && (
+              <div className="mt-2 pt-2 border-t border-white/10 space-y-2">
+                <div className="flex gap-3 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={selectAllRules}
+                    className="text-muted-foreground hover:text-white transition-colors underline"
+                    data-testid="filter-select-all"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearAllRules}
+                    className="text-muted-foreground hover:text-white transition-colors underline"
+                    data-testid="filter-clear-all"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {presentRules.map((rule) => (
+                    <div key={rule} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`filter-rule-${rule}`}
+                        checked={filter.auditRules.has(rule)}
+                        onCheckedChange={() => toggleRule(rule)}
+                      />
+                      <Label
+                        htmlFor={`filter-rule-${rule}`}
+                        className="text-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        {RULE_LABELS[rule]}
+                        <span className="text-muted-foreground">({ruleCounts.get(rule)})</span>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SummarySection
 // ---------------------------------------------------------------------------
 
 function SummarySection({
   report,
   removed,
+  filter,
 }: {
   report: QualitySweepReport;
   removed: RemovedFindings;
+  filter: IssueTypeFilter;
 }) {
-  const visible = filterStaticFindings(report.audit.findings, removed);
+  const allVisible = filterStaticFindings(report.audit.findings, removed);
+  const visible = filter.showAudit ? allVisible.filter((f) => filter.auditRules.has(f.rule)) : [];
   const visibleHigh = visible.filter((f) => f.severity === 'high').length;
   const visibleMedium = visible.filter((f) => f.severity === 'medium').length;
-  const visibleDupClusters = report.duplicates
-    ? buildClusters(filterDuplicates(report.duplicates.duplicatesFound, removed)).length
-    : null;
+  const visibleDupClusters =
+    filter.showDuplicates && report.duplicates
+      ? buildClusters(filterDuplicates(report.duplicates.duplicatesFound, removed)).length
+      : null;
   return (
     <Card className="bg-white/5 border-white/10">
       <CardHeader>
@@ -669,13 +884,17 @@ function AuditFindingsSection({
   removed,
   questionsById,
   actions,
+  filter,
 }: {
   findings: QuestionQualityFinding[];
   removed: RemovedFindings;
   questionsById: Record<string, QuestionSnapshot> | undefined;
   actions: EditActions;
+  filter?: IssueTypeFilter;
 }) {
-  const visible = filterStaticFindings(findings, removed);
+  const visible = filterStaticFindings(findings, removed).filter(
+    (f) => !filter || filter.auditRules.has(f.rule)
+  );
   const grouped = {
     high: visible.filter((f) => f.severity === 'high'),
     medium: visible.filter((f) => f.severity === 'medium'),
@@ -1142,6 +1361,7 @@ export default function AdminQualitySweep() {
   const [skipDuplicates, setSkipDuplicates] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [report, setReport] = useState<QualitySweepReport | null>(null);
+  const [filter, setFilter] = useState<IssueTypeFilter | null>(null);
 
   const [removed, setRemoved] = useState<RemovedFindings>({
     static: new Set(),
@@ -1181,6 +1401,7 @@ export default function AdminQualitySweep() {
   const handleRunSweep = async () => {
     setIsRunning(true);
     setReport(null);
+    setFilter(null);
     setRemoved({
       static: new Set(),
       duplicate: new Set(),
@@ -1209,6 +1430,7 @@ export default function AdminQualitySweep() {
       }
       const data = (await response.json()) as QualitySweepReport;
       setReport(data);
+      setFilter(buildDefaultFilter(data));
       toast({
         title: 'Sweep Complete',
         description: `Scanned ${data.totalQuestions} question(s). ${data.recommendations.length} recommendation(s).`,
@@ -1577,7 +1799,7 @@ export default function AdminQualitySweep() {
           </CardContent>
         </Card>
 
-        {report && (
+        {report && filter && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold">Report</h3>
@@ -1586,7 +1808,14 @@ export default function AdminQualitySweep() {
               </p>
             </div>
 
-            <SummarySection report={report} removed={removed} />
+            <SummarySection report={report} removed={removed} filter={filter} />
+
+            <FilterBar
+              report={report}
+              removed={removed}
+              filter={filter}
+              setFilter={(fn) => setFilter((prev) => (prev ? fn(prev) : prev))}
+            />
 
             {report.recommendations.length > 0 && (
               <Card className="bg-white/5 border-white/10">
@@ -1603,7 +1832,7 @@ export default function AdminQualitySweep() {
               </Card>
             )}
 
-            {report.duplicates && (
+            {filter.showDuplicates && report.duplicates && (
               <DuplicatesSection
                 duplicates={report.duplicates.duplicatesFound}
                 removed={removed}
@@ -1612,14 +1841,17 @@ export default function AdminQualitySweep() {
               />
             )}
 
-            <AuditFindingsSection
-              findings={report.audit.findings}
-              removed={removed}
-              questionsById={report.questionsById}
-              actions={editActions}
-            />
+            {filter.showAudit && (
+              <AuditFindingsSection
+                findings={report.audit.findings}
+                removed={removed}
+                questionsById={report.questionsById}
+                actions={editActions}
+                filter={filter}
+              />
+            )}
 
-            {report.factCheck && (
+            {filter.showFactCheck && report.factCheck && (
               <FactCheckSection
                 results={report.factCheck.results}
                 removed={removed}
