@@ -1164,7 +1164,7 @@ export default function AdminQualitySweep() {
         const res = await fetch('/api/questions', { credentials: 'include' });
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled) setAllQuestions(data);
+        if (!cancelled) setAllQuestions(Array.isArray(data) ? data : (data.questions ?? []));
       } catch {
         // Silently fall back to state.questions if fetch fails
       }
