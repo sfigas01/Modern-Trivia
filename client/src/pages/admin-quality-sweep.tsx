@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import {
   ScanSearch,
@@ -1154,6 +1154,30 @@ export default function AdminQualitySweep() {
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
+  // Local question cache — ensures edit/save works regardless of game state phase.
+  // state.questions only loads during SETUP; this fetches independently on mount.
+  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/questions', { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setAllQuestions(data);
+      } catch {
+        // Silently fall back to state.questions if fetch fails
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const findQuestion = (questionId: string): Question | undefined =>
+    allQuestions.find((q) => q.id === questionId) ??
+    state.questions.find((q) => q.id === questionId);
+
   const handleRunSweep = async () => {
     setIsRunning(true);
     setReport(null);
@@ -1247,7 +1271,7 @@ export default function AdminQualitySweep() {
     editKey: string,
     applyFn: ApplyFixFn
   ) => {
-    const sourceQ = state.questions.find((q) => q.id === questionId);
+    const sourceQ = findQuestion(questionId);
     if (!sourceQ) {
       toast({
         title: 'Question not loaded',
@@ -1259,7 +1283,9 @@ export default function AdminQualitySweep() {
     setBusyKey(editKey);
     try {
       const patch = applyFn(sourceQ);
-      await updateQuestion({ ...sourceQ, ...patch });
+      const updated = { ...sourceQ, ...patch };
+      await updateQuestion(updated);
+      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? updated : q)));
     } catch (error) {
       toast({
         title: 'Apply fix failed',
@@ -1303,7 +1329,7 @@ export default function AdminQualitySweep() {
   };
 
   const handleStartEdit = (editKey: string, questionId: string) => {
-    const sourceQ = state.questions.find((q) => q.id === questionId);
+    const sourceQ = findQuestion(questionId);
     if (!sourceQ) {
       toast({
         title: 'Question not loaded',
@@ -1334,8 +1360,15 @@ export default function AdminQualitySweep() {
   const handleSaveEdit = async (editKey: string, questionId: string) => {
     const draft = editDrafts[editKey];
     if (!draft) return;
-    const sourceQ = state.questions.find((q) => q.id === questionId);
-    if (!sourceQ) return;
+    const sourceQ = findQuestion(questionId);
+    if (!sourceQ) {
+      toast({
+        title: 'Question not loaded',
+        description: 'Could not find the question data. Please reload the page.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (!draft.question.trim() || !draft.answer.trim()) {
       toast({
@@ -1348,12 +1381,14 @@ export default function AdminQualitySweep() {
 
     setBusyKey(editKey);
     try {
-      await updateQuestion({
+      const updated = {
         ...sourceQ,
         question: draft.question.trim(),
         answer: draft.answer.trim(),
         explanation: draft.explanation.trim() || sourceQ.explanation,
-      });
+      };
+      await updateQuestion(updated);
+      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? updated : q)));
       setEditingKey(null);
       setEditDrafts((prev) => {
         const next = { ...prev };
