@@ -102,6 +102,22 @@ When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-pare
 
 CI gates (`.github/workflows/ci.yml`) must pass before merge. Fix failures, don't bypass.
 
+## Documentation Confirmation
+
+When finishing any task, **always confirm to the user what documentation was updated**. Report:
+
+1. **What** was documented — issue state change, release notes, PR description, test coverage, README/guide edits, config changes, etc.
+2. **Where** it lives — Linear issue ID + URL, GitHub release tag, file path, PR number, etc.
+
+This applies to every task completion. Specific expectations:
+
+- **Linear:** Move the issue to the correct state. Leave a closing comment summarizing what was shipped (what changed, what files, any trade-offs or follow-ups).
+- **GitHub releases:** Create a release when shipping a user-visible fix or feature. Bug fixes → patch version (e.g. v0.5.1). New features → minor version (e.g. v0.6.0). Breaking changes → major version.
+- **PR descriptions:** Must clearly describe what changed and why before requesting merge.
+- **`CLAUDE.md` / `AGENTS.md` / `replit.md`:** Update all three files in sync whenever agent workflow rules change. See Sync Contract above.
+
+Do not report a task as complete until documentation is confirmed. The user's signal that this is working: every task handoff includes an explicit "Documentation updated" confirmation listing the what and where.
+
 ## References
 
 - Product context: `README.md`, `docs/PRODUCT_ROADMAP.md`
