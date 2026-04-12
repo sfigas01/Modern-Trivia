@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { ScanSearch, Play, LogIn, Shield, Check, Pencil, Trash2, Save, X, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  ScanSearch,
+  Play,
+  LogIn,
+  Shield,
+  Check,
+  Pencil,
+  Trash2,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { AdminLayout } from '@/components/admin-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,7 +89,9 @@ function HiddenAnswer({ answer }: { answer: string }) {
       {revealed ? (
         <span>{answer}</span>
       ) : (
-        <span className="tracking-widest select-none">{'•'.repeat(Math.min(answer.length, 12))}</span>
+        <span className="tracking-widest select-none">
+          {'•'.repeat(Math.min(answer.length, 12))}
+        </span>
       )}
       <button
         type="button"
@@ -90,13 +106,7 @@ function HiddenAnswer({ answer }: { answer: string }) {
   );
 }
 
-function ProposedFixDisplay({
-  rule,
-  fix,
-}: {
-  rule: string;
-  fix: Record<string, unknown>;
-}) {
+function ProposedFixDisplay({ rule, fix }: { rule: string; fix: Record<string, unknown> }) {
   if (rule === 'missing_required_tags') {
     const currentTags = (fix.currentTags as string[]) ?? [];
     const missingRegion = fix.missingRegion as boolean;
@@ -110,7 +120,9 @@ function ProposedFixDisplay({
           <div className="flex gap-1 flex-wrap">
             {currentTags.length > 0 ? (
               currentTags.map((t) => (
-                <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">{t}</span>
+                <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">
+                  {t}
+                </span>
               ))
             ) : (
               <span className="text-muted-foreground italic">none</span>
@@ -124,7 +136,12 @@ function ProposedFixDisplay({
               <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-muted-foreground w-12 shrink-0">Region:</span>
                 {validRegionTags.map((t) => (
-                  <span key={t} className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-mono">{t}</span>
+                  <span
+                    key={t}
+                    className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-mono"
+                  >
+                    {t}
+                  </span>
                 ))}
               </div>
             )}
@@ -132,7 +149,12 @@ function ProposedFixDisplay({
               <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-muted-foreground w-12 shrink-0">Pillar:</span>
                 {validPillarTags.map((t) => (
-                  <span key={t} className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono">{t}</span>
+                  <span
+                    key={t}
+                    className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono"
+                  >
+                    {t}
+                  </span>
                 ))}
               </div>
             )}
@@ -151,7 +173,9 @@ function ProposedFixDisplay({
           <p className="text-[10px] uppercase text-muted-foreground mb-1">Current tags</p>
           <div className="flex gap-1 flex-wrap">
             {currentTags.map((t) => (
-              <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">{t}</span>
+              <span key={t} className="px-1.5 py-0.5 rounded bg-white/10 font-mono">
+                {t}
+              </span>
             ))}
             {currentTags.length === 0 && <span className="text-muted-foreground italic">none</span>}
           </div>
@@ -160,7 +184,9 @@ function ProposedFixDisplay({
           <p className="text-[10px] uppercase text-muted-foreground mb-1">Proposed fix</p>
           <div className="flex items-center gap-1">
             <span className="text-muted-foreground">Add:</span>
-            <span className="px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 font-mono">{addTag}</span>
+            <span className="px-1.5 py-0.5 rounded bg-green-500/20 text-green-300 font-mono">
+              {addTag}
+            </span>
           </div>
         </div>
       </div>
@@ -176,7 +202,9 @@ function ProposedFixDisplay({
         {subjectivePart && (
           <div>
             <p className="text-[10px] uppercase text-muted-foreground mb-1">Subjective phrase</p>
-            <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-medium">&ldquo;{subjectivePart}&rdquo;</span>
+            <span className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-medium">
+              &ldquo;{subjectivePart}&rdquo;
+            </span>
           </div>
         )}
         {proposedQuestion && (
@@ -196,11 +224,46 @@ function ProposedFixDisplay({
         <p className="text-[10px] uppercase text-muted-foreground mb-1">Missing fields</p>
         <div className="flex gap-1 flex-wrap">
           {missingFields.map((f) => (
-            <span key={f} className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-mono">{f}</span>
+            <span
+              key={f}
+              className="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 font-mono"
+            >
+              {f}
+            </span>
           ))}
         </div>
       </div>
     );
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// extractApplicableFix — returns a question-transform fn when a proposed fix
+// can be auto-applied, or null when manual editing is required.
+// ---------------------------------------------------------------------------
+
+type ApplyFixFn = (q: Question) => Partial<Question>;
+
+function extractApplicableFix(
+  rule: string,
+  fix: Record<string, unknown> | undefined
+): ApplyFixFn | null {
+  if (!fix) return null;
+
+  if (rule === 'subjective_prompt') {
+    const proposedQuestion = fix.proposedQuestion as string | undefined;
+    if (!proposedQuestion?.trim()) return null;
+    return () => ({ question: proposedQuestion.trim() });
+  }
+
+  if (rule === 'category_tag_mismatch') {
+    const addTag = fix.addTag as string | undefined;
+    if (!addTag) return null;
+    return (q) => ({
+      tags: q.tags.includes(addTag) ? q.tags : [...q.tags, addTag],
+    });
   }
 
   return null;
@@ -275,7 +338,19 @@ interface EditActions {
   editingKey: string | null;
   editDrafts: Record<string, EditDraft>;
   busyKey: string | null;
-  onAccept: (findingType: QualityFindingType, questionId: string, findingKey: string, editKey: string) => void;
+  onAccept: (
+    findingType: QualityFindingType,
+    questionId: string,
+    findingKey: string,
+    editKey: string
+  ) => void;
+  onAcceptFix: (
+    findingType: QualityFindingType,
+    questionId: string,
+    findingKey: string,
+    editKey: string,
+    applyFn: ApplyFixFn
+  ) => void;
   onStartEdit: (editKey: string, questionId: string) => void;
   onDraftChange: (editKey: string, field: EditField, value: string) => void;
   onSaveEdit: (editKey: string, questionId: string) => void;
@@ -290,13 +365,22 @@ interface EditActions {
 interface ActionRowProps {
   questionId: string;
   onAccept: () => void;
+  onAcceptFix?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   busy: boolean;
   isEditing: boolean;
 }
 
-function ActionRow({ questionId, onAccept, onEdit, onDelete, busy, isEditing }: ActionRowProps) {
+function ActionRow({
+  questionId,
+  onAccept,
+  onAcceptFix,
+  onEdit,
+  onDelete,
+  busy,
+  isEditing,
+}: ActionRowProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
@@ -307,8 +391,19 @@ function ActionRow({ questionId, onAccept, onEdit, onDelete, busy, isEditing }: 
         disabled={busy}
         data-testid={`button-accept-${questionId}`}
       >
-        <Check className="w-3 h-3 mr-1" /> Accept
+        <Check className="w-3 h-3 mr-1" /> {onAcceptFix ? 'Accept as-is' : 'Accept'}
       </Button>
+      {onAcceptFix && (
+        <Button
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white"
+          onClick={onAcceptFix}
+          disabled={busy}
+          data-testid={`button-accept-fix-${questionId}`}
+        >
+          <Check className="w-3 h-3 mr-1" /> Accept Fix
+        </Button>
+      )}
       <Button
         size="sm"
         variant="outline"
@@ -426,18 +521,35 @@ interface FindingRowProps {
   findingKey: string;
   children: React.ReactNode;
   actions: EditActions;
+  proposedFix?: Record<string, unknown>;
+  rule?: string;
 }
 
-function FindingRow({ editKey, questionId, findingType, findingKey, children, actions }: FindingRowProps) {
+function FindingRow({
+  editKey,
+  questionId,
+  findingType,
+  findingKey,
+  children,
+  actions,
+  proposedFix,
+  rule,
+}: FindingRowProps) {
   const isEditing = actions.editingKey === editKey;
   const draft = actions.editDrafts[editKey];
   const busy = actions.busyKey === editKey;
+  const applyFn = rule ? extractApplicableFix(rule, proposedFix) : null;
   return (
     <div className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]">
       {children}
       <ActionRow
         questionId={questionId}
         onAccept={() => actions.onAccept(findingType, questionId, findingKey, editKey)}
+        onAcceptFix={
+          applyFn
+            ? () => actions.onAcceptFix(findingType, questionId, findingKey, editKey, applyFn)
+            : undefined
+        }
         onEdit={() => actions.onStartEdit(editKey, questionId)}
         onDelete={() => actions.onDelete(editKey, questionId)}
         busy={busy}
@@ -610,6 +722,8 @@ function AuditFindingsSection({
                       findingType="static"
                       findingKey={finding.rule}
                       actions={actions}
+                      proposedFix={finding.proposedFix}
+                      rule={finding.rule}
                     >
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -709,7 +823,11 @@ function buildClusters(matches: DuplicateMatch[]): DuplicateCluster[] {
     });
   });
 
-  clusters.sort((a, b) => MATCH_SEVERITY[b.worstMatchType] - MATCH_SEVERITY[a.worstMatchType] || b.highestScore - a.highestScore);
+  clusters.sort(
+    (a, b) =>
+      MATCH_SEVERITY[b.worstMatchType] - MATCH_SEVERITY[a.worstMatchType] ||
+      b.highestScore - a.highestScore
+  );
   return clusters;
 }
 
@@ -750,7 +868,8 @@ function DuplicatesSection({
     <Card className="bg-white/5 border-white/10">
       <CardHeader>
         <CardTitle className="text-lg">
-          Duplicates ({clusters.length} cluster{clusters.length !== 1 ? 's' : ''}, {totalQuestions} questions)
+          Duplicates ({clusters.length} cluster{clusters.length !== 1 ? 's' : ''}, {totalQuestions}{' '}
+          questions)
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
           Related questions are grouped together. Review each cluster and delete the extras.
@@ -796,7 +915,10 @@ function DuplicatesSection({
                   {cluster.matches
                     .filter((m) => m.aiReasoning)
                     .map((m) => (
-                      <p key={`${m.questionIdA}-${m.questionIdB}`} className="text-xs text-muted-foreground italic">
+                      <p
+                        key={`${m.questionIdA}-${m.questionIdB}`}
+                        className="text-xs text-muted-foreground italic"
+                      >
                         AI: {truncate(m.aiReasoning!, 200)}
                       </p>
                     ))}
@@ -873,7 +995,8 @@ function DuplicatesSection({
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete this question?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This permanently removes the question from the database and seed data. It will not come back on restart.
+                                This permanently removes the question from the database and seed
+                                data. It will not come back on restart.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -979,7 +1102,9 @@ function FactCheckSection({
                     {result.questionId}
                   </span>
                   {snapshot && !snapshot.hasSource && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">no source</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                      no source
+                    </span>
                   )}
                 </div>
                 {snapshot && (
@@ -1115,6 +1240,50 @@ export default function AdminQualitySweep() {
     }
   };
 
+  const handleAcceptFix = async (
+    findingType: QualityFindingType,
+    questionId: string,
+    findingKey: string,
+    editKey: string,
+    applyFn: ApplyFixFn
+  ) => {
+    const sourceQ = state.questions.find((q) => q.id === questionId);
+    if (!sourceQ) {
+      toast({
+        title: 'Question not loaded',
+        description: 'The question is not in the local catalog. Reload the app and retry.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setBusyKey(editKey);
+    try {
+      const patch = applyFn(sourceQ);
+      await updateQuestion({ ...sourceQ, ...patch });
+      await dismissOnServer({ questionId, findingType, findingKey });
+      setRemoved((prev) => {
+        const next = { ...prev };
+        if (findingType === 'static') {
+          next.static = new Set(prev.static).add(`${questionId}::${findingKey}`);
+        } else if (findingType === 'duplicate') {
+          next.duplicate = new Set(prev.duplicate).add(findingKey);
+        } else {
+          next.factCheck = new Set(prev.factCheck).add(questionId);
+        }
+        return next;
+      });
+      toast({ title: 'Fix applied', description: 'Question updated and finding dismissed.' });
+    } catch (error) {
+      toast({
+        title: 'Apply fix failed',
+        description: error instanceof Error ? error.message : 'Could not apply the proposed fix.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   const handleStartEdit = (editKey: string, questionId: string) => {
     const sourceQ = state.questions.find((q) => q.id === questionId);
     if (!sourceQ) {
@@ -1219,6 +1388,7 @@ export default function AdminQualitySweep() {
     editDrafts,
     busyKey,
     onAccept: handleAccept,
+    onAcceptFix: handleAcceptFix,
     onStartEdit: handleStartEdit,
     onDraftChange: handleDraftChange,
     onSaveEdit: handleSaveEdit,
