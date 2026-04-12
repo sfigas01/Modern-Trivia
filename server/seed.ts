@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
+import { sql } from 'drizzle-orm';
 import { db } from './db';
 import { questions } from '@shared/schema';
 
@@ -43,62 +44,64 @@ function loadSeedData(): SeedRecord[] {
 
 export async function seedQuestions(): Promise<void> {
   try {
+    // First-run bootstrap only: if the questions table already has rows, the
+    // database is the source of truth (admin-curated edits/deletes via Quality
+    // Sweep, etc.). Re-seeding from seed-data.json would silently revert those
+    // deletes on every boot/republish — see STE-145.
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(questions);
+
+    if (count > 0) {
+      log(`Skipping seed — questions table already has ${count} rows.`);
+      return;
+    }
+
     const seedData = loadSeedData();
     if (seedData.length === 0) return;
 
     log(`Upserting ${seedData.length} seed questions…`);
 
-    const BATCH = 50;
-    let inserted = 0;
+    // Wrap all inserts in a single transaction so a mid-seed failure rolls back
+    // completely. This keeps count=0, allowing the next boot to retry from scratch
+    // rather than being permanently stuck with a partial question corpus.
+    const inserted = await db.transaction(async (tx) => {
+      const BATCH = 50;
+      let total = 0;
 
-    for (let i = 0; i < seedData.length; i += BATCH) {
-      const batch = seedData.slice(i, i + BATCH).map((q) => ({
-        id: q.id,
-        category: q.category,
-        difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
-        question: q.question,
-        answer: q.answer,
-        acceptableAnswers: q.acceptableAnswers ?? [],
-        explanation: q.explanation,
-        pillar: q.pillar as 'GlobalEh' | 'FreshPrints' | 'TimeCapsule' | 'GreatOutdoors',
-        tags: q.tags ?? [],
-        sourceUrl: q.sourceUrl,
-        sourceName: q.sourceName,
-        status: q.status as 'approved' | 'pending' | 'rejected' | 'draft',
-        aiAnalysis: q.aiAnalysis,
-        createdAt: q.createdAt ? new Date(q.createdAt) : new Date(),
-        updatedAt: q.updatedAt ? new Date(q.updatedAt) : new Date(),
-      }));
+      for (let i = 0; i < seedData.length; i += BATCH) {
+        const batch = seedData.slice(i, i + BATCH).map((q) => ({
+          id: q.id,
+          category: q.category,
+          difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
+          question: q.question,
+          answer: q.answer,
+          acceptableAnswers: q.acceptableAnswers ?? [],
+          explanation: q.explanation,
+          pillar: q.pillar as 'GlobalEh' | 'FreshPrints' | 'TimeCapsule' | 'GreatOutdoors',
+          tags: q.tags ?? [],
+          sourceUrl: q.sourceUrl,
+          sourceName: q.sourceName,
+          status: q.status as 'approved' | 'pending' | 'rejected' | 'draft',
+          aiAnalysis: q.aiAnalysis,
+          createdAt: q.createdAt ? new Date(q.createdAt) : new Date(),
+          updatedAt: q.updatedAt ? new Date(q.updatedAt) : new Date(),
+        }));
 
-      const result = await db
-        .insert(questions)
-        .values(batch)
-        .onConflictDoNothing()
-        .returning({ id: questions.id });
+        const result = await tx
+          .insert(questions)
+          .values(batch)
+          .onConflictDoNothing()
+          .returning({ id: questions.id });
 
-      inserted += result.length;
-    }
+        total += result.length;
+      }
+
+      return total;
+    });
 
     const skipped = seedData.length - inserted;
     log(`Seed complete — inserted ${inserted} new, ${skipped} already present`);
   } catch (err) {
     console.error('[seed] CRITICAL: Seed failed — production may have no questions.');
     console.error('[seed]', err);
-  }
-}
-
-export function removeFromSeedData(questionId: string): boolean {
-  try {
-    if (!existsSync(SEED_PATH)) return false;
-    const data: SeedRecord[] = JSON.parse(readFileSync(SEED_PATH, 'utf-8'));
-    const before = data.length;
-    const filtered = data.filter((q) => q.id !== questionId);
-    if (filtered.length === before) return false;
-    writeFileSync(SEED_PATH, JSON.stringify(filtered, null, 2) + '\n', 'utf-8');
-    log(`Removed ${questionId} from seed-data.json (${before} → ${filtered.length})`);
-    return true;
-  } catch (err) {
-    console.error(`[seed] Failed to remove ${questionId} from seed-data.json:`, err);
-    return false;
   }
 }
