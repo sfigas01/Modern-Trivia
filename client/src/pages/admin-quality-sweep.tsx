@@ -1395,8 +1395,8 @@ export default function AdminQualitySweep() {
   }, []);
 
   const findQuestion = (questionId: string): Question | undefined =>
-    allQuestions.find((q) => q.id === questionId) ??
-    state.questions.find((q) => q.id === questionId);
+    state.questions.find((q) => q.id === questionId) ??
+    allQuestions.find((q) => q.id === questionId);
 
   const handleRunSweep = async () => {
     setIsRunning(true);
