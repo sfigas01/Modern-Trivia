@@ -1,6 +1,9 @@
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
 import { db } from './db';
 import { questions } from '@shared/schema';
-import seedData from './seed-data.json';
+
+const SEED_PATH = resolve(process.cwd(), 'server/seed-data.json');
 
 function log(msg: string) {
   const t = new Date().toLocaleTimeString('en-US', {
@@ -30,23 +33,26 @@ interface SeedRecord {
   updatedAt: string | null;
 }
 
-const typedSeedData: SeedRecord[] = seedData as SeedRecord[];
+function loadSeedData(): SeedRecord[] {
+  if (!existsSync(SEED_PATH)) {
+    log(`Seed file not found at ${SEED_PATH} — skipping seed.`);
+    return [];
+  }
+  return JSON.parse(readFileSync(SEED_PATH, 'utf-8')) as SeedRecord[];
+}
 
-/**
- * Upserts all approved seed questions into the database.
- * Uses ON CONFLICT DO NOTHING so production-side edits are preserved.
- * Runs on every startup — new questions added to seed-data.json will be
- * inserted; existing ones (matched by id) are left untouched.
- */
 export async function seedQuestions(): Promise<void> {
   try {
-    log(`Upserting ${typedSeedData.length} seed questions…`);
+    const seedData = loadSeedData();
+    if (seedData.length === 0) return;
+
+    log(`Upserting ${seedData.length} seed questions…`);
 
     const BATCH = 50;
     let inserted = 0;
 
-    for (let i = 0; i < typedSeedData.length; i += BATCH) {
-      const batch = typedSeedData.slice(i, i + BATCH).map((q) => ({
+    for (let i = 0; i < seedData.length; i += BATCH) {
+      const batch = seedData.slice(i, i + BATCH).map((q) => ({
         id: q.id,
         category: q.category,
         difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
@@ -73,12 +79,26 @@ export async function seedQuestions(): Promise<void> {
       inserted += result.length;
     }
 
-    const skipped = typedSeedData.length - inserted;
+    const skipped = seedData.length - inserted;
     log(`Seed complete — inserted ${inserted} new, ${skipped} already present`);
   } catch (err) {
-    // Log prominently so it's visible in deployment logs — the server
-    // continues starting up but production may be question-less until fixed.
     console.error('[seed] CRITICAL: Seed failed — production may have no questions.');
     console.error('[seed]', err);
+  }
+}
+
+export function removeFromSeedData(questionId: string): boolean {
+  try {
+    if (!existsSync(SEED_PATH)) return false;
+    const data: SeedRecord[] = JSON.parse(readFileSync(SEED_PATH, 'utf-8'));
+    const before = data.length;
+    const filtered = data.filter((q) => q.id !== questionId);
+    if (filtered.length === before) return false;
+    writeFileSync(SEED_PATH, JSON.stringify(filtered, null, 2) + '\n', 'utf-8');
+    log(`Removed ${questionId} from seed-data.json (${before} → ${filtered.length})`);
+    return true;
+  } catch (err) {
+    console.error(`[seed] Failed to remove ${questionId} from seed-data.json:`, err);
+    return false;
   }
 }

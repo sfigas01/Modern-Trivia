@@ -512,8 +512,8 @@ function SummarySection({
   const visible = filterStaticFindings(report.audit.findings, removed);
   const visibleHigh = visible.filter((f) => f.severity === 'high').length;
   const visibleMedium = visible.filter((f) => f.severity === 'medium').length;
-  const visibleDupCount = report.duplicates
-    ? filterDuplicates(report.duplicates.duplicatesFound, removed).length
+  const visibleDupClusters = report.duplicates
+    ? buildClusters(filterDuplicates(report.duplicates.duplicatesFound, removed)).length
     : null;
   return (
     <Card className="bg-white/5 border-white/10">
@@ -539,8 +539,8 @@ function SummarySection({
             <p className="text-2xl font-bold text-yellow-400">{visibleMedium}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Duplicates</p>
-            <p className="text-2xl font-bold">{visibleDupCount ?? '—'}</p>
+            <p className="text-sm text-muted-foreground">Dup clusters</p>
+            <p className="text-2xl font-bold">{visibleDupClusters ?? '—'}</p>
           </div>
         </div>
       </CardContent>
@@ -639,21 +639,99 @@ function AuditFindingsSection({
 }
 
 // ---------------------------------------------------------------------------
-// DuplicatesSection
+// Duplicate clustering — groups related pairs into clusters
+// ---------------------------------------------------------------------------
+
+interface DuplicateCluster {
+  id: string;
+  questionIds: string[];
+  questions: Map<string, { question: string; answer: string }>;
+  matches: DuplicateMatch[];
+  worstMatchType: 'exact' | 'near_duplicate' | 'conceptual';
+  highestScore: number;
+}
+
+const MATCH_SEVERITY: Record<string, number> = { exact: 3, near_duplicate: 2, conceptual: 1 };
+
+function buildClusters(matches: DuplicateMatch[]): DuplicateCluster[] {
+  const parent = new Map<string, string>();
+
+  function find(x: string): string {
+    if (!parent.has(x)) parent.set(x, x);
+    let root = x;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    let cur = x;
+    while (cur !== root) {
+      const next = parent.get(cur)!;
+      parent.set(cur, root);
+      cur = next;
+    }
+    return root;
+  }
+
+  function union(a: string, b: string) {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  }
+
+  for (const m of matches) {
+    union(m.questionIdA, m.questionIdB);
+  }
+
+  const groups = new Map<string, DuplicateMatch[]>();
+  for (const m of matches) {
+    const root = find(m.questionIdA);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root)!.push(m);
+  }
+
+  const clusters: DuplicateCluster[] = [];
+  groups.forEach((clusterMatches, root) => {
+    const qMap = new Map<string, { question: string; answer: string }>();
+    let worstType = 'conceptual' as DuplicateMatch['matchType'];
+    let highestScore = 0;
+
+    for (const m of clusterMatches) {
+      qMap.set(m.questionIdA, { question: m.questionTextA, answer: m.answerA });
+      qMap.set(m.questionIdB, { question: m.questionTextB, answer: m.answerB });
+      if (MATCH_SEVERITY[m.matchType] > MATCH_SEVERITY[worstType]) worstType = m.matchType;
+      if (m.similarityScore > highestScore) highestScore = m.similarityScore;
+    }
+
+    clusters.push({
+      id: root,
+      questionIds: Array.from(qMap.keys()),
+      questions: qMap,
+      matches: clusterMatches,
+      worstMatchType: worstType,
+      highestScore,
+    });
+  });
+
+  clusters.sort((a, b) => MATCH_SEVERITY[b.worstMatchType] - MATCH_SEVERITY[a.worstMatchType] || b.highestScore - a.highestScore);
+  return clusters;
+}
+
+// ---------------------------------------------------------------------------
+// DuplicatesSection — cluster view
 // ---------------------------------------------------------------------------
 
 function DuplicatesSection({
   duplicates,
   removed,
+  questionsById,
   actions,
 }: {
   duplicates: DuplicateMatch[];
   removed: RemovedFindings;
+  questionsById: Record<string, QuestionSnapshot> | undefined;
   actions: EditActions;
 }) {
   const visible = filterDuplicates(duplicates, removed);
+  const clusters = buildClusters(visible);
 
-  if (visible.length === 0) {
+  if (clusters.length === 0) {
     return (
       <Card className="bg-white/5 border-white/10">
         <CardHeader>
@@ -666,108 +744,163 @@ function DuplicatesSection({
     );
   }
 
+  const totalQuestions = clusters.reduce((sum, c) => sum + c.questionIds.length, 0);
+
   return (
     <Card className="bg-white/5 border-white/10">
       <CardHeader>
         <CardTitle className="text-lg">
-          Duplicates ({visible.length} pair{visible.length !== 1 ? 's' : ''})
+          Duplicates ({clusters.length} cluster{clusters.length !== 1 ? 's' : ''}, {totalQuestions} questions)
         </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Related questions are grouped together. Review each cluster and delete the extras.
+        </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {visible.map((match) => {
-          const pairKey = duplicatePairKey(match.questionIdA, match.questionIdB);
-          const editKeyA = `dup::${pairKey}::A`;
-          const editKeyB = `dup::${pairKey}::B`;
-          const isAEditing = actions.editingKey === editKeyA;
-          const isBEditing = actions.editingKey === editKeyB;
-          const busyA = actions.busyKey === editKeyA;
-          const busyB = actions.busyKey === editKeyB;
+      <CardContent className="space-y-6">
+        {clusters.map((cluster) => {
+          const clusterKey = `cluster::${cluster.id}`;
 
           return (
             <div
-              key={pairKey}
-              className="border border-white/10 rounded-md p-3 space-y-3 bg-white/[0.02]"
+              key={clusterKey}
+              className="border border-white/10 rounded-lg p-4 space-y-4 bg-white/[0.02]"
+              data-testid={`duplicate-cluster-${cluster.id}`}
             >
               <div className="flex items-center gap-2 flex-wrap">
-                <MatchTypeBadge type={match.matchType} />
+                <MatchTypeBadge type={cluster.worstMatchType} />
                 <span className="text-xs font-mono">
-                  score {match.similarityScore.toFixed(2)}
+                  top score {cluster.highestScore.toFixed(2)}
                 </span>
+                <Badge variant="outline" className="text-xs">
+                  {cluster.questionIds.length} questions
+                </Badge>
                 <Button
                   size="sm"
                   variant="outline"
                   className="ml-auto border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
-                  onClick={() =>
-                    actions.onAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
-                  }
-                  disabled={actions.busyKey === `dup::${pairKey}`}
-                  data-testid={`button-accept-pair-${pairKey}`}
+                  onClick={async () => {
+                    for (const m of cluster.matches) {
+                      const pk = duplicatePairKey(m.questionIdA, m.questionIdB);
+                      await actions.onAccept('duplicate', m.questionIdA, pk, `dup::${pk}`);
+                    }
+                  }}
+                  disabled={!!actions.busyKey}
+                  data-testid={`button-dismiss-cluster-${cluster.id}`}
                 >
-                  <Check className="w-3 h-3 mr-1" /> Accept pair
+                  <Check className="w-3 h-3 mr-1" /> Dismiss cluster
                 </Button>
               </div>
-              {match.aiReasoning && (
-                <p className="text-xs text-muted-foreground italic">
-                  AI: {truncate(match.aiReasoning, 200)}
-                </p>
+
+              {cluster.matches.some((m) => m.aiReasoning) && (
+                <div className="space-y-1">
+                  {cluster.matches
+                    .filter((m) => m.aiReasoning)
+                    .map((m) => (
+                      <p key={`${m.questionIdA}-${m.questionIdB}`} className="text-xs text-muted-foreground italic">
+                        AI: {truncate(m.aiReasoning!, 200)}
+                      </p>
+                    ))}
+                </div>
               )}
-              <div className="grid md:grid-cols-2 gap-3">
-                {/* Side A */}
-                <div className="border border-white/10 rounded p-2 space-y-2">
-                  <p className="font-mono text-[10px] text-muted-foreground">
-                    {match.questionIdA}
-                  </p>
-                  <p className="text-sm">{match.questionTextA}</p>
-                  <HiddenAnswer answer={match.answerA} />
-                  <ActionRow
-                    questionId={match.questionIdA}
-                    onAccept={() =>
-                      actions.onAccept('duplicate', match.questionIdA, pairKey, `dup::${pairKey}`)
-                    }
-                    onEdit={() => actions.onStartEdit(editKeyA, match.questionIdA)}
-                    onDelete={() => actions.onDelete(editKeyA, match.questionIdA)}
-                    busy={busyA}
-                    isEditing={isAEditing}
-                  />
-                  {isAEditing && actions.editDrafts[editKeyA] && (
-                    <InlineEditor
-                      draft={actions.editDrafts[editKeyA]}
-                      questionId={match.questionIdA}
-                      busy={busyA}
-                      onChange={(field, value) => actions.onDraftChange(editKeyA, field, value)}
-                      onSave={() => actions.onSaveEdit(editKeyA, match.questionIdA)}
-                      onCancel={() => actions.onCancelEdit(editKeyA)}
-                    />
-                  )}
-                </div>
-                {/* Side B */}
-                <div className="border border-white/10 rounded p-2 space-y-2">
-                  <p className="font-mono text-[10px] text-muted-foreground">
-                    {match.questionIdB}
-                  </p>
-                  <p className="text-sm">{match.questionTextB}</p>
-                  <HiddenAnswer answer={match.answerB} />
-                  <ActionRow
-                    questionId={match.questionIdB}
-                    onAccept={() =>
-                      actions.onAccept('duplicate', match.questionIdB, pairKey, `dup::${pairKey}`)
-                    }
-                    onEdit={() => actions.onStartEdit(editKeyB, match.questionIdB)}
-                    onDelete={() => actions.onDelete(editKeyB, match.questionIdB)}
-                    busy={busyB}
-                    isEditing={isBEditing}
-                  />
-                  {isBEditing && actions.editDrafts[editKeyB] && (
-                    <InlineEditor
-                      draft={actions.editDrafts[editKeyB]}
-                      questionId={match.questionIdB}
-                      busy={busyB}
-                      onChange={(field, value) => actions.onDraftChange(editKeyB, field, value)}
-                      onSave={() => actions.onSaveEdit(editKeyB, match.questionIdB)}
-                      onCancel={() => actions.onCancelEdit(editKeyB)}
-                    />
-                  )}
-                </div>
+
+              <div className="space-y-3">
+                {cluster.questionIds.map((qId) => {
+                  const qData = cluster.questions.get(qId)!;
+                  const snapshot = questionsById?.[qId];
+                  const editKey = `dup::${cluster.id}::${qId}`;
+                  const isEditing = actions.editingKey === editKey;
+                  const busy = actions.busyKey === editKey;
+                  const relatedPairKeys = cluster.matches
+                    .filter((m) => m.questionIdA === qId || m.questionIdB === qId)
+                    .map((m) => duplicatePairKey(m.questionIdA, m.questionIdB));
+
+                  return (
+                    <div
+                      key={qId}
+                      className="border border-white/10 rounded p-3 space-y-2"
+                      data-testid={`duplicate-question-${qId}`}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-[10px] text-muted-foreground">{qId}</span>
+                        {snapshot && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {snapshot.category} / {snapshot.pillar}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-white/90 leading-snug">
+                        {qData.question}
+                      </p>
+                      <HiddenAnswer answer={qData.answer} />
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
+                          onClick={() => {
+                            for (const pk of relatedPairKeys) {
+                              actions.onAccept('duplicate', qId, pk, `dup::${pk}`);
+                            }
+                          }}
+                          disabled={busy}
+                          data-testid={`button-accept-${qId}`}
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-amber-500/30 hover:bg-amber-500/10 hover:text-amber-500"
+                          onClick={() => actions.onStartEdit(editKey, qId)}
+                          disabled={busy || isEditing}
+                          data-testid={`button-edit-${qId}`}
+                        >
+                          <Pencil className="w-3 h-3 mr-1" /> Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500/30 hover:bg-red-500/10 hover:text-red-500"
+                              disabled={busy}
+                              data-testid={`button-delete-${qId}`}
+                            >
+                              <Trash2 className="w-3 h-3 mr-1" /> Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this question?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This permanently removes the question from the database and seed data. It will not come back on restart.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-red-600 hover:bg-red-700"
+                                onClick={() => actions.onDelete(editKey, qId)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      {isEditing && actions.editDrafts[editKey] && (
+                        <InlineEditor
+                          draft={actions.editDrafts[editKey]}
+                          questionId={qId}
+                          busy={busy}
+                          onChange={(field, value) => actions.onDraftChange(editKey, field, value)}
+                          onSave={() => actions.onSaveEdit(editKey, qId)}
+                          onCancel={() => actions.onCancelEdit(editKey)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -1237,6 +1370,7 @@ export default function AdminQualitySweep() {
               <DuplicatesSection
                 duplicates={report.duplicates.duplicatesFound}
                 removed={removed}
+                questionsById={report.questionsById}
                 actions={editActions}
               />
             )}
