@@ -1260,7 +1260,18 @@ export default function AdminQualitySweep() {
     try {
       const patch = applyFn(sourceQ);
       await updateQuestion({ ...sourceQ, ...patch });
-      await dismissOnServer({ questionId, findingType, findingKey });
+    } catch (error) {
+      toast({
+        title: 'Apply fix failed',
+        description: error instanceof Error ? error.message : 'Could not update the question.',
+        variant: 'destructive',
+      });
+      setBusyKey(null);
+      return;
+    }
+
+    // Question is updated — always remove from UI so admin doesn't retry a stale finding.
+    const markRemoved = () =>
       setRemoved((prev) => {
         const next = { ...prev };
         if (findingType === 'static') {
@@ -1272,11 +1283,18 @@ export default function AdminQualitySweep() {
         }
         return next;
       });
+
+    try {
+      await dismissOnServer({ questionId, findingType, findingKey });
+      markRemoved();
       toast({ title: 'Fix applied', description: 'Question updated and finding dismissed.' });
-    } catch (error) {
+    } catch {
+      // Update succeeded but dismiss failed — still remove from UI to prevent duplicate writes.
+      markRemoved();
       toast({
-        title: 'Apply fix failed',
-        description: error instanceof Error ? error.message : 'Could not apply the proposed fix.',
+        title: 'Fix applied — dismiss failed',
+        description:
+          'Question was updated but the finding could not be dismissed. It may reappear on the next sweep.',
         variant: 'destructive',
       });
     } finally {
