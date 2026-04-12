@@ -1040,11 +1040,24 @@ export default function AdminQualitySweep() {
     });
     setEditDrafts({});
     setEditingKey(null);
+    const keepAlive = setInterval(() => {
+      fetch('/api/auth/user', { credentials: 'include' }).catch(() => {});
+    }, 60_000);
     try {
-      const response = await apiRequest('POST', '/api/admin/quality-sweep', {
-        skipFactCheck,
-        skipDuplicates,
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 10 * 60 * 1000);
+      const response = await fetch('/api/admin/quality-sweep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ skipFactCheck, skipDuplicates }),
+        signal: controller.signal,
       });
+      clearTimeout(abortTimer);
+      if (!response.ok) {
+        const text = (await response.text()) || response.statusText;
+        throw new Error(`${response.status}: ${text}`);
+      }
       const data = (await response.json()) as QualitySweepReport;
       setReport(data);
       toast({
@@ -1061,6 +1074,7 @@ export default function AdminQualitySweep() {
         variant: 'destructive',
       });
     } finally {
+      clearInterval(keepAlive);
       setIsRunning(false);
     }
   };
