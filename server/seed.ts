@@ -60,36 +60,43 @@ export async function seedQuestions(): Promise<void> {
 
     log(`Upserting ${seedData.length} seed questions…`);
 
-    const BATCH = 50;
-    let inserted = 0;
+    // Wrap all inserts in a single transaction so a mid-seed failure rolls back
+    // completely. This keeps count=0, allowing the next boot to retry from scratch
+    // rather than being permanently stuck with a partial question corpus.
+    const inserted = await db.transaction(async (tx) => {
+      const BATCH = 50;
+      let total = 0;
 
-    for (let i = 0; i < seedData.length; i += BATCH) {
-      const batch = seedData.slice(i, i + BATCH).map((q) => ({
-        id: q.id,
-        category: q.category,
-        difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
-        question: q.question,
-        answer: q.answer,
-        acceptableAnswers: q.acceptableAnswers ?? [],
-        explanation: q.explanation,
-        pillar: q.pillar as 'GlobalEh' | 'FreshPrints' | 'TimeCapsule' | 'GreatOutdoors',
-        tags: q.tags ?? [],
-        sourceUrl: q.sourceUrl,
-        sourceName: q.sourceName,
-        status: q.status as 'approved' | 'pending' | 'rejected' | 'draft',
-        aiAnalysis: q.aiAnalysis,
-        createdAt: q.createdAt ? new Date(q.createdAt) : new Date(),
-        updatedAt: q.updatedAt ? new Date(q.updatedAt) : new Date(),
-      }));
+      for (let i = 0; i < seedData.length; i += BATCH) {
+        const batch = seedData.slice(i, i + BATCH).map((q) => ({
+          id: q.id,
+          category: q.category,
+          difficulty: q.difficulty as 'Easy' | 'Medium' | 'Hard',
+          question: q.question,
+          answer: q.answer,
+          acceptableAnswers: q.acceptableAnswers ?? [],
+          explanation: q.explanation,
+          pillar: q.pillar as 'GlobalEh' | 'FreshPrints' | 'TimeCapsule' | 'GreatOutdoors',
+          tags: q.tags ?? [],
+          sourceUrl: q.sourceUrl,
+          sourceName: q.sourceName,
+          status: q.status as 'approved' | 'pending' | 'rejected' | 'draft',
+          aiAnalysis: q.aiAnalysis,
+          createdAt: q.createdAt ? new Date(q.createdAt) : new Date(),
+          updatedAt: q.updatedAt ? new Date(q.updatedAt) : new Date(),
+        }));
 
-      const result = await db
-        .insert(questions)
-        .values(batch)
-        .onConflictDoNothing()
-        .returning({ id: questions.id });
+        const result = await tx
+          .insert(questions)
+          .values(batch)
+          .onConflictDoNothing()
+          .returning({ id: questions.id });
 
-      inserted += result.length;
-    }
+        total += result.length;
+      }
+
+      return total;
+    });
 
     const skipped = seedData.length - inserted;
     log(`Seed complete — inserted ${inserted} new, ${skipped} already present`);
