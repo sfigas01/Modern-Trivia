@@ -978,10 +978,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             if (hostname.includes('britannica.com')) return 'Britannica';
             if (hostname.includes('history.com')) return 'History.com';
             if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
-            // Reduce unknown hosts to registrable domain (last 2 parts) to
-            // strip answer-bearing subdomains like "denali.fandom.com".
+            // Reduce unknown hosts to registrable domain to strip
+            // answer-bearing subdomains like "denali.fandom.com".
+            // Handle multi-level TLDs (.co.uk, .com.au, .org.uk, etc.)
             const parts = hostname.split('.');
-            return parts.slice(-2).join('.');
+            const MULTI_LEVEL_TLDS = new Set([
+              'co.uk',
+              'org.uk',
+              'com.au',
+              'co.nz',
+              'co.jp',
+              'co.kr',
+              'com.br',
+              'co.in',
+              'co.za',
+            ]);
+            const lastTwo = parts.slice(-2).join('.');
+            if (parts.length >= 3 && MULTI_LEVEL_TLDS.has(lastTwo)) {
+              return parts.slice(-3).join('.');
+            }
+            return lastTwo;
           } catch {
             // URL parse failed — fall through to sourceName
           }
@@ -1016,7 +1032,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             pillar: q.pillar,
             hasSource: !!(q.sourceUrl && q.sourceName),
             difficulty: q.difficulty,
-            sourceDomain: extractSourceDomain(q.sourceUrl, q.sourceName),
+            // Only expose sourceDomain when full metadata is present (both URL
+            // and name). This keeps hasSource and sourceDomain consistent so the
+            // UI never shows "Source: ..." and "no source" simultaneously.
+            sourceDomain:
+              q.sourceUrl && q.sourceName ? extractSourceDomain(q.sourceUrl, q.sourceName) : null,
           };
         }
       }
