@@ -978,7 +978,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             if (hostname.includes('britannica.com')) return 'Britannica';
             if (hostname.includes('history.com')) return 'History.com';
             if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
-            return hostname;
+            // Reduce unknown hosts to registrable domain (last 2 parts) to
+            // strip answer-bearing subdomains like "denali.fandom.com".
+            const parts = hostname.split('.');
+            return parts.slice(-2).join('.');
           } catch {
             // URL parse failed — fall through to sourceName
           }
