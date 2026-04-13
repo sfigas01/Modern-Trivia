@@ -984,8 +984,20 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
           }
         }
         if (sourceName) {
-          const cleaned = sourceName.split(/\s*[-–—:]\s*/)[0].trim();
-          return cleaned || sourceName;
+          // Search all tokens for a known provider rather than blindly taking
+          // the first token — e.g. "Denali - Wikipedia" must not return "Denali".
+          const KNOWN_PROVIDERS: [RegExp, string][] = [
+            [/wikipedia/i, 'Wikipedia'],
+            [/britannica/i, 'Britannica'],
+            [/history\.com|history channel/i, 'History.com'],
+            [/national\s*geographic/i, 'National Geographic'],
+          ];
+          for (const [pattern, label] of KNOWN_PROVIDERS) {
+            if (pattern.test(sourceName)) return label;
+          }
+          // No known provider found — omit the badge rather than risk leaking
+          // an article title that contains the answer.
+          return null;
         }
         return null;
       };
