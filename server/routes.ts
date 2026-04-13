@@ -14,6 +14,7 @@ import {
   questionEdits,
   questionQualitySweepDismissals,
   duplicatePairKey,
+  type QuestionSnapshot,
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
@@ -962,17 +963,50 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ...(factCheck?.results.map((r) => r.questionId) ?? []),
         ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
       ]);
-      const questionsById: Record<
-        string,
-        {
-          question: string;
-          answer: string;
-          tags: string[];
-          category: string;
-          pillar: string;
-          hasSource: boolean;
+
+      // Sanitize source URL/name to a domain label (e.g. "Wikipedia") so the
+      // raw article title never reaches the client and can't leak the answer.
+      const extractSourceDomain = (
+        sourceUrl: string | null | undefined,
+        sourceName: string | null | undefined
+      ): string | null => {
+        if (!sourceUrl && !sourceName) return null;
+        if (sourceUrl) {
+          try {
+            const hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
+            if (hostname.includes('wikipedia.org')) return 'Wikipedia';
+            if (hostname.includes('britannica.com')) return 'Britannica';
+            if (hostname.includes('history.com')) return 'History.com';
+            if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
+            // Unknown domain — suppress rather than risk leaking the answer
+            // via the domain itself (e.g. "denali.com") or a subdomain.
+            // Known providers above cover the major sources; for everything
+            // else, omit the badge entirely.
+            return null;
+          } catch {
+            // URL parse failed — fall through to sourceName
+          }
         }
-      > = {};
+        if (sourceName) {
+          // Search all tokens for a known provider rather than blindly taking
+          // the first token — e.g. "Denali - Wikipedia" must not return "Denali".
+          const KNOWN_PROVIDERS: [RegExp, string][] = [
+            [/wikipedia/i, 'Wikipedia'],
+            [/britannica/i, 'Britannica'],
+            [/history\.com|history channel/i, 'History.com'],
+            [/national\s*geographic/i, 'National Geographic'],
+          ];
+          for (const [pattern, label] of KNOWN_PROVIDERS) {
+            if (pattern.test(sourceName)) return label;
+          }
+          // No known provider found — omit the badge rather than risk leaking
+          // an article title that contains the answer.
+          return null;
+        }
+        return null;
+      };
+
+      const questionsById: Record<string, QuestionSnapshot> = {};
       for (const q of allQuestions) {
         if (flaggedIds.has(q.id)) {
           questionsById[q.id] = {
@@ -982,6 +1016,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             category: q.category,
             pillar: q.pillar,
             hasSource: !!(q.sourceUrl && q.sourceName),
+            difficulty: q.difficulty,
+            // Only expose sourceDomain when full metadata is present (both URL
+            // and name). This keeps hasSource and sourceDomain consistent so the
+            // UI never shows "Source: ..." and "no source" simultaneously.
+            sourceDomain:
+              q.sourceUrl && q.sourceName ? extractSourceDomain(q.sourceUrl, q.sourceName) : null,
           };
         }
       }
