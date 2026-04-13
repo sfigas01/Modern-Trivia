@@ -36,6 +36,8 @@ export interface QuestionSnapshot {
   category: string;
   pillar: string;
   hasSource: boolean;
+  difficulty: string;
+  sourceDomain: string | null;
 }
 
 export interface QuestionQualityAuditReport {

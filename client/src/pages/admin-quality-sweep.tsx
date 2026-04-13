@@ -294,6 +294,25 @@ function ExpandableDetails({
       </button>
       {open && (
         <div className="mt-2 pt-2 border-t border-white/10 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="text-xs border-white/20">
+              {snapshot.category}
+            </Badge>
+            {snapshot.difficulty && (
+              <Badge variant="outline" className="text-xs border-white/20">
+                {snapshot.difficulty}
+              </Badge>
+            )}
+            {snapshot.sourceDomain ? (
+              <Badge variant="outline" className="text-xs border-white/20">
+                Source: {snapshot.sourceDomain}
+              </Badge>
+            ) : !snapshot.hasSource ? (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                no source
+              </span>
+            ) : null}
+          </div>
           <div>
             <p className="text-[10px] uppercase text-muted-foreground mb-1">Answer</p>
             <HiddenAnswer answer={snapshot.answer} />
@@ -1164,9 +1183,25 @@ function DuplicatesSection({
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-[10px] text-muted-foreground">{qId}</span>
                         {snapshot && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {snapshot.category} / {snapshot.pillar}
-                          </span>
+                          <>
+                            <Badge variant="outline" className="text-xs border-white/20">
+                              {snapshot.category}
+                            </Badge>
+                            {snapshot.difficulty && (
+                              <Badge variant="outline" className="text-xs border-white/20">
+                                {snapshot.difficulty}
+                              </Badge>
+                            )}
+                            {snapshot.sourceDomain ? (
+                              <Badge variant="outline" className="text-xs border-white/20">
+                                Source: {snapshot.sourceDomain}
+                              </Badge>
+                            ) : !snapshot.hasSource ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                                no source
+                              </span>
+                            ) : null}
+                          </>
                         )}
                       </div>
                       <p className="text-sm font-medium text-white/90 leading-snug">
@@ -1320,10 +1355,26 @@ function FactCheckSection({
                   <span className="font-mono text-xs text-muted-foreground">
                     {result.questionId}
                   </span>
-                  {snapshot && !snapshot.hasSource && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
-                      no source
-                    </span>
+                  {snapshot && (
+                    <>
+                      <Badge variant="outline" className="text-xs border-white/20">
+                        {snapshot.category}
+                      </Badge>
+                      {snapshot.difficulty && (
+                        <Badge variant="outline" className="text-xs border-white/20">
+                          {snapshot.difficulty}
+                        </Badge>
+                      )}
+                      {snapshot.sourceDomain ? (
+                        <Badge variant="outline" className="text-xs border-white/20">
+                          Source: {snapshot.sourceDomain}
+                        </Badge>
+                      ) : !snapshot.hasSource ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                          no source
+                        </span>
+                      ) : null}
+                    </>
                   )}
                 </div>
                 {snapshot && (
