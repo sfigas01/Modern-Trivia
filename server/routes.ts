@@ -978,26 +978,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             if (hostname.includes('britannica.com')) return 'Britannica';
             if (hostname.includes('history.com')) return 'History.com';
             if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
-            // Reduce unknown hosts to registrable domain to strip
-            // answer-bearing subdomains like "denali.fandom.com".
-            // Handle multi-level TLDs (.co.uk, .com.au, .org.uk, etc.)
-            const parts = hostname.split('.');
-            const MULTI_LEVEL_TLDS = new Set([
-              'co.uk',
-              'org.uk',
-              'com.au',
-              'co.nz',
-              'co.jp',
-              'co.kr',
-              'com.br',
-              'co.in',
-              'co.za',
-            ]);
-            const lastTwo = parts.slice(-2).join('.');
-            if (parts.length >= 3 && MULTI_LEVEL_TLDS.has(lastTwo)) {
-              return parts.slice(-3).join('.');
-            }
-            return lastTwo;
+            // Unknown domain — suppress rather than risk leaking the answer
+            // via the domain itself (e.g. "denali.com") or a subdomain.
+            // Known providers above cover the major sources; for everything
+            // else, omit the badge entirely.
+            return null;
           } catch {
             // URL parse failed — fall through to sourceName
           }
