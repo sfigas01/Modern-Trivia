@@ -104,6 +104,153 @@ function isLeakCandidate(candidate: string): boolean {
   return candidate.length >= 4;
 }
 
+const STOPWORDS = new Set([
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'with',
+  'by',
+  'from',
+  'is',
+  'it',
+  'its',
+  'was',
+  'are',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'shall',
+  'can',
+  'this',
+  'that',
+  'these',
+  'those',
+  'he',
+  'she',
+  'they',
+  'we',
+  'you',
+  'who',
+  'whom',
+  'which',
+  'what',
+  'where',
+  'when',
+  'why',
+  'how',
+  'not',
+  'no',
+  'nor',
+  'so',
+  'if',
+  'then',
+  'than',
+  'too',
+  'very',
+  'just',
+  'about',
+  'also',
+  'into',
+  'over',
+  'after',
+  'before',
+  'called',
+  'known',
+  'name',
+  'named',
+  'type',
+  'kind',
+  'form',
+  'first',
+  'last',
+  'most',
+  'many',
+  'much',
+  'more',
+  'some',
+  'new',
+  'old',
+  'great',
+  'big',
+  'small',
+  'long',
+  'short',
+  'world',
+  'country',
+  'city',
+  'state',
+  'part',
+]);
+
+const STEM_RULES: [RegExp, string][] = [
+  [/isation$/, 'ise'],
+  [/ization$/, 'ize'],
+  [/ically$/, 'ic'],
+  [/ation$/, ''],
+  [/ness$/, ''],
+  [/ment$/, ''],
+  [/ical$/, 'ic'],
+  [/ious$/, ''],
+  [/eous$/, ''],
+  [/ible$/, ''],
+  [/able$/, ''],
+  [/ting$/, 't'],
+  [/ling$/, 'l'],
+  [/ning$/, 'n'],
+  [/sis$/, ''],
+  [/tic$/, ''],
+  [/ing$/, ''],
+  [/ies$/, 'y'],
+  [/ied$/, 'y'],
+  [/ated$/, ''],
+  [/ted$/, 't'],
+  [/ded$/, 'd'],
+  [/ed$/, ''],
+  [/ly$/, ''],
+  [/er$/, ''],
+  [/es$/, ''],
+  [/s$/, ''],
+];
+
+function stemWord(word: string): string {
+  if (word.length < 5) return word;
+  for (const [suffix, replacement] of STEM_RULES) {
+    if (suffix.test(word)) {
+      const result = word.replace(suffix, replacement);
+      if (result.length >= 3) return result;
+    }
+  }
+  return word;
+}
+
+function extractKeywords(normalizedText: string): string[] {
+  return normalizedText
+    .split(/\s+/)
+    .filter((word) => isLeakCandidate(word) && !STOPWORDS.has(word));
+}
+
 function answerLooksNumeric(answer: string): boolean {
   const normalized = answer.toLowerCase();
   return /\d/.test(normalized) || NUMBER_WORD_PATTERN.test(normalized);
@@ -163,7 +310,14 @@ function pushFinding(
   message: string,
   proposedFix?: Record<string, unknown>
 ) {
-  findings.push({ questionId, questionIndex, severity, rule, message, ...(proposedFix ? { proposedFix } : {}) });
+  findings.push({
+    questionId,
+    questionIndex,
+    severity,
+    rule,
+    message,
+    ...(proposedFix ? { proposedFix } : {}),
+  });
 }
 
 export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQualityAuditReport {
@@ -294,6 +448,14 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
       .map((entry) => normalize(entry))
       .filter((entry) => isLeakCandidate(entry));
 
+    const questionWords = normalizedQuestion
+      ? normalizedQuestion.split(/\s+/).filter((w) => w.length >= 4)
+      : [];
+    const questionStemMap = new Map<string, string>();
+    for (const qw of questionWords) {
+      questionStemMap.set(stemWord(qw), qw);
+    }
+
     for (const candidate of answerCandidates) {
       if (normalizedQuestion && containsCandidate(normalizedQuestion, candidate)) {
         pushFinding(
@@ -304,6 +466,40 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
           'answer_leakage',
           `Answer candidate "${candidate}" appears in the question text.`
         );
+        continue;
+      }
+
+      const keywords = candidate.includes(' ')
+        ? extractKeywords(candidate)
+        : isLeakCandidate(candidate) && !STOPWORDS.has(candidate)
+          ? [candidate]
+          : [];
+
+      for (const keyword of keywords) {
+        if (candidate.includes(' ') && containsCandidate(normalizedQuestion, keyword)) {
+          pushFinding(
+            findings,
+            questionId,
+            questionIndex,
+            'medium',
+            'answer_leakage',
+            `Answer keyword "${keyword}" (from answer "${candidate}") appears in the question text.`
+          );
+          continue;
+        }
+
+        const keywordStem = stemWord(keyword);
+        const morphMatch = questionStemMap.get(keywordStem);
+        if (morphMatch && morphMatch !== keyword) {
+          pushFinding(
+            findings,
+            questionId,
+            questionIndex,
+            'low',
+            'answer_leakage',
+            `Question word "${morphMatch}" shares a root with answer keyword "${keyword}" (from answer "${candidate}").`
+          );
+        }
       }
     }
 
@@ -395,7 +591,9 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
     }
 
     if (!sourceUrl || !sourceName) {
-      const missingFieldsList = ([!sourceUrl && 'sourceUrl', !sourceName && 'sourceName'] as (string | false)[]).filter(Boolean) as string[];
+      const missingFieldsList = (
+        [!sourceUrl && 'sourceUrl', !sourceName && 'sourceName'] as (string | false)[]
+      ).filter(Boolean) as string[];
       pushFinding(
         findings,
         questionId,
