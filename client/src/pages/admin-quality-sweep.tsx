@@ -303,15 +303,16 @@ function ExpandableDetails({
                 {snapshot.difficulty}
               </Badge>
             )}
-            {snapshot.sourceDomain ? (
+            {snapshot.sourceDomain && (
               <Badge variant="outline" className="text-xs border-white/20">
                 Source: {snapshot.sourceDomain}
               </Badge>
-            ) : !snapshot.hasSource ? (
+            )}
+            {!snapshot.hasSource && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
                 no source
               </span>
-            ) : null}
+            )}
           </div>
           <div>
             <p className="text-[10px] uppercase text-muted-foreground mb-1">Answer</p>
@@ -1192,15 +1193,16 @@ function DuplicatesSection({
                                 {snapshot.difficulty}
                               </Badge>
                             )}
-                            {snapshot.sourceDomain ? (
+                            {snapshot.sourceDomain && (
                               <Badge variant="outline" className="text-xs border-white/20">
                                 Source: {snapshot.sourceDomain}
                               </Badge>
-                            ) : !snapshot.hasSource ? (
+                            )}
+                            {!snapshot.hasSource && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
                                 no source
                               </span>
-                            ) : null}
+                            )}
                           </>
                         )}
                       </div>
@@ -1365,15 +1367,16 @@ function FactCheckSection({
                           {snapshot.difficulty}
                         </Badge>
                       )}
-                      {snapshot.sourceDomain ? (
+                      {snapshot.sourceDomain && (
                         <Badge variant="outline" className="text-xs border-white/20">
                           Source: {snapshot.sourceDomain}
                         </Badge>
-                      ) : !snapshot.hasSource ? (
+                      )}
+                      {!snapshot.hasSource && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300">
                           no source
                         </span>
-                      ) : null}
+                      )}
                     </>
                   )}
                 </div>
