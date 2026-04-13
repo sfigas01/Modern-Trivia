@@ -230,7 +230,6 @@ const STEM_RULES: [RegExp, string][] = [
   [/ed$/, ''],
   [/ly$/, ''],
   [/er$/, ''],
-  [/est$/, ''],
   [/es$/, ''],
   [/s$/, ''],
 ];
