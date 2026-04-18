@@ -14,6 +14,7 @@ import {
   questionEdits,
   questionQualitySweepDismissals,
   duplicatePairKey,
+  isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -873,7 +874,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       );
 
       const filteredFindings = auditRaw.findings.filter(
-        (f) => !dismissedStatic.has(`${f.questionId}::${f.rule}`)
+        (f) => !isStaticFindingDismissed(dismissedStatic, f)
       );
       const recountedSeverity: Record<'high' | 'medium' | 'low', number> = {
         high: 0,
