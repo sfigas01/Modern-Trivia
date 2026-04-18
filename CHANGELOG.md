@@ -5,6 +5,65 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.4.2] - 2026-03-22
+
+### Fixed
+
+- **Game ends too early — round count not fully applied** — `startGame()` calculated `totalNeeded = numRounds × teams`, missing the 4-questions-per-turn factor. With 2 teams and 10 rounds this fetched only 20 questions (~2.5 rounds) instead of 80 (10 full rounds). Fixed to `numRounds × teams × QUESTIONS_PER_TEAM_ROTATION`; the setup-screen "not enough questions" warning and unit tests updated to match (STE-126)
+
+## [v0.4.1] - 2026-03-22
+
+### Fixed
+
+- **Production database seeding** — Deployed app had an empty production database; added `server/seed-data.json` (254 approved questions) and a `seedQuestions()` startup routine that upserts all seed questions on every boot using `ON CONFLICT DO NOTHING` — preserves production-side edits while filling gaps (STE-123)
+- **Questions disappear after game reset** — `resetGame()` cleared the question list but the store loader only ran once on mount; changed the `useEffect` dependency to `state.phase` so questions re-fetch whenever the game returns to the setup screen (STE-123)
+
+## [v0.4.0] - 2026-03-22
+
+### Added
+
+- **Guardian Lite content guardrails** — Server-side validation layer that screens AI-generated trivia for quality, accuracy, and content-policy compliance before questions enter the staging queue (STE-8)
+- **Staging database migration** — New `staging_questions` table with status tracking, enabling a proper review pipeline for AI-generated content (STE-32)
+- **Staging generation with validation** — End-to-end pipeline: generate → validate → stage, with status filtering in the admin UI (STE-32)
+- **Time-based question recycling with escalating cooldown** — When the pool runs low, previously-seen questions become eligible again after an increasing cooldown period; unseen questions are always preferred (STE-120)
+- **Inline field editing** — Hover any field in the admin question panel to reveal an edit pencil; saves via a single-field `PATCH` without touching other fields (STE-117)
+- **AI fix suggestions** — Fields flagged by QA show a `Fix with AI` button that calls a field-specific AI prompt and pre-fills the corrected value for admin review before saving (STE-117)
+- **Audit changelog** — Every field save writes an old→new record to a new `question_edits` table; the `ChangeLog` component in each question's detail panel shows full edit history with AI-assisted edits clearly badged (STE-117)
+- **Bulk Accept All** — Green _Accept All_ button in the staging queue header promotes every pending question to approved in a single operation via `POST /api/staging/promote-all` (STE-118)
+- **Spoiler-free staging review** — Answers hidden by default in the staging queue with a per-card _Reveal answer_ toggle, so reviewers can scan question text without spoiling answers (STE-118)
+- **Spoiler-free question browser** — Answer removed from the collapsed row summary in the admin question browser; still visible in the expanded edit panel (STE-118)
+- **Mixed pillar option** — Question generation can now produce questions across multiple pillars in a single batch
+- **Three visual game variations** — Three distinct visual layouts for the trivia game component
+- **AI source verification** — AI-generated questions now include verifiable source information
+- **Question auto-repair** — Failed question generations are automatically retried with corrective prompts
+- **Category QA tags** — Category names added to question tags for improved quality auditing
+- **Game page smoke test** — UI-level gameplay test covering question → reveal → round score → next round → game over
+- **Game mechanics regression coverage** — Tests for full-question consumption before `GAME_OVER`, duplicate score guards, and short question-pool scenarios
+- **Husky pre-push hook** — Runs `npm test` before pushes so gameplay regressions are caught locally
+- **Linear parent sync workflow** — Automated workflow for syncing parent issue status when sub-issues close
+
+### Changed
+
+- Trivia categories updated to use consistent naming conventions
+- Streamlined agent manual and added linear-parent-sync workflow docs
+- Expanded game mechanics regression coverage to verify full-question consumption before `GAME_OVER`, guard against duplicate score advancement, and cover short question-pool scenarios
+- Extended setup-screen regression coverage to keep the insufficient-question warning visible during game configuration
+
+### Fixed
+
+- Removed auto-accept toggle from the staging generate form — it was causing a React infinite render loop due to Radix UI `Switch` + `Label htmlFor` double-toggling (STE-118)
+- Bulk status update now uses `inArray()` instead of a raw SQL template, fixing a query-builder safety issue
+- Seen-questions upsert is now idempotent against replays
+
+### Dependencies
+
+- `react-day-picker` 9.11.1 → 9.14.0
+- `react-resizable-panels` 4.7.1 → 4.7.2
+- `@hookform/resolvers` 3.10.0 → 5.2.2
+- `zod-validation-error` 4.0.2 → 5.0.0
+- `@typescript-eslint/eslint-plugin` bumped
+- `actions/upload-artifact` 4 → 7
+
 ## [v0.3.0] - 2026-03-07
 
 ### Added
@@ -73,6 +132,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Session handling uses memory store fallback when database is unavailable
 - Trivia questions updated with factual corrections and improved explanations
 
+[v0.4.2]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.2
+[v0.4.1]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.1
+[v0.4.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.4.0
 [v0.3.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.3.0
 [v0.2.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/sfigas01/Modern-Trivia/releases/tag/v0.1.0

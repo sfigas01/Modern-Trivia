@@ -80,6 +80,113 @@ describe('auditQuestionQuality', () => {
     expect(report.findingsBySeverity.medium).toBeGreaterThanOrEqual(3);
   });
 
+  it('detects keyword leakage when a significant answer word appears in the question', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'kw1',
+        category: 'Geography',
+        difficulty: 'Medium',
+        question: 'What is the tallest peak, sometimes called Everest, in the Himalayas?',
+        answer: 'Mount Everest',
+        explanation: 'Mount Everest is the tallest peak at 8,849m.',
+        tags: ['Global', 'Geography', 'GlobalEh'],
+        sourceUrl: 'https://example.com/everest',
+        sourceName: 'National Geographic',
+      },
+    ]);
+
+    const leakFindings = report.findings.filter((f) => f.rule === 'answer_leakage');
+    expect(leakFindings.length).toBeGreaterThanOrEqual(1);
+    expect(leakFindings.some((f) => f.severity === 'medium' && f.message.includes('everest'))).toBe(
+      true
+    );
+  });
+
+  it('detects morphological leakage when question word shares a root with answer keyword', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'morph1',
+        category: 'Science',
+        difficulty: 'Hard',
+        question: 'Which process is photosynthetic in nature?',
+        answer: 'Photosynthesis',
+        explanation: 'Photosynthesis converts light into chemical energy.',
+        tags: ['Global', 'Science', 'GlobalEh'],
+        sourceUrl: 'https://example.com/bio',
+        sourceName: 'Biology textbook',
+      },
+    ]);
+
+    const leakFindings = report.findings.filter((f) => f.rule === 'answer_leakage');
+    expect(leakFindings.length).toBeGreaterThanOrEqual(1);
+    expect(
+      leakFindings.some((f) => f.severity === 'low' && f.message.includes('shares a root'))
+    ).toBe(true);
+  });
+
+  it('detects morphological leakage for confederation/confederated', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'morph2',
+        category: 'History',
+        difficulty: 'Medium',
+        question: 'When was Canada confederated into a single dominion?',
+        answer: 'Confederation',
+        explanation: 'Canadian Confederation occurred on July 1, 1867.',
+        tags: ['CA', 'History', 'TimeCapsule'],
+        sourceUrl: 'https://example.com/confederation',
+        sourceName: 'Canadian Encyclopedia',
+      },
+    ]);
+
+    const leakFindings = report.findings.filter((f) => f.rule === 'answer_leakage');
+    expect(leakFindings.length).toBeGreaterThanOrEqual(1);
+    expect(
+      leakFindings.some((f) => f.severity === 'low' && f.message.includes('shares a root'))
+    ).toBe(true);
+  });
+
+  it('does not flag stopwords as keyword leakage', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'stop1',
+        category: 'History',
+        difficulty: 'Medium',
+        question: 'What is the name of the ancient structure in China?',
+        answer: 'The Great Wall',
+        explanation: 'The Great Wall of China is over 13,000 miles long.',
+        tags: ['Global', 'History', 'TimeCapsule'],
+        sourceUrl: 'https://example.com/wall',
+        sourceName: 'Encyclopedia',
+      },
+    ]);
+
+    const leakFindings = report.findings.filter((f) => f.rule === 'answer_leakage');
+    expect(
+      leakFindings.some((f) => f.message.includes('"the"') || f.message.includes('"great"'))
+    ).toBe(false);
+  });
+
+  it('does not double-report keyword leakage when full answer already matches', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'dup1',
+        category: 'Music',
+        difficulty: 'Easy',
+        question: 'What Canadian musician is known as Oscar Peterson?',
+        answer: 'Oscar Peterson',
+        explanation: 'Oscar Peterson was a Canadian jazz pianist.',
+        tags: ['CA', 'Music', 'TimeCapsule'],
+        sourceUrl: 'https://example.com/oscar',
+        sourceName: 'Jazz Archive',
+      },
+    ]);
+
+    const leakFindings = report.findings.filter((f) => f.rule === 'answer_leakage');
+    expect(leakFindings.length).toBe(1);
+    expect(leakFindings[0].severity).toBe('high');
+  });
+
   it('returns a concise human-readable summary', () => {
     const report = auditQuestionQuality([
       {
@@ -91,6 +198,7 @@ describe('auditQuestionQuality', () => {
         explanation: 'DNA stands for deoxyribonucleic acid.',
         tags: ['Global', 'Science', 'GlobalEh'],
         sourceName: 'Biology textbook',
+        sourceUrl: 'https://example.com/biology',
       },
     ]);
 

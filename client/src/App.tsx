@@ -8,6 +8,9 @@ import Game from '@/pages/Game';
 import Admin from '@/pages/Admin';
 import AdminDisputes from '@/pages/admin-disputes';
 import AdminSettings from '@/pages/admin-settings';
+import AdminStaging from '@/pages/admin-staging';
+import AdminQuestions from '@/pages/admin-questions';
+import AdminQualitySweep from '@/pages/admin-quality-sweep';
 import NotFound from '@/pages/not-found';
 
 function Router() {
@@ -16,8 +19,11 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/game" component={Game} />
       <Route path="/admin" component={Admin} />
+      <Route path="/admin/staging" component={AdminStaging} />
+      <Route path="/admin/questions" component={AdminQuestions} />
       <Route path="/admin/disputes" component={AdminDisputes} />
       <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/quality-sweep" component={AdminQualitySweep} />
       <Route component={NotFound} />
     </Switch>
   );

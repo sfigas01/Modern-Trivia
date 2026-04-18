@@ -61,7 +61,9 @@ function makeQuestion(overrides: Partial<Question> & { id: string }): Question {
 // Fetch mock — intercepts /api/questions (GET) and /api/questions/seen (POST)
 // ---------------------------------------------------------------------------
 
-function createFetchMock() {
+function createFetchMock(options?: { questions?: Array<(typeof ALL_TEST_QUESTIONS)[number]> }) {
+  const questionPool = options?.questions ?? ALL_TEST_QUESTIONS;
+
   return vi.fn((input: string | URL | Request, _init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
@@ -76,7 +78,7 @@ function createFetchMock() {
       const category = parsed.searchParams.get('category');
       const limit = parsed.searchParams.get('limit');
 
-      let questions = [...ALL_TEST_QUESTIONS];
+      let questions = [...questionPool];
       if (category) {
         questions = questions.filter((q) => q.category === category);
       }
@@ -86,7 +88,7 @@ function createFetchMock() {
         questions = questions.slice(0, parseInt(limit, 10));
       }
 
-      const categories = Array.from(new Set(ALL_TEST_QUESTIONS.map((q) => q.category))).sort();
+      const categories = Array.from(new Set(questionPool.map((q) => q.category))).sort();
 
       return Promise.resolve({
         ok: true,
@@ -117,13 +119,17 @@ async function renderGame() {
 }
 
 /** Add two teams and optionally set category/rounds, then start the game. */
-async function setupAndStart(opts?: { category?: string; numRounds?: number }) {
+async function setupAndStart(opts?: {
+  category?: string;
+  numRounds?: number;
+  teamNames?: string[];
+}) {
   const hook = await renderGame();
   const { result } = hook;
+  const teamNames = opts?.teamNames ?? ['Alpha', 'Bravo'];
 
   act(() => {
-    result.current.addTeam('Alpha');
-    result.current.addTeam('Bravo');
+    teamNames.forEach((teamName) => result.current.addTeam(teamName));
   });
 
   if (opts?.category) {
@@ -152,6 +158,25 @@ function answerAndAdvance(result: { current: ReturnType<typeof useGame> }, answe
 function passAndAdvance(result: { current: ReturnType<typeof useGame> }) {
   act(() => result.current.passQuestion());
   act(() => result.current.advanceToScoreUpdate());
+}
+
+function finishGame(result: { current: ReturnType<typeof useGame> }) {
+  let questionsAnswered = 0;
+  let roundBreaks = 0;
+
+  while (result.current.state.phase !== 'GAME_OVER') {
+    if (result.current.state.phase === 'ROUND_SCORE') {
+      roundBreaks++;
+      act(() => result.current.continueToNextRound());
+      continue;
+    }
+
+    expect(result.current.state.phase).toBe('QUESTION');
+    passAndAdvance(result);
+    questionsAnswered++;
+  }
+
+  return { questionsAnswered, roundBreaks };
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +362,25 @@ describe('GameProvider state machine', () => {
     expect(result.current.state.currentQuestionIndex).toBe(1);
   });
 
+  it('advanceToScoreUpdate is idempotent when triggered twice for the same reveal', async () => {
+    const { result } = await setupAndStart();
+    const activeTeamId = result.current.state.activeTeamId!;
+    const correctAnswer = result.current.state.questions[0].answer;
+
+    act(() => result.current.setTypedAnswer(correctAnswer));
+    act(() => result.current.submitAnswer());
+
+    act(() => {
+      result.current.advanceToScoreUpdate();
+      result.current.advanceToScoreUpdate();
+    });
+
+    const activeTeam = result.current.state.teams.find((team) => team.id === activeTeamId);
+    expect(activeTeam?.questionCount).toBe(1);
+    expect(result.current.state.currentQuestionIndex).toBe(1);
+    expect(result.current.state.phase).toBe('QUESTION');
+  });
+
   it('rotates active team after QUESTIONS_PER_TEAM_ROTATION (4) questions', async () => {
     const { result } = await setupAndStart();
 
@@ -378,8 +422,8 @@ describe('GameProvider state machine', () => {
 
   it('reaches GAME_OVER when all questions are exhausted', async () => {
     // Use small numRounds so we have few questions to exhaust
-    // numRounds * teams = total questions; with numRounds=4 and 2 teams → 8 questions
-    const { result } = await setupAndStart({ numRounds: 4 });
+    // numRounds * teams * QUESTIONS_PER_TEAM_ROTATION = total questions; with numRounds=1 and 2 teams → 1*2*4=8 questions
+    const { result } = await setupAndStart({ numRounds: 1 });
     const totalQuestions = result.current.state.questions.length;
 
     for (let i = 0; i < totalQuestions; i++) {
@@ -415,6 +459,47 @@ describe('GameProvider state machine', () => {
     expect(result.current.state.selectedCategory).toBe('All');
     expect(result.current.state.numRounds).toBe(10);
   });
+
+  it.each([
+    { label: '2 teams and 5 questions each', teamNames: ['Alpha', 'Bravo'], numRounds: 5 },
+    {
+      label: '3 teams and 4 questions each',
+      teamNames: ['Alpha', 'Bravo', 'Charlie'],
+      numRounds: 4,
+    },
+    {
+      label: '4 teams and 3 questions each',
+      teamNames: ['Alpha', 'Bravo', 'Charlie', 'Delta'],
+      numRounds: 3,
+    },
+  ])('consumes every fetched question before GAME_OVER for $label', async (scenario) => {
+    const { result } = await setupAndStart({
+      numRounds: scenario.numRounds,
+      teamNames: scenario.teamNames,
+    });
+    const totalQuestions = result.current.state.questions.length;
+    const questionsPerRound = scenario.teamNames.length * 4;
+
+    const { questionsAnswered, roundBreaks } = finishGame(result);
+
+    expect(questionsAnswered).toBe(totalQuestions);
+    expect(result.current.state.currentQuestionIndex).toBe(totalQuestions);
+    expect(roundBreaks).toBe(Math.floor((totalQuestions - 1) / questionsPerRound));
+  });
+
+  it('uses every fetched question before GAME_OVER even when inventory is smaller than requested', async () => {
+    const limitedQuestions = ALL_TEST_QUESTIONS.slice(0, 6);
+    vi.stubGlobal('fetch', createFetchMock({ questions: limitedQuestions }));
+
+    const { result } = await setupAndStart({ numRounds: 5 });
+    expect(result.current.state.questions).toHaveLength(limitedQuestions.length);
+
+    const { questionsAnswered, roundBreaks } = finishGame(result);
+
+    expect(questionsAnswered).toBe(limitedQuestions.length);
+    expect(result.current.state.currentQuestionIndex).toBe(limitedQuestions.length);
+    expect(roundBreaks).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -432,10 +517,10 @@ describe('Full game happy path', () => {
   });
 
   it('plays a complete game: SETUP → questions → ROUND_SCORE → GAME_OVER with scores', async () => {
-    // Setup: 2 teams, 4 rounds → 8 total questions → exactly 1 round boundary at 8
-    const { result } = await setupAndStart({ numRounds: 4 });
+    // Setup: 2 teams, 2 rounds → 2*2*4=16 total questions → ROUND_SCORE at 8, GAME_OVER at 16
+    const { result } = await setupAndStart({ numRounds: 2 });
     const totalQuestions = result.current.state.questions.length;
-    expect(totalQuestions).toBe(8); // 4 rounds * 2 teams
+    expect(totalQuestions).toBe(16); // 2 rounds * 2 teams * 4 questions/turn
 
     let questionsAnswered = 0;
     while (result.current.state.phase !== 'GAME_OVER') {

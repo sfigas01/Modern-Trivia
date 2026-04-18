@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from 'express';
+import { enrichSubjectiveFindings } from './lib/subjectivity-enricher';
 import { createServer, type Server } from 'http';
 import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integrations/auth';
 import { db } from './db';
@@ -10,19 +11,48 @@ import {
   questions,
   seenQuestions,
   insertQuestionSchema,
+  questionEdits,
+  questionQualitySweepDismissals,
+  duplicatePairKey,
+  type QuestionSnapshot,
 } from '@shared/schema';
-import { eq, and, sql, isNull } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
+import { getAiFieldFix, type FixableField } from './lib/field-fix';
+import { auditQuestionQuality } from './lib/question-quality-audit';
+import { detectDuplicates } from './lib/duplicate-detector';
+import { batchFactCheck } from './lib/verifier';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+type SinglePillar = (typeof VALID_PILLARS)[number];
+
+const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
+  { pillar: 'TimeCapsule', pct: 0.3 },
+  { pillar: 'GlobalEh', pct: 0.3 },
+  { pillar: 'FreshPrints', pct: 0.25 },
+  { pillar: 'GreatOutdoors', pct: 0.15 },
+];
+
+function allocateMixed(count: number): { pillar: SinglePillar; count: number }[] {
+  const items = PILLAR_MIX.map((t) => ({
+    pillar: t.pillar,
+    floored: Math.floor(t.pct * count),
+    remainder: (t.pct * count) % 1,
+    pct: t.pct,
+  }));
+  let remaining = count - items.reduce((s, t) => s + t.floored, 0);
+  items.sort((a, b) => b.remainder - a.remainder || b.pct - a.pct);
+  for (let i = 0; i < remaining; i++) items[i].floored++;
+  return items.filter((t) => t.floored > 0).map((t) => ({ pillar: t.pillar, count: t.floored }));
+}
 
 const stagingGenerateSchema = z.object({
   topic: z.string().trim().min(1, 'Topic is required'),
   count: z.coerce.number().int().min(1).max(20),
-  pillar: z.enum(VALID_PILLARS),
+  pillar: z.union([z.enum(VALID_PILLARS), z.literal('Mixed')]),
 });
 
 function getUserId(req: Request): string | undefined {
@@ -266,7 +296,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let results;
       if (shouldExcludeSeen) {
-        // LEFT JOIN to find unseen questions
+        // Escalating cooldown cycle: 1 month → 3 months → 5 months, repeating
+        const cooldownExpr = sql`
+          CASE (${seenQuestions.seenCount} - 1) % 3
+            WHEN 0 THEN INTERVAL '1 month'
+            WHEN 1 THEN INTERVAL '3 months'
+            WHEN 2 THEN INTERVAL '5 months'
+          END
+        `;
+
+        // LEFT JOIN to find unseen or cooldown-expired questions
         const query = db
           .select({
             id: questions.id,
@@ -286,10 +325,22 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             seenQuestions,
             and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(and(...conditions, isNull(seenQuestions.questionId)));
+          .where(
+            and(
+              ...conditions,
+              sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
+            )
+          );
 
+        // Prefer never-seen questions first; only backfill with
+        // cooldown-expired ones when unseen supply is exhausted.
         if (shuffle === 'true') {
-          query.orderBy(sql`random()`);
+          query.orderBy(
+            sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
+            sql`random()`
+          );
+        } else {
+          query.orderBy(sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`);
         }
         if (limit) {
           query.limit(parseInt(limit as string, 10));
@@ -347,10 +398,28 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(400).json({ message: 'questionIds array is required' });
       }
 
+      // Upsert with replay guard: only bump seen_count if the last
+      // seen_at is more than 24 hours ago. This prevents duplicate
+      // submissions or client retries from inflating the count and
+      // pushing questions into longer cooldowns than warranted.
       await db
         .insert(seenQuestions)
         .values(questionIds.map((qId: string) => ({ userId, questionId: qId })))
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [seenQuestions.userId, seenQuestions.questionId],
+          set: {
+            seenCount: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN ${seenQuestions.seenCount} + 1
+              ELSE ${seenQuestions.seenCount}
+            END`,
+            seenAt: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN NOW()
+              ELSE ${seenQuestions.seenAt}
+            END`,
+          },
+        });
 
       res.json({ message: 'Questions marked as seen', count: questionIds.length });
     } catch (error) {
@@ -400,6 +469,219 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Admin question browser — all questions, all statuses
+  app.get('/api/admin/questions', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const {
+        status,
+        category,
+        pillar,
+        search,
+        limit: limitParam,
+        offset: offsetParam,
+      } = req.query;
+
+      const conditions = [];
+      if (status && status !== 'all') {
+        conditions.push(eq(questions.status, status as string));
+      }
+      if (category && category !== 'all') {
+        conditions.push(eq(questions.category, category as string));
+      }
+      if (pillar && pillar !== 'all') {
+        conditions.push(eq(questions.pillar, pillar as string));
+      }
+      if (search && typeof search === 'string' && search.trim()) {
+        const term = `%${search.trim()}%`;
+        conditions.push(
+          sql`(${questions.question} ilike ${term} or ${questions.answer} ilike ${term} or ${questions.category} ilike ${term})`
+        );
+      }
+
+      const pageLimit = Math.min(parseInt(limitParam as string, 10) || 50, 200);
+      const pageOffset = parseInt(offsetParam as string, 10) || 0;
+
+      const rows = await db
+        .select()
+        .from(questions)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(sql`${questions.createdAt} desc`)
+        .limit(pageLimit)
+        .offset(pageOffset);
+
+      const [totalResult, allCategories, allPillars] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(questions)
+          .then((r) => r[0]?.count ?? 0),
+        db.selectDistinct({ category: questions.category }).from(questions),
+        db.selectDistinct({ pillar: questions.pillar }).from(questions),
+      ]);
+
+      res.json({
+        questions: rows,
+        total: totalResult,
+        categories: allCategories.map((c) => c.category).sort(),
+        pillars: allPillars.map((p) => p.pillar).sort(),
+      });
+    } catch (error) {
+      console.error('Error fetching admin questions:', error);
+      res.status(500).json({ message: 'Failed to fetch questions' });
+    }
+  });
+
+  // Edit a single field on a question and record it in the changelog
+  app.patch('/api/admin/questions/:id/field', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+      const {
+        field,
+        value,
+        aiSuggested = false,
+      } = req.body as {
+        field: string;
+        value: unknown;
+        aiSuggested?: boolean;
+      };
+
+      if (!field) return res.status(400).json({ message: 'field is required' });
+
+      // Fetch the current row to capture the old value
+      const [current] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+      if (!current) return res.status(404).json({ message: 'Question not found' });
+
+      const oldValue =
+        current[field as keyof typeof current] != null
+          ? JSON.stringify(current[field as keyof typeof current])
+          : null;
+
+      // Apply the update
+      const [updated] = await db
+        .update(questions)
+        .set({ [field]: value, updatedAt: new Date() } as Record<string, unknown>)
+        .where(eq(questions.id, id))
+        .returning();
+
+      // Record in changelog
+      await db.insert(questionEdits).values({
+        id: crypto.randomUUID(),
+        questionId: id,
+        field,
+        oldValue,
+        newValue: value != null ? JSON.stringify(value) : null,
+        changedBy: userId,
+        aiSuggested: Boolean(aiSuggested),
+      });
+
+      res.json(updated);
+    } catch (error) {
+      console.error('Error patching question field:', error);
+      res.status(500).json({ message: 'Failed to update field' });
+    }
+  });
+
+  // AI fix suggestion for a specific field
+  app.post(
+    '/api/admin/questions/:id/ai-fix',
+    isAuthenticated,
+    isAdmin,
+    aiLimiter,
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { field } = req.body as { field: string };
+
+        const FIXABLE = [
+          'sourceUrl',
+          'sourceName',
+          'explanation',
+          'tags',
+          'answer',
+          'question',
+          'acceptableAnswers',
+        ];
+        if (!field || !FIXABLE.includes(field)) {
+          return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
+        }
+
+        const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
+        if (!q) return res.status(404).json({ message: 'Question not found' });
+
+        const suggestion = await getAiFieldFix(
+          {
+            id: q.id,
+            category: q.category,
+            difficulty: q.difficulty,
+            question: q.question,
+            answer: q.answer,
+            explanation: q.explanation,
+            pillar: q.pillar,
+            tags: (q.tags as string[]) ?? [],
+            sourceUrl: q.sourceUrl ?? null,
+            sourceName: q.sourceName ?? null,
+          },
+          field as FixableField
+        );
+
+        res.json({ suggestion });
+      } catch (error) {
+        console.error('Error getting AI field fix:', error);
+        res.status(500).json({ message: 'Failed to get AI suggestion' });
+      }
+    }
+  );
+
+  // Fetch the edit changelog for a question
+  app.get('/api/admin/questions/:id/edits', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const edits = await db
+        .select({
+          id: questionEdits.id,
+          questionId: questionEdits.questionId,
+          field: questionEdits.field,
+          oldValue: questionEdits.oldValue,
+          newValue: questionEdits.newValue,
+          aiSuggested: questionEdits.aiSuggested,
+          changedAt: questionEdits.changedAt,
+          changedBy: questionEdits.changedBy,
+        })
+        .from(questionEdits)
+        .where(eq(questionEdits.questionId, id))
+        .orderBy(sql`${questionEdits.changedAt} desc`)
+        .limit(50);
+      res.json(edits);
+    } catch (error) {
+      console.error('Error fetching question edits:', error);
+      res.status(500).json({ message: 'Failed to fetch edit history' });
+    }
+  });
+
+  // Delete a question (admin only). Cascades to seen_questions and
+  // question_quality_sweep_dismissals via FK on delete cascade.
+  app.delete('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Clean up seen_questions rows that don't have ON DELETE CASCADE.
+      await db.delete(seenQuestions).where(eq(seenQuestions.questionId, id));
+
+      const deleted = await db.delete(questions).where(eq(questions.id, id)).returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      res.status(500).json({ message: 'Failed to delete question' });
+    }
+  });
+
   // Staging API (Admin Only)
   app.get('/api/staging', isAuthenticated, isAdmin, async (req, res) => {
     try {
@@ -428,9 +710,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const { topic, count, pillar } = parsed.data;
-      const generatedQuestions = await generateQuestions(topic, count, pillar);
 
-      const insertedQuestions = await db.insert(questions).values(generatedQuestions).returning();
+      let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
+
+      if (pillar === 'Mixed') {
+        const batches = allocateMixed(count);
+        console.info('[staging] Mixed generation', { topic, count, batches });
+        const results = await Promise.all(
+          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p))
+        );
+        allGenerated = results.flat();
+      } else {
+        allGenerated = await generateQuestions(topic, count, pillar);
+      }
+
+      const insertedQuestions = await db
+        .insert(questions)
+        .values(
+          allGenerated.map((q) => ({
+            ...q,
+            aiAnalysis: q.aiAnalysis,
+          }))
+        )
+        .returning();
 
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
@@ -440,6 +742,23 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
+    }
+  });
+
+  // Bulk-promote all pending staging questions to approved
+  app.post('/api/staging/promote-all', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const promoted = await db
+        .update(questions)
+        .set({ status: 'approved', updatedAt: new Date() })
+        .where(eq(questions.status, 'pending'))
+        .returning({ id: questions.id });
+
+      console.info('[staging] Bulk promoted all pending questions', { count: promoted.length });
+      res.json({ count: promoted.length, ids: promoted.map((q) => q.id) });
+    } catch (error) {
+      console.error('Error bulk promoting questions:', error);
+      res.status(500).json({ message: 'Failed to promote all questions' });
     }
   });
 
@@ -464,6 +783,314 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     } catch (error) {
       console.error('Error promoting question:', error);
       res.status(500).json({ message: 'Failed to promote question' });
+    }
+  });
+
+  app.post('/api/staging/:id/reject', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [rejected] = await db
+        .update(questions)
+        .set({
+          status: 'rejected',
+          updatedAt: new Date(),
+        })
+        .where(eq(questions.id, id))
+        .returning();
+
+      if (!rejected) {
+        return res.status(404).json({ message: 'Question not found' });
+      }
+
+      res.json(rejected);
+    } catch (error) {
+      console.error('Error rejecting question:', error);
+      res.status(500).json({ message: 'Failed to reject question' });
+    }
+  });
+
+  // Quality Sweep (Admin Only)
+  const sweepRequestSchema = z.object({
+    skipFactCheck: z.boolean().optional().default(false),
+    skipDuplicates: z.boolean().optional().default(false),
+  });
+
+  app.post('/api/admin/quality-sweep', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
+    try {
+      const parsed = sweepRequestSchema.parse(req.body);
+      const { skipFactCheck, skipDuplicates } = parsed;
+
+      // 1. Fetch all approved questions
+      const allQuestions = await db
+        .select()
+        .from(questions)
+        .where(eq(questions.status, 'approved'));
+
+      if (allQuestions.length === 0) {
+        return res.json({
+          generatedAt: new Date().toISOString(),
+          totalQuestions: 0,
+          audit: {
+            generatedAt: new Date().toISOString(),
+            totalQuestions: 0,
+            totalFindings: 0,
+            flaggedQuestionCount: 0,
+            findingsBySeverity: { high: 0, medium: 0, low: 0 },
+            findingsByRule: {},
+            findings: [],
+          },
+          duplicates: null,
+          factCheck: null,
+          recommendations: ['No approved questions found in the database.'],
+        });
+      }
+
+      // 2. Static audit (instant)
+      const auditRaw = auditQuestionQuality(allQuestions);
+
+      // 2.5 Enrich subjective_prompt findings with AI-identified subjective phrase + rewrite
+      await enrichSubjectiveFindings(auditRaw.findings, allQuestions);
+
+      // 3. Duplicate detection (GPT-4o for conceptual pairs only)
+      const duplicatesRaw = skipDuplicates ? null : await detectDuplicates(allQuestions);
+
+      // 4. Fact-checking (GPT-4o per question)
+      const factCheckRaw = skipFactCheck ? null : await batchFactCheck(allQuestions);
+
+      // 4.5 Filter out previously-dismissed findings
+      const dismissals = await db.select().from(questionQualitySweepDismissals);
+      const dismissedStatic = new Set(
+        dismissals
+          .filter((d) => d.findingType === 'static')
+          .map((d) => `${d.questionId}::${d.findingKey}`)
+      );
+      const dismissedDuplicates = new Set(
+        dismissals.filter((d) => d.findingType === 'duplicate').map((d) => d.findingKey)
+      );
+      const dismissedFactCheck = new Set(
+        dismissals.filter((d) => d.findingType === 'fact_check').map((d) => d.questionId)
+      );
+
+      const filteredFindings = auditRaw.findings.filter(
+        (f) => !dismissedStatic.has(`${f.questionId}::${f.rule}`)
+      );
+      const recountedSeverity: Record<'high' | 'medium' | 'low', number> = {
+        high: 0,
+        medium: 0,
+        low: 0,
+      };
+      const recountedRule: Record<string, number> = {};
+      for (const ruleKey of Object.keys(auditRaw.findingsByRule)) {
+        recountedRule[ruleKey] = 0;
+      }
+      for (const f of filteredFindings) {
+        recountedSeverity[f.severity]++;
+        recountedRule[f.rule] = (recountedRule[f.rule] ?? 0) + 1;
+      }
+      const audit = {
+        ...auditRaw,
+        findings: filteredFindings,
+        totalFindings: filteredFindings.length,
+        flaggedQuestionCount: new Set(filteredFindings.map((f) => f.questionId)).size,
+        findingsBySeverity: recountedSeverity,
+        findingsByRule: recountedRule as typeof auditRaw.findingsByRule,
+      };
+
+      const duplicates = duplicatesRaw
+        ? (() => {
+            const filtered = duplicatesRaw.duplicatesFound.filter(
+              (m) => !dismissedDuplicates.has(duplicatePairKey(m.questionIdA, m.questionIdB))
+            );
+            const byType: Record<'exact' | 'near_duplicate' | 'conceptual', number> = {
+              exact: 0,
+              near_duplicate: 0,
+              conceptual: 0,
+            };
+            for (const m of filtered) byType[m.matchType]++;
+            return {
+              ...duplicatesRaw,
+              duplicatesFound: filtered,
+              duplicatesByType: byType,
+            };
+          })()
+        : null;
+
+      const factCheck = factCheckRaw
+        ? {
+            ...factCheckRaw,
+            results: factCheckRaw.results.filter((r) => !dismissedFactCheck.has(r.questionId)),
+          }
+        : null;
+
+      // 5. Compute recommendations
+      const recommendations: string[] = [];
+      if (audit.findingsBySeverity.high > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.high} high-severity audit finding(s) — fix before next release.`
+        );
+      }
+      if (audit.findingsBySeverity.medium > 0) {
+        recommendations.push(
+          `${audit.findingsBySeverity.medium} medium-severity audit finding(s) — review and improve.`
+        );
+      }
+      if (duplicates && duplicates.duplicatesFound.length > 0) {
+        recommendations.push(
+          `${duplicates.duplicatesFound.length} duplicate pair(s) found — remove or merge the lower-quality version of each pair.`
+        );
+      }
+      if (factCheck) {
+        const failures = factCheck.results.filter((r) => r.verdict === 'fail').length;
+        const flags = factCheck.results.filter((r) => r.verdict === 'flag').length;
+        if (failures > 0) {
+          recommendations.push(`${failures} question(s) failed fact-check — review immediately.`);
+        }
+        if (flags > 0) {
+          recommendations.push(
+            `${flags} question(s) flagged by fact-check — verify before next release.`
+          );
+        }
+      }
+      if (recommendations.length === 0) {
+        recommendations.push('No critical issues found. All approved questions passed the sweep.');
+      }
+
+      // Build a snapshot map for all flagged questions so the frontend can
+      // show question text, hidden answer, and current state without extra fetches.
+      const flaggedIds = new Set<string>([
+        ...audit.findings.map((f) => f.questionId),
+        ...(factCheck?.results.map((r) => r.questionId) ?? []),
+        ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
+      ]);
+
+      // Sanitize source URL/name to a domain label (e.g. "Wikipedia") so the
+      // raw article title never reaches the client and can't leak the answer.
+      const extractSourceDomain = (
+        sourceUrl: string | null | undefined,
+        sourceName: string | null | undefined
+      ): string | null => {
+        if (!sourceUrl && !sourceName) return null;
+        if (sourceUrl) {
+          try {
+            const hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
+            if (hostname.includes('wikipedia.org')) return 'Wikipedia';
+            if (hostname.includes('britannica.com')) return 'Britannica';
+            if (hostname.includes('history.com')) return 'History.com';
+            if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
+            // Unknown domain — suppress rather than risk leaking the answer
+            // via the domain itself (e.g. "denali.com") or a subdomain.
+            // Known providers above cover the major sources; for everything
+            // else, omit the badge entirely.
+            return null;
+          } catch {
+            // URL parse failed — fall through to sourceName
+          }
+        }
+        if (sourceName) {
+          // Search all tokens for a known provider rather than blindly taking
+          // the first token — e.g. "Denali - Wikipedia" must not return "Denali".
+          const KNOWN_PROVIDERS: [RegExp, string][] = [
+            [/wikipedia/i, 'Wikipedia'],
+            [/britannica/i, 'Britannica'],
+            [/history\.com|history channel/i, 'History.com'],
+            [/national\s*geographic/i, 'National Geographic'],
+          ];
+          for (const [pattern, label] of KNOWN_PROVIDERS) {
+            if (pattern.test(sourceName)) return label;
+          }
+          // No known provider found — omit the badge rather than risk leaking
+          // an article title that contains the answer.
+          return null;
+        }
+        return null;
+      };
+
+      const questionsById: Record<string, QuestionSnapshot> = {};
+      for (const q of allQuestions) {
+        if (flaggedIds.has(q.id)) {
+          questionsById[q.id] = {
+            question: q.question,
+            answer: q.answer,
+            tags: (q.tags as string[]) ?? [],
+            category: q.category,
+            pillar: q.pillar,
+            hasSource: !!(q.sourceUrl && q.sourceName),
+            difficulty: q.difficulty,
+            // Only expose sourceDomain when full metadata is present (both URL
+            // and name). This keeps hasSource and sourceDomain consistent so the
+            // UI never shows "Source: ..." and "no source" simultaneously.
+            sourceDomain:
+              q.sourceUrl && q.sourceName ? extractSourceDomain(q.sourceUrl, q.sourceName) : null,
+          };
+        }
+      }
+
+      res.json({
+        generatedAt: new Date().toISOString(),
+        totalQuestions: allQuestions.length,
+        audit,
+        duplicates,
+        factCheck,
+        recommendations,
+        questionsById,
+      });
+    } catch (error) {
+      console.error('Error running quality sweep:', error);
+      res.status(500).json({ message: 'Quality sweep failed' });
+    }
+  });
+
+  // Dismiss a quality-sweep finding so it stops appearing in future sweeps.
+  const dismissRequestSchema = z.object({
+    questionId: z.string().min(1),
+    findingType: z.enum(['static', 'duplicate', 'fact_check']),
+    findingKey: z.string().min(1),
+    reason: z.string().optional(),
+  });
+
+  app.post('/api/admin/quality-sweep/dismiss', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const parsed = dismissRequestSchema.parse(req.body);
+      const userId = getUserId(req);
+
+      // Idempotent: on conflict (unique index), return the existing row.
+      const [row] = await db
+        .insert(questionQualitySweepDismissals)
+        .values({
+          questionId: parsed.questionId,
+          findingType: parsed.findingType,
+          findingKey: parsed.findingKey,
+          reason: parsed.reason,
+          dismissedBy: userId,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (row) {
+        return res.json({ id: row.id });
+      }
+
+      // Conflict — fetch the existing row to return its id.
+      const [existing] = await db
+        .select()
+        .from(questionQualitySweepDismissals)
+        .where(
+          and(
+            eq(questionQualitySweepDismissals.questionId, parsed.questionId),
+            eq(questionQualitySweepDismissals.findingType, parsed.findingType),
+            eq(questionQualitySweepDismissals.findingKey, parsed.findingKey)
+          )
+        )
+        .limit(1);
+
+      res.json({ id: existing?.id ?? '' });
+    } catch (error) {
+      console.error('Error dismissing finding:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(422).json({ message: 'Invalid dismiss request', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to dismiss finding' });
     }
   });
 

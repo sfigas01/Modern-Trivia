@@ -1,56 +1,29 @@
 # Modern Trivia Agent Manual (Shared)
 
-**Last updated:** 2026-03-06
-**Maintainer:** Modern Trivia maintainers (owner: Stephanie Figas)
-**Review cadence:** Monthly (or immediately after major workflow/tooling changes)
+This file is shared across `AGENTS.md`, `CLAUDE.md`, and `replit.md`. All three must contain identical content.
 
-This file is intentionally shared across agent entrypoints:
-
-- `AGENTS.md`
-- `CLAUDE.md`
-- `replit.md`
-
-All three files must contain the same policy content so every agent operates with the same context and rules.
+Multiple agents work on this repo (Claude Code, Replit, Codex, Antigravity). Expect uncommitted changes from other sessions.
 
 ## Sync Contract
 
-### Required behavior
+1. If any rule is added/changed/removed in one file, mirror it in the other two in the same change.
+2. All three files are equal entrypoints; none is canonical-only.
+3. If sync cannot complete in one pass, add a mismatch note in all three files.
 
-1. If any shared rule is added/changed/removed in one file, mirror the exact policy update in the other two files in the same change.
-2. Do not treat any one file as canonical-only for policy; all three are equal entrypoints for agents.
-3. If all three files cannot be synced in one pass, do not finalize silently. Add an explicit mismatch note in all three files.
+## Linear as Shared Memory
 
-## Agent Team & Scope
+Linear (Modern Trivia project) is the source of truth for priorities, status, and context. All agents must keep it current.
 
-This repository is actively worked on by multiple agents:
-
-- Claude Code (desktop/web)
-- Replit agent
-- Codex
-- Antigravity (multi-model)
-
-All agents must follow the same operating rules in this manual.
-
-## Current Priority
-
-Follow the current prioritized work in Linear (Modern Trivia project) as the source of truth.
-
-Do not assume a static priority (for example, feature freeze vs feature work) unless it is explicitly reflected in current Linear priorities/issues.
-
-Default work categories:
-
-1. Security
-2. DevOps
-3. Observability
-4. Process
-5. Critical bug fixes
-
-If Linear priority changes, update this section in all three shared files in the same change.
+1. **Before starting work:** Read the full issue description and comments for context. Check that no one else is already working on it (status should not be `In Progress`).
+2. **When starting work:** Move the issue to `In Progress`.
+3. **When opening a PR:** Move the issue to `In Review`. Include the Linear issue ID (e.g., `STE-XX`) in the PR title or description.
+4. **When work is blocked or paused:** Comment on the issue explaining why, so other agents and the user have context.
+5. Do not assume a static priority unless explicitly reflected in Linear.
 
 ## Security Rules
 
 1. Never commit `.env` files, API keys, credentials, or secrets.
-2. Use `.env.example` as the reference template.
+2. Use `.env.example` as the reference template for environment variables.
 3. Put production secrets in Replit Secrets.
 4. If hardcoded secrets are found, stop and flag immediately.
 
@@ -60,13 +33,16 @@ If Linear priority changes, update this section in all three shared files in the
 
 1. Never push directly to `main`; use pull requests.
 2. CI must pass before merge.
-3. Do not bypass hooks with `--no-verify`.
-4. Use issue-linked branch names with one normalized pattern set:
+3. Do not bypass hooks with `--no-verify`. Pre-commit hooks run `lint-staged` (eslint + prettier) and `tsc --noEmit`.
+4. Pull or rebase from `main` before pushing to avoid merge conflicts.
+5. Keep commits atomic: one logical change per commit. Do not bundle unrelated changes.
+6. Never commit generated files (`node_modules/`, `dist/`, `.DS_Store`, build output).
+7. Use issue-linked branch names:
    - `feature/STE-XX-short-description`
    - `fix/STE-XX-short-description`
    - `chore/STE-XX-short-description`
    - `docs/STE-XX-short-description`
-   - `codex/ste-XX-short-description` (when Codex-specific branch prefix is required)
+   - `codex/ste-XX-short-description` (Codex-specific)
 
 ### Hygiene requirements
 
@@ -90,88 +66,65 @@ If Linear priority changes, update this section in all three shared files in the
 3. If a "do not continue" condition is hit, stop and provide a concise warning plus the recommended next step (new branch/worktree, cleanup, or explicit override).
 4. Do not silently continue after warning; require explicit user confirmation to override.
 
-## Linear Parent Sync Rule
+## Commit Messages
 
-When completing a Linear sub-issue with a `parentId`, always sync the parent in the same workflow unless the user explicitly says not to.
+Use Conventional Commits: `<type>(<scope>): <description>`
 
-### Required sequence
+- Types: `feat`, `fix`, `chore`, `docs`
+- Scopes should match area of change (e.g., `api`, `deps`, `client`)
+- Imperative mood, lowercase, no trailing period
+- Examples: `fix(api): validate count parameter`, `feat(client): add dark mode toggle`
 
-1. Update/close the sub-issue first.
-2. Read all current child issues of the parent and recompute progress (`done/total` and percentage).
-3. Update parent description so status, completed/open/canceled child lists, critical path, and next recommended issue are current.
-4. Add a parent comment summarizing refresh with concrete counts and issue IDs.
-5. If parent sync fails, do not silently skip it.
-6. If parent sync fails, add a sub-issue comment stating parent sync failed and why.
-7. If parent sync fails, keep sub-issue in `In Review` instead of `Done` until parent sync is resolved.
+## Testing
+
+- Framework: Vitest (not Jest). Use `vitest` APIs.
+- Test files: `*.test.ts` / `*.test.tsx`
+- Run `npm test` before marking work complete.
+- If tests fail: fix them. Do not skip, mock around, or ignore failures.
+
+## Error Handling
+
+- Server routes: try/catch with `console.error('Context:', error)` + appropriate HTTP status codes.
+- Validation: use Zod schemas. Return 422 for validation errors, 400 for bad input, 500 for server errors.
+- Do not swallow errors silently.
+
+## Linear Parent Sync
+
+When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-parent-sync.md` to sync the parent. This workflow verifies PR links, updates parent progress, and can be invoked standalone.
+
+## Pull Requests
+
+1. Include the Linear issue ID in the PR title (e.g., `feat(api): add endpoint [STE-42]`) or link it in the description.
+2. Write a brief description: what changed and why. Reviewers should understand the PR without reading every diff.
+3. Keep PRs focused on a single issue or feature. Split large changes into smaller PRs when possible.
 
 ## Quality Gates
 
-Configured CI checks are the source of truth for required merge gates.
+CI gates (`.github/workflows/ci.yml`) must pass before merge. Fix failures, don't bypass.
 
-Reference:
+## Documentation Confirmation
 
-- `.github/workflows/ci.yml`
+When finishing any task, **always confirm to the user what documentation was updated**. Report:
 
-At minimum, expect type-check, build, lint, tests, and dependency/security checks to pass when configured as required in CI.
+1. **What** was documented — issue state change, release notes, PR description, test coverage, README/guide edits, config changes, etc.
+2. **Where** it lives — Linear issue ID + URL, GitHub release tag, file path, PR number, etc.
 
-If any required CI gate fails, fix it before merge.
+This applies to every task completion. Specific expectations:
 
-## Commands & Environment
+- **Linear:** Move the issue to the correct state. Leave a closing comment summarizing what was shipped (what changed, what files, any trade-offs or follow-ups).
+- **GitHub releases:** Create a release when shipping a user-visible fix or feature. Bug fixes → patch version (e.g. v0.5.1). New features → minor version (e.g. v0.6.0). Breaking changes → major version.
+- **PR descriptions:** Must clearly describe what changed and why before requesting merge.
+- **`CLAUDE.md` / `AGENTS.md` / `replit.md`:** Update all three files in sync whenever agent workflow rules change. See Sync Contract above.
 
-Use `package.json` scripts as the source of truth for runnable commands.
+Do not report a task as complete until documentation is confirmed. The user's signal that this is working: every task handoff includes an explicit "Documentation updated" confirmation listing the what and where.
 
-Common script entrypoints include:
+## References
 
-- `npm run dev`
-- `npm run db:push`
-- `npm run build`
-- `npm run check`
-- `npm test`
-- `npm run lint`
-- `npm run lint:fix`
-- `npm run format`
-
-Use `.env.example` as the source of truth for required environment variables and expected names.
-
-## Repository Context
-
-Use canonical docs instead of duplicating volatile technical details in this manual.
-
-Primary references:
-
-- Product and project context: `README.md`, `docs/PRODUCT_ROADMAP.md`
-- App behavior and state flow: `docs/guides/game_state_machine.md`
-- Admin and operational setup: `docs/guides/admin_setup.md`, `docs/guides/ai_tool_setup.md`
-- Code-level implementation details: source files under `client/`, `server/`, and `shared/`
-
-If architecture, endpoints, or implementation details change, update the dedicated docs above rather than expanding this shared manual.
-
-## Documentation & Process
-
-1. Follow documentation standards in `docs/guides/documentation_standards.md`.
-2. Keep roadmap updated in `docs/PRODUCT_ROADMAP.md` when scope changes.
-3. Current doc structure:
-   - Epics: `docs/epics/`
-   - Features: `docs/features/`
-   - Guides: `docs/guides/`
-4. Use `.agent/workflows/` workflows when applicable.
-
-## Trivia Content QA Rules
-
-For QA sessions, read `docs/guides/qa_instructions.md` first.
-
-Key references:
-
-- Questions: `client/src/lib/questions.json`
-- Editorial strategy: `CONTENT_STRATEGY.md`
-- QA instructions: `docs/guides/qa_instructions.md`
-
-Hard constraints:
-
-1. Verify facts before changing content.
-2. GlobalEh content must not be US-centric.
-3. FreshPrints content must be recent.
-4. Verify nationality before assigning regional tags.
+- Product context: `README.md`, `docs/PRODUCT_ROADMAP.md`
+- Guides and standards: `docs/guides/`
+- Documentation standards: `docs/guides/documentation_standards.md`
+- QA work: read `docs/guides/qa_instructions.md` first
+- Workflows: `.agent/workflows/`
 
 ## Permission Gate
 
