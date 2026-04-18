@@ -1,10 +1,13 @@
 import type { Express, Request, Response } from 'express';
+import { aiLimiter } from '../../middleware/rateLimiter';
 import { chatStorage } from '../chat/storage';
 import { openai, speechToText, voiceChatWithTextModel, convertWebmToWav } from './client';
 
 // Note: Set express.json({ limit: "50mb" }) for audio payloads.
 // Note: Use convertWebmToWav() to convert browser WebM to WAV before API calls.
 export function registerAudioRoutes(app: Express): void {
+  const voiceStreamRoute = '/api/conversations/:id/voice-stream';
+
   // Get all conversations
   app.get('/api/conversations', async (req: Request, res: Response) => {
     try {
@@ -59,7 +62,7 @@ export function registerAudioRoutes(app: Express): void {
   // Send voice message and get streaming audio response
   // Uses gpt-4o-mini-transcribe for STT, gpt-audio-mini for voice response
   // For text model control, chain: speechToText() -> text model -> textToSpeech()
-  app.post('/api/conversations/:id/messages', async (req: Request, res: Response) => {
+  app.post('/api/conversations/:id/messages', aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       const { audio, voice = 'alloy', inputFormat = 'wav' } = req.body;
@@ -137,7 +140,7 @@ export function registerAudioRoutes(app: Express): void {
   // Voice chat using separate text model (GPT-5) + TTS pipeline
   // Streams sentences to TTS as they're generated for lower latency
   // Supports multilingual sentence detection via locale parameter
-  app.post('/api/conversations/:id/voice-stream', async (req: Request, res: Response) => {
+  app.post(voiceStreamRoute, aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       const { audio, voice = 'alloy', inputFormat = 'wav', locale = 'en' } = req.body;

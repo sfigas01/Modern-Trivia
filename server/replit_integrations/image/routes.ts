@@ -1,8 +1,9 @@
 import type { Express, Request, Response } from 'express';
+import { aiLimiter } from '../../middleware/rateLimiter';
 import { openai } from './client';
 
 export function registerImageRoutes(app: Express): void {
-  app.post('/api/generate-image', async (req: Request, res: Response) => {
+  app.post('/api/generate-image', aiLimiter, async (req: Request, res: Response) => {
     try {
       const { prompt, size = '1024x1024' } = req.body;
 
@@ -19,9 +20,7 @@ export function registerImageRoutes(app: Express): void {
 
       const imageData = response.data?.[0];
       if (!imageData?.url && !imageData?.b64_json) {
-        return res
-          .status(502)
-          .json({ error: 'Image provider returned an empty image response' });
+        return res.status(502).json({ error: 'Image provider returned an empty image response' });
       }
 
       res.json({

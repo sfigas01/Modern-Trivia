@@ -12,7 +12,7 @@ export const generalLimiter = rateLimit({
 
 export const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: {
