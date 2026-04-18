@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import OpenAI from 'openai';
+import { aiLimiter } from '../../middleware/rateLimiter';
 import { chatStorage } from './storage';
 
 const openai = new OpenAI({
@@ -60,7 +61,7 @@ export function registerChatRoutes(app: Express): void {
   });
 
   // Send message and get AI response (streaming)
-  app.post('/api/conversations/:id/messages', async (req: Request, res: Response) => {
+  app.post('/api/conversations/:id/messages', aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
       const { content } = req.body;
