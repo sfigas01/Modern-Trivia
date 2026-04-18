@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
-import { useGame, Team } from '@/lib/store';
+import { useGame } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Minus, ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
+import { ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
 import { DisputeModal } from '@/components/DisputeModal';
+import { useToast } from '@/hooks/use-toast';
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -15,11 +16,13 @@ export default function Game() {
   const [_, setLocation] = useLocation();
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const { toast } = useToast();
   const {
     state,
     setTypedAnswer,
     submitAnswer,
     passQuestion,
+    awardDisputedPoints,
     advanceToScoreUpdate,
     continueToNextRound,
     endGame,
@@ -168,6 +171,14 @@ export default function Game() {
   const completedRounds =
     questionsPerRound > 0 ? Math.floor(state.currentQuestionIndex / questionsPerRound) : 0;
   const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
+  const canDisputeAttempt =
+    isReveal &&
+    state.currentAttempt?.verdict === 'INCORRECT' &&
+    state.currentAttempt.pointsAwarded !== true;
+  const canAwardDisputedPoints =
+    canDisputeAttempt &&
+    state.currentAttempt?.disputeSubmitted === true &&
+    state.currentAttempt.pointsAwarded !== true;
 
   const getDifficultyColor = (d: string) => {
     switch (d) {
@@ -180,6 +191,14 @@ export default function Game() {
       default:
         return 'bg-primary';
     }
+  };
+
+  const handleAwardDisputedPoints = () => {
+    awardDisputedPoints();
+    toast({
+      title: 'Points Awarded',
+      description: `Points awarded to ${activeTeam?.name || 'team'}.`,
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -353,14 +372,25 @@ export default function Game() {
                     >
                       NEXT QUESTION <ArrowRight className="ml-2 w-6 h-6" />
                     </Button>
-                    <Button
-                      onClick={() => setDisputeOpen(true)}
-                      variant="outline"
-                      className="h-16 px-6 border-white/20 hover:bg-red-500/10 hover:text-red-500 transition-colors"
-                    >
-                      <Flag className="w-5 h-5" />
-                      <span className="hidden sm:inline ml-2">Dispute</span>
-                    </Button>
+                    {canAwardDisputedPoints && (
+                      <Button
+                        onClick={handleAwardDisputedPoints}
+                        variant="secondary"
+                        className="h-16 px-6 font-bold"
+                      >
+                        Group agreed — award points
+                      </Button>
+                    )}
+                    {canDisputeAttempt && (
+                      <Button
+                        onClick={() => setDisputeOpen(true)}
+                        variant="outline"
+                        className="h-16 px-6 border-white/20 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+                      >
+                        <Flag className="w-5 h-5" />
+                        <span className="hidden sm:inline ml-2">Dispute</span>
+                      </Button>
+                    )}
                   </div>
 
                   <DisputeModal

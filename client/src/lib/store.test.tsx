@@ -160,6 +160,20 @@ function passAndAdvance(result: { current: ReturnType<typeof useGame> }) {
   act(() => result.current.advanceToScoreUpdate());
 }
 
+function getCorrectPoints(difficulty: Question['difficulty']) {
+  return difficulty === 'Easy' ? 1 : difficulty === 'Medium' ? 2 : 3;
+}
+
+function submitIncorrectAnswer(result: { current: ReturnType<typeof useGame> }) {
+  const question = result.current.state.questions[result.current.state.currentQuestionIndex];
+
+  act(() => result.current.setTypedAnswer('zzzzzzzzzzzz'));
+  act(() => result.current.submitAnswer());
+
+  expect(result.current.state.currentAttempt?.verdict).toBe('INCORRECT');
+  return question;
+}
+
 function finishGame(result: { current: ReturnType<typeof useGame> }) {
   let questionsAnswered = 0;
   let roundBreaks = 0;
@@ -379,6 +393,104 @@ describe('GameProvider state machine', () => {
     expect(activeTeam?.questionCount).toBe(1);
     expect(result.current.state.currentQuestionIndex).toBe(1);
     expect(result.current.state.phase).toBe('QUESTION');
+  });
+
+  it('marks the current reveal attempt after a dispute is submitted', async () => {
+    const { result } = await setupAndStart();
+
+    submitIncorrectAnswer(result);
+    expect(result.current.state.currentAttempt?.disputeSubmitted).toBeUndefined();
+
+    act(() => result.current.markDisputeSubmitted());
+
+    expect(result.current.state.currentAttempt?.disputeSubmitted).toBe(true);
+  });
+
+  it('awards disputed points immediately and flips the attempt to correct', async () => {
+    const { result } = await setupAndStart();
+    const activeTeamId = result.current.state.activeTeamId!;
+    const startingScore = result.current.state.teams.find((team) => team.id === activeTeamId)!
+      .score;
+    const question = submitIncorrectAnswer(result);
+    const correctPoints = getCorrectPoints(question.difficulty);
+
+    act(() => result.current.markDisputeSubmitted());
+    act(() => result.current.awardDisputedPoints());
+
+    const activeTeam = result.current.state.teams.find((team) => team.id === activeTeamId);
+    expect(activeTeam?.score).toBe(startingScore + correctPoints);
+    expect(activeTeam?.questionCount).toBe(0);
+    expect(result.current.state.currentAttempt).toMatchObject({
+      verdict: 'CORRECT',
+      pointsDelta: correctPoints,
+      processed: true,
+      disputeSubmitted: true,
+      pointsAwarded: true,
+    });
+  });
+
+  it('advances an awarded attempt without applying points a second time', async () => {
+    const { result } = await setupAndStart();
+    const activeTeamId = result.current.state.activeTeamId!;
+
+    submitIncorrectAnswer(result);
+    act(() => result.current.markDisputeSubmitted());
+    act(() => result.current.awardDisputedPoints());
+
+    const scoreAfterAward = result.current.state.teams.find((team) => team.id === activeTeamId)!
+      .score;
+
+    act(() => result.current.advanceToScoreUpdate());
+
+    const activeTeam = result.current.state.teams.find((team) => team.id === activeTeamId);
+    expect(activeTeam?.score).toBe(scoreAfterAward);
+    expect(activeTeam?.questionCount).toBe(1);
+    expect(result.current.state.currentQuestionIndex).toBe(1);
+    expect(result.current.state.phase).toBe('QUESTION');
+  });
+
+  it('prevents re-awarding points for the same dispute attempt', async () => {
+    const { result } = await setupAndStart();
+    const activeTeamId = result.current.state.activeTeamId!;
+
+    submitIncorrectAnswer(result);
+    act(() => result.current.markDisputeSubmitted());
+    act(() => result.current.awardDisputedPoints());
+
+    const scoreAfterAward = result.current.state.teams.find((team) => team.id === activeTeamId)!
+      .score;
+
+    act(() => result.current.awardDisputedPoints());
+
+    expect(result.current.state.teams.find((team) => team.id === activeTeamId)?.score).toBe(
+      scoreAfterAward
+    );
+  });
+
+  it('does not award points for pass, correct, or undisputed incorrect attempts', async () => {
+    const passHook = await setupAndStart();
+    act(() => passHook.result.current.passQuestion());
+    act(() => passHook.result.current.markDisputeSubmitted());
+    act(() => passHook.result.current.awardDisputedPoints());
+    expect(passHook.result.current.state.teams[0].score).toBe(0);
+    expect(passHook.result.current.state.currentAttempt?.verdict).toBe('PASS');
+    passHook.unmount();
+
+    const correctHook = await setupAndStart();
+    const correctAnswer = correctHook.result.current.state.questions[0].answer;
+    act(() => correctHook.result.current.setTypedAnswer(correctAnswer));
+    act(() => correctHook.result.current.submitAnswer());
+    act(() => correctHook.result.current.markDisputeSubmitted());
+    act(() => correctHook.result.current.awardDisputedPoints());
+    expect(correctHook.result.current.state.teams[0].score).toBe(0);
+    expect(correctHook.result.current.state.currentAttempt?.verdict).toBe('CORRECT');
+    correctHook.unmount();
+
+    const undisputedHook = await setupAndStart();
+    submitIncorrectAnswer(undisputedHook.result);
+    act(() => undisputedHook.result.current.awardDisputedPoints());
+    expect(undisputedHook.result.current.state.teams[0].score).toBe(0);
+    expect(undisputedHook.result.current.state.currentAttempt?.verdict).toBe('INCORRECT');
   });
 
   it('rotates active team after QUESTIONS_PER_TEAM_ROTATION (4) questions', async () => {

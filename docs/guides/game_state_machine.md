@@ -27,15 +27,16 @@ The game uses a linear state machine to ensure data integrity and a consistent g
    - **Next State**: `REVEAL` (Immediate transition).
 
 4. **REVEAL**
-   - **Description**: Read-only view showing the question, user's answer, correct answer, explanation, and the verdict/points result.
-   - **Allowed Actions**: `advanceToScoreUpdate`.
+   - **Description**: View showing the question, user's answer, correct answer, explanation, and the verdict/points result.
+   - **Allowed Actions**: `advanceToScoreUpdate`, `markDisputeSubmitted`, and `awardDisputedPoints` for disputed incorrect answers.
+   - **Dispute Award Logic**: If a dispute is submitted for an `INCORRECT` attempt and the group agrees, `awardDisputedPoints` immediately flips the attempt to `CORRECT`, applies the correct-answer score once, and marks the attempt as processed.
    - **Next State**: `SCORE_UPDATE`.
 
 5. **SCORE_UPDATE** (Transient)
    - **Description**: System applies the `pointsDelta` to the `activeTeam`'s score.
-   - **Guards**: Checks `attemptId` or similar to ensure points are applied exactly once.
+   - **Guards**: Checks `processed` to ensure points are applied exactly once.
    - **Logic**:
-     - Update Team Score.
+     - Update Team Score if the attempt has not already been processed by a dispute award.
      - Increment `teamQuestionCount`.
      - Rotate `activeTeamId` if `teamQuestionCount` % 4 == 0.
      - Increment `currentQuestionIndex`.
@@ -66,5 +67,7 @@ interface Attempt {
   verdict: 'CORRECT' | 'INCORRECT' | 'PASS';
   pointsDelta: number;
   processed: boolean; // Guard for score application
+  disputeSubmitted?: boolean;
+  pointsAwarded?: boolean;
 }
 ```

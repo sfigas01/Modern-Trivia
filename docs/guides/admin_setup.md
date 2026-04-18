@@ -71,5 +71,5 @@ Once granted admin access, users can:
 
 - Admin access is stored in a separate `admin_roles` table
 - All admin routes require both authentication AND admin role verification
-- Regular users can still submit disputes (requires authentication)
+- Players can submit disputes without authentication during gameplay
 - Only admins can view and manage disputes

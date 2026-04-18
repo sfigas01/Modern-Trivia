@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +11,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { saveDispute } from '@/lib/disputes';
+import { useGame } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
 interface DisputeModalProps {
@@ -36,6 +35,7 @@ export function DisputeModal({
 }: DisputeModalProps) {
   const [explanation, setExplanation] = useState('');
   const { toast } = useToast();
+  const { markDisputeSubmitted } = useGame();
 
   const handleSubmit = async () => {
     if (!explanation.trim()) {
@@ -56,18 +56,6 @@ export function DisputeModal({
       teamExplanation: explanation,
     });
 
-    if (result.needsAuth) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please sign in to submit disputes. Redirecting to login...',
-        variant: 'destructive',
-      });
-      setTimeout(() => {
-        window.location.href = '/api/login';
-      }, 1500);
-      return;
-    }
-
     if (!result.success) {
       toast({
         title: 'Error',
@@ -76,6 +64,8 @@ export function DisputeModal({
       });
       return;
     }
+
+    markDisputeSubmitted();
 
     toast({
       title: 'Dispute Submitted',
