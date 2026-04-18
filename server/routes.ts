@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import { enrichSubjectiveFindings } from './lib/subjectivity-enricher';
-import { createServer, type Server } from 'http';
+import type { Server } from 'http';
 import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integrations/auth';
 import { db } from './db';
 import {
@@ -28,6 +28,13 @@ import { aiLimiter } from './middleware/rateLimiter';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 type SinglePillar = (typeof VALID_PILLARS)[number];
+type RequestWithClaims = Request & {
+  user?: {
+    claims?: {
+      sub?: string;
+    };
+  };
+};
 
 const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
   { pillar: 'TimeCapsule', pct: 0.3 },
@@ -56,7 +63,7 @@ const stagingGenerateSchema = z.object({
 });
 
 function getUserId(req: Request): string | undefined {
-  return (req as any).user?.claims?.sub;
+  return (req as RequestWithClaims).user?.claims?.sub;
 }
 
 async function isAdmin(req: Request, res: Response, next: NextFunction) {
@@ -84,7 +91,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // Disputes API - protected by admin middleware
+  // Disputes API - admin review routes are protected; player submissions are public.
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const allDisputes = await db.select().from(disputes);
@@ -95,7 +102,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  app.post('/api/disputes', isAuthenticated, async (req, res) => {
+  app.post('/api/disputes', async (req, res) => {
     try {
       const parsed = insertDisputeSchema.parse(req.body);
       const [newDispute] = await db.insert(disputes).values(parsed).returning();

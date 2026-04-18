@@ -41,6 +41,8 @@ export interface Attempt {
   verdict: Verdict;
   pointsDelta: number;
   processed: boolean;
+  disputeSubmitted?: boolean;
+  pointsAwarded?: boolean;
 }
 
 export interface GameState {
@@ -66,6 +68,8 @@ interface GameContextType {
   setTypedAnswer: (text: string) => void;
   submitAnswer: () => void;
   passQuestion: () => void;
+  markDisputeSubmitted: () => void;
+  awardDisputedPoints: () => void;
   advanceToScoreUpdate: () => void;
   continueToNextRound: () => void;
   endGame: () => void;
@@ -131,6 +135,10 @@ export const verifyAttempt = (input: string, q: Question): { verdict: Verdict; p
     const p = q.difficulty === 'Easy' ? -1 : q.difficulty === 'Medium' ? -2 : -3;
     return { verdict: 'INCORRECT', points: p };
   }
+};
+
+const getCorrectPoints = (difficulty: Difficulty): number => {
+  return difficulty === 'Easy' ? 1 : difficulty === 'Medium' ? 2 : 3;
 };
 
 export function GameProvider({ children }: { children: React.ReactNode }) {
@@ -301,17 +309,74 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const markDisputeSubmitted = () => {
+    setState((prev) => {
+      if (prev.phase !== 'REVEAL' || !prev.currentAttempt) return prev;
+
+      return {
+        ...prev,
+        currentAttempt: {
+          ...prev.currentAttempt,
+          disputeSubmitted: true,
+        },
+      };
+    });
+  };
+
+  const awardDisputedPoints = () => {
+    setState((prev) => {
+      const attempt = prev.currentAttempt;
+      const currentQ = prev.questions[prev.currentQuestionIndex];
+
+      if (
+        prev.phase !== 'REVEAL' ||
+        !attempt ||
+        !currentQ ||
+        attempt.verdict !== 'INCORRECT' ||
+        attempt.disputeSubmitted !== true ||
+        attempt.pointsAwarded === true
+      ) {
+        return prev;
+      }
+
+      const correctPoints = getCorrectPoints(currentQ.difficulty);
+      const scoreAdjustment = attempt.processed
+        ? correctPoints - attempt.pointsDelta
+        : correctPoints;
+
+      return {
+        ...prev,
+        teams: prev.teams.map((team) => {
+          if (team.id !== attempt.teamId) return team;
+
+          return {
+            ...team,
+            score: team.score + scoreAdjustment,
+            lastRoundDelta: correctPoints,
+          };
+        }),
+        currentAttempt: {
+          ...attempt,
+          verdict: 'CORRECT',
+          pointsDelta: correctPoints,
+          processed: true,
+          pointsAwarded: true,
+        },
+      };
+    });
+  };
+
   const advanceToScoreUpdate = () => {
     setState((prev) => {
-      if (prev.phase !== 'REVEAL' || !prev.currentAttempt || prev.currentAttempt.processed)
-        return prev;
+      if (prev.phase !== 'REVEAL' || !prev.currentAttempt) return prev;
 
       const attempt = prev.currentAttempt;
+      const shouldApplyScore = !attempt.processed;
       const updatedTeams = prev.teams.map((t) => {
         if (t.id === attempt.teamId) {
           return {
             ...t,
-            score: t.score + attempt.pointsDelta,
+            score: shouldApplyScore ? t.score + attempt.pointsDelta : t.score,
             questionCount: t.questionCount + 1,
             lastRoundDelta: attempt.pointsDelta,
           };
@@ -471,6 +536,8 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         setTypedAnswer,
         submitAnswer,
         passQuestion,
+        markDisputeSubmitted,
+        awardDisputedPoints,
         advanceToScoreUpdate,
         continueToNextRound,
         endGame,

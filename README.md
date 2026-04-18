@@ -27,7 +27,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
 ### Authentication & Admin Features
 
 - **Replit Authentication**: Secure OpenID Connect-based login
-- **Dispute System**: Challenge question answers with explanations (requires authentication)
+- **Dispute System**: Challenge question answers with explanations during gameplay
 - **Admin Panel**:
   - Add, edit, and delete custom questions (stored in local storage)
   - View and manage dispute logs (requires admin role)
@@ -242,7 +242,7 @@ To grant admin access to users:
 
 ### Disputes
 
-- `POST /api/disputes` - Submit question dispute (requires authentication)
+- `POST /api/disputes` - Submit question dispute (public gameplay endpoint)
 - `GET /api/disputes` - View all disputes (requires admin)
 - `DELETE /api/disputes` - Clear all disputes (requires admin)
 
@@ -281,7 +281,7 @@ The Replit configuration is defined in `.replit`.
 ## Notes
 
 - Custom questions added in the Admin panel are saved in browser local storage
-- The dispute system requires user authentication via Replit Auth
+- Players can submit disputes without signing in; dispute review and management require admin access
 - Admin roles are managed in the PostgreSQL database
 - Answer verification uses fuzzy matching with an 80% similarity threshold to handle minor typos and formatting differences
 - `DATABASE_URL` and `SESSION_SECRET` are required to start the server
