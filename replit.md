@@ -81,6 +81,7 @@ Use Conventional Commits: `<type>(<scope>): <description>`
 - Test files: `*.test.ts` / `*.test.tsx`
 - Run `npm test` before marking work complete.
 - If tests fail: fix them. Do not skip, mock around, or ignore failures.
+- User-facing flow changes should add or update an E2E test in `e2e/`.
 
 ## Error Handling
 
