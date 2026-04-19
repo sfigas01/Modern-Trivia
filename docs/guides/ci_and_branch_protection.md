@@ -15,14 +15,14 @@ This is the `jobs.quality-gates.name` value in `.github/workflows/ci.yml`.
 
 ## CI gates (all required, all blocking)
 
-| Step                    | Command                                | Notes                                         |
-| ----------------------- | -------------------------------------- | --------------------------------------------- |
-| Agent manual sync check | `cmp -s AGENTS.md CLAUDE.md replit.md` | Fails if the three shared agent files diverge |
-| TypeScript type-check   | `npm run check`                        | Runs `tsc` with no emit                       |
-| ESLint                  | `npm run lint`                         | Zero-warning policy                           |
-| Tests                   | `npm test`                             | Vitest suite                                  |
-| Dependency audit        | `npm audit --audit-level=high`         | Fails on any high or critical finding         |
-| Build                   | `npm run build`                        | Production bundle must compile clean          |
+| Step                    | Command                                | Notes                                                           |
+| ----------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| Agent manual sync check | `cmp -s AGENTS.md CLAUDE.md replit.md` | Fails if the three shared agent files diverge                   |
+| TypeScript type-check   | `npm run check`                        | Runs `tsc` with no emit                                         |
+| ESLint                  | `npm run lint`                         | Fails on errors only; warnings are reported but do not block CI |
+| Tests                   | `npm test`                             | Vitest suite                                                    |
+| Dependency audit        | `npm audit --audit-level=high`         | Fails on any high or critical finding                           |
+| Build                   | `npm run build`                        | Production bundle must compile clean                            |
 
 All steps run in a single job named **Quality Gates** on `ubuntu-latest` with Node 20.
 
