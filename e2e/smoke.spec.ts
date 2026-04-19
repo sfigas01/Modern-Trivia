@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { test, expect } from '@playwright/test';
-import fixtureData from './fixtures/questions.json';
+
+const fixtureData = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./fixtures/questions.json', import.meta.url)), 'utf8')
+);
 
 const WRONG_ANSWER = 'definitely wrong answer';
 const CORRECT_ANSWER = 'H2O'; // smoke-q1 correct answer
