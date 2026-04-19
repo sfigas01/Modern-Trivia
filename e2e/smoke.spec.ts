@@ -62,8 +62,13 @@ test.describe('SETUP → QUESTION → REVEAL loop', () => {
     const answerInput = page.getByPlaceholder('Type answer here...');
     await expect(answerInput).toBeVisible();
 
-    // Assert TeamA is the active team shown in the header area
-    await expect(page.getByText('TeamA').first()).toBeVisible();
+    // Assert TeamA is the *active* team — the "Active Team" label in the
+    // question-phase header is only rendered for the current player, unlike
+    // the scoreboard strip which always lists all teams. Anchoring to this
+    // label means a rotation bug (wrong team shown as active) would fail here.
+    await expect(page.getByText('Active Team', { exact: true }).locator('..')).toContainText(
+      'TeamA'
+    );
 
     // ── 3. Submit a known-wrong answer ──────────────────────────────────────
     await answerInput.fill(WRONG_ANSWER);

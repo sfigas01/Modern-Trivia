@@ -107,9 +107,16 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
 
+      # OS-level packages (libgbm, libatk, etc.) are not stored in the
+      # ~/.cache/ms-playwright directory, so they must be installed on every
+      # run — even when the browser-binary cache is warm.
+      - name: Install Playwright OS dependencies
+        run: npx playwright install-deps chromium
+
+      # Browser binaries are large; restore them from cache when possible.
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Push database schema
         run: npm run db:push
