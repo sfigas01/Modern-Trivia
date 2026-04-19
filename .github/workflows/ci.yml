@@ -131,6 +131,13 @@ jobs:
           # no real Replit app is needed since auth routes are never exercised
           # during the smoke test.
           REPL_ID: ci-playwright-smoke
+          # AI_INTEGRATIONS_OPENAI_API_KEY must be non-empty — several server
+          # modules (lib/ai, lib/guardian, lib/verifier, etc.) instantiate
+          # `new OpenAI({ apiKey: ... })` at import time, and the SDK throws
+          # "Missing credentials" when both this var and OPENAI_API_KEY are
+          # unset. This placeholder satisfies the constructor; no OpenAI
+          # request is made during the smoke test.
+          AI_INTEGRATIONS_OPENAI_API_KEY: sk-ci-placeholder-not-for-production
           CI: true
 
       - name: Upload Playwright report
