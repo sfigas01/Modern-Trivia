@@ -1,0 +1,105 @@
+{
+  "questions": [
+    {
+      "id": "smoke-q1",
+      "category": "Science",
+      "difficulty": "Easy",
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O",
+      "explanation": "Water consists of two hydrogen atoms and one oxygen atom.",
+      "pillar": "Science",
+      "tags": ["Science"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Water",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q2",
+      "category": "Science",
+      "difficulty": "Medium",
+      "question": "What is the speed of light in a vacuum, approximately?",
+      "answer": "300000 km/s",
+      "acceptableAnswers": ["3x10^8 m/s", "299792 km/s", "299792458 m/s"],
+      "explanation": "The speed of light in a vacuum is approximately 299,792,458 metres per second.",
+      "pillar": "Science",
+      "tags": ["Science"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Speed_of_light",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q3",
+      "category": "Science",
+      "difficulty": "Hard",
+      "question": "What element has atomic number 79?",
+      "answer": "Gold",
+      "acceptableAnswers": ["Au"],
+      "explanation": "Gold (Au) is a chemical element with atomic number 79.",
+      "pillar": "Science",
+      "tags": ["Science"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Gold",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q4",
+      "category": "Science",
+      "difficulty": "Easy",
+      "question": "What gas do plants absorb from the air during photosynthesis?",
+      "answer": "Carbon dioxide",
+      "acceptableAnswers": ["CO2", "carbon dioxide"],
+      "explanation": "Plants absorb carbon dioxide (CO2) and release oxygen during photosynthesis.",
+      "pillar": "Science",
+      "tags": ["Science"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q5",
+      "category": "History",
+      "difficulty": "Easy",
+      "question": "In what year did World War II end?",
+      "answer": "1945",
+      "explanation": "World War II ended in 1945 with the surrender of Germany in May and Japan in September.",
+      "pillar": "History",
+      "tags": ["History"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/World_War_II",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q6",
+      "category": "History",
+      "difficulty": "Medium",
+      "question": "Who wrote the play Romeo and Juliet?",
+      "answer": "Shakespeare",
+      "acceptableAnswers": ["William Shakespeare"],
+      "explanation": "Romeo and Juliet is a tragedy written by William Shakespeare, believed to have been written between 1594 and 1596.",
+      "pillar": "History",
+      "tags": ["History"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Romeo_and_Juliet",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q7",
+      "category": "History",
+      "difficulty": "Hard",
+      "question": "In what year was the Magna Carta signed?",
+      "answer": "1215",
+      "explanation": "The Magna Carta was sealed by King John of England on June 15, 1215.",
+      "pillar": "History",
+      "tags": ["History"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Magna_Carta",
+      "sourceName": "Wikipedia"
+    },
+    {
+      "id": "smoke-q8",
+      "category": "History",
+      "difficulty": "Medium",
+      "question": "Who was the first President of the United States?",
+      "answer": "George Washington",
+      "explanation": "George Washington served as the first President of the United States from 1789 to 1797.",
+      "pillar": "History",
+      "tags": ["History"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/George_Washington",
+      "sourceName": "Wikipedia"
+    }
+  ],
+  "categories": ["Science", "History"]
+}

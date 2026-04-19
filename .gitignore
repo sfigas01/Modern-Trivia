@@ -18,3 +18,8 @@ vite.config.ts.*
 !.env.example
 # Local MCP Settings (Secrets)
 .vscode/mcp.json
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.cache/
