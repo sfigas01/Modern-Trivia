@@ -102,6 +102,8 @@ When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-pare
 
 CI gates (`.github/workflows/ci.yml`) must pass before merge. Fix failures, don't bypass.
 
+- `docs/guides/ci_and_branch_protection.md` — required status-check name, all CI gates, and branch protection settings for `main`
+
 ## Documentation Confirmation
 
 When finishing any task, **always confirm to the user what documentation was updated**. Report:

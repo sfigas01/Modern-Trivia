@@ -63,7 +63,6 @@ jobs:
 
       - name: Dependency audit
         run: npm audit --audit-level=high
-        continue-on-error: true
 
       - name: Build
         run: npm run build
