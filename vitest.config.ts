@@ -18,6 +18,11 @@ export default defineConfig({
           environment: "node",
           include: ["server/**/*.test.ts", "shared/**/*.test.ts"],
         },
+        resolve: {
+          alias: {
+            "@shared": path.resolve(import.meta.dirname, "shared"),
+          },
+        },
       },
       {
         plugins: [react()],
