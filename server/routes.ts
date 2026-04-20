@@ -14,6 +14,7 @@ import {
   questionEdits,
   questionQualitySweepDismissals,
   duplicatePairKey,
+  isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -109,7 +110,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(201).json(newDispute);
     } catch (error) {
       console.error('Error creating dispute:', error);
-      const statusCode = error instanceof Error && error.message.includes('validation') ? 422 : 400;
+      const statusCode = error instanceof z.ZodError ? 422 : 400;
       res.status(statusCode).json({ message: 'Invalid dispute data' });
     }
   });
@@ -880,7 +881,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       );
 
       const filteredFindings = auditRaw.findings.filter(
-        (f) => !dismissedStatic.has(`${f.questionId}::${f.rule}`)
+        (f) => !isStaticFindingDismissed(dismissedStatic, f)
       );
       const recountedSeverity: Record<'high' | 'medium' | 'low', number> = {
         high: 0,
