@@ -81,6 +81,7 @@ Use Conventional Commits: `<type>(<scope>): <description>`
 - Test files: `*.test.ts` / `*.test.tsx`
 - Run `npm test` before marking work complete.
 - If tests fail: fix them. Do not skip, mock around, or ignore failures.
+- User-facing flow changes should add or update an E2E test in `e2e/`.
 
 ## Error Handling
 
@@ -101,6 +102,8 @@ When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-pare
 ## Quality Gates
 
 CI gates (`.github/workflows/ci.yml`) must pass before merge. Fix failures, don't bypass.
+
+- `docs/guides/ci_and_branch_protection.md` — required status-check name, all CI gates, and branch protection settings for `main`
 
 ## Documentation Confirmation
 
