@@ -1,65 +1,58 @@
-import express, { type Express, type NextFunction, type Request, type Response } from 'express';
-import { createServer } from 'http';
+import type { Express, NextFunction, Request, Response } from 'express';
 import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createQueryMock } from './test/dbMock';
+import { buildTestApp } from './test/testApp';
 
 const dbMocks = vi.hoisted(() => ({
   delete: vi.fn(),
   insert: vi.fn(),
-  returning: vi.fn(),
   select: vi.fn(),
+  selectDistinct: vi.fn(),
   update: vi.fn(),
-  values: vi.fn(),
 }));
 
 const authMocks = vi.hoisted(() => ({
   isAuthenticated: vi.fn((req: Request, res: Response, next: NextFunction) => {
-    const userId = req.header('x-test-user-id');
+    const user = (req as Request & { user?: TestUser }).user;
 
-    if (!userId) {
+    if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    (req as Request & { user?: { claims: { sub: string }; expires_at: number } }).user = {
-      claims: { sub: userId },
-      expires_at: Math.floor(Date.now() / 1000) + 60,
-    };
     next();
   }),
   registerAuthRoutes: vi.fn(),
-  setupAuth: vi.fn(async (_app: Express) => undefined),
+  setupAuth: vi.fn(async (app: Express) => {
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      const userId = req.header('x-test-user-id');
+
+      if (userId) {
+        (req as Request & { user?: TestUser }).user = {
+          claims: { sub: userId },
+          expires_at: Math.floor(Date.now() / 1000) + 60,
+        };
+      }
+
+      next();
+    });
+  }),
 }));
 
-const schemaMocks = vi.hoisted(() => ({
-  insertDisputeParse: vi.fn((body) => body),
-  insertQuestionParse: vi.fn((body) => body),
-}));
+type TestUser = {
+  claims: { sub: string };
+  expires_at: number;
+};
 
 vi.mock('./db', () => ({
   db: {
     delete: dbMocks.delete,
     insert: dbMocks.insert,
     select: dbMocks.select,
+    selectDistinct: dbMocks.selectDistinct,
     update: dbMocks.update,
   },
-}));
-
-vi.mock('@shared/schema', () => ({
-  adminRoles: {},
-  appConfig: {},
-  disputes: {},
-  duplicatePairKey: vi.fn(),
-  insertDisputeSchema: {
-    parse: schemaMocks.insertDisputeParse,
-  },
-  insertQuestionSchema: {
-    parse: schemaMocks.insertQuestionParse,
-  },
-  questionEdits: {},
-  questionQualitySweepDismissals: {},
-  questions: {},
-  seenQuestions: {},
 }));
 
 vi.mock('./replit_integrations/auth', () => authMocks);
@@ -70,10 +63,8 @@ vi.mock('./lib/field-fix', () => ({ getAiFieldFix: vi.fn() }));
 vi.mock('./lib/question-quality-audit', () => ({ auditQuestionQuality: vi.fn() }));
 vi.mock('./lib/duplicate-detector', () => ({ detectDuplicates: vi.fn() }));
 vi.mock('./lib/verifier', () => ({ batchFactCheck: vi.fn() }));
-vi.mock('./middleware/rateLimiter', () => ({
-  aiLimiter: (_req: Request, _res: Response, next: NextFunction) => next(),
-}));
 
+const adminRole = { userId: 'admin-user' };
 const disputePayload = {
   questionId: 'q-1',
   questionText: 'What is the capital of Canada?',
@@ -82,44 +73,37 @@ const disputePayload = {
   submittedAnswer: 'Toronto',
   teamExplanation: 'We think Toronto should count because of the clue wording.',
 };
+const disputeRow = {
+  ...disputePayload,
+  id: 'dispute-1',
+  status: 'pending',
+  timestamp: new Date('2026-01-01T00:00:00Z'),
+  resolutionNote: null,
+  aiAnalysis: null,
+};
 
-async function buildApp() {
-  const app = express();
-  app.use(express.json());
-
-  const { registerRoutes } = await import('./routes');
-  await registerRoutes(createServer(app), app);
-
-  return app;
-}
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 describe('dispute routes', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    dbMocks.returning.mockResolvedValue([
-      {
-        ...disputePayload,
-        id: 'dispute-1',
-        status: 'pending',
-        timestamp: new Date('2026-01-01T00:00:00Z'),
-        resolutionNote: null,
-        aiAnalysis: null,
-      },
-    ]);
-    dbMocks.values.mockReturnValue({ returning: dbMocks.returning });
-    dbMocks.insert.mockReturnValue({ values: dbMocks.values });
-    schemaMocks.insertDisputeParse.mockImplementation((body) => body);
-    schemaMocks.insertQuestionParse.mockImplementation((body) => body);
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it('allows unauthenticated players to submit disputes', async () => {
-    const app = await buildApp();
+    const insertQuery = createQueryMock([disputeRow]);
+    dbMocks.insert.mockReturnValue(insertQuery);
+    const app = await buildTestApp();
 
     const response = await request(app).post('/api/disputes').send(disputePayload).expect(201);
 
     expect(authMocks.isAuthenticated).not.toHaveBeenCalled();
     expect(dbMocks.insert).toHaveBeenCalledOnce();
-    expect(dbMocks.values).toHaveBeenCalledWith(disputePayload);
+    expect(insertQuery.values).toHaveBeenCalledWith(disputePayload);
     expect(response.body).toMatchObject({
       id: 'dispute-1',
       status: 'pending',
@@ -129,30 +113,29 @@ describe('dispute routes', () => {
   });
 
   it('returns 422 without writing when dispute validation fails', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = await buildTestApp();
+    const { teamExplanation: _teamExplanation, ...invalidPayload } = disputePayload;
 
-    schemaMocks.insertDisputeParse.mockImplementationOnce(() => {
-      throw new z.ZodError([
-        {
-          code: 'invalid_type',
-          expected: 'string',
-          received: 'undefined',
-          path: ['teamExplanation'],
-          message: 'Required',
-        },
-      ]);
-    });
+    const response = await request(app).post('/api/disputes').send(invalidPayload).expect(422);
 
-    const app = await buildApp();
-
-    const response = await request(app)
-      .post('/api/disputes')
-      .send({ ...disputePayload, teamExplanation: undefined })
-      .expect(422);
-
-    expect(dbMocks.insert).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalledWith('Error creating dispute:', expect.any(z.ZodError));
     expect(response.body).toEqual({ message: 'Invalid dispute data' });
+    expect(dbMocks.insert).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error creating dispute:', expect.any(Error));
+  });
+
+  it('accepts long dispute explanations that stay within the JSON body limit', async () => {
+    const longPayload = {
+      ...disputePayload,
+      teamExplanation: 'This should count. '.repeat(3_000),
+    };
+    const insertQuery = createQueryMock([{ ...disputeRow, ...longPayload }]);
+    dbMocks.insert.mockReturnValue(insertQuery);
+    const app = await buildTestApp();
+
+    const response = await request(app).post('/api/disputes').send(longPayload).expect(201);
+
+    expect(insertQuery.values).toHaveBeenCalledWith(longPayload);
+    expect(response.body.teamExplanation).toBe(longPayload.teamExplanation);
   });
 
   it.each([
@@ -161,7 +144,7 @@ describe('dispute routes', () => {
     ['DELETE', '/api/disputes'],
     ['POST', '/api/disputes/dispute-1/analyze'],
   ])('keeps %s %s protected without a session', async (method, path) => {
-    const app = await buildApp();
+    const app = await buildTestApp();
     let response: request.Response;
 
     switch (method) {
@@ -181,5 +164,98 @@ describe('dispute routes', () => {
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual({ message: 'Unauthorized' });
+  });
+
+  it.each([
+    ['GET', '/api/disputes'],
+    ['PATCH', '/api/disputes/dispute-1'],
+    ['DELETE', '/api/disputes'],
+    ['POST', '/api/disputes/dispute-1/analyze'],
+  ])('rejects non-admin sessions for %s %s', async (method, path) => {
+    dbMocks.select.mockReturnValue(createQueryMock([]));
+    const app = await buildTestApp();
+    let response: request.Response;
+
+    switch (method) {
+      case 'GET':
+        response = await request(app).get(path).set('x-test-user-id', 'regular-user');
+        break;
+      case 'PATCH':
+        response = await request(app)
+          .patch(path)
+          .set('x-test-user-id', 'regular-user')
+          .send({ status: 'resolved' });
+        break;
+      case 'DELETE':
+        response = await request(app).delete(path).set('x-test-user-id', 'regular-user');
+        break;
+      default:
+        response = await request(app).post(path).set('x-test-user-id', 'regular-user');
+        break;
+    }
+
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ message: 'Forbidden: Admin access required' });
+  });
+
+  it('lists disputes for admins', async () => {
+    dbMocks.select
+      .mockReturnValueOnce(createQueryMock([adminRole]))
+      .mockReturnValueOnce(createQueryMock([disputeRow]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/disputes')
+      .set('x-test-user-id', 'admin-user')
+      .expect(200);
+
+    expect(response.body).toMatchObject([{ id: 'dispute-1', teamName: 'Alpha' }]);
+  });
+
+  it.each(['resolved', 'rejected'])('updates disputes to %s for admins', async (status) => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const updateQuery = createQueryMock([{ ...disputeRow, status, resolutionNote: 'Reviewed' }]);
+    dbMocks.update.mockReturnValue(updateQuery);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .patch('/api/disputes/dispute-1')
+      .set('x-test-user-id', 'admin-user')
+      .send({ status, resolutionNote: 'Reviewed' })
+      .expect(200);
+
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status, resolutionNote: 'Reviewed' })
+    );
+    expect(response.body).toMatchObject({ id: 'dispute-1', status, resolutionNote: 'Reviewed' });
+  });
+
+  it('rejects invalid dispute statuses before updating', async () => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .patch('/api/disputes/dispute-1')
+      .set('x-test-user-id', 'admin-user')
+      .send({ status: 'closed' })
+      .expect(400);
+
+    expect(response.body).toEqual({ message: 'Invalid status' });
+    expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
+  it('clears disputes for admins', async () => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const deleteQuery = createQueryMock(undefined);
+    dbMocks.delete.mockReturnValue(deleteQuery);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .delete('/api/disputes')
+      .set('x-test-user-id', 'admin-user')
+      .expect(200);
+
+    expect(dbMocks.delete).toHaveBeenCalledOnce();
+    expect(response.body).toEqual({ message: 'All disputes cleared' });
   });
 });

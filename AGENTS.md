@@ -82,6 +82,7 @@ Use Conventional Commits: `<type>(<scope>): <description>`
 - Run `npm test` before marking work complete.
 - If tests fail: fix them. Do not skip, mock around, or ignore failures.
 - User-facing flow changes should add or update an E2E test in `e2e/`.
+- When adding a new route in `server/routes.ts`, add or update a corresponding integration test.
 
 ## Error Handling
 
