@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { buildStaticFindingKey, isStaticFindingDismissed } from '../../shared/models/quality-sweep';
 import { auditQuestionQuality, formatQuestionQualitySummary } from './question-quality-audit';
 
 describe('auditQuestionQuality', () => {
@@ -38,6 +39,63 @@ describe('auditQuestionQuality', () => {
       )
     ).toBe(true);
     expect(report.findingsBySeverity.high).toBeGreaterThan(0);
+  });
+
+  it('builds unique static finding keys for repeated rules on the same question', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'required-fields-1',
+        category: '',
+        difficulty: '',
+        question: 'Which Canadian city hosts the Calgary Stampede?',
+        answer: '',
+        explanation: '',
+        tags: ['CA', 'General Knowledge', 'GlobalEh'],
+        sourceUrl: 'https://example.com/source',
+        sourceName: 'Example Source',
+      },
+    ]);
+
+    const missingRequiredFindings = report.findings.filter(
+      (finding) =>
+        finding.questionId === 'required-fields-1' && finding.rule === 'missing_required_field'
+    );
+    const keys = missingRequiredFindings.map(buildStaticFindingKey);
+
+    expect(missingRequiredFindings.length).toBeGreaterThan(1);
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys).toContain('missing_required_field::Missing required field: answer.');
+  });
+
+  it('still recognizes legacy rule-only static dismissal keys', () => {
+    const report = auditQuestionQuality([
+      {
+        id: 'legacy-dismissal-1',
+        category: '',
+        difficulty: 'Easy',
+        question: 'Which Canadian city hosts the Calgary Stampede?',
+        answer: '',
+        explanation: 'The Calgary Stampede is hosted in Calgary.',
+        tags: ['CA', 'General Knowledge', 'GlobalEh'],
+        sourceUrl: 'https://example.com/source',
+        sourceName: 'Example Source',
+      },
+    ]);
+
+    const finding = report.findings.find(
+      (candidate) =>
+        candidate.questionId === 'legacy-dismissal-1' &&
+        candidate.rule === 'missing_required_field' &&
+        candidate.message === 'Missing required field: answer.'
+    );
+
+    expect(finding).toBeDefined();
+    if (!finding) {
+      throw new Error('Expected missing required answer finding');
+    }
+    expect(
+      isStaticFindingDismissed(new Set(['legacy-dismissal-1::missing_required_field']), finding)
+    ).toBe(true);
   });
 
   it('flags ambiguous prompts and answer-type mismatches as medium severity', () => {
