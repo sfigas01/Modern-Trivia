@@ -110,7 +110,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(201).json(newDispute);
     } catch (error) {
       console.error('Error creating dispute:', error);
-      const statusCode = error instanceof Error && error.message.includes('validation') ? 422 : 400;
+      const statusCode = error instanceof z.ZodError ? 422 : 400;
       res.status(statusCode).json({ message: 'Invalid dispute data' });
     }
   });

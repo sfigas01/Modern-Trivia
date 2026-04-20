@@ -2,6 +2,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import { createServer } from 'http';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
 const dbMocks = vi.hoisted(() => ({
   delete: vi.fn(),
@@ -30,6 +31,11 @@ const authMocks = vi.hoisted(() => ({
   setupAuth: vi.fn(async (_app: Express) => undefined),
 }));
 
+const schemaMocks = vi.hoisted(() => ({
+  insertDisputeParse: vi.fn((body) => body),
+  insertQuestionParse: vi.fn((body) => body),
+}));
+
 vi.mock('./db', () => ({
   db: {
     delete: dbMocks.delete,
@@ -45,10 +51,10 @@ vi.mock('@shared/schema', () => ({
   disputes: {},
   duplicatePairKey: vi.fn(),
   insertDisputeSchema: {
-    parse: vi.fn((body) => body),
+    parse: schemaMocks.insertDisputeParse,
   },
   insertQuestionSchema: {
-    parse: vi.fn((body) => body),
+    parse: schemaMocks.insertQuestionParse,
   },
   questionEdits: {},
   questionQualitySweepDismissals: {},
@@ -102,6 +108,8 @@ describe('dispute routes', () => {
     ]);
     dbMocks.values.mockReturnValue({ returning: dbMocks.returning });
     dbMocks.insert.mockReturnValue({ values: dbMocks.values });
+    schemaMocks.insertDisputeParse.mockImplementation((body) => body);
+    schemaMocks.insertQuestionParse.mockImplementation((body) => body);
   });
 
   it('allows unauthenticated players to submit disputes', async () => {
@@ -118,6 +126,33 @@ describe('dispute routes', () => {
       teamName: 'Alpha',
       teamExplanation: disputePayload.teamExplanation,
     });
+  });
+
+  it('returns 422 without writing when dispute validation fails', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    schemaMocks.insertDisputeParse.mockImplementationOnce(() => {
+      throw new z.ZodError([
+        {
+          code: 'invalid_type',
+          expected: 'string',
+          received: 'undefined',
+          path: ['teamExplanation'],
+          message: 'Required',
+        },
+      ]);
+    });
+
+    const app = await buildApp();
+
+    const response = await request(app)
+      .post('/api/disputes')
+      .send({ ...disputePayload, teamExplanation: undefined })
+      .expect(422);
+
+    expect(dbMocks.insert).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith('Error creating dispute:', expect.any(z.ZodError));
+    expect(response.body).toEqual({ message: 'Invalid dispute data' });
   });
 
   it.each([

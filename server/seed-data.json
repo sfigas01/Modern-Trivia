@@ -1784,16 +1784,19 @@
     "id": "q89",
     "category": "History",
     "difficulty": "Medium",
-    "question": "In which year did the Titanic sink?",
-    "answer": "1912",
-    "acceptableAnswers": [],
-    "explanation": "Over 1,500 people died when RMS Titanic sank on April 15, 1912 after hitting an iceberg.",
-    "pillar": "GlobalEh",
+    "question": "Which civilization built Machu Picchu?",
+    "answer": "Inca Empire",
+    "acceptableAnswers": [
+      "Inca",
+      "Incas"
+    ],
+    "explanation": "Machu Picchu was built by the Inca Empire in the 15th century and later became one of Peru's most famous archaeological sites.",
+    "pillar": "TimeCapsule",
     "tags": [
       "Global",
       "History"
     ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
+    "sourceUrl": "https://en.wikipedia.org/wiki/Machu_Picchu",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
