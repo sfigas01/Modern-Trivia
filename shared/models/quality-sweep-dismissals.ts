@@ -18,7 +18,7 @@ export const questionQualitySweepDismissals = pgTable(
       .references(() => questions.id, { onDelete: 'cascade' }),
     // 'static' | 'duplicate' | 'fact_check'
     findingType: varchar('finding_type', { length: 20 }).notNull(),
-    // For static: the rule name. For duplicate: sorted "{minId}::{maxId}".
+    // For static: stable rule+message finding key. For duplicate: sorted "{minId}::{maxId}".
     // For fact_check: the literal "fact_check".
     findingKey: text('finding_key').notNull(),
     dismissedAt: timestamp('dismissed_at').notNull().defaultNow(),
