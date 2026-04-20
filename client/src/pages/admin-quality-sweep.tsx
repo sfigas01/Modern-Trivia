@@ -41,8 +41,10 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 import { useGame, type Question } from '@/lib/store';
 import {
+  buildStaticFindingKey,
   duplicatePairKey,
   FACT_CHECK_FINDING_KEY,
+  isStaticFindingDismissed,
   type DismissFindingRequest,
   type DuplicateMatch,
   type FactCheckVerdict,
@@ -645,8 +647,7 @@ function buildDefaultFilter(report: QualitySweepReport): IssueTypeFilter {
 function filterStaticFindings(findings: QuestionQualityFinding[], removed: RemovedFindings) {
   return findings.filter(
     (f) =>
-      !removed.deletedQuestionIds.has(f.questionId) &&
-      !removed.static.has(`${f.questionId}::${f.rule}`)
+      !removed.deletedQuestionIds.has(f.questionId) && !isStaticFindingDismissed(removed.static, f)
   );
 }
 
@@ -951,7 +952,8 @@ function AuditFindingsSection({
               </h4>
               <div className="space-y-2">
                 {group.map((finding) => {
-                  const editKey = `static::${finding.questionId}::${finding.rule}`;
+                  const findingKey = buildStaticFindingKey(finding);
+                  const editKey = `static::${finding.questionId}::${findingKey}`;
                   const snapshot = questionsById?.[finding.questionId];
                   return (
                     <FindingRow
@@ -959,7 +961,7 @@ function AuditFindingsSection({
                       editKey={editKey}
                       questionId={finding.questionId}
                       findingType="static"
-                      findingKey={finding.rule}
+                      findingKey={findingKey}
                       actions={actions}
                       proposedFix={finding.proposedFix}
                       rule={finding.rule}
