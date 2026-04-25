@@ -139,7 +139,7 @@ function renderGamePage() {
 }
 
 async function passQuestionAndAdvance() {
-  fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+  fireEvent.click(screen.getByRole('button', { name: 'PASS' }));
   expect(await screen.findByText('They Answered')).toBeDefined();
   fireEvent.click(screen.getByRole('button', { name: /NEXT QUESTION/i }));
 }
@@ -159,7 +159,7 @@ describe('Game page', () => {
     renderGamePage();
 
     expect(await screen.findByText('Question 1?')).toBeDefined();
-    expect(screen.getByText('Active Team')).toBeDefined();
+    expect(screen.getByText('ACTIVE TEAM')).toBeDefined();
     expect(screen.getByText('Question 1/4')).toBeDefined();
 
     for (let questionNumber = 1; questionNumber <= 4; questionNumber++) {
@@ -175,7 +175,7 @@ describe('Game page', () => {
       expect(await screen.findByText(`Question ${questionNumber + 1}?`)).toBeDefined();
     }
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'PASS' }));
     expect(await screen.findByText('They Answered')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /NEXT QUESTION/i }));
 
@@ -189,7 +189,7 @@ describe('Game page', () => {
     await passQuestionAndAdvance();
     expect(await screen.findByText('Question 10?')).toBeDefined();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Pass' }));
+    fireEvent.click(screen.getByRole('button', { name: 'PASS' }));
     expect(await screen.findByText('They Answered')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /NEXT QUESTION/i }));
 
