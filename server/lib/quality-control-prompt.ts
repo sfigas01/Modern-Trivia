@@ -19,9 +19,12 @@ function formatDate(date: Date): string {
 }
 
 function threeMonthsBefore(date: Date): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() - 3);
-  return result;
+  const year = date.getUTCFullYear();
+  const targetMonth = date.getUTCMonth() - 3;
+  const targetMonthLastDay = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
+  const targetDay = Math.min(date.getUTCDate(), targetMonthLastDay);
+
+  return new Date(Date.UTC(year, targetMonth, targetDay));
 }
 
 function toQualityControlPayload(question: Question): QualityControlQuestionPayload {

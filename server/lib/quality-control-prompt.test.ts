@@ -37,6 +37,20 @@ describe('buildQualityControlPrompt', () => {
     expect(prompt).toContain('FreshPrints');
   });
 
+  it('clamps the FreshPrints cutoff to the target month instead of rolling over', () => {
+    const mayPrompt = buildQualityControlPrompt(
+      [makeQuestion({ id: 'may-end', question: 'What is the capital of France?' })],
+      new Date('2026-05-31T00:00:00.000Z')
+    );
+    const decemberPrompt = buildQualityControlPrompt(
+      [makeQuestion({ id: 'december-end', question: 'What is the capital of France?' })],
+      new Date('2026-12-31T00:00:00.000Z')
+    );
+
+    expect(mayPrompt).toContain('FreshPrints freshness cutoff: 2026-02-28');
+    expect(decemberPrompt).toContain('FreshPrints freshness cutoff: 2026-09-30');
+  });
+
   it('serializes the expanded question metadata needed for semantic QA', () => {
     const prompt = buildQualityControlPrompt([
       makeQuestion({
