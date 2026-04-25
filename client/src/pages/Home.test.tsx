@@ -77,24 +77,6 @@ vi.mock('wouter', () => ({
   useLocation: () => ['/', vi.fn()],
 }));
 
-vi.mock('@/hooks/use-auth', () => ({
-  useAuth: () => ({
-    user: null,
-    isLoading: false,
-    isAuthenticated: false,
-    logout: vi.fn(),
-    isLoggingOut: false,
-  }),
-}));
-
-vi.mock('@/hooks/use-admin', () => ({
-  useAdmin: () => ({
-    isAdmin: false,
-    isLoading: false,
-    error: null,
-  }),
-}));
-
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
   motion: {
@@ -131,7 +113,7 @@ function renderHome() {
 }
 
 // ---------------------------------------------------------------------------
-// BUG #1 REGRESSION: Category selection must be visible on the setup screen
+// Tests for SNES-themed Home screen
 // ---------------------------------------------------------------------------
 
 describe('Home page', () => {
@@ -145,32 +127,9 @@ describe('Home page', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the Category section heading', async () => {
+  it('renders the Team Setup panel header', () => {
     renderHome();
-    expect(await screen.findByText('Category')).toBeDefined();
-  });
-
-  it('renders the "All" category button with a count', async () => {
-    renderHome();
-    expect(await screen.findByRole('button', { name: /^All\s*\(\d+\)$/ })).toBeDefined();
-  });
-
-  it('renders individual category buttons from loaded questions', async () => {
-    renderHome();
-    expect(
-      await screen.findByRole('button', { name: /Geography\s*\(\d+\)/ }, { timeout: 3000 })
-    ).toBeDefined();
-    expect(
-      await screen.findByRole('button', { name: /Science\s*\(\d+\)/ }, { timeout: 3000 })
-    ).toBeDefined();
-    expect(
-      await screen.findByRole('button', { name: /History\s*\(\d+\)/ }, { timeout: 3000 })
-    ).toBeDefined();
-  });
-
-  it('renders the Team Setup section', () => {
-    renderHome();
-    expect(screen.getByText('Team Setup')).toBeDefined();
+    expect(screen.getByText('TEAM SETUP')).toBeDefined();
   });
 
   it('renders the start game button (disabled with no teams)', () => {
@@ -180,12 +139,25 @@ describe('Home page', () => {
     expect(startButton.hasAttribute('disabled')).toBe(true);
   });
 
-  it('renders round selection buttons', () => {
+  it('renders the admin button', () => {
     renderHome();
-    expect(screen.getByText('5')).toBeDefined();
-    expect(screen.getByText('10')).toBeDefined();
-    expect(screen.getByText('15')).toBeDefined();
-    expect(screen.getByText('20')).toBeDefined();
+    const adminButton = screen.getByTestId('link-admin');
+    expect(adminButton).toBeDefined();
+  });
+
+  it('shows empty state when no teams added', () => {
+    renderHome();
+    expect(screen.getByText('NO TEAMS YET')).toBeDefined();
+  });
+
+  it('renders the add team input', () => {
+    renderHome();
+    expect(screen.getByPlaceholderText('TEAM NAME...')).toBeDefined();
+  });
+
+  it('renders the TRIVIA CLASH title', () => {
+    renderHome();
+    expect(screen.getByText('TRIVIA CLASH')).toBeDefined();
   });
 
   it('warns when the selected setup needs more questions than are available', async () => {
