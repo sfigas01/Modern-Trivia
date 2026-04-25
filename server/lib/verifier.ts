@@ -29,10 +29,10 @@ interface RawVerdict {
 
 const BATCH_SIZE = 50;
 
-async function factCheckBatch(batch: Question[]): Promise<FactCheckVerdict[]> {
+async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<FactCheckVerdict[]> {
   if (batch.length === 0) return [];
 
-  const prompt = buildQualityControlPrompt(batch);
+  const prompt = buildQualityControlPrompt(batch, reviewDate);
 
   const startedAt = Date.now();
   console.info('[verifier] Fact-checking batch', { count: batch.length });
@@ -107,6 +107,7 @@ export async function batchFactCheck(questions: Question[]): Promise<FactCheckRe
   }
 
   console.info('[verifier] Running batch fact-check', { count: questions.length });
+  const reviewDate = new Date();
 
   // Split into chunks and process each with a single GPT-4o call
   const chunks: Question[][] = [];
@@ -117,7 +118,7 @@ export async function batchFactCheck(questions: Question[]): Promise<FactCheckRe
   // Process chunks sequentially to avoid rate limits
   const allResults: FactCheckVerdict[] = [];
   for (const chunk of chunks) {
-    const chunkResults = await factCheckBatch(chunk);
+    const chunkResults = await factCheckBatch(chunk, reviewDate);
     allResults.push(...chunkResults);
   }
 

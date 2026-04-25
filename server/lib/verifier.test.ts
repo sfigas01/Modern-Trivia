@@ -134,4 +134,33 @@ describe('batchFactCheck', () => {
       },
     ]);
   });
+
+  it('uses one captured review date across all batches', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-31T23:59:59.000Z'));
+    mockCreate.mockResolvedValue({
+      choices: [{ message: { content: JSON.stringify({ results: [] }) } }],
+    });
+
+    try {
+      const questions = Array.from({ length: 51 }, (_, index) =>
+        makeQuestion({
+          id: `q${index + 1}`,
+          question: `Question ${index + 1}?`,
+          answer: `Answer ${index + 1}`,
+        })
+      );
+
+      await batchFactCheck(questions);
+
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+      for (const call of mockCreate.mock.calls) {
+        const prompt = call[0].messages[1].content as string;
+        expect(prompt).toContain('Review date: 2026-05-31');
+        expect(prompt).toContain('FreshPrints freshness cutoff: 2026-02-28');
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
