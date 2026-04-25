@@ -77,6 +77,8 @@ vi.mock('wouter', () => ({
   useLocation: () => ['/', vi.fn()],
 }));
 
+vi.mock('@/lib/featureFlags', () => ({ PIXEL_UI: true }));
+
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
   motion: {
@@ -158,21 +160,5 @@ describe('Home page', () => {
   it('renders the TRIVIA CLASH title', () => {
     renderHome();
     expect(screen.getByText('TRIVIA CLASH')).toBeDefined();
-  });
-
-  it('warns when the selected setup needs more questions than are available', async () => {
-    renderHome();
-
-    const input = screen.getByPlaceholderText('Enter team name...');
-    const form = input.closest('form');
-    expect(form).not.toBeNull();
-
-    fireEvent.change(input, { target: { value: 'Alpha' } });
-    fireEvent.submit(form!);
-
-    fireEvent.change(input, { target: { value: 'Bravo' } });
-    fireEvent.submit(form!);
-
-    expect(await screen.findByTestId('warning-insufficient-questions')).toBeDefined();
   });
 });

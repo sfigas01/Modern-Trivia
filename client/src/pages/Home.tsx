@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useGame } from '@/lib/store';
+import { PIXEL_UI } from '@/lib/featureFlags';
+import HomeClassic from './HomeClassic';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SNES_COLORS,
@@ -17,7 +19,7 @@ import {
   StatusOrb,
 } from '@/components/snes';
 
-export default function Home() {
+function HomeSnes() {
   const [_, setLocation] = useLocation();
   const { state, addTeam, removeTeam, startGame } = useGame();
   const [newTeamName, setNewTeamName] = useState('');
@@ -295,4 +297,8 @@ export default function Home() {
       </section>
     </main>
   );
+}
+
+export default function Home() {
+  return PIXEL_UI ? <HomeSnes /> : <HomeClassic />;
 }

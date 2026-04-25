@@ -9,6 +9,7 @@ import { ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
 import { DisputeModal } from '@/components/DisputeModal';
 import { QuestionScreen } from '@/components/QuestionScreen';
 import { useToast } from '@/hooks/use-toast';
+import { PIXEL_UI } from '@/lib/featureFlags';
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -205,7 +206,7 @@ export default function Game() {
   };
 
   // Pixel-art QUESTION phase — renders the full-screen design
-  if (state.phase === 'QUESTION' && currentQ && activeTeam) {
+  if (PIXEL_UI && state.phase === 'QUESTION' && currentQ && activeTeam) {
     return (
       <>
         <QuestionScreen
