@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 
 import type { Question } from '@shared/models/questions';
+import { buildQualityControlPrompt } from './quality-control-prompt';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -31,36 +32,7 @@ const BATCH_SIZE = 50;
 async function factCheckBatch(batch: Question[]): Promise<FactCheckVerdict[]> {
   if (batch.length === 0) return [];
 
-  const prompt = `You are a trivia fact-checker. Review each question and verify factual accuracy.
-
-For each question return one of:
-- "pass"  — question, answer, and explanation are all factually correct and unambiguous
-- "flag"  — likely correct but uncertain, minor wording concern, or hard to verify
-- "fail"  — factually wrong, misleading, or the answer is clearly incorrect
-
-Return valid JSON:
-{
-  "results": [
-    {
-      "id": "<question id>",
-      "verdict": "pass" | "flag" | "fail",
-      "confidence": 0-100,
-      "reason": "one sentence explaining the verdict"
-    }
-  ]
-}
-
-Questions to review:
-${JSON.stringify(
-  batch.map((q) => ({
-    id: q.id,
-    question: q.question,
-    answer: q.answer,
-    explanation: q.explanation,
-  })),
-  null,
-  2
-)}`;
+  const prompt = buildQualityControlPrompt(batch);
 
   const startedAt = Date.now();
   console.info('[verifier] Fact-checking batch', { count: batch.length });
@@ -72,7 +44,7 @@ ${JSON.stringify(
         {
           role: 'system',
           content:
-            'You are a trivia fact-checking assistant. Always respond with valid JSON that matches the requested schema exactly.',
+            'You are a trivia quality-control assistant. Always respond with valid JSON that matches the requested schema exactly.',
         },
         { role: 'user', content: prompt },
       ],
@@ -88,13 +60,16 @@ ${JSON.stringify(
     for (const raw of rawResults) {
       const id = typeof raw.id === 'string' ? raw.id : '';
       if (!id) continue;
-      const verdict = (['pass', 'flag', 'fail'] as const).includes(raw.verdict as 'pass' | 'flag' | 'fail')
+      const verdict = (['pass', 'flag', 'fail'] as const).includes(
+        raw.verdict as 'pass' | 'flag' | 'fail'
+      )
         ? (raw.verdict as 'pass' | 'flag' | 'fail')
         : 'flag';
       resultMap.set(id, {
         questionId: id,
         verdict,
-        confidence: typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
+        confidence:
+          typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
         reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
       });
     }
