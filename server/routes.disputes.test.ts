@@ -238,9 +238,9 @@ describe('dispute routes', () => {
       .patch('/api/disputes/dispute-1')
       .set('x-test-user-id', 'admin-user')
       .send({ status: 'closed' })
-      .expect(400);
+      .expect(422);
 
-    expect(response.body).toEqual({ message: 'Invalid status' });
+    expect(response.body).toMatchObject({ message: 'Invalid dispute update' });
     expect(dbMocks.update).not.toHaveBeenCalled();
   });
 

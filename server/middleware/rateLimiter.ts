@@ -1,5 +1,6 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
+import type { AuthenticatedRequest } from '../types';
 
 export const generalLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -19,7 +20,7 @@ export const aiLimiter = rateLimit({
     message: 'AI analysis rate limit exceeded. Please wait before trying again.',
   },
   keyGenerator: (req: Request) => {
-    const userId = (req as any).user?.claims?.sub;
+    const userId = (req as AuthenticatedRequest).user?.claims?.sub;
     if (userId) return userId;
     return ipKeyGenerator(req.ip ?? 'unknown');
   },
