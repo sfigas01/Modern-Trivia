@@ -214,6 +214,20 @@ describe('question routes', () => {
     expect(response.body).toEqual({ message: 'Question not found' });
   });
 
+  it('rejects unsafe question update fields before writing', async () => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .patch('/api/questions/q-1')
+      .set('x-test-user-id', 'admin-user')
+      .send({ id: 'different-id', answer: 'Ottawa' })
+      .expect(422);
+
+    expect(response.body).toMatchObject({ message: 'Invalid question update' });
+    expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
   it('requires authentication to mark questions as seen', async () => {
     const app = await buildTestApp();
 
@@ -233,9 +247,9 @@ describe('question routes', () => {
       .post('/api/questions/seen')
       .set('x-test-user-id', 'player-1')
       .send({ questionIds: [] })
-      .expect(400);
+      .expect(422);
 
-    expect(response.body).toEqual({ message: 'questionIds array is required' });
+    expect(response.body).toMatchObject({ message: 'Invalid seen-question request' });
     expect(dbMocks.insert).not.toHaveBeenCalled();
   });
 
