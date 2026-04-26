@@ -78,9 +78,11 @@ const appConfigUpdateSchema = z
   })
   .strict();
 
+const MAX_SEEN_QUESTION_IDS_PER_REQUEST = 500;
+
 const seenQuestionsRequestSchema = z
   .object({
-    questionIds: z.array(z.string().trim().min(1)).min(1).max(200),
+    questionIds: z.array(z.string().trim().min(1)).min(1).max(MAX_SEEN_QUESTION_IDS_PER_REQUEST),
   })
   .strict();
 

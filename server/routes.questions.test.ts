@@ -253,6 +253,38 @@ describe('question routes', () => {
     expect(dbMocks.insert).not.toHaveBeenCalled();
   });
 
+  it('accepts the largest normal game seen-question payload', async () => {
+    const insertQuery = createQueryMock(undefined);
+    dbMocks.insert.mockReturnValue(insertQuery);
+    const app = await buildTestApp();
+    const questionIds = Array.from({ length: 480 }, (_, index) => `q-${index + 1}`);
+
+    const response = await request(app)
+      .post('/api/questions/seen')
+      .set('x-test-user-id', 'player-1')
+      .send({ questionIds })
+      .expect(200);
+
+    expect(insertQuery.values).toHaveBeenCalledWith(
+      questionIds.map((questionId) => ({ userId: 'player-1', questionId }))
+    );
+    expect(response.body).toEqual({ message: 'Questions marked as seen', count: 480 });
+  });
+
+  it('rejects excessive seen-question payloads', async () => {
+    const app = await buildTestApp();
+    const questionIds = Array.from({ length: 501 }, (_, index) => `q-${index + 1}`);
+
+    const response = await request(app)
+      .post('/api/questions/seen')
+      .set('x-test-user-id', 'player-1')
+      .send({ questionIds })
+      .expect(422);
+
+    expect(response.body).toMatchObject({ message: 'Invalid seen-question request' });
+    expect(dbMocks.insert).not.toHaveBeenCalled();
+  });
+
   it('upserts seen-question rows for authenticated users', async () => {
     const insertQuery = createQueryMock(undefined);
     dbMocks.insert.mockReturnValue(insertQuery);
