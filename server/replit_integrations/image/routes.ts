@@ -1,15 +1,19 @@
 import type { Express, Request, Response } from 'express';
+import { z } from 'zod';
 import { aiLimiter } from '../../middleware/rateLimiter';
 import { openai } from './client';
+
+const generateImageSchema = z
+  .object({
+    prompt: z.string().trim().min(1).max(1000),
+    size: z.enum(['1024x1024', '512x512', '256x256']).optional().default('1024x1024'),
+  })
+  .strict();
 
 export function registerImageRoutes(app: Express): void {
   app.post('/api/generate-image', aiLimiter, async (req: Request, res: Response) => {
     try {
-      const { prompt, size = '1024x1024' } = req.body;
-
-      if (!prompt) {
-        return res.status(400).json({ error: 'Prompt is required' });
-      }
+      const { prompt, size } = generateImageSchema.parse(req.body);
 
       const response = await openai.images.generate({
         model: 'gpt-image-1',
@@ -29,6 +33,9 @@ export function registerImageRoutes(app: Express): void {
       });
     } catch (error) {
       console.error('Error generating image:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(422).json({ error: 'Invalid image request', details: error.errors });
+      }
       res.status(500).json({ error: 'Failed to generate image' });
     }
   });
