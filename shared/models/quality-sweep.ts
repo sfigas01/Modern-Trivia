@@ -116,6 +116,25 @@ export interface DismissFindingResponse {
   id: string;
 }
 
+type StaticFindingKeySource = Pick<QuestionQualityFinding, 'questionId' | 'rule' | 'message'>;
+
+// Build the stable per-finding key used for static audit dismissals.
+// Include the message so repeated rules on the same question stay distinct.
+export function buildStaticFindingKey(
+  finding: Pick<QuestionQualityFinding, 'rule' | 'message'>
+): string {
+  return `${finding.rule}::${finding.message}`;
+}
+
+export function isStaticFindingDismissed(
+  dismissedKeys: ReadonlySet<string>,
+  finding: StaticFindingKeySource
+): boolean {
+  const currentKey = `${finding.questionId}::${buildStaticFindingKey(finding)}`;
+  const legacyKey = `${finding.questionId}::${finding.rule}`;
+  return dismissedKeys.has(currentKey) || dismissedKeys.has(legacyKey);
+}
+
 // Build the stable per-pair key used for duplicate dismissals.
 // Sorting ensures the same key regardless of (A, B) order.
 export function duplicatePairKey(idA: string, idB: string): string {
