@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import OpenAI from 'openai';
+import { z } from 'zod';
 import { aiLimiter } from '../../middleware/rateLimiter';
 import { chatStorage } from './storage';
 
@@ -7,6 +8,22 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
+
+const createConversationSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200).optional(),
+  })
+  .strict();
+
+const sendMessageSchema = z
+  .object({
+    content: z.string().trim().min(1).max(10000),
+  })
+  .strict();
+
+function sendValidationError(res: Response, message: string, error: z.ZodError) {
+  return res.status(422).json({ error: message, details: error.errors });
+}
 
 export function registerChatRoutes(app: Express): void {
   // Get all conversations
@@ -39,11 +56,14 @@ export function registerChatRoutes(app: Express): void {
   // Create new conversation
   app.post('/api/conversations', async (req: Request, res: Response) => {
     try {
-      const { title } = req.body;
+      const { title } = createConversationSchema.parse(req.body);
       const conversation = await chatStorage.createConversation(title || 'New Chat');
       res.status(201).json(conversation);
     } catch (error) {
       console.error('Error creating conversation:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid conversation request', error);
+      }
       res.status(500).json({ error: 'Failed to create conversation' });
     }
   });
@@ -64,7 +84,7 @@ export function registerChatRoutes(app: Express): void {
   app.post('/api/conversations/:id/messages', aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { content } = req.body;
+      const { content } = sendMessageSchema.parse(req.body);
 
       // Save user message
       await chatStorage.createMessage(conversationId, 'user', content);
@@ -106,6 +126,9 @@ export function registerChatRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error('Error sending message:', error);
+      if (error instanceof z.ZodError && !res.headersSent) {
+        return sendValidationError(res, 'Invalid message request', error);
+      }
       // Check if headers already sent (SSE streaming started)
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ error: 'Failed to send message' })}\n\n`);

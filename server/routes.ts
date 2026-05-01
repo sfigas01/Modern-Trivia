@@ -26,17 +26,10 @@ import { detectDuplicates } from './lib/duplicate-detector';
 import { batchFactCheck } from './lib/verifier';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
+import type { AuthenticatedRequest } from './types';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 type SinglePillar = (typeof VALID_PILLARS)[number];
-type RequestWithClaims = Request & {
-  user?: {
-    claims?: {
-      sub?: string;
-    };
-  };
-};
-
 const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
   { pillar: 'TimeCapsule', pct: 0.3 },
   { pillar: 'GlobalEh', pct: 0.3 },
@@ -63,8 +56,83 @@ const stagingGenerateSchema = z.object({
   pillar: z.union([z.enum(VALID_PILLARS), z.literal('Mixed')]),
 });
 
+const disputeUpdateSchema = z
+  .object({
+    status: z.enum(['pending', 'resolved', 'rejected']).optional(),
+    resolutionNote: z.string().max(2000).nullable().optional(),
+    aiAnalysis: z.unknown().optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, 'At least one update field is required');
+
+const adminGrantSchema = z
+  .object({
+    userId: z.string().trim().min(1).max(255),
+  })
+  .strict();
+
+const appConfigUpdateSchema = z
+  .object({
+    key: z.enum(['openai_api_key', 'llm_provider']),
+    value: z.string().trim().min(1).max(10000),
+  })
+  .strict();
+
+const MAX_SEEN_QUESTION_IDS_PER_REQUEST = 500;
+
+const seenQuestionsRequestSchema = z
+  .object({
+    questionIds: z.array(z.string().trim().min(1)).min(1).max(MAX_SEEN_QUESTION_IDS_PER_REQUEST),
+  })
+  .strict();
+
+const questionEditableFieldsSchema = insertQuestionSchema
+  .omit({ id: true, aiAnalysis: true })
+  .partial()
+  .strict();
+
+const questionPatchSchema = questionEditableFieldsSchema.refine(
+  (value) => Object.keys(value).length > 0,
+  'At least one update field is required'
+);
+
+const questionFieldPatchSchema = z
+  .object({
+    field: questionEditableFieldsSchema.keyof(),
+    value: z.unknown(),
+    aiSuggested: z.boolean().optional().default(false),
+  })
+  .strict();
+
+const aiFixRequestSchema = z
+  .object({
+    field: z.enum([
+      'sourceUrl',
+      'sourceName',
+      'explanation',
+      'tags',
+      'answer',
+      'question',
+      'acceptableAnswers',
+    ]),
+  })
+  .strict();
+
+function sendValidationError(res: Response, message: string, error: z.ZodError) {
+  return res.status(422).json({ message, errors: error.errors });
+}
+
+function parseQuestionFieldPatch(body: unknown) {
+  const parsed = questionFieldPatchSchema.parse(body);
+  const fieldSchema = questionEditableFieldsSchema.shape[parsed.field];
+  return {
+    ...parsed,
+    value: fieldSchema.parse(parsed.value),
+  };
+}
+
 function getUserId(req: Request): string | undefined {
-  return (req as RequestWithClaims).user?.claims?.sub;
+  return (req as AuthenticatedRequest).user?.claims?.sub;
 }
 
 async function isAdmin(req: Request, res: Response, next: NextFunction) {
@@ -147,19 +215,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch('/api/disputes/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const { status, resolutionNote, aiAnalysis } = req.body;
-
-      // Validate status enum
-      if (status && !['pending', 'resolved', 'rejected'].includes(status)) {
-        return res.status(400).json({ message: 'Invalid status' });
-      }
+      const parsed = disputeUpdateSchema.parse(req.body);
 
       const [updated] = await db
         .update(disputes)
         .set({
-          status,
-          resolutionNote,
-          aiAnalysis,
+          ...parsed,
         })
         .where(eq(disputes.id, id))
         .returning();
@@ -171,6 +232,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(updated);
     } catch (error) {
       console.error('Error updating dispute:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid dispute update', error);
+      }
       res.status(500).json({ message: 'Failed to update dispute' });
     }
   });
@@ -188,12 +252,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Admin management routes
   app.post('/api/admin/grant', isAuthenticated, isAdmin, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.body;
+      const { userId } = adminGrantSchema.parse(req.body);
       const grantedBy = getUserId(req);
-
-      if (!userId) {
-        return res.status(400).json({ message: 'userId is required' });
-      }
 
       await db.insert(adminRoles).values({
         userId,
@@ -203,6 +263,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json({ message: 'Admin access granted' });
     } catch (error) {
       console.error('Error granting admin:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid admin grant request', error);
+      }
       res.status(500).json({ message: 'Failed to grant admin access' });
     }
   });
@@ -227,10 +290,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post('/api/admin/config', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { key, value } = req.body;
-      if (!key || !value) {
-        return res.status(400).json({ message: 'Key and value are required' });
-      }
+      const { key, value } = appConfigUpdateSchema.parse(req.body);
 
       // Upsert configuration
       const [updated] = await db
@@ -245,6 +305,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json({ message: 'Configuration saved', key: updated.key });
     } catch (error) {
       console.error('Error saving config:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid configuration request', error);
+      }
       res.status(500).json({ message: 'Failed to save configuration' });
     }
   });
@@ -401,10 +464,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const userId = getUserId(req);
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-      const { questionIds } = req.body;
-      if (!Array.isArray(questionIds) || questionIds.length === 0) {
-        return res.status(400).json({ message: 'questionIds array is required' });
-      }
+      const { questionIds } = seenQuestionsRequestSchema.parse(req.body);
 
       // Upsert with replay guard: only bump seen_count if the last
       // seen_at is more than 24 hours ago. This prevents duplicate
@@ -432,6 +492,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json({ message: 'Questions marked as seen', count: questionIds.length });
     } catch (error) {
       console.error('Error marking questions as seen:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid seen-question request', error);
+      }
       res.status(500).json({ message: 'Failed to mark questions as seen' });
     }
   });
@@ -459,10 +522,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.patch('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { id } = req.params;
+      const parsed = questionPatchSchema.parse(req.body);
 
       const [updated] = await db
         .update(questions)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ ...parsed, updatedAt: new Date() })
         .where(eq(questions.id, id))
         .returning();
 
@@ -473,6 +537,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(updated);
     } catch (error) {
       console.error('Error updating question:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid question update', error);
+      }
       res.status(500).json({ message: 'Failed to update question' });
     }
   });
@@ -545,17 +612,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const userId = getUserId(req);
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-      const {
-        field,
-        value,
-        aiSuggested = false,
-      } = req.body as {
-        field: string;
-        value: unknown;
-        aiSuggested?: boolean;
-      };
-
-      if (!field) return res.status(400).json({ message: 'field is required' });
+      const { field, value, aiSuggested } = parseQuestionFieldPatch(req.body);
 
       // Fetch the current row to capture the old value
       const [current] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
@@ -587,6 +644,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.json(updated);
     } catch (error) {
       console.error('Error patching question field:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid question field update', error);
+      }
       res.status(500).json({ message: 'Failed to update field' });
     }
   });
@@ -600,20 +660,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     async (req, res) => {
       try {
         const { id } = req.params;
-        const { field } = req.body as { field: string };
-
-        const FIXABLE = [
-          'sourceUrl',
-          'sourceName',
-          'explanation',
-          'tags',
-          'answer',
-          'question',
-          'acceptableAnswers',
-        ];
-        if (!field || !FIXABLE.includes(field)) {
-          return res.status(400).json({ message: `field must be one of: ${FIXABLE.join(', ')}` });
-        }
+        const { field } = aiFixRequestSchema.parse(req.body);
 
         const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
         if (!q) return res.status(404).json({ message: 'Question not found' });
@@ -637,6 +684,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         res.json({ suggestion });
       } catch (error) {
         console.error('Error getting AI field fix:', error);
+        if (error instanceof z.ZodError) {
+          return sendValidationError(res, 'Invalid AI fix request', error);
+        }
         res.status(500).json({ message: 'Failed to get AI suggestion' });
       }
     }
@@ -711,7 +761,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     try {
       const parsed = stagingGenerateSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({
+        return res.status(422).json({
           message: 'Invalid generation parameters',
           errors: parsed.error.errors,
         });
@@ -1045,6 +1095,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       });
     } catch (error) {
       console.error('Error running quality sweep:', error);
+      if (error instanceof z.ZodError) {
+        return sendValidationError(res, 'Invalid quality sweep request', error);
+      }
       res.status(500).json({ message: 'Quality sweep failed' });
     }
   });
