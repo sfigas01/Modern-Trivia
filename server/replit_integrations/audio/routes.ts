@@ -1,7 +1,25 @@
 import type { Express, Request, Response } from 'express';
+import { z } from 'zod';
 import { aiLimiter } from '../../middleware/rateLimiter';
 import { chatStorage } from '../chat/storage';
 import { openai, speechToText, voiceChatWithTextModel, convertWebmToWav } from './client';
+
+const voiceSchema = z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']);
+const audioRequestSchema = z
+  .object({
+    audio: z.string().min(1).max(10_000_000),
+    voice: voiceSchema.optional().default('alloy'),
+    inputFormat: z.enum(['wav', 'mp3']).optional().default('wav'),
+  })
+  .strict();
+
+const voiceStreamRequestSchema = audioRequestSchema.extend({
+  locale: z.string().trim().min(2).max(12).optional().default('en'),
+});
+
+function sendValidationError(res: Response, message: string, error: z.ZodError) {
+  return res.status(422).json({ error: message, details: error.errors });
+}
 
 // Note: Set express.json({ limit: "50mb" }) for audio payloads.
 // Note: Use convertWebmToWav() to convert browser WebM to WAV before API calls.
@@ -65,11 +83,7 @@ export function registerAudioRoutes(app: Express): void {
   app.post('/api/conversations/:id/messages', aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { audio, voice = 'alloy', inputFormat = 'wav' } = req.body;
-
-      if (!audio) {
-        return res.status(400).json({ error: 'Audio data (base64) is required' });
-      }
+      const { audio, voice, inputFormat } = audioRequestSchema.parse(req.body);
 
       // 1. Transcribe user audio
       const audioBuffer = Buffer.from(audio, 'base64');
@@ -126,6 +140,9 @@ export function registerAudioRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error('Error processing voice message:', error);
+      if (error instanceof z.ZodError && !res.headersSent) {
+        return sendValidationError(res, 'Invalid voice message request', error);
+      }
       if (res.headersSent) {
         res.write(
           `data: ${JSON.stringify({ type: 'error', error: 'Failed to process voice message' })}\n\n`
@@ -143,11 +160,7 @@ export function registerAudioRoutes(app: Express): void {
   app.post(voiceStreamRoute, aiLimiter, async (req: Request, res: Response) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { audio, voice = 'alloy', inputFormat = 'wav', locale = 'en' } = req.body;
-
-      if (!audio) {
-        return res.status(400).json({ error: 'Audio data (base64) is required' });
-      }
+      const { audio, voice, inputFormat, locale } = voiceStreamRequestSchema.parse(req.body);
 
       // Get conversation history
       const existingMessages = await chatStorage.getMessagesByConversation(conversationId);
@@ -188,6 +201,9 @@ export function registerAudioRoutes(app: Express): void {
       res.end();
     } catch (error) {
       console.error('Error in voice stream:', error);
+      if (error instanceof z.ZodError && !res.headersSent) {
+        return sendValidationError(res, 'Invalid voice stream request', error);
+      }
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ type: 'error', error: 'Voice stream failed' })}\n\n`);
         res.end();
