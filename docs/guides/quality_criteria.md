@@ -191,13 +191,13 @@ _Examples: Poutine, Canadian slang ("double-double", "toque"), CN Tower, cottage
 
 ## Key Files for Review
 
-| File                            | Purpose                                |
-| ------------------------------- | -------------------------------------- |
-| `client/src/lib/questions.json` | Main question database (200 questions) |
-| `CONTENT_STRATEGY.md`           | Content guidelines and pillars         |
-| `docs/STATE_MACHINE.md`         | Game flow documentation                |
-| `docs/ADMIN_SETUP.md`           | Admin role setup                       |
-| `server/routes.ts`              | API routes including disputes          |
+| File                                | Purpose                                |
+| ----------------------------------- | -------------------------------------- |
+| `client/src/lib/questions.json`     | Main question database (200 questions) |
+| `CONTENT_STRATEGY.md`               | Content guidelines and pillars         |
+| `docs/guides/game_state_machine.md` | Game flow documentation                |
+| `docs/guides/admin_setup.md`        | Admin role setup                       |
+| `server/routes.ts`                  | API routes including disputes          |
 
 ---
 

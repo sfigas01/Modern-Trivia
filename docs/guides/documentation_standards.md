@@ -67,3 +67,33 @@ Every new Epic or Feature **must** be added to `docs/PRODUCT_ROADMAP.md`.
 
 - **Check IDs:** Always check existing IDs in the target directory to find the next available number.
 - **Categorize:** Never create uncategorized files in the root `docs/` folder.
+
+## 6. Documentation Maintenance Checklist
+
+Run this checklist whenever file paths change, docs are renamed/moved, or agents are added/removed.
+
+### File path references
+
+- [ ] `README.md` — all links in Features, Project Structure, Game Flow, Admin Setup sections resolve
+- [ ] `docs/guides/qa_instructions.md` — Key Files table paths resolve
+- [ ] `docs/guides/quality_criteria.md` — Key Files for Review table paths resolve
+- [ ] `docs/guides/ai_tool_setup.md` — instruction file names match root files
+
+### Agent naming
+
+Active agents: **Claude Code**, **Replit Agent**, **Codex**, **Antigravity**
+
+- [ ] `docs/PRODUCT_ROADMAP.md` — agent list in STE-66 section matches active set
+- [ ] `docs/guides/ai_tool_setup.md` — one section per active agent, none for retired tools
+- [ ] `.agent/AGENT_STATUS.md` — Agent names row matches active set
+- [ ] `AGENTS.md` / `CLAUDE.md` / `replit.md` — Sync Contract: all three files identical (CI enforces via `cmp -s`)
+
+### Shared agent manifest sync
+
+- [ ] After any edit to `AGENTS.md`, mirror the change in `CLAUDE.md` and `replit.md` in the same commit
+- [ ] CI gate `cmp -s AGENTS.md CLAUDE.md replit.md` passes before merge
+
+### Stale coordination files
+
+- [ ] `AGENT_STATUS.md` (root) — clear completed/abandoned claims
+- [ ] `.agent/AGENT_STATUS.md` — move finished issues to Recently Completed; remove stale Up Next rows
