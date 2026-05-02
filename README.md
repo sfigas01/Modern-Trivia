@@ -6,7 +6,7 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 
 This project was created using ChatGPT, Replit, and Codex. The original prototype was designed by ChatGPT and built in Replit using the App Connector, and the initial README was created using Codex.
 
-Additionally, Claude Code on web was used to update and enhance the README content to accurately reflect the current state of the application. This project demonstrates collaboration across multiple AI coding tools throughout its development lifecycle.
+Ongoing development uses four AI coding agents working concurrently: **Claude Code**, **Replit Agent**, **Codex**, and **Antigravity**. Each agent reads from `AGENTS.md` / `CLAUDE.md` / `replit.md` (kept in sync) for shared operating rules.
 
 ## Features
 
@@ -22,7 +22,7 @@ Additionally, Claude Code on web was used to update and enhance the README conte
   - Medium questions: ±2 points
   - Hard questions: ±3 points
 - **Round System**: Teams rotate after every 4 questions, with round score displays
-- **State Machine Architecture**: Ensures consistent game flow (see `docs/STATE_MACHINE.md`)
+- **State Machine Architecture**: Ensures consistent game flow (see `docs/guides/game_state_machine.md`)
 
 ### Authentication & Admin Features
 
@@ -201,8 +201,10 @@ Modern-Trivia/
 │   ├── schema.ts        # Drizzle ORM database schema
 │   └── models/          # User and session models
 ├── docs/
-│   ├── STATE_MACHINE.md # Game state flow documentation
-│   └── ADMIN_SETUP.md   # Admin role setup instructions
+│   ├── PRODUCT_ROADMAP.md         # High-level roadmap
+│   └── guides/
+│       ├── game_state_machine.md  # Game state flow documentation
+│       └── admin_setup.md         # Admin role setup instructions
 └── script/
     └── build.ts         # Production build script
 ```
@@ -219,14 +221,14 @@ The game follows a state machine pattern with these states:
 6. **ROUND_SCORE** → Display scores after each complete round
 7. **GAME_OVER** → Final scoreboard and winner announcement
 
-See `docs/STATE_MACHINE.md` for detailed state transitions.
+See `docs/guides/game_state_machine.md` for detailed state transitions.
 
 ## Admin Setup
 
 To grant admin access to users:
 
 1. Ensure the user has logged in at least once (creates user record)
-2. See `docs/ADMIN_SETUP.md` for instructions on granting admin roles
+2. See `docs/guides/admin_setup.md` for instructions on granting admin roles
 3. Admin users can:
    - View and clear dispute logs
    - Add/edit/delete custom questions
