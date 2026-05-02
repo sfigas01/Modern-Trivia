@@ -8,10 +8,7 @@
     "acceptableAnswers": [],
     "explanation": "Ottawa was chosen as the capital on December 31, 1857 by Queen Victoria.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ottawa",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -25,15 +22,10 @@
     "difficulty": "Easy",
     "question": "Which US state is known as the 'Sunshine State'?",
     "answer": "Florida",
-    "acceptableAnswers": [
-      "FL"
-    ],
+    "acceptableAnswers": ["FL"],
     "explanation": "Florida officially adopted 'The Sunshine State' nickname in 1970 when the state legislature included it on license plates.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Florida",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -47,15 +39,10 @@
     "difficulty": "Medium",
     "question": "What represents the 'K' in the periodic table?",
     "answer": "Potassium",
-    "acceptableAnswers": [
-      "K"
-    ],
+    "acceptableAnswers": ["K"],
     "explanation": "The symbol K comes from the Latin word 'Kalium'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Potassium",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -69,17 +56,10 @@
     "difficulty": "Hard",
     "question": "Who was the first Prime Minister of Canada?",
     "answer": "Sir John A. Macdonald",
-    "acceptableAnswers": [
-      "John A Macdonald",
-      "Macdonald",
-      "John Macdonald"
-    ],
+    "acceptableAnswers": ["John A Macdonald", "Macdonald", "John Macdonald"],
     "explanation": "He served as the first Prime Minister of Canada from 1867 to 1873.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -96,10 +76,7 @@
     "acceptableAnswers": [],
     "explanation": "The Declaration of Independence was ADOPTED on July 4, 1776, declaring the 13 colonies independent from Britain. The actual signing began on August 2, 1776, when delegates started signing the engrossed parchment copy.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "History"
-    ],
+    "tags": ["US", "History"],
     "sourceUrl": "https://www.archives.gov/milestone-documents/declaration-of-independence",
     "sourceName": "National Archives",
     "status": "approved",
@@ -116,10 +93,7 @@
     "acceptableAnswers": [],
     "explanation": "Drake released Views in April 2016. 'Hotline Bling' was released earlier as a single on July 31, 2015, and is credited as a bonus track on the physical album. Major album tracks include 'One Dance' and 'Controlla'.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Pop Culture"
-    ],
+    "tags": ["CA", "Pop Culture"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Views_(album)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -136,10 +110,7 @@
     "acceptableAnswers": [],
     "explanation": "Vancouver, Canada hosted the XXI Olympic Winter Games.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/2010_Winter_Olympics",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -156,10 +127,7 @@
     "acceptableAnswers": [],
     "explanation": "While Hockey is the national winter sport, Lacrosse is the official national summer sport of Canada.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/National_Sports_of_Canada_Act",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -176,10 +144,7 @@
     "acceptableAnswers": [],
     "explanation": "The Missouri River is about 2,341 miles long, slightly longer than the Mississippi River at 2,340 miles.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Missouri_River",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -196,10 +161,7 @@
     "acceptableAnswers": [],
     "explanation": "The Simpsons is the longest-running American animated series and longest-running American sitcom.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Entertainment"
-    ],
+    "tags": ["US", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Simpsons",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -216,10 +178,7 @@
     "acceptableAnswers": [],
     "explanation": "The Japanese Yen is the third most traded currency in the foreign exchange market.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "General Knowledge"
-    ],
+    "tags": ["Global", "General Knowledge"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Japanese_yen",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -236,10 +195,7 @@
     "acceptableAnswers": [],
     "explanation": "Diamonds are formed deep within the Earth under extreme heat and pressure. They rank 10 on the Mohs hardness scale.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Diamond",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -256,10 +212,7 @@
     "acceptableAnswers": [],
     "explanation": "They joined Confederation on March 31, 1949, becoming Canada's tenth province.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -273,16 +226,10 @@
     "difficulty": "Medium",
     "question": "Which U.S. president who served four terms is not depicted on Mount Rushmore?",
     "answer": "Franklin D. Roosevelt",
-    "acceptableAnswers": [
-      "FDR",
-      "Franklin Roosevelt"
-    ],
+    "acceptableAnswers": ["FDR", "Franklin Roosevelt"],
     "explanation": "The four presidents on Mount Rushmore are George Washington, Thomas Jefferson, Theodore Roosevelt, and Abraham Lincoln. Franklin D. Roosevelt is not depicted.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Rushmore",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -299,36 +246,13 @@
     "acceptableAnswers": [],
     "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
     "createdAt": "2026-03-06T14:18:01.064189",
     "updatedAt": "2026-03-06T18:57:10.65"
-  },
-  {
-    "id": "q16",
-    "category": "Technology",
-    "difficulty": "Medium",
-    "question": "What year was the first iPhone released?",
-    "answer": "2007",
-    "acceptableAnswers": [],
-    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007, and it went on sale June 29, 2007.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Technology"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": null,
-    "createdAt": "2026-03-06T14:18:01.067894",
-    "updatedAt": "2026-03-06T18:57:10.653"
   },
   {
     "id": "q17",
@@ -339,10 +263,7 @@
     "acceptableAnswers": [],
     "explanation": "Pacific, Mountain, Central, Eastern, Atlantic, and Newfoundland.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Time_in_Canada",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -359,10 +280,7 @@
     "acceptableAnswers": [],
     "explanation": "He served from 1861 to 1865 during the American Civil War.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "History"
-    ],
+    "tags": ["US", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Abraham_Lincoln",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -379,10 +297,7 @@
     "acceptableAnswers": [],
     "explanation": "The Bald Eagle was adopted as the national bird in 1782.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Nature"
-    ],
+    "tags": ["US", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bald_eagle",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -399,10 +314,7 @@
     "acceptableAnswers": [],
     "explanation": "The North American Beaver became an official symbol of Canada in 1975.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Nature"
-    ],
+    "tags": ["CA", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/North_American_beaver",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -419,10 +331,7 @@
     "acceptableAnswers": [],
     "explanation": "Iron oxide prevalent on its surface gives it a reddish appearance.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Space"
-    ],
+    "tags": ["Global", "Space"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mars",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -439,10 +348,7 @@
     "acceptableAnswers": [],
     "explanation": "Margaret Atwood is a celebrated Canadian author. The novel was published in 1985.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Literature"
-    ],
+    "tags": ["CA", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Handmaid%27s_Tale",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -459,10 +365,7 @@
     "acceptableAnswers": [],
     "explanation": "The nickname was popularized in the 1920s by sports writer John J. Fitz Gerald.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Big_Apple",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -479,10 +382,7 @@
     "acceptableAnswers": [],
     "explanation": "Basketball was invented by Canadian James Naismith in 1891.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Sports"
-    ],
+    "tags": ["US", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Slam_dunk",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -499,10 +399,7 @@
     "acceptableAnswers": [],
     "explanation": "He was born in Vancouver, British Columbia on October 23, 1976.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -519,10 +416,7 @@
     "acceptableAnswers": [],
     "explanation": "Rhode Island is about 1,545 square miles. Despite its name, it is not an island.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Rhode_Island",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -539,10 +433,7 @@
     "acceptableAnswers": [],
     "explanation": "Two hydrogen atoms and one oxygen atom.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Water",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -559,10 +450,7 @@
     "acceptableAnswers": [],
     "explanation": "He is regarded as one of the most significant cultural figures of the 20th century.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Music"
-    ],
+    "tags": ["US", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Michael_Jackson",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -579,10 +467,7 @@
     "acceptableAnswers": [],
     "explanation": "Quebec covers about 1.5 million km². Nunavut is larger, but it is a territory, not a province.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Quebec",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -599,11 +484,7 @@
     "acceptableAnswers": [],
     "explanation": "The Treaty of Ghent was signed December 24, 1814, but fighting continued into 1815, including the Battle of New Orleans.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "History",
-      "CA"
-    ],
+    "tags": ["US", "History", "CA"],
     "sourceUrl": "https://en.wikipedia.org/wiki/War_of_1812",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -620,10 +501,7 @@
     "acceptableAnswers": [],
     "explanation": "Founded on April 4, 1975 in Albuquerque, New Mexico.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Technology"
-    ],
+    "tags": ["US", "Technology"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Microsoft",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -640,10 +518,7 @@
     "acceptableAnswers": [],
     "explanation": "She was born on March 30, 1968 in Charlemagne, Quebec.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Celine_Dion",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -660,10 +535,7 @@
     "acceptableAnswers": [],
     "explanation": "Sacramento became California's state capital in 1854. It's not Los Angeles or San Francisco!",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Sacramento,_California",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -680,10 +552,7 @@
     "acceptableAnswers": [],
     "explanation": "From the Greek 'hex' meaning six.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "General Knowledge"
-    ],
+    "tags": ["Global", "General Knowledge"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hexagon",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -700,10 +569,7 @@
     "acceptableAnswers": [],
     "explanation": "It's an avocado-based dip, spread, or salad originating from Mexico.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "Food"
-    ],
+    "tags": ["Global", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Guacamole",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -720,10 +586,7 @@
     "acceptableAnswers": [],
     "explanation": "It held the record for the world's tallest free-standing structure for 32 years (1975-2007).",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/CN_Tower",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -740,10 +603,7 @@
     "acceptableAnswers": [],
     "explanation": "It is the largest and deepest of Earth's oceanic divisions, covering about 63 million square miles.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -760,10 +620,7 @@
     "acceptableAnswers": [],
     "explanation": "They defeated the Kansas City Chiefs 35-10 on January 15, 1967.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Sports"
-    ],
+    "tags": ["US", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_I",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -780,10 +637,7 @@
     "acceptableAnswers": [],
     "explanation": "They can grow up to 100 feet long and weigh as much as 200 tons.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Blue_whale",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -800,10 +654,7 @@
     "acceptableAnswers": [],
     "explanation": "Founded in 1964 in Hamilton, Ontario by Canadian hockey player Tim Horton.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Culture"
-    ],
+    "tags": ["CA", "Culture"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tim_Hortons",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -820,10 +671,7 @@
     "acceptableAnswers": [],
     "explanation": "Two for each of the 50 states, serving six-year terms.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Government"
-    ],
+    "tags": ["US", "Government"],
     "sourceUrl": "https://en.wikipedia.org/wiki/United_States_Senate",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -840,10 +688,7 @@
     "acceptableAnswers": [],
     "explanation": "Often approximated as 300,000 km/s. Light travels at exactly 299,792,458 meters per second in a vacuum.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Speed_of_light",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -860,10 +705,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada became officially bilingual at the federal level with the Official Languages Act of 1969.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Official_Languages_Act_(Canada)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -880,10 +722,7 @@
     "acceptableAnswers": [],
     "explanation": "The other four Great Lakes (Superior, Huron, Erie, Ontario) are shared with Canada.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Michigan",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -900,10 +739,7 @@
     "acceptableAnswers": [],
     "explanation": "He kicked off the MCU in Iron Man (2008) and played Tony Stark until Avengers: Endgame (2019).",
     "pillar": "FreshPrints",
-    "tags": [
-      "US",
-      "Entertainment"
-    ],
+    "tags": ["US", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Robert_Downey_Jr.",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -920,10 +756,7 @@
     "acceptableAnswers": [],
     "explanation": "He holds over 60 NHL records including most career goals (894) and assists (1,963).",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Wayne_Gretzky",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -940,10 +773,7 @@
     "acceptableAnswers": [],
     "explanation": "They generate most of the cell's supply of adenosine triphosphate (ATP) through cellular respiration.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mitochondrion",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -960,10 +790,7 @@
     "acceptableAnswers": [],
     "explanation": "Austin has been the state capital since 1839. 'Keep Austin Weird' is the city's unofficial slogan.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "Geography"
-    ],
+    "tags": ["US", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Austin,_Texas",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -980,10 +807,7 @@
     "acceptableAnswers": [],
     "explanation": "Purple is a secondary color in the traditional RYB color model used in painting.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "General Knowledge"
-    ],
+    "tags": ["Global", "General Knowledge"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Purple",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1000,10 +824,7 @@
     "acceptableAnswers": [],
     "explanation": "Alert is located at 82°30'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1020,10 +841,7 @@
     "acceptableAnswers": [],
     "explanation": "Confederation occurred on July 1, 1867, now celebrated as Canada Day.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1040,10 +858,7 @@
     "acceptableAnswers": [],
     "explanation": "The Weeknd performed at Super Bowl LV (55) on February 7, 2021 in Tampa, Florida. Super Bowl LIV (54) in 2020 featured Shakira and Jennifer Lopez.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LV_halftime_show",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1060,10 +875,7 @@
     "acceptableAnswers": [],
     "explanation": "Their last championship was in 1967, the longest active drought in the NHL.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1080,10 +892,7 @@
     "acceptableAnswers": [],
     "explanation": "Au comes from the Latin word 'aurum', meaning 'shining dawn'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Gold",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1097,16 +906,10 @@
     "difficulty": "Hard",
     "question": "What is the tallest mountain in North America?",
     "answer": "Denali",
-    "acceptableAnswers": [
-      "Mount Denali",
-      "Mt. Denali"
-    ],
+    "acceptableAnswers": ["Mount Denali", "Mt. Denali"],
     "explanation": "Denali in Alaska stands at 20,310 feet (6,190 meters). It was formerly known as Mount McKinley.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Denali",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1123,10 +926,7 @@
     "acceptableAnswers": [],
     "explanation": "The sugar maple (Acer saccharum) is the primary source of maple syrup and is Canada's national tree.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Sugar_maple",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1143,10 +943,7 @@
     "acceptableAnswers": [],
     "explanation": "Robert Pattinson was born on May 13, 1986 in Barnes, London, England. He is British and starred in 'The Batman' (2022).",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://www.britannica.com/facts/Robert-Pattinson",
     "sourceName": "Britannica",
     "status": "approved",
@@ -1163,10 +960,7 @@
     "acceptableAnswers": [],
     "explanation": "Sir Frederick Banting was a Canadian physician who shared the 1923 Nobel Prize with John Macleod for the discovery of insulin.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Frederick_Banting",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1183,10 +977,7 @@
     "acceptableAnswers": [],
     "explanation": "Lake Superior is the largest freshwater lake by surface area (31,700 sq mi), shared between Canada and the United States.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Lake_Superior",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1203,10 +994,7 @@
     "acceptableAnswers": [],
     "explanation": "L.M. Montgomery was a Canadian author born in Clifton, Prince Edward Island. The novel was published in 1908.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Literature"
-    ],
+    "tags": ["CA", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Anne_of_Green_Gables",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1223,10 +1011,7 @@
     "acceptableAnswers": [],
     "explanation": "Montreal hosts over 100 festivals annually including the Montreal Jazz Festival and Just for Laughs.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Montreal",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1240,16 +1025,10 @@
     "difficulty": "Medium",
     "question": "What gas do plants absorb for photosynthesis?",
     "answer": "Carbon Dioxide",
-    "acceptableAnswers": [
-      "CO2",
-      "CO2"
-    ],
+    "acceptableAnswers": ["CO2", "CO2"],
     "explanation": "Plants use CO2 and sunlight to create glucose and release oxygen.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1266,10 +1045,7 @@
     "acceptableAnswers": [],
     "explanation": "Andreescu defeated Serena Williams 6–3, 7–5 in the final, becoming the first Canadian to win a Grand Slam singles title.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bianca_Andreescu",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1286,10 +1062,7 @@
     "acceptableAnswers": [],
     "explanation": "Dan Levy co-created the show with his father Eugene Levy. It won 9 Emmy Awards in 2020.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Schitt%27s_Creek",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1306,10 +1079,7 @@
     "acceptableAnswers": [],
     "explanation": "RMS Titanic struck an iceberg on April 14, 1912 and sank in the early morning of April 15. Over 1,500 people died.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "History"
-    ],
+    "tags": ["Global", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Sinking_of_the_Titanic",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1326,10 +1096,7 @@
     "acceptableAnswers": [],
     "explanation": "Canberra was chosen in 1908 as a compromise between Sydney and Melbourne, and became the capital in 1927.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canberra",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1346,10 +1113,7 @@
     "acceptableAnswers": [],
     "explanation": "Leonard Cohen was born in Montreal and originally released 'Hallelujah' on his 1984 album 'Various Positions'.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hallelujah_(Leonard_Cohen_song)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1366,10 +1130,7 @@
     "acceptableAnswers": [],
     "explanation": "Poutine consists of French fries topped with cheese curds and brown gravy. It originated in Quebec in the late 1950s.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1386,10 +1147,7 @@
     "acceptableAnswers": [],
     "explanation": "Babies are born with about 270 bones, but some fuse together as they grow into adults.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Human_skeleton",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1406,10 +1164,7 @@
     "acceptableAnswers": [],
     "explanation": "The Kids in the Hall is a Canadian sketch comedy group formed in 1984. Their TV series aired from 1988-1995.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Kids_in_the_Hall",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1426,10 +1181,7 @@
     "acceptableAnswers": [],
     "explanation": "Étienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_1904_Summer_Olympics",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1446,10 +1198,7 @@
     "acceptableAnswers": [],
     "explanation": "The Viking explorer reached North America around 1000 AD, establishing a settlement at L'Anse aux Meadows in Newfoundland.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "History"
-    ],
+    "tags": ["Global", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Leif_Erikson",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1466,10 +1215,7 @@
     "acceptableAnswers": [],
     "explanation": "Paris is located on the Seine River and has been France's capital since 987 AD.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Paris",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1486,10 +1232,7 @@
     "acceptableAnswers": [],
     "explanation": "Adult male African bush elephants can weigh up to 14,000 pounds (6,350 kg) and stand up to 13 feet tall.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/African_elephant",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1506,36 +1249,13 @@
     "acceptableAnswers": [],
     "explanation": "J.K. Rowling is a British author who published the first Harry Potter book in 1997.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Potter",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
     "createdAt": "2026-03-06T14:18:01.26034",
     "updatedAt": "2026-03-06T18:57:10.931"
-  },
-  {
-    "id": "q76",
-    "category": "Technology",
-    "difficulty": "Easy",
-    "question": "In what year did the internet become publicly available?",
-    "answer": "1991",
-    "acceptableAnswers": [],
-    "explanation": "Tim Berners-Lee released the World Wide Web to the public on August 6, 1991 at CERN.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Technology"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/World_Wide_Web",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": null,
-    "createdAt": "2026-03-06T14:18:01.263746",
-    "updatedAt": "2026-03-06T18:57:10.934"
   },
   {
     "id": "q77",
@@ -1546,10 +1266,7 @@
     "acceptableAnswers": [],
     "explanation": "Pink Floyd is a British rock band formed in London in 1965. 'The Wall' is one of rock's most acclaimed concept albums.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Pink_Floyd",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1566,10 +1283,7 @@
     "acceptableAnswers": [],
     "explanation": "The 2024 Paris Olympics featured 32 sports. The number of sports varies with each Olympic Games.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Summer_Olympic_Games",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1586,10 +1300,7 @@
     "acceptableAnswers": [],
     "explanation": "Ontario is home to over 15 million people, about 38% of Canada's total population.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ontario",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1606,10 +1317,7 @@
     "acceptableAnswers": [],
     "explanation": "The skin covers about 20 square feet in adults and weighs about 8 pounds.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Human_skin",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1626,10 +1334,7 @@
     "acceptableAnswers": [],
     "explanation": "Scarlett Johansson is an American actress born in New York City. She has played Natasha Romanoff/Black Widow since 2010.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Scarlett_Johansson",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1646,10 +1351,7 @@
     "acceptableAnswers": [],
     "explanation": "The Berlin Wall fell on November 9, 1989, symbolizing the end of the Cold War division of Europe.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "History"
-    ],
+    "tags": ["Global", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Fall_of_the_Berlin_Wall",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1663,16 +1365,10 @@
     "difficulty": "Easy",
     "question": "What is a Nanaimo bar?",
     "answer": "A chocolate dessert",
-    "acceptableAnswers": [
-      "Chocolate bar",
-      "Canadian candy"
-    ],
+    "acceptableAnswers": ["Chocolate bar", "Canadian candy"],
     "explanation": "It's a no-bake three-layer dessert bar originating from Nanaimo, British Columbia with a custard-flavored middle layer.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Nanaimo_bar",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1689,10 +1385,7 @@
     "acceptableAnswers": [],
     "explanation": "Vatican City is about 0.44 square kilometers (110 acres), entirely surrounded by Rome, Italy.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Vatican_City",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1709,10 +1402,7 @@
     "acceptableAnswers": [],
     "explanation": "The Toronto Maple Leafs were founded in 1917 and play in the Atlantic Division of the Eastern Conference.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1729,10 +1419,7 @@
     "acceptableAnswers": [],
     "explanation": "García Márquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/One_Hundred_Years_of_Solitude",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1749,10 +1436,7 @@
     "acceptableAnswers": [],
     "explanation": "Hydrogen is the lightest element and makes up about 75% of all matter in the universe.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1769,10 +1453,7 @@
     "acceptableAnswers": [],
     "explanation": "Harry Styles is a British singer born in Redditch, England. 'Watermelon Sugar' was released in 2019 from his album 'Fine Line'.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Styles",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1786,16 +1467,10 @@
     "difficulty": "Medium",
     "question": "Which civilization built Machu Picchu?",
     "answer": "Inca Empire",
-    "acceptableAnswers": [
-      "Inca",
-      "Incas"
-    ],
+    "acceptableAnswers": ["Inca", "Incas"],
     "explanation": "Machu Picchu was built by the Inca Empire in the 15th century and later became one of Peru's most famous archaeological sites.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "History"
-    ],
+    "tags": ["Global", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Machu_Picchu",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1812,10 +1487,7 @@
     "acceptableAnswers": [],
     "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Città Eterna).",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Rome",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1832,10 +1504,7 @@
     "acceptableAnswers": [],
     "explanation": "Hugh Jackman is an Australian actor born in Sydney. He played Wolverine in nine X-Men films from 2000-2024.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hugh_Jackman",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1852,10 +1521,7 @@
     "acceptableAnswers": [],
     "explanation": "De Grasse won three medals: 1 silver and 2 bronze.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Andre_De_Grasse",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1872,10 +1538,7 @@
     "acceptableAnswers": [],
     "explanation": "All spiders are arachnids with eight legs.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Spider",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1889,16 +1552,10 @@
     "difficulty": "Hard",
     "question": "What is a Buxton cake?",
     "answer": "A Canadian pastry",
-    "acceptableAnswers": [
-      "Pastry",
-      "Dessert"
-    ],
+    "acceptableAnswers": ["Pastry", "Dessert"],
     "explanation": "A traditional Canadian dessert from the early 20th century.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_cuisine",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1915,10 +1572,7 @@
     "acceptableAnswers": [],
     "explanation": "Only a handful of people worldwide have this blood type.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Rh_blood_group_system",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1935,10 +1589,7 @@
     "acceptableAnswers": [],
     "explanation": "The Maple Leaf flag was officially adopted on February 15, 1965.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1955,10 +1606,7 @@
     "acceptableAnswers": [],
     "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bras%C3%ADlia",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1975,10 +1623,7 @@
     "acceptableAnswers": [],
     "explanation": "Lewis Capaldi is a Scottish singer-songwriter from Whitburn, West Lothian. 'Someone You Loved' reached #1 in the UK and US in 2019.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Lewis_Capaldi",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -1995,10 +1640,7 @@
     "acceptableAnswers": [],
     "explanation": "Netflix started in 1997 as a mail-based DVD rental service.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Netflix",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2015,36 +1657,13 @@
     "acceptableAnswers": [],
     "explanation": "Five skaters and one goaltender.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
     "createdAt": "2026-03-06T14:18:01.339452",
     "updatedAt": "2026-03-06T18:57:11"
-  },
-  {
-    "id": "q101",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "Who was the first Canadian Prime Minister?",
-    "answer": "Sir John A. Macdonald",
-    "acceptableAnswers": [],
-    "explanation": "He led from 1867 to 1873 and 1878 to 1891.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": null,
-    "createdAt": "2026-03-06T14:18:01.342503",
-    "updatedAt": "2026-03-06T18:57:11.002"
   },
   {
     "id": "q102",
@@ -2055,10 +1674,7 @@
     "acceptableAnswers": [],
     "explanation": "Nitrogen comprises about 78% of the air we breathe.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Atmosphere_of_Earth",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2075,10 +1691,7 @@
     "acceptableAnswers": [],
     "explanation": "Prince Edward Island has the smallest population of any Canadian province, with approximately 170,000 residents. Note: Nunavut has fewer people but is a territory, not a province.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2095,10 +1708,7 @@
     "acceptableAnswers": [],
     "explanation": "Homer was an ancient Greek poet.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Odyssey",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2115,10 +1725,7 @@
     "acceptableAnswers": [],
     "explanation": "Keeso created and stars in the comedy series.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Letterkenny_(TV_series)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2135,10 +1742,7 @@
     "acceptableAnswers": [],
     "explanation": "Joni Mitchell is a Canadian singer-songwriter from Alberta. 'Blue' (1971) is considered one of the greatest albums of all time. Note: 'Take Me Home' is a Cher album (1979), not Joni Mitchell.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2155,10 +1759,7 @@
     "acceptableAnswers": [],
     "explanation": "Raonic reached the Wimbledon final in 2016.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Milos_Raonic",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2175,10 +1776,7 @@
     "acceptableAnswers": [],
     "explanation": "This is a traditional Canadian dessert.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Butter_tart",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2195,10 +1793,7 @@
     "acceptableAnswers": [],
     "explanation": "Located in the Western Pacific, it reaches nearly 11 km deep.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mariana_Trench",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2215,10 +1810,7 @@
     "acceptableAnswers": [],
     "explanation": "Fe comes from the Latin word 'ferrum'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Iron",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2235,10 +1827,7 @@
     "acceptableAnswers": [],
     "explanation": "The Slavery Abolition Act was passed throughout the British Empire.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Slavery_Abolition_Act_1833",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2255,10 +1844,7 @@
     "acceptableAnswers": [],
     "explanation": "The Mackenzie River flows through northern Canada.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mackenzie_River",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2275,10 +1861,7 @@
     "acceptableAnswers": [],
     "explanation": "Rihanna is from Saint Michael, Barbados. She performed at Super Bowl LVII in Glendale, Arizona on February 12, 2023.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Super_Bowl_LVII_halftime_show",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2295,10 +1878,7 @@
     "acceptableAnswers": [],
     "explanation": "The Canucks have been a major NHL team since then.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Vancouver_Canucks",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2315,10 +1895,7 @@
     "acceptableAnswers": [],
     "explanation": "The British author created the iconic tale.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Alice%27s_Adventures_in_Wonderland",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2335,10 +1912,7 @@
     "acceptableAnswers": [],
     "explanation": "At sea level, water boils at 212°F or 100°C.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2355,10 +1929,7 @@
     "acceptableAnswers": [],
     "explanation": "The prog rock band is from Toronto.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Rush_(band)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2375,10 +1946,7 @@
     "acceptableAnswers": [],
     "explanation": "Tokyo is the most populous metropolitan area in the world.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2395,10 +1963,7 @@
     "acceptableAnswers": [],
     "explanation": "Cheetahs can reach speeds of over 70 mph.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Cheetah",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2415,10 +1980,7 @@
     "acceptableAnswers": [],
     "explanation": "It's a fried dough pastry traditionally served at Canadian fairs.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/BeaverTails",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2435,10 +1997,7 @@
     "acceptableAnswers": [],
     "explanation": "Despite some Canadian involvement, it's primarily American.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Drake_%26_Josh",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2455,10 +2014,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada officially adopted its own constitution on April 17, 1982.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Patriation",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2475,10 +2031,7 @@
     "acceptableAnswers": [],
     "explanation": "Tennis is played on courts worldwide.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tennis",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2495,10 +2048,7 @@
     "acceptableAnswers": [],
     "explanation": "Hydrogen makes up about 75% of all matter.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hydrogen",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2515,10 +2065,7 @@
     "acceptableAnswers": [],
     "explanation": "Despite being smaller than Auckland, Wellington is the capital.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Wellington",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2535,10 +2082,7 @@
     "acceptableAnswers": [],
     "explanation": "Fitzgerald wrote this American classic in 1925.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Great_Gatsby",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2555,10 +2099,7 @@
     "acceptableAnswers": [],
     "explanation": "Oscar Peterson, born in Montreal, was a legendary Canadian jazz pianist known as the 'Maharaja of the keyboard.'",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Oscar_Peterson",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2575,10 +2116,7 @@
     "acceptableAnswers": [],
     "explanation": "Robb Wells plays Ricky in the comedy series. Mike Smith plays Bubbles, and John Paul Tremblay plays Julian.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Robb_Wells",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2595,10 +2133,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada hosted the Summer Olympics once, in Montreal in 1976. Vancouver 2010 was the Winter Olympics.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/1976_Summer_Olympics",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2615,10 +2150,7 @@
     "acceptableAnswers": [],
     "explanation": "Canadian bacon is back bacon from the loin, not belly.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Back_bacon",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2635,10 +2167,7 @@
     "acceptableAnswers": [],
     "explanation": "The maple leaf flag replaced the Union Jack on February 15.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Flag_of_Canada",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2655,10 +2184,7 @@
     "acceptableAnswers": [],
     "explanation": "Water freezes at 0°C or 32°F.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Melting_point",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2675,10 +2201,7 @@
     "acceptableAnswers": [],
     "explanation": "Alert, Nunavut is the northernmost settlement.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2695,10 +2218,7 @@
     "acceptableAnswers": [],
     "explanation": "Including polar, grizzly, black, panda, and others.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bear",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2715,10 +2235,7 @@
     "acceptableAnswers": [],
     "explanation": "Chris Carter is an American writer and producer born in Bellflower, California. He created The X-Files in 1993.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "Entertainment"
-    ],
+    "tags": ["US", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Chris_Carter_(screenwriter)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2735,10 +2252,7 @@
     "acceptableAnswers": [],
     "explanation": "Nirvana was from Seattle, Washington.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Nirvana_(band)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2755,10 +2269,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada has hosted the Winter Olympics twice: Calgary in 1988 and Vancouver in 2010.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_Winter_Olympics",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2775,10 +2286,7 @@
     "acceptableAnswers": [],
     "explanation": "The Russian author wrote this psychological novel.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Crime_and_Punishment",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2795,10 +2303,7 @@
     "acceptableAnswers": [],
     "explanation": "10 provinces and 3 territories.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Provinces_and_territories_of_Canada",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2815,10 +2320,7 @@
     "acceptableAnswers": [],
     "explanation": "Sodium chloride is the most common salt.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Sodium_chloride",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2835,10 +2337,7 @@
     "acceptableAnswers": [],
     "explanation": "Confederation in 1867 marked the creation of the Dominion.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2855,10 +2354,7 @@
     "acceptableAnswers": [],
     "explanation": "Reynolds is from Vancouver and starred in the Marvel films.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ryan_Reynolds",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2875,10 +2371,7 @@
     "acceptableAnswers": [],
     "explanation": "Sushi originated in Japan centuries ago.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Food"
-    ],
+    "tags": ["Global", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Sushi",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2895,10 +2388,7 @@
     "acceptableAnswers": [],
     "explanation": "Eight players in the field plus a pitcher.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Baseball",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2915,10 +2405,7 @@
     "acceptableAnswers": [],
     "explanation": "Hyperion is a coast redwood in California.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hyperion_(tree)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2935,10 +2422,7 @@
     "acceptableAnswers": [],
     "explanation": "This iconic 1971 album is considered one of the greatest albums of all time.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Blue_(Joni_Mitchell_album)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2955,10 +2439,7 @@
     "acceptableAnswers": [],
     "explanation": "Only Russia is larger.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_area",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2975,10 +2456,7 @@
     "acceptableAnswers": [],
     "explanation": "Austen was a British novelist from the 19th century.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Pride_and_Prejudice",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -2995,10 +2473,7 @@
     "acceptableAnswers": [],
     "explanation": "Pluto was reclassified as a dwarf planet in 2006.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Solar_System",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3015,10 +2490,7 @@
     "acceptableAnswers": [],
     "explanation": "Brad Pitt is an American actor from Shawnee, Oklahoma. He voiced Metro Man in the 2010 animated film 'Megamind'.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Megamind",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3035,10 +2507,7 @@
     "acceptableAnswers": [],
     "explanation": "Brad Gushue won gold in men's curling at the 2006 Turin Olympics, becoming the first Newfoundlander to win Olympic gold. He also won bronze at the 2022 Beijing Olympics.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Brad_Gushue",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3055,10 +2524,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada was the fourth country to legalize same-sex marriage.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Same-sex_marriage_in_Canada",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3075,10 +2541,7 @@
     "acceptableAnswers": [],
     "explanation": "Montreal bagels are smaller and sweeter than New York bagels.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Montreal-style_bagel",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3095,10 +2558,7 @@
     "acceptableAnswers": [],
     "explanation": "Oxygen makes up about 46% of Earth's crust.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Abundance_of_elements_in_Earth%27s_crust",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3115,10 +2575,7 @@
     "acceptableAnswers": [],
     "explanation": "PEI is only about 5,600 square kilometers.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Prince_Edward_Island",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3135,10 +2592,7 @@
     "acceptableAnswers": [],
     "explanation": "Led Zeppelin's 'Immigrant Song' was by a British band.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Immigrant_Song",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3155,10 +2609,7 @@
     "acceptableAnswers": [],
     "explanation": "Logan Lerman is an American actor from Beverly Hills, California. He starred in 'Percy Jackson & the Olympians: The Lightning Thief' (2010) and its sequel.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Logan_Lerman",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3172,16 +2623,10 @@
     "difficulty": "Hard",
     "question": "What type of mammal lays eggs?",
     "answer": "Monotreme",
-    "acceptableAnswers": [
-      "Platypus",
-      "Echidna"
-    ],
+    "acceptableAnswers": ["Platypus", "Echidna"],
     "explanation": "Monotremes are egg-laying mammals. There are five species: the platypus and four species of echidna. All are found in Australia and New Guinea.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Monotreme",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3198,10 +2643,7 @@
     "acceptableAnswers": [],
     "explanation": "Salinger wrote this classic American novel.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Catcher_in_the_Rye",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3218,10 +2660,7 @@
     "acceptableAnswers": [],
     "explanation": "Elvis Stojko won silver medals at both the 1994 Lillehammer and 1998 Nagano Olympics. He is a three-time World champion (1994, 1995, 1997).",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Sports"
-    ],
+    "tags": ["CA", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Elvis_Stojko",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3238,10 +2677,7 @@
     "acceptableAnswers": [],
     "explanation": "Japan surrendered in September 1945.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "History"
-    ],
+    "tags": ["Global", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/World_War_II",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3258,10 +2694,7 @@
     "acceptableAnswers": [],
     "explanation": "Mexico City is one of the largest cities in the world.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mexico_City",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3278,10 +2711,7 @@
     "acceptableAnswers": [],
     "explanation": "Ag comes from the Latin word 'argentum'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Silver",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3298,10 +2728,7 @@
     "acceptableAnswers": [],
     "explanation": "Christopher Nolan was born in London, England and holds dual British-American citizenship. He is known for films like 'Inception', 'Interstellar', and 'The Dark Knight' trilogy.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Christopher_Nolan",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3318,10 +2745,7 @@
     "acceptableAnswers": [],
     "explanation": "The Eagles were an American rock band.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hotel_California_(Eagles_album)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3338,10 +2762,7 @@
     "acceptableAnswers": [],
     "explanation": "A variation of poutine with added protein.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "CA",
-      "Food"
-    ],
+    "tags": ["CA", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3358,10 +2779,7 @@
     "acceptableAnswers": [],
     "explanation": "Including the goalkeeper.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Association_football",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3375,15 +2793,10 @@
     "difficulty": "Hard",
     "question": "Which four provinces formed Canada at Confederation in 1867?",
     "answer": "Ontario, Quebec, Nova Scotia, New Brunswick",
-    "acceptableAnswers": [
-      "Ontario, Quebec, New Brunswick, Nova Scotia"
-    ],
+    "acceptableAnswers": ["Ontario, Quebec, New Brunswick, Nova Scotia"],
     "explanation": "On July 1, 1867, Ontario, Quebec, Nova Scotia, and New Brunswick united to form the Dominion of Canada. Ontario and Quebec were created from the former Province of Canada.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3400,10 +2813,7 @@
     "acceptableAnswers": [],
     "explanation": "Young kangaroos are called joeys.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Kangaroo",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3420,10 +2830,7 @@
     "acceptableAnswers": [],
     "explanation": "Tolstoy was a Russian author.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/War_and_Peace",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3440,10 +2847,7 @@
     "acceptableAnswers": [],
     "explanation": "BC is on the Pacific coast.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/British_Columbia",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3460,10 +2864,7 @@
     "acceptableAnswers": [],
     "explanation": "DNA carries genetic instructions for life.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/DNA",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3480,10 +2881,7 @@
     "acceptableAnswers": [],
     "explanation": "Christian Bale was born in Haverfordwest, Wales. He played Batman in Christopher Nolan's Dark Knight trilogy (2005-2012). Note: Bale was NOT in 'Inception' - that film starred Leonardo DiCaprio.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "Entertainment"
-    ],
+    "tags": ["Global", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Christian_Bale",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3500,10 +2898,7 @@
     "acceptableAnswers": [],
     "explanation": "Chad Kroeger is the lead singer of Nickelback. He was born and raised in Hanna, Alberta, where the band formed in 1995. They later relocated to Vancouver, British Columbia.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Nickelback",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3520,10 +2915,7 @@
     "acceptableAnswers": [],
     "explanation": "The NHL expanded to 32 teams in recent years.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/National_Hockey_League",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3540,10 +2932,7 @@
     "acceptableAnswers": [],
     "explanation": "Chicken Tikka Masala was declared a 'true British national dish' by UK Foreign Secretary Robin Cook in 2001. It was likely invented in Glasgow, Scotland in the 1970s. India has no official national dish.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Food"
-    ],
+    "tags": ["Global", "Food"],
     "sourceUrl": "https://www.britannica.com/topic/chicken-tikka-masala",
     "sourceName": "Britannica",
     "status": "approved",
@@ -3560,10 +2949,7 @@
     "acceptableAnswers": [],
     "explanation": "Canada was a founding member of the UN.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
+    "tags": ["CA", "History"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canada_and_the_United_Nations",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3580,10 +2966,7 @@
     "acceptableAnswers": [],
     "explanation": "All octopuses have eight arms/legs.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Octopus",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3600,10 +2983,7 @@
     "acceptableAnswers": [],
     "explanation": "Tolkien was a British author and philologist.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Lord_of_the_Rings",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3620,10 +3000,7 @@
     "acceptableAnswers": [],
     "explanation": "It is the most eastern point of North America.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "Geography"
-    ],
+    "tags": ["CA", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Newfoundland_and_Labrador",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3640,10 +3017,7 @@
     "acceptableAnswers": [],
     "explanation": "RNA is a key molecule in all living cells.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/RNA",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3660,10 +3034,7 @@
     "acceptableAnswers": [],
     "explanation": "Tatiana Maslany is from Regina, Saskatchewan. She won an Emmy Award for Outstanding Lead Actress in a Drama Series in 2016 for 'Orphan Black', plus two Critics' Choice Awards and five Canadian Screen Awards. She was nominated for a Golden Globe in 2014 but did not win.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tatiana_Maslany",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3680,10 +3051,7 @@
     "acceptableAnswers": [],
     "explanation": "Muse is a British rock band formed in Teignmouth, Devon, England in 1994. 'Hysteria' is from their 2003 album 'Absolution'.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "Music"
-    ],
+    "tags": ["Global", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Muse_(band)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3700,10 +3068,7 @@
     "acceptableAnswers": [],
     "explanation": "Each period lasts 20 minutes.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3720,36 +3085,13 @@
     "acceptableAnswers": [],
     "explanation": "Hummus is made from pureed chickpeas.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Food"
-    ],
+    "tags": ["Global", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Hummus",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
     "createdAt": "2026-03-06T14:18:01.597492",
     "updatedAt": "2026-03-06T18:57:11.222"
-  },
-  {
-    "id": "q186",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "What year did the Titanic sink?",
-    "answer": "1912",
-    "acceptableAnswers": [],
-    "explanation": "It sank on April 15, 1912.",
-    "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "History"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": null,
-    "createdAt": "2026-03-06T14:18:01.60019",
-    "updatedAt": "2026-03-06T18:57:11.225"
   },
   {
     "id": "q187",
@@ -3760,10 +3102,7 @@
     "acceptableAnswers": [],
     "explanation": "It weighs less than 2 grams.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bee_hummingbird",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3780,10 +3119,7 @@
     "acceptableAnswers": [],
     "explanation": "Brontë was a British novelist.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Jane_Eyre",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3800,10 +3136,7 @@
     "acceptableAnswers": [],
     "explanation": "Singapore is both a city and a country.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Singapore",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3820,10 +3153,7 @@
     "acceptableAnswers": [],
     "explanation": "Cu comes from the Latin word 'cuprum'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Copper",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3840,10 +3170,7 @@
     "acceptableAnswers": [],
     "explanation": "Cronenberg is a legendary Canadian director.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/David_Cronenberg",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3860,10 +3187,7 @@
     "acceptableAnswers": [],
     "explanation": "Furtado is from Victoria, BC.",
     "pillar": "FreshPrints",
-    "tags": [
-      "CA",
-      "Music"
-    ],
+    "tags": ["CA", "Music"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Nelly_Furtado",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3880,10 +3204,7 @@
     "acceptableAnswers": [],
     "explanation": "Standard golf courses have 18 holes.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Sports"
-    ],
+    "tags": ["Global", "Sports"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Golf_course",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3900,36 +3221,13 @@
     "acceptableAnswers": [],
     "explanation": "Tempura is a Japanese battered and deep-fried dish.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Food"
-    ],
+    "tags": ["Global", "Food"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tempura",
     "sourceName": "Wikipedia",
     "status": "approved",
     "aiAnalysis": null,
     "createdAt": "2026-03-06T14:18:01.623412",
     "updatedAt": "2026-03-06T18:57:11.244"
-  },
-  {
-    "id": "q195",
-    "category": "History",
-    "difficulty": "Hard",
-    "question": "What year did Confederation happen in Canada?",
-    "answer": "1867",
-    "acceptableAnswers": [],
-    "explanation": "July 1, 1867 marks the birth of modern Canada.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "History"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": null,
-    "createdAt": "2026-03-06T14:18:01.627806",
-    "updatedAt": "2026-03-06T18:57:11.247"
   },
   {
     "id": "q196",
@@ -3940,10 +3238,7 @@
     "acceptableAnswers": [],
     "explanation": "They can reach lengths of over 20 feet.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Nature"
-    ],
+    "tags": ["Global", "Nature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Saltwater_crocodile",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3960,10 +3255,7 @@
     "acceptableAnswers": [],
     "explanation": "Melville wrote this American epic.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Literature"
-    ],
+    "tags": ["Global", "Literature"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Moby-Dick",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -3980,10 +3272,7 @@
     "acceptableAnswers": [],
     "explanation": "Madrid is the largest city in Spain.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Geography"
-    ],
+    "tags": ["Global", "Geography"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Madrid",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4000,10 +3289,7 @@
     "acceptableAnswers": [],
     "explanation": "Plants convert sunlight into chemical energy.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "Science"
-    ],
+    "tags": ["Global", "Science"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Photosynthesis",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4020,10 +3306,7 @@
     "acceptableAnswers": [],
     "explanation": "Dobrev played Mia in the Canadian teen drama.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "CA",
-      "Entertainment"
-    ],
+    "tags": ["CA", "Entertainment"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Nina_Dobrev",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4037,16 +3320,10 @@
     "difficulty": "Medium",
     "question": "What artist broke the record for most Grammy awards in history in 2023?",
     "answer": "Beyoncé",
-    "acceptableAnswers": [
-      "Beyoncé",
-      "Beyonce"
-    ],
+    "acceptableAnswers": ["Beyoncé", "Beyonce"],
     "explanation": "Beyoncé set a new record for the most Grammy wins in 2023, showcasing her immense achievements in music and pop culture.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Global", "FreshPrints"],
     "sourceUrl": "https://www.grammy.com/",
     "sourceName": "Grammy",
     "status": "approved",
@@ -4075,16 +3352,10 @@
     "difficulty": "Medium",
     "question": "Which Marvel superhero movie became the highest-grossing movie of all time in 2019?",
     "answer": "Avengers: Endgame",
-    "acceptableAnswers": [
-      "Avengers: Endgame",
-      "Endgame"
-    ],
+    "acceptableAnswers": ["Avengers: Endgame", "Endgame"],
     "explanation": "'Avengers: Endgame' dethroned 'Avatar' in 2019 as the highest-grossing movie globally, solidifying Marvel’s dominance in pop culture.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Global", "FreshPrints"],
     "sourceUrl": "https://www.boxofficemojo.com/",
     "sourceName": "Box Office Mojo",
     "status": "approved",
@@ -4113,15 +3384,10 @@
     "difficulty": "Hard",
     "question": "The famous Kardashian family launched their reality TV show in which year?",
     "answer": "2007",
-    "acceptableAnswers": [
-      "2007"
-    ],
+    "acceptableAnswers": ["2007"],
     "explanation": "'Keeping Up with the Kardashians' first aired in 2007, making the Kardashians a household name across pop culture.",
     "pillar": "FreshPrints",
-    "tags": [
-      "US",
-      "FreshPrints"
-    ],
+    "tags": ["US", "FreshPrints"],
     "sourceUrl": "https://www.eonline.com/",
     "sourceName": "E! Online",
     "status": "approved",
@@ -4150,15 +3416,10 @@
     "difficulty": "Easy",
     "question": "Which popular streaming service released the hit show 'Stranger Things'?",
     "answer": "Netflix",
-    "acceptableAnswers": [
-      "Netflix"
-    ],
+    "acceptableAnswers": ["Netflix"],
     "explanation": "'Stranger Things' is one of Netflix's most successful original series, known for its 1980s nostalgia and supernatural themes.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Global", "FreshPrints"],
     "sourceUrl": null,
     "sourceName": null,
     "status": "approved",
@@ -4194,16 +3455,10 @@
     "difficulty": "Medium",
     "question": "Which 1990s TV show starred Will Smith as a young man from West Philadelphia sent to live with his wealthy relatives in Bel-Air?",
     "answer": "The Fresh Prince of Bel-Air",
-    "acceptableAnswers": [
-      "Fresh Prince",
-      "The Fresh Prince of Bel-Air"
-    ],
+    "acceptableAnswers": ["Fresh Prince", "The Fresh Prince of Bel-Air"],
     "explanation": "The show 'The Fresh Prince of Bel-Air' was a sitcom that aired from 1990 to 1996, starring Will Smith. It became an iconic part of pop culture and highlighted numerous social themes through humor and drama.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Global", "FreshPrints"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Fresh_Prince_of_Bel-Air",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4239,17 +3494,10 @@
     "difficulty": "Medium",
     "question": "Which TV show popularized the phrase 'pivot!' during a comedic furniture-moving scene?",
     "answer": "Friends",
-    "acceptableAnswers": [
-      "Friends",
-      "Friends TV show"
-    ],
+    "acceptableAnswers": ["Friends", "Friends TV show"],
     "explanation": "The phrase 'pivot!' became a popular meme after a hilarious scene in Friends where Ross tries to move a sofa upstairs.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "TimeCapsule",
-      "TV"
-    ],
+    "tags": ["US", "TimeCapsule", "TV"],
     "sourceUrl": "https://www.imdb.com/title/tt0108778/",
     "sourceName": "IMDb",
     "status": "approved",
@@ -4278,17 +3526,10 @@
     "difficulty": "Hard",
     "question": "Which famous album released in 1982 remains the best-selling album of all time?",
     "answer": "Thriller",
-    "acceptableAnswers": [
-      "Thriller",
-      "Michael Jackson's Thriller"
-    ],
+    "acceptableAnswers": ["Thriller", "Michael Jackson's Thriller"],
     "explanation": "Michael Jackson's Thriller, released in 1982, is widely regarded as one of the greatest albums ever and holds the record for best-selling album globally.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "Music"
-    ],
+    "tags": ["Global", "TimeCapsule", "Music"],
     "sourceUrl": "https://www.riaa.com/",
     "sourceName": "RIAA",
     "status": "approved",
@@ -4324,16 +3565,10 @@
     "difficulty": "Medium",
     "question": "Which famous music festival, often regarded as a symbol of outdoor communal experiences, first took place in 1969 in New York state?",
     "answer": "Woodstock",
-    "acceptableAnswers": [
-      "Woodstock",
-      "The Woodstock Festival"
-    ],
+    "acceptableAnswers": ["Woodstock", "The Woodstock Festival"],
     "explanation": "The Woodstock Festival, held in August 1969, became a cultural milestone representing peace, love, and music. Over 400,000 people gathered outdoors for the iconic event.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "US",
-      "GreatOutdoors"
-    ],
+    "tags": ["US", "GreatOutdoors"],
     "sourceUrl": "https://www.history.com/topics/1960s/woodstock",
     "sourceName": "History.com",
     "status": "approved",
@@ -4362,18 +3597,10 @@
     "difficulty": "Hard",
     "question": "What Canadian company was credited for inventing the first practical quantum computer in 2007?",
     "answer": "D-Wave Systems",
-    "acceptableAnswers": [
-      "D-Wave",
-      "D-Wave Systems"
-    ],
+    "acceptableAnswers": ["D-Wave", "D-Wave Systems"],
     "explanation": "D-Wave Systems, based in Canada, developed the first commercially available quantum computer in 2007, marking a significant advancement in quantum computing technology.",
     "pillar": "GlobalEh",
-    "tags": [
-      "CA",
-      "GlobalEh",
-      "quantum computing",
-      "technology"
-    ],
+    "tags": ["CA", "GlobalEh", "quantum computing", "technology"],
     "sourceUrl": "https://en.wikipedia.org/wiki/D-Wave_Systems",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4402,17 +3629,10 @@
     "difficulty": "Easy",
     "question": "What is the name of the world's first general-purpose electronic computer?",
     "answer": "ENIAC",
-    "acceptableAnswers": [
-      "Electronic Numerical Integrator and Computer",
-      "ENIAC"
-    ],
+    "acceptableAnswers": ["Electronic Numerical Integrator and Computer", "ENIAC"],
     "explanation": "The ENIAC, short for Electronic Numerical Integrator and Computer, was developed in 1945 and is considered the first general-purpose electronic computer. It was used initially by the US Army for calculating artillery firing tables.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Technology",
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Technology", "Global", "FreshPrints"],
     "sourceUrl": "https://www.britannica.com/technology/ENIAC",
     "sourceName": "Britannica",
     "status": "approved",
@@ -4433,17 +3653,10 @@
     "difficulty": "Medium",
     "question": "Which company developed the Android operating system before it was acquired by Google?",
     "answer": "Android Inc.",
-    "acceptableAnswers": [
-      "Android Inc.",
-      "Android Incorporated"
-    ],
+    "acceptableAnswers": ["Android Inc.", "Android Incorporated"],
     "explanation": "The Android operating system was initially developed by Android Inc. in 2003. The company was later acquired by Google in 2005 to expand its mobile technology efforts.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Technology",
-      "Global",
-      "FreshPrints"
-    ],
+    "tags": ["Technology", "Global", "FreshPrints"],
     "sourceUrl": "https://www.britannica.com/technology/Android-operating-system",
     "sourceName": "Britannica",
     "status": "approved",
@@ -4464,16 +3677,10 @@
     "difficulty": "Hard",
     "question": "What was the primary programming language used to create the original World Wide Web?",
     "answer": "HTML",
-    "acceptableAnswers": [
-      "HTML",
-      "HyperText Markup Language"
-    ],
+    "acceptableAnswers": ["HTML", "HyperText Markup Language"],
     "explanation": "HTML (HyperText Markup Language) was developed by Tim Berners-Lee in 1991 as the foundation for the World Wide Web, allowing the creation and linking of web pages.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule"
-    ],
+    "tags": ["Global", "TimeCapsule"],
     "sourceUrl": "https://en.wikipedia.org/wiki/HTML",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4502,16 +3709,10 @@
     "difficulty": "Medium",
     "question": "What technology is commonly used in outdoor navigation and relies on a network of orbiting satellites to determine location?",
     "answer": "Global Positioning System (GPS)",
-    "acceptableAnswers": [
-      "GPS",
-      "Global Positioning System"
-    ],
+    "acceptableAnswers": ["GPS", "Global Positioning System"],
     "explanation": "GPS, or Global Positioning System, is a satellite-based navigation system that provides geolocation and time information to a GPS receiver anywhere on or near the Earth where there is an unobstructed line of sight to four or more GPS satellites.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "GreatOutdoors"
-    ],
+    "tags": ["Global", "GreatOutdoors"],
     "sourceUrl": "https://www.nasa.gov/directorates/heo/scan/communications/policy/GPS_history",
     "sourceName": "NASA",
     "status": "approved",
@@ -4540,15 +3741,10 @@
     "difficulty": "Easy",
     "question": "What year was the first iPhone released?",
     "answer": "2007",
-    "acceptableAnswers": [
-      "2007"
-    ],
+    "acceptableAnswers": ["2007"],
     "explanation": "Apple released the first iPhone on June 29, 2007, revolutionizing the smartphone industry with its touchscreen interface and app ecosystem.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule"
-    ],
+    "tags": ["Global", "TimeCapsule"],
     "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4577,18 +3773,10 @@
     "difficulty": "Medium",
     "question": "What is the name of the programming language created by Guido van Rossum in 1991 that emphasizes readability and simplicity?",
     "answer": "Python",
-    "acceptableAnswers": [
-      "Python",
-      "python programming language"
-    ],
+    "acceptableAnswers": ["Python", "python programming language"],
     "explanation": "Python is a popular programming language designed by Guido van Rossum in 1991, known for its readable syntax and ease of use. It is widely used in web development, data science, and automation.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "programming",
-      "technology"
-    ],
+    "tags": ["Global", "GlobalEh", "programming", "technology"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Python_(programming_language)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4617,18 +3805,10 @@
     "difficulty": "Easy",
     "question": "Which company co-founded by Steve Jobs introduced the first iPhone in 2007?",
     "answer": "Apple",
-    "acceptableAnswers": [
-      "Apple",
-      "Apple Inc."
-    ],
+    "acceptableAnswers": ["Apple", "Apple Inc."],
     "explanation": "Apple, co-founded by Steve Jobs, launched the first iPhone in 2007, revolutionizing mobile technology by combining phone, internet, and multimedia functionalities in one device.",
     "pillar": "GlobalEh",
-    "tags": [
-      "US",
-      "GlobalEh",
-      "technology",
-      "smartphones"
-    ],
+    "tags": ["US", "GlobalEh", "technology", "smartphones"],
     "sourceUrl": "https://en.wikipedia.org/wiki/History_of_the_iPhone",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4657,18 +3837,10 @@
     "difficulty": "Medium",
     "question": "What portable advanced navigation technology is commonly used by hikers and outdoor enthusiasts to pinpoint locations without cellular service?",
     "answer": "GPS device",
-    "acceptableAnswers": [
-      "GPS device",
-      "Global Positioning System",
-      "GPS"
-    ],
+    "acceptableAnswers": ["GPS device", "Global Positioning System", "GPS"],
     "explanation": "GPS devices use satellite signals to provide accurate location tracking, making them essential for outdoor activities in remote areas where cellular service is unavailable.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "GreatOutdoors",
-      "Technology"
-    ],
+    "tags": ["Global", "GreatOutdoors", "Technology"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Global_Positioning_System",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4689,16 +3861,10 @@
     "difficulty": "Easy",
     "question": "Which company is commonly credited with developing the first smartphone?",
     "answer": "IBM",
-    "acceptableAnswers": [
-      "IBM",
-      "IBM Simon"
-    ],
+    "acceptableAnswers": ["IBM", "IBM Simon"],
     "explanation": "IBM Simon, introduced in 1994, is widely recognized as the world's first smartphone due to its ability to combine telephony and PDA features.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh"
-    ],
+    "tags": ["Global", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/IBM_Simon",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4727,16 +3893,10 @@
     "difficulty": "Hard",
     "question": "What was the name of the first commercial computer sold in 1951?",
     "answer": "UNIVAC I",
-    "acceptableAnswers": [
-      "UNIVAC I",
-      "UNIVAC"
-    ],
+    "acceptableAnswers": ["UNIVAC I", "UNIVAC"],
     "explanation": "The UNIVAC I (Universal Automatic Computer I) was created by J. Presper Eckert and John Mauchly and became the first commercial computer available for general purpose use.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "TimeCapsule"
-    ],
+    "tags": ["US", "TimeCapsule"],
     "sourceUrl": "https://www.computerhistory.org/timeline/computers/",
     "sourceName": "Computer History Museum",
     "status": "approved",
@@ -4760,52 +3920,15 @@
     "updatedAt": "2026-03-21T23:24:25.776"
   },
   {
-    "id": "3f4d9d1c-2b72-4eff-b9a4-0f92c95a4df1",
-    "category": "Technology",
-    "difficulty": "Easy",
-    "question": "Which company developed the iPhone?",
-    "answer": "Apple",
-    "acceptableAnswers": [
-      "Apple Inc.",
-      "Apple"
-    ],
-    "explanation": "Apple is the creator of the iPhone, first released in 2007, which revolutionized the smartphone industry.",
-    "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "Technology"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": {
-      "factCheck": {
-        "reason": "The answer and explanation are factually correct; Apple developed the iPhone.",
-        "verdict": "pass",
-        "confidence": 100
-      },
-      "qaFindings": []
-    },
-    "createdAt": "2026-03-21T23:22:35.595783",
-    "updatedAt": "2026-03-21T23:25:57.582"
-  },
-  {
     "id": "a7f5e81f-7b21-4f32-8a77-798d9f503e1e",
     "category": "Technology",
     "difficulty": "Medium",
     "question": "What does the acronym 'HTTP' stand for in web technology?",
     "answer": "HyperText Transfer Protocol",
-    "acceptableAnswers": [
-      "HyperText Transfer Protocol"
-    ],
+    "acceptableAnswers": ["HyperText Transfer Protocol"],
     "explanation": "HTTP stands for HyperText Transfer Protocol, a foundational technology for transferring data over the web.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "Internet"
-    ],
+    "tags": ["Global", "FreshPrints", "Internet"],
     "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/HTTP",
     "sourceName": "Mozilla Developer Network",
     "status": "approved",
@@ -4834,17 +3957,10 @@
     "difficulty": "Hard",
     "question": "Who is credited with inventing the World Wide Web?",
     "answer": "Tim Berners-Lee",
-    "acceptableAnswers": [
-      "Sir Tim Berners-Lee",
-      "Tim Berners-Lee"
-    ],
+    "acceptableAnswers": ["Sir Tim Berners-Lee", "Tim Berners-Lee"],
     "explanation": "Tim Berners-Lee invented the World Wide Web in 1989, creating the first web browser and server.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "Internet"
-    ],
+    "tags": ["Global", "FreshPrints", "Internet"],
     "sourceUrl": "https://webfoundation.org/about/vision/history-of-the-web/",
     "sourceName": "World Wide Web Foundation",
     "status": "approved",
@@ -4868,58 +3984,15 @@
     "updatedAt": "2026-03-21T23:26:23.342"
   },
   {
-    "id": "447be981-3075-403d-8323-d7dbf019bb63",
-    "category": "Technology",
-    "difficulty": "Medium",
-    "question": "Which company released the first smartphone known as the Simon Personal Communicator?",
-    "answer": "IBM",
-    "acceptableAnswers": [
-      "IBM",
-      "International Business Machines"
-    ],
-    "explanation": "IBM introduced the Simon Personal Communicator in 1994, often referred to as the first true smartphone because it combined telephone and PDA features.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "TimeCapsule"
-    ],
-    "sourceUrl": "https://www.computerhistory.org/revolution/mobile-computing/18/320",
-    "sourceName": "Computer History Museum",
-    "status": "approved",
-    "aiAnalysis": {
-      "factCheck": {
-        "reason": "IBM released the Simon Personal Communicator in 1994, and it is widely recognized as the first smartphone, making the answer and explanation correct.",
-        "verdict": "pass",
-        "confidence": 100
-      },
-      "qaFindings": [
-        {
-          "rule": "category_tag_mismatch",
-          "message": "Category \"Technology\" is not present in tags.",
-          "severity": "medium",
-          "questionId": "447be981-3075-403d-8323-d7dbf019bb63",
-          "questionIndex": 2
-        }
-      ]
-    },
-    "createdAt": "2026-03-21T23:22:35.595783",
-    "updatedAt": "2026-03-21T23:23:22.024"
-  },
-  {
     "id": "8e71fca2-52f0-4c89-9b60-aff72a9fc4f5",
     "category": "Technology",
     "difficulty": "Hard",
     "question": "Which programming language, designed by Bjarne Stroustrup, is widely used for system programming and game development?",
     "answer": "C++",
-    "acceptableAnswers": [
-      "C++"
-    ],
+    "acceptableAnswers": ["C++"],
     "explanation": "C++, developed by Bjarne Stroustrup in 1985, is a powerful language known for its utility in system programming and high-performance applications, including game development.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh"
-    ],
+    "tags": ["Global", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/C%2B%2B",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -4948,16 +4021,10 @@
     "difficulty": "Easy",
     "question": "What year was the World Wide Web made publicly available?",
     "answer": "1991",
-    "acceptableAnswers": [
-      "1991",
-      "Nineteen ninety-one"
-    ],
+    "acceptableAnswers": ["1991", "Nineteen ninety-one"],
     "explanation": "The World Wide Web, developed by Tim Berners-Lee, was made publicly accessible in 1991, revolutionizing how people access and share information.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule"
-    ],
+    "tags": ["Global", "TimeCapsule"],
     "sourceUrl": "https://www.w3.org/History.html",
     "sourceName": "World Wide Web Consortium (W3C)",
     "status": "approved",
@@ -4986,18 +4053,10 @@
     "difficulty": "Easy",
     "question": "Which artist is known for the painting of the 'Mona Lisa'?",
     "answer": "Leonardo da Vinci",
-    "acceptableAnswers": [
-      "Da Vinci",
-      "Leonardo",
-      "Leonardo di ser Piero da Vinci"
-    ],
+    "acceptableAnswers": ["Da Vinci", "Leonardo", "Leonardo di ser Piero da Vinci"],
     "explanation": "Leonardo da Vinci is renowned for painting the 'Mona Lisa', one of the world's most famous artworks, noted for its mysterious expression.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "Art"
-    ],
+    "tags": ["Global", "TimeCapsule", "Art"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Mona_Lisa",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5018,17 +4077,10 @@
     "difficulty": "Easy",
     "question": "Which famous French Impressionist artist often painted outdoor scenes that highlighted natural light?",
     "answer": "Claude Monet",
-    "acceptableAnswers": [
-      "Monet",
-      "Claude Monet"
-    ],
+    "acceptableAnswers": ["Monet", "Claude Monet"],
     "explanation": "Claude Monet was a leading figure in the Impressionist movement, known for his outdoor paintings that captured the effects of natural light, such as 'Impression, Sunrise' and his series on water lilies.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "GreatOutdoors",
-      "art"
-    ],
+    "tags": ["Global", "GreatOutdoors", "art"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Claude_Monet",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5049,18 +4101,10 @@
     "difficulty": "Medium",
     "question": "Who painted the famous artwork 'The Persistence of Memory' featuring melting clocks?",
     "answer": "Salvador Dalí",
-    "acceptableAnswers": [
-      "Dalí",
-      "Salvador Dali",
-      "Salvador Felipe Jacinto Dalí i Domènech"
-    ],
+    "acceptableAnswers": ["Dalí", "Salvador Dali", "Salvador Felipe Jacinto Dalí i Domènech"],
     "explanation": "'The Persistence of Memory' is a 1931 surrealist painting by Salvador Dalí, depicting melting clocks as a symbol of the fluidity of time.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "Art"
-    ],
+    "tags": ["Global", "TimeCapsule", "Art"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Persistence_of_Memory",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5081,18 +4125,10 @@
     "difficulty": "Medium",
     "question": "Who painted the famous artwork known as 'The Starry Night'?",
     "answer": "Vincent van Gogh",
-    "acceptableAnswers": [
-      "Vincent van Gogh",
-      "Van Gogh",
-      "Vincent"
-    ],
+    "acceptableAnswers": ["Vincent van Gogh", "Van Gogh", "Vincent"],
     "explanation": "'The Starry Night' is one of Vincent van Gogh's most iconic paintings, created in 1889 while he was staying at the asylum of Saint-Paul-de-Mausole in Saint-Rémy-de-Provence, France.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "Art"
-    ],
+    "tags": ["Global", "FreshPrints", "Art"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Starry_Night",
     "sourceName": "Test Source Name",
     "status": "approved",
@@ -5113,16 +4149,10 @@
     "difficulty": "Medium",
     "question": "Which famous art movement, originating in the early 20th century, is known for its emphasis on dreams and the unconscious mind?",
     "answer": "Surrealism",
-    "acceptableAnswers": [
-      "Surrealism"
-    ],
+    "acceptableAnswers": ["Surrealism"],
     "explanation": "Surrealism is an art movement that began in the early 20th century, emphasizing illogical scenes, dream-like imagery, and the workings of the unconscious mind. Key figures include Salvador Dalí, René Magritte, and André Breton.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "art"
-    ],
+    "tags": ["Global", "GlobalEh", "art"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Surrealism",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5143,18 +4173,10 @@
     "difficulty": "Easy",
     "question": "What film directed by Steven Spielberg features a young boy befriending an alien who wants to 'phone home'?",
     "answer": "E.T. the Extra-Terrestrial",
-    "acceptableAnswers": [
-      "E.T. the Extra-Terrestrial",
-      "E.T.",
-      "ET"
-    ],
+    "acceptableAnswers": ["E.T. the Extra-Terrestrial", "E.T.", "ET"],
     "explanation": "Released in 1982, Steven Spielberg’s 'E.T. the Extra-Terrestrial' became an iconic family film about friendship and understanding, with a young boy helping a stranded alien return to its home planet.",
     "pillar": "FreshPrints",
-    "tags": [
-      "US",
-      "FreshPrints",
-      "Movies"
-    ],
+    "tags": ["US", "FreshPrints", "Movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/E.T._the_Extra-Terrestrial",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5175,16 +4197,10 @@
     "difficulty": "Medium",
     "question": "What movie is set in the fictional country of Wakanda and became the first superhero film to be nominated for Best Picture at the Academy Awards?",
     "answer": "Black Panther",
-    "acceptableAnswers": [
-      "Black Panther"
-    ],
+    "acceptableAnswers": ["Black Panther"],
     "explanation": "Released in 2018, 'Black Panther' was the first superhero film to receive an Academy Award nomination for Best Picture. It is set in Wakanda, a fictional African nation with advanced technology.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "Movies"
-    ],
+    "tags": ["Global", "FreshPrints", "Movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Black_Panther_(film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5213,16 +4229,10 @@
     "difficulty": "Hard",
     "question": "Which 1927 film is considered the first feature-length 'talkie' and revolutionized the film industry?",
     "answer": "The Jazz Singer",
-    "acceptableAnswers": [
-      "The Jazz Singer"
-    ],
+    "acceptableAnswers": ["The Jazz Singer"],
     "explanation": "Released in 1927, 'The Jazz Singer' is regarded as the first movie with synchronized dialogue and songs, marking the transition from silent films to 'talkies' and changing the future of cinema.",
     "pillar": "FreshPrints",
-    "tags": [
-      "US",
-      "FreshPrints",
-      "Movies"
-    ],
+    "tags": ["US", "FreshPrints", "Movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Jazz_Singer",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5243,16 +4253,10 @@
     "difficulty": "Medium",
     "question": "Which movie follows a dog named Buck as he navigates the Alaskan wilderness, forming a bond with a man named John Thornton?",
     "answer": "The Call of the Wild",
-    "acceptableAnswers": [
-      "The Call of the Wild"
-    ],
+    "acceptableAnswers": ["The Call of the Wild"],
     "explanation": "The 2020 film 'The Call of the Wild,' based on Jack London's novel, features Buck, a sled dog, as he experiences life in the Alaskan wilderness and forms a deep bond with John Thornton. The movie captures themes of survival and connection with nature.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "US",
-      "GreatOutdoors",
-      "movies"
-    ],
+    "tags": ["US", "GreatOutdoors", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Call_of_the_Wild_(2020_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5274,16 +4278,10 @@
     "difficulty": "Easy",
     "question": "Which movie features the iconic line, 'I'll be back,' spoken by Arnold Schwarzenegger?",
     "answer": "The Terminator",
-    "acceptableAnswers": [
-      "The Terminator"
-    ],
+    "acceptableAnswers": ["The Terminator"],
     "explanation": "Arnold Schwarzenegger delivers the famous line 'I'll be back' in the 1984 science fiction classic 'The Terminator,' directed by James Cameron.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["US", "TimeCapsule", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Terminator",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5304,17 +4302,10 @@
     "difficulty": "Medium",
     "question": "What was the first feature-length animated movie ever released?",
     "answer": "Snow White and the Seven Dwarfs",
-    "acceptableAnswers": [
-      "Snow White and the Seven Dwarfs",
-      "Snow White"
-    ],
+    "acceptableAnswers": ["Snow White and the Seven Dwarfs", "Snow White"],
     "explanation": "'Snow White and the Seven Dwarfs,' released in 1937 by Walt Disney Productions, holds the distinction of being the first-ever feature-length animated movie.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["Global", "TimeCapsule", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Snow_White_and_the_Seven_Dwarfs_(1937_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5335,16 +4326,10 @@
     "difficulty": "Hard",
     "question": "Which director is responsible for the groundbreaking 1927 film, 'Metropolis,' a pioneering work in science fiction cinema?",
     "answer": "Fritz Lang",
-    "acceptableAnswers": [
-      "Fritz Lang"
-    ],
+    "acceptableAnswers": ["Fritz Lang"],
     "explanation": "'Metropolis,' directed by Fritz Lang in 1927, is regarded as one of the most influential science fiction films in cinematic history. It introduced themes of dystopian future and class struggle.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["Global", "TimeCapsule", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Metropolis_(1927_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5365,16 +4350,10 @@
     "difficulty": "Easy",
     "question": "Which 1997 movie featured the iconic phrase, 'I'm the king of the world!'?",
     "answer": "Titanic",
-    "acceptableAnswers": [
-      "Titanic (1997)"
-    ],
+    "acceptableAnswers": ["Titanic (1997)"],
     "explanation": "This line was famously shouted by Leonardo DiCaprio's character, Jack Dawson, in James Cameron's 1997 blockbuster 'Titanic'.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "movies"
-    ],
+    "tags": ["Global", "GlobalEh", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Titanic_(1997_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5395,16 +4374,10 @@
     "difficulty": "Medium",
     "question": "What is the highest-grossing movie of all time, adjusted for inflation?",
     "answer": "Gone with the Wind",
-    "acceptableAnswers": [
-      "Gone with the Wind (1939)"
-    ],
+    "acceptableAnswers": ["Gone with the Wind (1939)"],
     "explanation": "When adjusted for inflation, the 1939 movie 'Gone with the Wind' remains the highest-grossing film of all time due to its enduring popularity.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "movies"
-    ],
+    "tags": ["Global", "GlobalEh", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/List_of_highest-grossing_films#Highest-grossing_films_adjusted_for_inflation",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5425,16 +4398,10 @@
     "difficulty": "Hard",
     "question": "Who directed the 1927 science fiction classic 'Metropolis'?",
     "answer": "Fritz Lang",
-    "acceptableAnswers": [
-      "Fritz Lang"
-    ],
+    "acceptableAnswers": ["Fritz Lang"],
     "explanation": "'Metropolis' is a highly influential science fiction film, and its visionary director, Fritz Lang, is often credited for helping to define the genre in cinema.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "movies"
-    ],
+    "tags": ["Global", "GlobalEh", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Metropolis_(1927_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5455,17 +4422,10 @@
     "difficulty": "Medium",
     "question": "What was the first animated film to ever be nominated for the Best Picture Oscar?",
     "answer": "Beauty and the Beast",
-    "acceptableAnswers": [
-      "Beauty and the Beast (1991)",
-      "Beauty and the Beast"
-    ],
+    "acceptableAnswers": ["Beauty and the Beast (1991)", "Beauty and the Beast"],
     "explanation": "Released in 1991, Disney's 'Beauty and the Beast' was the first-ever animated film to receive a nomination for Best Picture at the Academy Awards, a significant milestone for animated filmmaking.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["Global", "TimeCapsule", "movies"],
     "sourceUrl": "https://www.oscars.org/oscars/ceremonies/1992",
     "sourceName": "The Oscars (Academy of Motion Picture Arts and Sciences)",
     "status": "approved",
@@ -5494,17 +4454,10 @@
     "difficulty": "Medium",
     "question": "Which 2015 movie centers around a man stranded alone on Mars and his battle to survive in the harsh, isolated environment?",
     "answer": "The Martian",
-    "acceptableAnswers": [
-      "The Martian (2015)",
-      "The Martian"
-    ],
+    "acceptableAnswers": ["The Martian (2015)", "The Martian"],
     "explanation": "The movie 'The Martian,' directed by Ridley Scott, follows astronaut Mark Watney as he uses his ingenuity and knowledge of science to survive after being mistakenly left behind on Mars. It focuses on themes of survival in an extreme environment.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "GreatOutdoors",
-      "movies"
-    ],
+    "tags": ["Global", "GreatOutdoors", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/The_Martian_(film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5526,16 +4479,10 @@
     "difficulty": "Hard",
     "question": "Which actor starred in and directed the 1995 historical drama 'Braveheart'?",
     "answer": "Mel Gibson",
-    "acceptableAnswers": [
-      "Mel Gibson"
-    ],
+    "acceptableAnswers": ["Mel Gibson"],
     "explanation": "Mel Gibson not only played the lead role of William Wallace in the epic historical drama 'Braveheart,' but he also directed the movie, which went on to win the Academy Award for Best Picture and Best Director.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["Global", "TimeCapsule", "movies"],
     "sourceUrl": "https://www.britannica.com/topic/Braveheart",
     "sourceName": "Encyclopaedia Britannica",
     "status": "approved",
@@ -5556,16 +4503,10 @@
     "difficulty": "Medium",
     "question": "Which Canadian director is known for films such as 'Titanic', 'Avatar', and 'The Terminator'?",
     "answer": "James Cameron",
-    "acceptableAnswers": [
-      "James Cameron"
-    ],
+    "acceptableAnswers": ["James Cameron"],
     "explanation": "James Cameron, born in Kapuskasing, Ontario, is a world-renowned Canadian filmmaker famous for directing blockbuster hits such as 'Titanic' (1997), 'Avatar' (2009), and 'The Terminator' series.",
     "pillar": "GlobalEh",
-    "tags": [
-      "GlobalEh",
-      "movies",
-      "CA"
-    ],
+    "tags": ["GlobalEh", "movies", "CA"],
     "sourceUrl": "https://en.wikipedia.org/wiki/James_Cameron",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5586,17 +4527,10 @@
     "difficulty": "Medium",
     "question": "What is the highest-grossing movie of all time without adjusting for inflation?",
     "answer": "Avatar",
-    "acceptableAnswers": [
-      "Avatar",
-      "James Cameron's Avatar"
-    ],
+    "acceptableAnswers": ["Avatar", "James Cameron's Avatar"],
     "explanation": "James Cameron's 2009 science-fiction epic 'Avatar' holds the title of the highest-grossing movie of all time, generating massive box office revenue worldwide.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "movies"
-    ],
+    "tags": ["Global", "FreshPrints", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/List_of_highest-grossing_films",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5617,16 +4551,10 @@
     "difficulty": "Easy",
     "question": "Which 2007 movie follows a man who abandons his possessions to live in the Alaskan wilderness, inspired by a true story?",
     "answer": "Into the Wild",
-    "acceptableAnswers": [
-      "Into the Wild"
-    ],
+    "acceptableAnswers": ["Into the Wild"],
     "explanation": "\"Into the Wild\" is based on the true story of Christopher McCandless, a man who sought freedom in the wilderness and whose journey was documented in a book by Jon Krakauer before being adapted into the film.",
     "pillar": "GreatOutdoors",
-    "tags": [
-      "US",
-      "GreatOutdoors",
-      "movies"
-    ],
+    "tags": ["US", "GreatOutdoors", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Into_the_Wild_(film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5647,16 +4575,10 @@
     "difficulty": "Medium",
     "question": "Which Quentin Tarantino movie features a mysterious briefcase as a central plot element?",
     "answer": "Pulp Fiction",
-    "acceptableAnswers": [
-      "Pulp Fiction"
-    ],
+    "acceptableAnswers": ["Pulp Fiction"],
     "explanation": "In Quentin Tarantino's film 'Pulp Fiction', the briefcase serves as a mysterious plot device, driving intrigue as its contents are never revealed.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "movies"
-    ],
+    "tags": ["Global", "FreshPrints", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Pulp_Fiction",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5672,52 +4594,15 @@
     "updatedAt": "2026-03-22T01:12:18.46"
   },
   {
-    "id": "3f3d2dfa-6ed8-4e15-af7f-10fcf0ea4903",
-    "category": "movies",
-    "difficulty": "Medium",
-    "question": "What was the first feature-length animated film ever released?",
-    "answer": "Snow White and the Seven Dwarfs",
-    "acceptableAnswers": [
-      "Snow White and the Seven Dwarfs",
-      "Snow White"
-    ],
-    "explanation": "Snow White and the Seven Dwarfs, released by Walt Disney in 1937, is considered the first feature-length animated film in cinematic history.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Snow_White_and_the_Seven_Dwarfs_(1937_film)",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": {
-      "factCheck": {
-        "reason": "Snow White and the Seven Dwarfs, released in 1937, is widely recognized as the first feature-length animated film in cinematic history.",
-        "verdict": "pass",
-        "confidence": 100
-      },
-      "qaFindings": []
-    },
-    "createdAt": "2026-03-22T01:06:04.105909",
-    "updatedAt": "2026-03-22T01:12:18.46"
-  },
-  {
     "id": "5f08bd8a-5801-45dc-bec0-26ec753e49b0",
     "category": "movies",
     "difficulty": "Hard",
     "question": "Which silent film was the first movie to win the Academy Award for Best Picture?",
     "answer": "Wings",
-    "acceptableAnswers": [
-      "Wings"
-    ],
+    "acceptableAnswers": ["Wings"],
     "explanation": "Wings, a silent World War I drama released in 1927, was the first movie to win the Academy Award for Best Picture at the inaugural Oscars in 1929.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "US",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["US", "TimeCapsule", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Wings_(1927_film)",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5746,16 +4631,10 @@
     "difficulty": "Medium",
     "question": "Which movie won the Academy Award for Best Picture in 1994?",
     "answer": "Forrest Gump",
-    "acceptableAnswers": [
-      "Forrest Gump"
-    ],
+    "acceptableAnswers": ["Forrest Gump"],
     "explanation": "Forrest Gump, directed by Robert Zemeckis and starring Tom Hanks, won the Oscar for Best Picture at the 67th Academy Awards in 1994.",
     "pillar": "GlobalEh",
-    "tags": [
-      "Global",
-      "GlobalEh",
-      "movies"
-    ],
+    "tags": ["Global", "GlobalEh", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/67th_Academy_Awards",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5784,16 +4663,10 @@
     "difficulty": "Medium",
     "question": "Which movie, released in 1985, features a time-traveling DeLorean car?",
     "answer": "Back to the Future",
-    "acceptableAnswers": [
-      "Back to the Future"
-    ],
+    "acceptableAnswers": ["Back to the Future"],
     "explanation": "'Back to the Future' is a 1985 science fiction film in which the protagonist, Marty McFly, travels through time using a DeLorean car modified by his friend Dr. Emmett Brown.",
     "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
+    "tags": ["Global", "TimeCapsule", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Back_to_the_Future",
     "sourceName": "Wikipedia",
     "status": "approved",
@@ -5809,81 +4682,15 @@
     "updatedAt": "2026-03-22T01:12:18.46"
   },
   {
-    "id": "4d4b0f7c-f2b7-4add-bac6-5fdb36e8b694",
-    "category": "movies",
-    "difficulty": "Medium",
-    "question": "Which movie directed by Sean Penn revolves around the story of a young man who travels into the Alaskan wilderness and is based on true events?",
-    "answer": "Into the Wild",
-    "acceptableAnswers": [
-      "Into the Wild"
-    ],
-    "explanation": "The film 'Into the Wild,' directed by Sean Penn, is based on Jon Krakauer's book of the same name. It tells the story of Christopher McCandless, a young man who ventured into the Alaskan wilderness seeking a simpler life.",
-    "pillar": "GreatOutdoors",
-    "tags": [
-      "Global",
-      "GreatOutdoors",
-      "movies"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Into_the_Wild_(film)",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": {
-      "factCheck": {
-        "reason": "The question, answer, and explanation are factually correct as 'Into the Wild' was directed by Sean Penn and based on the true story of Christopher McCandless as detailed in Jon Krakauer's book.",
-        "verdict": "pass",
-        "confidence": 100
-      },
-      "qaFindings": []
-    },
-    "createdAt": "2026-03-22T01:11:59.903564",
-    "updatedAt": "2026-03-22T01:12:18.46"
-  },
-  {
-    "id": "0ab9da7e-45b7-41f9-a7f2-d2df5a7c5e8b",
-    "category": "movies",
-    "difficulty": "Easy",
-    "question": "What 1997 film features the famous line, 'I'm the king of the world'?",
-    "answer": "Titanic",
-    "acceptableAnswers": [
-      "Titanic"
-    ],
-    "explanation": "In the 1997 epic romance film 'Titanic', the character Jack Dawson, played by Leonardo DiCaprio, says the memorable line while standing on the ship's bow.",
-    "pillar": "TimeCapsule",
-    "tags": [
-      "Global",
-      "TimeCapsule",
-      "movies"
-    ],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic_(1997_film)",
-    "sourceName": "Wikipedia",
-    "status": "approved",
-    "aiAnalysis": {
-      "factCheck": {
-        "reason": "The question, answer, and explanation about the film 'Titanic' are accurate and match the iconic line spoken by the character Jack Dawson in the 1997 movie.",
-        "verdict": "pass",
-        "confidence": 100
-      },
-      "qaFindings": []
-    },
-    "createdAt": "2026-03-22T01:11:59.903564",
-    "updatedAt": "2026-03-22T01:12:18.46"
-  },
-  {
     "id": "d14e2f08-3f8c-42d8-89e5-4a996a4ceb4b",
     "category": "movies",
     "difficulty": "Medium",
     "question": "Which 1994 movie directed by Quentin Tarantino revitalized John Travolta's career?",
     "answer": "Pulp Fiction",
-    "acceptableAnswers": [
-      "Pulp Fiction"
-    ],
+    "acceptableAnswers": ["Pulp Fiction"],
     "explanation": "Directed by Quentin Tarantino, 'Pulp Fiction' is widely regarded as a groundbreaking moment in cinematic history. Its success reinvigorated John Travolta's career, earning him widespread acclaim.",
     "pillar": "FreshPrints",
-    "tags": [
-      "Global",
-      "FreshPrints",
-      "movies"
-    ],
+    "tags": ["Global", "FreshPrints", "movies"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Pulp_Fiction",
     "sourceName": "Wikipedia",
     "status": "approved",
