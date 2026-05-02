@@ -66,6 +66,25 @@ Linear (Modern Trivia project) is the source of truth for priorities, status, an
 3. If a "do not continue" condition is hit, stop and provide a concise warning plus the recommended next step (new branch/worktree, cleanup, or explicit override).
 4. Do not silently continue after warning; require explicit user confirmation to override.
 
+### Parallel session rules
+
+These rules apply whenever two or more agent sessions (Claude, Codex, or any combination) are running concurrently on independent issues.
+
+1. **One worktree per session, always.** Never share a worktree between sessions. Each session must have its own dedicated folder on disk, on its own branch. One session = one worktree = one branch.
+2. **Always start from latest main.** Before creating a worktree for a new session, pull main first:
+   ```
+   git checkout main && git pull
+   git worktree add <path> <new-branch-name>
+   ```
+   Never branch from another feature branch. Always branch from `main`.
+3. **Sync before resuming any idle worktree.** If a worktree has been idle while other PRs may have merged, pull main into the branch before continuing:
+   ```
+   git fetch origin && git merge origin/main
+   ```
+4. **Sync before opening or merging a PR.** Before opening a PR, and again immediately before merging, pull latest main into the branch and resolve any conflicts. Do not merge a PR whose branch has not been updated against current main.
+5. **Merge PRs one at a time — never simultaneously.** When multiple parallel sessions finish, merge them sequentially. After each merge, every remaining open PR branch must pull the updated main before that PR is reviewed or merged.
+6. **Flag file-level conflict risk before starting.** If a new session's issue is likely to touch the same files as another currently in-progress session, stop and flag this to the user before starting work. Parallel sessions should target different areas of the codebase where possible (e.g. one API, one client).
+
 ## Commit Messages
 
 Use Conventional Commits: `<type>(<scope>): <description>`
