@@ -28,6 +28,7 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
 
   const batchIds = new Set(batch.map((q) => q.id));
   const batchOrder = new Map<string, number>(batch.map((q, i) => [q.id, i]));
+  const batchById = new Map<string, T>(batch.map((q) => [q.id, q]));
 
   const combined = [...existing, ...(batch as unknown as Question[])];
 
@@ -35,9 +36,6 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   // existing-vs-existing collisions here (owned by STE-143 / offline cleanup),
   // and skipping them is O((E+B)^2) → O(B*(E+B)) work.
   const report = await detectDuplicates(combined, { scopeIds: batchIds });
-
-  // For each batch id, record the strongest reason it should be dropped.
-  const dropDecisions = new Map<string, DroppedNovelty<T>>();
 
   function isStrongerMatch(
     a: DuplicateMatch['matchType'],
@@ -51,75 +49,81 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     return rank[a] > rank[b];
   }
 
-  function record(targetId: string, candidate: DroppedNovelty<T>) {
-    const existingDecision = dropDecisions.get(targetId);
-    if (!existingDecision) {
-      dropDecisions.set(targetId, candidate);
-      return;
+  function shouldReplace(prev: DroppedNovelty<T>, next: DroppedNovelty<T>): boolean {
+    if (isStrongerMatch(next.matchType, prev.matchType)) return true;
+    if (next.matchType === prev.matchType && next.similarityScore > prev.similarityScore) {
+      return true;
     }
-    // Prefer existing-collision over within-batch (existing rules are stricter),
-    // then prefer stronger match types, then prefer higher similarity.
-    if (
-      candidate.reason === 'duplicate_of_existing' &&
-      existingDecision.reason === 'duplicate_within_batch'
-    ) {
-      dropDecisions.set(targetId, candidate);
-      return;
-    }
-    if (
-      candidate.reason === existingDecision.reason &&
-      isStrongerMatch(candidate.matchType, existingDecision.matchType)
-    ) {
-      dropDecisions.set(targetId, candidate);
-      return;
-    }
-    if (
-      candidate.reason === existingDecision.reason &&
-      candidate.matchType === existingDecision.matchType &&
-      candidate.similarityScore > existingDecision.similarityScore
-    ) {
-      dropDecisions.set(targetId, candidate);
-    }
+    return false;
   }
 
+  // Pass 1: identify batch items that are duplicates of an existing DB row.
+  // These are unconditionally dropped — the existing row is the canonical version.
+  const droppedByExisting = new Map<string, DroppedNovelty<T>>();
   for (const match of report.duplicatesFound) {
     const aInBatch = batchIds.has(match.questionIdA);
     const bInBatch = batchIds.has(match.questionIdB);
+    if (aInBatch === bInBatch) continue; // skip both-batch and both-existing
 
-    if (aInBatch && bInBatch) {
-      // Within-batch collision — keep the earlier one, drop the later one.
-      const aOrder = batchOrder.get(match.questionIdA) ?? 0;
-      const bOrder = batchOrder.get(match.questionIdB) ?? 0;
-      const dropId = aOrder <= bOrder ? match.questionIdB : match.questionIdA;
-      const keepId = dropId === match.questionIdA ? match.questionIdB : match.questionIdA;
-      const dropped = batch.find((q) => q.id === dropId);
-      if (!dropped) continue;
-      record(dropId, {
-        question: dropped,
-        reason: 'duplicate_within_batch',
-        matchType: match.matchType,
-        similarityScore: match.similarityScore,
-        matchedBatchId: keepId,
-      });
-      continue;
-    }
+    const batchId = aInBatch ? match.questionIdA : match.questionIdB;
+    const existingId = aInBatch ? match.questionIdB : match.questionIdA;
+    const item = batchById.get(batchId);
+    if (!item) continue;
 
-    if (aInBatch || bInBatch) {
-      const batchId = aInBatch ? match.questionIdA : match.questionIdB;
-      const existingId = aInBatch ? match.questionIdB : match.questionIdA;
-      const dropped = batch.find((q) => q.id === batchId);
-      if (!dropped) continue;
-      record(batchId, {
-        question: dropped,
-        reason: 'duplicate_of_existing',
-        matchType: match.matchType,
-        similarityScore: match.similarityScore,
-        matchedExistingId: existingId,
-      });
+    const candidate: DroppedNovelty<T> = {
+      question: item,
+      reason: 'duplicate_of_existing',
+      matchType: match.matchType,
+      similarityScore: match.similarityScore,
+      matchedExistingId: existingId,
+    };
+
+    const prior = droppedByExisting.get(batchId);
+    if (!prior || shouldReplace(prior, candidate)) {
+      droppedByExisting.set(batchId, candidate);
     }
-    // If neither id is in the batch, the collision is between two existing rows —
-    // not our concern here (owned by STE-143 / offline cleanup).
   }
+
+  // Pass 2: within-batch matches. Only drop the loser when the winner is itself
+  // surviving — i.e. not already dropped as a duplicate of existing. Otherwise
+  // the loser was being removed solely because of a ghost that's about to be
+  // removed itself, and should pass through.
+  const droppedByBatch = new Map<string, DroppedNovelty<T>>();
+  for (const match of report.duplicatesFound) {
+    const aInBatch = batchIds.has(match.questionIdA);
+    const bInBatch = batchIds.has(match.questionIdB);
+    if (!aInBatch || !bInBatch) continue;
+
+    const aOrder = batchOrder.get(match.questionIdA) ?? 0;
+    const bOrder = batchOrder.get(match.questionIdB) ?? 0;
+    const winnerId = aOrder <= bOrder ? match.questionIdA : match.questionIdB;
+    const loserId = winnerId === match.questionIdA ? match.questionIdB : match.questionIdA;
+
+    if (droppedByExisting.has(winnerId)) continue;
+    if (droppedByExisting.has(loserId)) continue; // already accounted for with stronger reason
+
+    const item = batchById.get(loserId);
+    if (!item) continue;
+
+    const candidate: DroppedNovelty<T> = {
+      question: item,
+      reason: 'duplicate_within_batch',
+      matchType: match.matchType,
+      similarityScore: match.similarityScore,
+      matchedBatchId: winnerId,
+    };
+
+    const prior = droppedByBatch.get(loserId);
+    if (!prior || shouldReplace(prior, candidate)) {
+      droppedByBatch.set(loserId, candidate);
+    }
+  }
+
+  const dropDecisions = new Map<string, DroppedNovelty<T>>();
+  droppedByExisting.forEach((decision, id) => dropDecisions.set(id, decision));
+  droppedByBatch.forEach((decision, id) => {
+    if (!dropDecisions.has(id)) dropDecisions.set(id, decision);
+  });
 
   const kept: T[] = [];
   const dropped: DroppedNovelty<T>[] = [];

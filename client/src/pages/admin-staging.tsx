@@ -366,7 +366,7 @@ export default function AdminStaging() {
       }
       const data = (await res.json()) as { count: number; droppedAsDuplicate?: number };
       const droppedNote = data.droppedAsDuplicate
-        ? ` (${data.droppedAsDuplicate} dropped as duplicate of existing questions)`
+        ? ` (${data.droppedAsDuplicate} dropped as duplicate${data.droppedAsDuplicate !== 1 ? 's' : ''})`
         : '';
       toast({
         title: 'Questions generated',

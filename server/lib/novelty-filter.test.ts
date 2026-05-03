@@ -165,6 +165,55 @@ describe('filterNovelQuestions — within-batch collisions', () => {
     expect(result.dropped[0].reason).toBe('duplicate_within_batch');
     expect(result.dropped[0].matchedBatchId).toBe('b1');
   });
+
+  it('keeps a batch item whose only collision is with another batch item that is itself a duplicate of existing', async () => {
+    // Regression for two-pass logic. Without the fix, both `a` and `b` would be
+    // dropped: `a` as duplicate_of_existing (matched with E1 via conceptual),
+    // and `b` as duplicate_within_batch (matched with `a` via near-duplicate).
+    // With the fix, only `a` is dropped — `b` survives because the within-batch
+    // collision was solely with the now-removed `a`.
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              isDuplicate: true,
+              reasoning: 'Same fact phrased differently.',
+            }),
+          },
+        },
+      ],
+    });
+
+    const existing = [
+      makeQuestion({ id: 'e1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ];
+    const batch = [
+      // Different wording from E1, same answer — Sørensen-Dice on text is below 0.8,
+      // but identical answer triggers Phase 3 conceptual check (mock returns true).
+      makeQuestion({
+        id: 'a',
+        question: 'Which European city hosts the Eiffel Tower?',
+        answer: 'Paris',
+      }),
+      // Near-dup of `a` via Phase 2 (most bigrams shared with `a`'s text).
+      // Different answer from E1 ("Paris" vs "Berlin"), so does NOT collide with E1
+      // — Phase 3 candidate gate (answer similarity ≥ 0.7) is not met.
+      makeQuestion({
+        id: 'b',
+        question: 'Which European city hosts the Brandenburg Gate?',
+        answer: 'Berlin',
+      }),
+    ];
+
+    const result = await filterNovelQuestions(batch, existing);
+
+    expect(result.kept.map((q) => q.id)).toEqual(['b']);
+    expect(result.dropped).toHaveLength(1);
+    expect(result.dropped[0].question.id).toBe('a');
+    expect(result.dropped[0].reason).toBe('duplicate_of_existing');
+    expect(result.dropped[0].matchedExistingId).toBe('e1');
+  });
 });
 
 describe('filterNovelQuestions — performance guards', () => {
