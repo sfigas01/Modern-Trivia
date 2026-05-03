@@ -88,6 +88,11 @@ const seenQuestionsRequestSchema = z
 
 const questionEditableFieldsSchema = insertQuestionSchema
   .omit({ id: true, aiAnalysis: true })
+  .extend({
+    // Keep status validation explicit on PATCH payloads so invalid values are rejected
+    // before hitting the database update.
+    status: z.enum(['draft', 'pending', 'approved', 'rejected']).optional(),
+  })
   .partial()
   .strict();
 
