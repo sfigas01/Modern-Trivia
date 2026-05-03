@@ -31,7 +31,10 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
 
   const combined = [...existing, ...(batch as unknown as Question[])];
 
-  const report = await detectDuplicates(combined);
+  // Constrain pair iteration to "at least one batch id" — we don't care about
+  // existing-vs-existing collisions here (owned by STE-143 / offline cleanup),
+  // and skipping them is O((E+B)^2) → O(B*(E+B)) work.
+  const report = await detectDuplicates(combined, { scopeIds: batchIds });
 
   // For each batch id, record the strongest reason it should be dropped.
   const dropDecisions = new Map<string, DroppedNovelty<T>>();

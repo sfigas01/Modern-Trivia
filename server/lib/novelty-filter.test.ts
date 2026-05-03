@@ -197,4 +197,32 @@ describe('filterNovelQuestions — performance guards', () => {
     expect(result.kept).toHaveLength(1);
     expect(result.dropped).toHaveLength(0);
   });
+
+  it('does not invoke the GPT-4o conceptual check for existing-vs-existing pairs', async () => {
+    // Two existing rows with different question wording but identical answer —
+    // would normally trigger Phase 3 (conceptual GPT-4o call). With the scopeIds
+    // constraint, this pair must be skipped entirely.
+    const existing = [
+      makeQuestion({
+        id: 'e1',
+        question: 'What is the capital city of France?',
+        answer: 'Paris',
+      }),
+      makeQuestion({
+        id: 'e2',
+        question: "Which European city serves as France's capital?",
+        answer: 'Paris',
+      }),
+    ];
+    // Batch is unrelated to the existing pair — so no batch-involving pair
+    // should trigger GPT-4o either. The only way mockCreate could be called
+    // is if existing-vs-existing is being evaluated.
+    const batch = [
+      makeQuestion({ id: 'b1', question: 'What is the tallest mountain?', answer: 'Everest' }),
+    ];
+
+    await filterNovelQuestions(batch, existing);
+
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
 });
