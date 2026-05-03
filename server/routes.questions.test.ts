@@ -200,6 +200,24 @@ describe('question routes', () => {
     expect(response.body).toMatchObject({ id: 'q-1', answer: 'Ottawa' });
   });
 
+  it('updates question status for admins when status is valid', async () => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const updateQuery = createQueryMock([{ ...questionRow, status: 'rejected' }]);
+    dbMocks.update.mockReturnValue(updateQuery);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .patch('/api/questions/q-1')
+      .set('x-test-user-id', 'admin-user')
+      .send({ status: 'rejected' })
+      .expect(200);
+
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'rejected', updatedAt: expect.any(Date) })
+    );
+    expect(response.body).toMatchObject({ id: 'q-1', status: 'rejected' });
+  });
+
   it('returns 404 when admins update a missing question', async () => {
     dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
     dbMocks.update.mockReturnValue(createQueryMock([]));
@@ -222,6 +240,20 @@ describe('question routes', () => {
       .patch('/api/questions/q-1')
       .set('x-test-user-id', 'admin-user')
       .send({ id: 'different-id', answer: 'Ottawa' })
+      .expect(422);
+
+    expect(response.body).toMatchObject({ message: 'Invalid question update' });
+    expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid question status values before writing', async () => {
+    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .patch('/api/questions/q-1')
+      .set('x-test-user-id', 'admin-user')
+      .send({ status: 'whatever' })
       .expect(422);
 
     expect(response.body).toMatchObject({ message: 'Invalid question update' });
