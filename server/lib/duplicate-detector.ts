@@ -27,6 +27,16 @@ export interface DuplicateDetectionReport {
   duplicatesByType: Record<DuplicateMatch['matchType'], number>;
 }
 
+export interface DetectDuplicatesOptions {
+  /**
+   * If provided, only evaluate pairs where at least one question's id is in this set.
+   * Pairs where neither id is in scope are skipped entirely — no Sørensen-Dice,
+   * no answer comparison, no GPT-4o conceptual check. Useful for "batch vs. corpus"
+   * checks where existing-vs-existing pair work is wasted.
+   */
+  scopeIds?: Set<string>;
+}
+
 const NEAR_DUPLICATE_THRESHOLD = 0.8;
 const ANSWER_SIMILARITY_THRESHOLD = 0.7;
 
@@ -95,7 +105,11 @@ Respond with JSON:
   }
 }
 
-export async function detectDuplicates(questions: Question[]): Promise<DuplicateDetectionReport> {
+export async function detectDuplicates(
+  questions: Question[],
+  options: DetectDuplicatesOptions = {}
+): Promise<DuplicateDetectionReport> {
+  const { scopeIds } = options;
   const duplicatesFound: DuplicateMatch[] = [];
   const seenPairs = new Set<string>();
   const conceptualCandidates: ConceptualPair[] = [];
@@ -106,6 +120,11 @@ export async function detectDuplicates(questions: Question[]): Promise<Duplicate
     for (let j = i + 1; j < questions.length; j++) {
       const a = questions[i];
       const b = questions[j];
+
+      if (scopeIds && !scopeIds.has(a.id) && !scopeIds.has(b.id)) {
+        continue;
+      }
+
       totalPairsChecked++;
 
       const pairKey = `${a.id}::${b.id}`;

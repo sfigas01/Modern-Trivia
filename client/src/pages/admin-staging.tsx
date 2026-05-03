@@ -364,10 +364,13 @@ export default function AdminStaging() {
         const err = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(err.message || 'Generation failed');
       }
-      const data = (await res.json()) as { count: number };
+      const data = (await res.json()) as { count: number; droppedAsDuplicate?: number };
+      const droppedNote = data.droppedAsDuplicate
+        ? ` (${data.droppedAsDuplicate} dropped as duplicate${data.droppedAsDuplicate !== 1 ? 's' : ''})`
+        : '';
       toast({
         title: 'Questions generated',
-        description: `${data.count} question${data.count !== 1 ? 's' : ''} added to the review queue.`,
+        description: `${data.count} question${data.count !== 1 ? 's' : ''} added to the review queue${droppedNote}.`,
       });
       setGenForm((f) => ({ ...f, topic: '' }));
       await fetchStaging();
