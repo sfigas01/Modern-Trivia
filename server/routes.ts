@@ -778,9 +778,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       // Pull existing questions ONCE for both prompt seeding and post-filter.
       // Include 'approved' AND 'pending' so the same admin doesn't see dupes
-      // of questions already sitting in their staging queue.
+      // of questions already sitting in their staging queue. Project to only
+      // the columns downstream consumers read (selectTopicContext + novelty
+      // filter) so we don't drag explanation, aiAnalysis, etc. across the wire.
       const existing = await db
-        .select()
+        .select({
+          id: questions.id,
+          question: questions.question,
+          answer: questions.answer,
+          pillar: questions.pillar,
+        })
         .from(questions)
         .where(sql`${questions.status} IN ('approved', 'pending')`);
 

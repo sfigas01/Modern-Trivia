@@ -18,9 +18,16 @@ export interface NoveltyFilterResult<T> {
 type DetectableQuestion = Pick<Question, 'id' | 'question' | 'answer'> &
   Partial<Pick<Question, 'pillar'>>;
 
+/**
+ * Only the fields the duplicate-detector reads — keeps callers free to pass a
+ * narrowed select() result instead of full `Question` rows (saves DB I/O when
+ * the corpus grows).
+ */
+export type ExistingForNovelty = Pick<Question, 'id' | 'question' | 'answer'>;
+
 export async function filterNovelQuestions<T extends DetectableQuestion>(
   batch: T[],
-  existing: Question[]
+  existing: ExistingForNovelty[]
 ): Promise<NoveltyFilterResult<T>> {
   if (batch.length === 0) {
     return { kept: [], dropped: [] };
@@ -30,7 +37,10 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   const batchOrder = new Map<string, number>(batch.map((q, i) => [q.id, i]));
   const batchById = new Map<string, T>(batch.map((q) => [q.id, q]));
 
-  const combined = [...existing, ...(batch as unknown as Question[])];
+  // detectDuplicates is typed `Question[]` but only reads id/question/answer.
+  // The casts are sound because both sides have those fields; we keep the
+  // narrow types at the public boundary so callers can pass slim shapes.
+  const combined = [...(existing as unknown as Question[]), ...(batch as unknown as Question[])];
 
   // Constrain pair iteration to "at least one batch id" — we don't care about
   // existing-vs-existing collisions here (owned by STE-143 / offline cleanup),
