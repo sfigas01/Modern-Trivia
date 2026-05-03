@@ -9,6 +9,7 @@
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],
     "jsx": "preserve",
+    "ignoreDeprecations": "5.0",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
