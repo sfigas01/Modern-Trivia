@@ -444,9 +444,13 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
     }
 
     const normalizedQuestion = normalize(questionText);
-    const answerCandidates = [answer, ...acceptableAnswers]
-      .map((entry) => normalize(entry))
-      .filter((entry) => isLeakCandidate(entry));
+    const answerCandidates = Array.from(
+      new Set(
+        [answer, ...acceptableAnswers]
+          .map((entry) => normalize(entry))
+          .filter((entry) => isLeakCandidate(entry))
+      )
+    );
 
     const questionWords = normalizedQuestion
       ? normalizedQuestion.split(/\s+/).filter((w) => w.length >= 4)
@@ -456,16 +460,15 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
       questionStemMap.set(stemWord(qw), qw);
     }
 
+    const leakageMessages = new Set<string>();
+
     for (const candidate of answerCandidates) {
       if (normalizedQuestion && containsCandidate(normalizedQuestion, candidate)) {
-        pushFinding(
-          findings,
-          questionId,
-          questionIndex,
-          'high',
-          'answer_leakage',
-          `Answer candidate "${candidate}" appears in the question text.`
-        );
+        const message = `Answer candidate "${candidate}" appears in the question text.`;
+        if (!leakageMessages.has(message)) {
+          leakageMessages.add(message);
+          pushFinding(findings, questionId, questionIndex, 'high', 'answer_leakage', message);
+        }
         continue;
       }
 
@@ -477,28 +480,22 @@ export function auditQuestionQuality(questions: RawTriviaQuestion[]): QuestionQu
 
       for (const keyword of keywords) {
         if (candidate.includes(' ') && containsCandidate(normalizedQuestion, keyword)) {
-          pushFinding(
-            findings,
-            questionId,
-            questionIndex,
-            'medium',
-            'answer_leakage',
-            `Answer keyword "${keyword}" (from answer "${candidate}") appears in the question text.`
-          );
+          const message = `Answer keyword "${keyword}" (from answer "${candidate}") appears in the question text.`;
+          if (!leakageMessages.has(message)) {
+            leakageMessages.add(message);
+            pushFinding(findings, questionId, questionIndex, 'medium', 'answer_leakage', message);
+          }
           continue;
         }
 
         const keywordStem = stemWord(keyword);
         const morphMatch = questionStemMap.get(keywordStem);
         if (morphMatch && morphMatch !== keyword) {
-          pushFinding(
-            findings,
-            questionId,
-            questionIndex,
-            'low',
-            'answer_leakage',
-            `Question word "${morphMatch}" shares a root with answer keyword "${keyword}" (from answer "${candidate}").`
-          );
+          const message = `Question word "${morphMatch}" shares a root with answer keyword "${keyword}" (from answer "${candidate}").`;
+          if (!leakageMessages.has(message)) {
+            leakageMessages.add(message);
+            pushFinding(findings, questionId, questionIndex, 'low', 'answer_leakage', message);
+          }
         }
       }
     }
