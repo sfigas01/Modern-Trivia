@@ -95,9 +95,17 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   }
 
   // Pass 2: within-batch matches. Only drop the loser when the winner is itself
-  // surviving — i.e. not already dropped as a duplicate of existing. Otherwise
-  // the loser was being removed solely because of a ghost that's about to be
-  // removed itself, and should pass through.
+  // surviving — i.e. not already dropped as a duplicate of existing AND not
+  // already dropped by an earlier within-batch match. Otherwise the loser was
+  // being removed solely because of a ghost that's about to be removed itself,
+  // and should pass through.
+  //
+  // Iteration order matters here. duplicatesFound is in i,j order over the
+  // combined `[...existing, ...batch]` array (Phase 1/2 push during the index
+  // walk; Phase 3 candidates are batchProcess-ed via Promise.all which
+  // preserves input order). For any within-batch chain X→Y→Z (where X<Y<Z in
+  // batchOrder), the (X,Y) pair is always processed before (Y,Z), so by the
+  // time we evaluate (Y,Z) the kill of Y is already in droppedByBatch.
   const droppedByBatch = new Map<string, DroppedNovelty<T>>();
   for (const match of report.duplicatesFound) {
     const aInBatch = batchIds.has(match.questionIdA);
@@ -109,8 +117,14 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     const winnerId = aOrder <= bOrder ? match.questionIdA : match.questionIdB;
     const loserId = winnerId === match.questionIdA ? match.questionIdB : match.questionIdA;
 
+    // Winner is dead — this within-batch match has no force.
     if (droppedByExisting.has(winnerId)) continue;
-    if (droppedByExisting.has(loserId)) continue; // already accounted for with stronger reason
+    if (droppedByBatch.has(winnerId)) continue;
+
+    // Loser is already dropped with a stronger reason (duplicate_of_existing).
+    // Don't downgrade it here; just skip. (The combine step below also enforces
+    // this precedence, so this guard is belt-and-suspenders.)
+    if (droppedByExisting.has(loserId)) continue;
 
     const item = batchById.get(loserId);
     if (!item) continue;

@@ -166,6 +166,50 @@ describe('filterNovelQuestions — within-batch collisions', () => {
     expect(result.dropped[0].matchedBatchId).toBe('b1');
   });
 
+  it('does not over-drop in a non-transitive within-batch chain (a~b, b~c, no a~c)', async () => {
+    // Regression for Pass 2 winner-alive check. Without the fix, processing
+    // (a,b) marks b dead, then processing (b,c) re-checks only droppedByExisting
+    // (which is empty), treats b as alive, and incorrectly drops c. With the
+    // fix, (b,c) sees b in droppedByBatch and lets c through.
+    //
+    // All three questions share answer "Paris" so every pair becomes a Phase 3
+    // candidate; question text is distinct enough that none passes Phase 2's
+    // 0.8 Sørensen-Dice threshold. The mock returns isDuplicate=true only for
+    // the (a,b) and (b,c) prompts — (a,c) is not a duplicate.
+    mockCreate.mockImplementation(async (params: unknown) => {
+      const messages = (params as { messages: { role: string; content: string }[] }).messages;
+      const userMessage = messages.find((m) => m.role === 'user');
+      const prompt = userMessage?.content ?? '';
+      const hasA = prompt.includes('capital of France');
+      const hasB = prompt.includes('Eiffel');
+      const hasC = prompt.includes('Louvre');
+      const isDuplicate = (hasA && hasB) || (hasB && hasC);
+      return {
+        choices: [
+          {
+            message: { content: JSON.stringify({ isDuplicate, reasoning: 'test' }) },
+          },
+        ],
+      };
+    });
+
+    const batch = [
+      makeQuestion({ id: 'a', question: 'What is the capital of France?', answer: 'Paris' }),
+      makeQuestion({ id: 'b', question: 'Site of the Eiffel Tower?', answer: 'Paris' }),
+      makeQuestion({ id: 'c', question: 'Home of the Louvre Museum?', answer: 'Paris' }),
+    ];
+
+    const result = await filterNovelQuestions(batch, []);
+
+    // a is the canonical of the (a,b) cluster; c survives because its only
+    // collision was with b, which is itself dropped.
+    expect(result.kept.map((q) => q.id)).toEqual(['a', 'c']);
+    expect(result.dropped).toHaveLength(1);
+    expect(result.dropped[0].question.id).toBe('b');
+    expect(result.dropped[0].reason).toBe('duplicate_within_batch');
+    expect(result.dropped[0].matchedBatchId).toBe('a');
+  });
+
   it('keeps a batch item whose only collision is with another batch item that is itself a duplicate of existing', async () => {
     // Regression for two-pass logic. Without the fix, both `a` and `b` would be
     // dropped: `a` as duplicate_of_existing (matched with E1 via conceptual),
