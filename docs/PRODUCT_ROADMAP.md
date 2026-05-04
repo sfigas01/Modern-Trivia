@@ -30,7 +30,7 @@ This document serves as the high-level roadmap for Modern Trivia, tracking activ
 **Status:** 🏗️ In Progress
 **Tracked in:** [Linear — Modern Trivia project](https://linear.app/stephs-vibe-coding/issue/STE-66)
 
-**Why now:** The app is worked on by 4 AI agents (Claude Code Desktop, Claude Code Web, Replit Codex, Antigravity) with no automated quality gates, no testing, no CI/CD, and a security incident (exposed API key). The codebase needs guardrails before it can scale safely.
+**Why now:** The app is worked on by 4 AI agents (Claude Code, Replit Agent, Codex, Antigravity) with no automated quality gates, no testing, no CI/CD, and a security incident (exposed API key). The codebase needs guardrails before it can scale safely.
 
 **Key workstreams:**
 

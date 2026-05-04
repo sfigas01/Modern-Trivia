@@ -14,6 +14,13 @@ export interface QuestionAiAnalysis {
   repaired?: boolean;
 }
 
+export interface ExistingExample {
+  question: string;
+  answer: string;
+}
+
+const MAX_EXISTING_EXAMPLES = 30;
+
 type PendingQuestion = InsertQuestion & { status: 'pending'; aiAnalysis: QuestionAiAnalysis };
 
 const insertQuestionWithPendingStatusSchema = insertQuestionSchema.transform((question) => ({
@@ -68,6 +75,15 @@ const QUESTION_JSON_SCHEMA = (pillar: string) => `{
   "status": "pending"
 }`;
 
+function buildNegativeExamplesBlock(examples: ExistingExample[]): string {
+  if (examples.length === 0) return '';
+  const trimmed = examples.slice(0, MAX_EXISTING_EXAMPLES);
+  const list = trimmed
+    .map((ex, i) => `${i + 1}. Q: "${ex.question}" — A: "${ex.answer}"`)
+    .join('\n');
+  return `\nAvoid generating questions that overlap in fact or framing with these existing questions on this topic. Each new question must test a DIFFERENT fact. Do not paraphrase, do not change the wording slightly to ask the same thing.\n\nExisting questions to avoid:\n${list}\n`;
+}
+
 const QUESTION_RULES = (pillar: string) => `Rules:
 - Use a unique UUID as id.
 - Ensure all fields are filled and valid.
@@ -120,7 +136,8 @@ async function repairQuestion(
   original: PendingQuestion,
   topic: string,
   pillar: string,
-  failureReasons: string[]
+  failureReasons: string[],
+  existingExamples: ExistingExample[] = []
 ): Promise<PendingQuestion | null> {
   const originalJson = JSON.stringify(
     {
@@ -153,7 +170,8 @@ Please return a corrected version of this question that fixes ALL of the failure
 Return valid JSON for exactly ONE question using this schema:
 ${QUESTION_JSON_SCHEMA(pillar)}
 
-${QUESTION_RULES(pillar)}`;
+${QUESTION_RULES(pillar)}
+${buildNegativeExamplesBlock(existingExamples)}`;
 
   try {
     const response = await openai.chat.completions.create({
@@ -198,7 +216,8 @@ ${QUESTION_RULES(pillar)}`;
 export async function generateQuestions(
   topic: string,
   count: number,
-  pillar: string
+  pillar: string,
+  existingExamples: ExistingExample[] = []
 ): Promise<PendingQuestion[]> {
   const normalizedCount = Math.max(1, Math.min(20, Math.floor(count || 1)));
   const startedAt = Date.now();
@@ -207,6 +226,7 @@ export async function generateQuestions(
     topic,
     pillar,
     count: normalizedCount,
+    negativeExamples: Math.min(existingExamples.length, MAX_EXISTING_EXAMPLES),
   });
 
   const prompt = `Generate ${normalizedCount} trivia questions about "${topic}" for the "${pillar}" pillar.
@@ -219,7 +239,8 @@ Return only valid JSON in this exact envelope:
 }
 
 ${QUESTION_RULES(pillar)}
-- Return exactly ${normalizedCount} items.`;
+- Return exactly ${normalizedCount} items.
+${buildNegativeExamplesBlock(existingExamples)}`;
 
   let content = '{}';
 
@@ -358,7 +379,7 @@ ${QUESTION_RULES(pillar)}
     });
 
     const repairResults = await Promise.all(
-      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q)))
+      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q), existingExamples))
     );
 
     let repairedCount = 0;

@@ -12,7 +12,7 @@ Modern Trivia is a browser-based multiplayer trivia party game for 2-6 teams. Th
 
 - `client/src/lib/questions.json` — Main question database (200 questions)
 - `CONTENT_STRATEGY.md` — Editorial guidelines and pillar definitions
-- `docs/QUALITY_REVIEW_CONTEXT.md` — Quality review criteria and focus areas
+- `docs/guides/quality_criteria.md` — Quality review criteria and focus areas
 
 ---
 

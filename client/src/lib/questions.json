@@ -163,20 +163,9 @@
     "difficulty": "Easy",
     "question": "Poutine originated in which Canadian province?",
     "answer": "Quebec",
-    "explanation": "It emerged in the late 1950s in the Centre-du-Québec area.",
+    "explanation": "It emerged in the late 1950s in the Centre-du-Qu\u00e9bec area.",
     "tags": ["CA", "Food", "GreatOutdoors"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Poutine",
-    "sourceName": "Wikipedia"
-  },
-  {
-    "id": "q16",
-    "category": "Technology",
-    "difficulty": "Medium",
-    "question": "What year was the first iPhone released?",
-    "answer": "2007",
-    "explanation": "Steve Jobs announced the first iPhone on January 9, 2007, and it went on sale June 29, 2007.",
-    "tags": ["Global", "Technology", "TimeCapsule"],
-    "sourceUrl": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
     "sourceName": "Wikipedia"
   },
   {
@@ -317,7 +306,7 @@
     "difficulty": "Medium",
     "question": "What is the largest province in Canada by area?",
     "answer": "Quebec",
-    "explanation": "Quebec covers about 1.5 million km². Nunavut is larger, but it is a territory, not a province.",
+    "explanation": "Quebec covers about 1.5 million km\u00b2. Nunavut is larger, but it is a territory, not a province.",
     "tags": ["CA", "Geography", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Quebec",
     "sourceName": "Wikipedia"
@@ -548,7 +537,7 @@
     "difficulty": "Hard",
     "question": "What is the northernmost permanent settlement in the world?",
     "answer": "Alert, Nunavut",
-    "explanation": "Alert is located at 82°30'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
+    "explanation": "Alert is located at 82\u00b030'N in the Qikiqtaaluk Region of Nunavut, Canada, just 817 km from the North Pole.",
     "tags": ["CA", "Geography", "GreatOutdoors"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Alert,_Nunavut",
     "sourceName": "Wikipedia"
@@ -693,7 +682,7 @@
     "difficulty": "Hard",
     "question": "Which Canadian tennis player won the US Open in 2019?",
     "answer": "Bianca Andreescu",
-    "explanation": "Andreescu defeated Serena Williams 6–3, 7–5 in the final, becoming the first Canadian to win a Grand Slam singles title.",
+    "explanation": "Andreescu defeated Serena Williams 6\u20133, 7\u20135 in the final, becoming the first Canadian to win a Grand Slam singles title.",
     "tags": ["CA", "Sports", "FreshPrints"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bianca_Andreescu",
     "sourceName": "Wikipedia"
@@ -781,7 +770,7 @@
     "difficulty": "Easy",
     "question": "What year did Canada first win an Olympic gold medal?",
     "answer": "1904",
-    "explanation": "Étienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
+    "explanation": "\u00c9tienne Desmarteau and George Lyon won Canada's first official Olympic gold medals at the 1904 St. Louis Games. Gold, silver, and bronze medals were first awarded at the 1904 Olympics.",
     "tags": ["CA", "Sports", "TimeCapsule"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Canada_at_the_1904_Summer_Olympics",
     "sourceName": "Wikipedia"
@@ -828,17 +817,6 @@
     "explanation": "J.K. Rowling is a British author who published the first Harry Potter book in 1997.",
     "tags": ["Global", "Literature", "TimeCapsule"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Harry_Potter",
-    "sourceName": "Wikipedia"
-  },
-  {
-    "id": "q76",
-    "category": "Technology",
-    "difficulty": "Easy",
-    "question": "In what year did the internet become publicly available?",
-    "answer": "1991",
-    "explanation": "Tim Berners-Lee released the World Wide Web to the public on August 6, 1991 at CERN.",
-    "tags": ["Global", "Technology", "TimeCapsule"],
-    "sourceUrl": "https://en.wikipedia.org/wiki/World_Wide_Web",
     "sourceName": "Wikipedia"
   },
   {
@@ -946,8 +924,8 @@
     "category": "Literature",
     "difficulty": "Medium",
     "question": "Who wrote 'One Hundred Years of Solitude'?",
-    "answer": "Gabriel García Márquez",
-    "explanation": "García Márquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
+    "answer": "Gabriel Garc\u00eda M\u00e1rquez",
+    "explanation": "Garc\u00eda M\u00e1rquez was a Colombian author who won the 1982 Nobel Prize in Literature.",
     "tags": ["Global", "Literature", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/One_Hundred_Years_of_Solitude",
     "sourceName": "Wikipedia"
@@ -992,7 +970,7 @@
     "difficulty": "Easy",
     "question": "What is the capital of Italy?",
     "answer": "Rome",
-    "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Città Eterna).",
+    "explanation": "Rome has been Italy's capital since 1871. It's known as the 'Eternal City' (La Citt\u00e0 Eterna).",
     "tags": ["Global", "Geography", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Rome",
     "sourceName": "Wikipedia"
@@ -1069,8 +1047,8 @@
     "category": "Geography",
     "difficulty": "Medium",
     "question": "What is the capital of Brazil?",
-    "answer": "Brasília",
-    "explanation": "Brasília replaced Rio de Janeiro as the capital in 1960.",
+    "answer": "Bras\u00edlia",
+    "explanation": "Bras\u00edlia replaced Rio de Janeiro as the capital in 1960.",
     "tags": ["Global", "Geography", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Bras%C3%ADlia",
     "sourceName": "Wikipedia"
@@ -1106,17 +1084,6 @@
     "explanation": "Five skaters and one goaltender.",
     "tags": ["CA", "Sports", "GreatOutdoors"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Ice_hockey",
-    "sourceName": "Wikipedia"
-  },
-  {
-    "id": "q101",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "Who was the first Canadian Prime Minister?",
-    "answer": "Sir John A. Macdonald",
-    "explanation": "He led from 1867 to 1873 and 1878 to 1891.",
-    "tags": ["CA", "History", "TimeCapsule"],
-    "sourceUrl": "https://en.wikipedia.org/wiki/John_A._Macdonald",
     "sourceName": "Wikipedia"
   },
   {
@@ -1279,7 +1246,7 @@
     "difficulty": "Hard",
     "question": "What is the boiling point of water in Fahrenheit?",
     "answer": "212",
-    "explanation": "At sea level, water boils at 212°F or 100°C.",
+    "explanation": "At sea level, water boils at 212\u00b0F or 100\u00b0C.",
     "tags": ["Global", "Science", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
     "sourceName": "Wikipedia"
@@ -1455,7 +1422,7 @@
     "difficulty": "Easy",
     "question": "What is the freezing point of water in Celsius?",
     "answer": "0",
-    "explanation": "Water freezes at 0°C or 32°F.",
+    "explanation": "Water freezes at 0\u00b0C or 32\u00b0F.",
     "tags": ["Global", "Science", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Melting_point",
     "sourceName": "Wikipedia"
@@ -2046,17 +2013,6 @@
     "sourceName": "Wikipedia"
   },
   {
-    "id": "q186",
-    "category": "History",
-    "difficulty": "Easy",
-    "question": "What year did the Titanic sink?",
-    "answer": "1912",
-    "explanation": "It sank on April 15, 1912.",
-    "tags": ["Global", "History", "GlobalEh"],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Titanic",
-    "sourceName": "Wikipedia"
-  },
-  {
     "id": "q187",
     "category": "Nature",
     "difficulty": "Hard",
@@ -2142,17 +2098,6 @@
     "explanation": "Tempura is a Japanese battered and deep-fried dish.",
     "tags": ["Global", "Food", "GlobalEh"],
     "sourceUrl": "https://en.wikipedia.org/wiki/Tempura",
-    "sourceName": "Wikipedia"
-  },
-  {
-    "id": "q195",
-    "category": "History",
-    "difficulty": "Hard",
-    "question": "What year did Confederation happen in Canada?",
-    "answer": "1867",
-    "explanation": "July 1, 1867 marks the birth of modern Canada.",
-    "tags": ["CA", "History", "TimeCapsule"],
-    "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
     "sourceName": "Wikipedia"
   },
   {

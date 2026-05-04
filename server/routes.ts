@@ -24,6 +24,8 @@ import { getAiFieldFix, type FixableField } from './lib/field-fix';
 import { auditQuestionQuality } from './lib/question-quality-audit';
 import { detectDuplicates } from './lib/duplicate-detector';
 import { batchFactCheck } from './lib/verifier';
+import { selectTopicContext } from './lib/topic-context';
+import { filterNovelQuestions } from './lib/novelty-filter';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
@@ -88,6 +90,11 @@ const seenQuestionsRequestSchema = z
 
 const questionEditableFieldsSchema = insertQuestionSchema
   .omit({ id: true, aiAnalysis: true })
+  .extend({
+    // Keep status validation explicit on PATCH payloads so invalid values are rejected
+    // before hitting the database update.
+    status: z.enum(['draft', 'pending', 'approved', 'rejected']).optional(),
+  })
   .partial()
   .strict();
 
@@ -769,32 +776,75 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const { topic, count, pillar } = parsed.data;
 
+      // Pull existing questions ONCE for both prompt seeding and post-filter.
+      // Include 'approved' AND 'pending' so the same admin doesn't see dupes
+      // of questions already sitting in their staging queue. Project to only
+      // the columns downstream consumers read (selectTopicContext + novelty
+      // filter) so we don't drag explanation, aiAnalysis, etc. across the wire.
+      const existing = await db
+        .select({
+          id: questions.id,
+          question: questions.question,
+          answer: questions.answer,
+          pillar: questions.pillar,
+        })
+        .from(questions)
+        .where(sql`${questions.status} IN ('approved', 'pending')`);
+
       let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
 
       if (pillar === 'Mixed') {
         const batches = allocateMixed(count);
         console.info('[staging] Mixed generation', { topic, count, batches });
         const results = await Promise.all(
-          batches.map(({ pillar: p, count: c }) => generateQuestions(topic, c, p))
+          batches.map(({ pillar: p, count: c }) => {
+            const ctx = selectTopicContext({ topic, pillar: p, existing });
+            return generateQuestions(topic, c, p, ctx);
+          })
         );
         allGenerated = results.flat();
       } else {
-        allGenerated = await generateQuestions(topic, count, pillar);
+        const ctx = selectTopicContext({ topic, pillar, existing });
+        allGenerated = await generateQuestions(topic, count, pillar, ctx);
       }
 
-      const insertedQuestions = await db
-        .insert(questions)
-        .values(
-          allGenerated.map((q) => ({
-            ...q,
-            aiAnalysis: q.aiAnalysis,
-          }))
-        )
-        .returning();
+      const { kept, dropped } = await filterNovelQuestions(allGenerated, existing);
+
+      if (dropped.length > 0) {
+        console.info('[staging] Novelty filter dropped duplicates', {
+          topic,
+          requested: count,
+          generated: allGenerated.length,
+          kept: kept.length,
+          dropped: dropped.length,
+          reasons: dropped.map((d) => ({
+            id: d.question.id,
+            reason: d.reason,
+            matchType: d.matchType,
+            similarityScore: d.similarityScore,
+            matchedExistingId: d.matchedExistingId,
+            matchedBatchId: d.matchedBatchId,
+          })),
+        });
+      }
+
+      const insertedQuestions =
+        kept.length > 0
+          ? await db
+              .insert(questions)
+              .values(
+                kept.map((q) => ({
+                  ...q,
+                  aiAnalysis: q.aiAnalysis,
+                }))
+              )
+              .returning()
+          : [];
 
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
         count: insertedQuestions.length,
+        droppedAsDuplicate: dropped.length,
         questions: insertedQuestions,
       });
     } catch (error) {
