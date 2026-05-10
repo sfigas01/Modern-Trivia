@@ -13,7 +13,7 @@ const validDisputePayload = {
 
 const validQuestionPayload = {
   id: 'q-test',
-  category: 'History',
+  category: 'History & Geography',
   difficulty: 'Medium',
   question: 'Which civilization built Machu Picchu?',
   answer: 'Inca Empire',
@@ -50,10 +50,14 @@ describe('insertQuestionSchema', () => {
   });
 
   it.each([
+    ['category', 'History'],
+    ['category', 'Movies'],
+    ['category', 'General Knowledge'],
+    ['category', 'geography'],
     ['difficulty', 'Impossible'],
     ['pillar', 'WrongPillar'],
     ['status', 'archived'],
-  ])('rejects an invalid %s value', (field, value) => {
+  ])('rejects an invalid %s value "%s"', (field, value) => {
     const result = insertQuestionSchema.safeParse({
       ...validQuestionPayload,
       [field]: value,
@@ -61,5 +65,17 @@ describe('insertQuestionSchema', () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.issues.some((issue) => issue.path.join('.') === field)).toBe(true);
+  });
+
+  it.each([
+    'History & Geography',
+    'Science & Nature',
+    'Sports',
+    'Entertainment & Pop Culture',
+    'Food & Culture',
+    'Technology',
+  ])('accepts canonical category "%s"', (category) => {
+    const result = insertQuestionSchema.safeParse({ ...validQuestionPayload, category });
+    expect(result.success).toBe(true);
   });
 });

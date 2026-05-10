@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { VALID_CATEGORIES } from '@shared/constants/categories';
 import { AdminLayout } from '@/components/admin-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -181,6 +182,7 @@ interface EditableFieldProps {
   fieldKey: string;
   question: Question;
   inputType?: 'text' | 'textarea' | 'url';
+  selectOptions?: readonly string[];
   onSaved: (updated: Question) => void;
 }
 
@@ -189,6 +191,7 @@ function EditableField({
   fieldKey,
   question,
   inputType = 'text',
+  selectOptions,
   onSaved,
 }: EditableFieldProps) {
   const { toast } = useToast();
@@ -328,7 +331,29 @@ function EditableField({
       {/* Content */}
       {editing ? (
         <div className="space-y-2">
-          {inputType === 'textarea' ? (
+          {selectOptions ? (
+            <Select
+              value={draft}
+              onValueChange={(v) => {
+                setDraft(v);
+                setAiSuggested(false);
+              }}
+            >
+              <SelectTrigger
+                className="bg-white/5 border-white/20 text-sm"
+                data-testid={`input-field-${fieldKey}-${question.id}`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {selectOptions.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : inputType === 'textarea' ? (
             <Textarea
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={draft}
@@ -581,7 +606,13 @@ function ExpandedRow({ q, onUpdated }: { q: Question; onUpdated: (updated: Quest
             question={q}
             onSaved={onUpdated}
           />
-          <EditableField label="Category" fieldKey="category" question={q} onSaved={onUpdated} />
+          <EditableField
+            label="Category"
+            fieldKey="category"
+            question={q}
+            selectOptions={VALID_CATEGORIES}
+            onSaved={onUpdated}
+          />
 
           {/* Read-only fields */}
           <div>
