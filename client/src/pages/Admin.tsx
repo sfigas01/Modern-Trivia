@@ -17,6 +17,7 @@ import { Save, LogIn, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
+import { VALID_CATEGORIES } from '@shared/constants/categories';
 
 export default function Admin() {
   const [_, setLocation] = useLocation();
@@ -26,7 +27,7 @@ export default function Admin() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
 
   const [formData, setFormData] = useState({
-    category: '',
+    category: VALID_CATEGORIES[0] as string,
     difficulty: 'Medium' as Difficulty,
     question: '',
     answer: '',
@@ -43,7 +44,7 @@ export default function Admin() {
 
     const newQuestion: Question = {
       id: crypto.randomUUID(),
-      category: formData.category || 'General Knowledge',
+      category: formData.category,
       difficulty: formData.difficulty,
       question: formData.question,
       answer: formData.answer,
@@ -61,7 +62,7 @@ export default function Admin() {
         description: 'Successfully added to the database.',
       });
       setFormData({
-        category: '',
+        category: VALID_CATEGORIES[0],
         difficulty: 'Medium',
         question: '',
         answer: '',
@@ -166,12 +167,19 @@ export default function Admin() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
-                  <Input
+                  <Select
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g. Science"
-                    data-testid="input-category"
-                  />
+                    onValueChange={(v) => setFormData({ ...formData, category: v })}
+                  >
+                    <SelectTrigger data-testid="select-category">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALID_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Difficulty</label>

@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { insertQuestionSchema, type InsertQuestion, type Question } from '@shared/models/questions';
 import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
 import { batchFactCheck, type FactCheckVerdict } from './verifier';
-import { VALID_CATEGORIES, CATEGORY_SET } from '@shared/constants/categories';
+import { VALID_CATEGORIES, CATEGORY_SET, LEGACY_CATEGORY_MAP } from '@shared/constants/categories';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -56,12 +56,22 @@ function normalizeCandidate(
   if (CATEGORY_SET.has(rawCategory)) {
     category = rawCategory;
   } else {
-    console.warn('[guardian] AI returned non-canonical category — defaulting', {
-      received: rawCategory || '(empty)',
-      topic,
-      defaulting: VALID_CATEGORIES[0],
-    });
-    category = VALID_CATEGORIES[0];
+    const mapped = LEGACY_CATEGORY_MAP[rawCategory.toLowerCase()];
+    if (mapped) {
+      console.warn('[guardian] AI returned legacy category — mapping to canonical', {
+        received: rawCategory,
+        topic,
+        mappedTo: mapped,
+      });
+      category = mapped;
+    } else {
+      console.warn('[guardian] AI returned non-canonical category — defaulting', {
+        received: rawCategory || '(empty)',
+        topic,
+        defaulting: VALID_CATEGORIES[0],
+      });
+      category = VALID_CATEGORIES[0];
+    }
   }
 
   return {
