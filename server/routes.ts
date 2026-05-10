@@ -17,7 +17,7 @@ import {
   isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
-import { eq, and, sql, inArray } from 'drizzle-orm';
+import { eq, and, sql, inArray, ne } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
@@ -1166,7 +1166,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         const selectedQuestions = await db
           .select()
           .from(questions)
-          .where(inArray(questions.id, questionIds));
+          .where(and(inArray(questions.id, questionIds), ne(questions.status, 'rejected')));
 
         if (selectedQuestions.length === 0) {
           return res.status(404).json({

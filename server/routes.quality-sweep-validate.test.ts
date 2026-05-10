@@ -393,6 +393,44 @@ describe('POST /api/admin/quality-sweep/validate', () => {
     expect(response.body.factCheck.results).toHaveLength(0);
   });
 
+  it('excludes rejected questions — returns 404 when all requested IDs belong to rejected questions', async () => {
+    dbMocks.select
+      .mockReturnValueOnce(createQueryMock([adminRole]))
+      .mockReturnValueOnce(createQueryMock([])); // status filter excludes rejected rows
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/admin/quality-sweep/validate')
+      .set('x-test-user-id', 'admin-user')
+      .send({ questionIds: ['q-rejected'] })
+      .expect(404);
+
+    expect(response.body).toMatchObject({ message: 'No questions found for the provided IDs.' });
+    expect(auditMock).not.toHaveBeenCalled();
+  });
+
+  it('validates draft and pending questions', async () => {
+    const draftQuestion = { ...questionRow, id: 'q-draft', status: 'draft' };
+    const pendingQuestion = { ...questionRow, id: 'q-pending', status: 'pending' };
+    auditMock.mockReturnValueOnce({ ...emptyAuditReport, totalQuestions: 2 });
+    factCheckMock.mockResolvedValueOnce({ totalChecked: 2, results: [] });
+
+    dbMocks.select
+      .mockReturnValueOnce(createQueryMock([adminRole]))
+      .mockReturnValueOnce(createQueryMock([draftQuestion, pendingQuestion]))
+      .mockReturnValueOnce(createQueryMock([]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/admin/quality-sweep/validate')
+      .set('x-test-user-id', 'admin-user')
+      .send({ questionIds: ['q-draft', 'q-pending'] })
+      .expect(200);
+
+    expect(response.body.totalFound).toBe(2);
+    expect(auditMock).toHaveBeenCalledWith([draftQuestion, pendingQuestion]);
+  });
+
   it('returns 500 when a database error occurs', async () => {
     dbMocks.select
       .mockReturnValueOnce(createQueryMock([adminRole]))
