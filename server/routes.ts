@@ -17,7 +17,7 @@ import {
   isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
 import { generateQuestions } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
@@ -160,6 +160,40 @@ async function isAdmin(req: Request, res: Response, next: NextFunction) {
     console.error('Error checking admin status:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+}
+
+// Sanitize source URL/name to a domain label (e.g. "Wikipedia") so the
+// raw article title never reaches the client and can't leak the answer.
+function extractSourceDomain(
+  sourceUrl: string | null | undefined,
+  sourceName: string | null | undefined
+): string | null {
+  if (!sourceUrl && !sourceName) return null;
+  if (sourceUrl) {
+    try {
+      const hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
+      if (hostname.includes('wikipedia.org')) return 'Wikipedia';
+      if (hostname.includes('britannica.com')) return 'Britannica';
+      if (hostname.includes('history.com')) return 'History.com';
+      if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
+      return null;
+    } catch {
+      // URL parse failed — fall through to sourceName
+    }
+  }
+  if (sourceName) {
+    const KNOWN_PROVIDERS: [RegExp, string][] = [
+      [/wikipedia/i, 'Wikipedia'],
+      [/britannica/i, 'Britannica'],
+      [/history\.com|history channel/i, 'History.com'],
+      [/national\s*geographic/i, 'National Geographic'],
+    ];
+    for (const [pattern, label] of KNOWN_PROVIDERS) {
+      if (pattern.test(sourceName)) return label;
+    }
+    return null;
+  }
+  return null;
 }
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -1072,48 +1106,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ...(duplicates?.duplicatesFound.flatMap((m) => [m.questionIdA, m.questionIdB]) ?? []),
       ]);
 
-      // Sanitize source URL/name to a domain label (e.g. "Wikipedia") so the
-      // raw article title never reaches the client and can't leak the answer.
-      const extractSourceDomain = (
-        sourceUrl: string | null | undefined,
-        sourceName: string | null | undefined
-      ): string | null => {
-        if (!sourceUrl && !sourceName) return null;
-        if (sourceUrl) {
-          try {
-            const hostname = new URL(sourceUrl).hostname.replace(/^www\./, '');
-            if (hostname.includes('wikipedia.org')) return 'Wikipedia';
-            if (hostname.includes('britannica.com')) return 'Britannica';
-            if (hostname.includes('history.com')) return 'History.com';
-            if (hostname.includes('nationalgeographic.com')) return 'National Geographic';
-            // Unknown domain — suppress rather than risk leaking the answer
-            // via the domain itself (e.g. "denali.com") or a subdomain.
-            // Known providers above cover the major sources; for everything
-            // else, omit the badge entirely.
-            return null;
-          } catch {
-            // URL parse failed — fall through to sourceName
-          }
-        }
-        if (sourceName) {
-          // Search all tokens for a known provider rather than blindly taking
-          // the first token — e.g. "Denali - Wikipedia" must not return "Denali".
-          const KNOWN_PROVIDERS: [RegExp, string][] = [
-            [/wikipedia/i, 'Wikipedia'],
-            [/britannica/i, 'Britannica'],
-            [/history\.com|history channel/i, 'History.com'],
-            [/national\s*geographic/i, 'National Geographic'],
-          ];
-          for (const [pattern, label] of KNOWN_PROVIDERS) {
-            if (pattern.test(sourceName)) return label;
-          }
-          // No known provider found — omit the badge rather than risk leaking
-          // an article title that contains the answer.
-          return null;
-        }
-        return null;
-      };
-
       const questionsById: Record<string, QuestionSnapshot> = {};
       for (const q of allQuestions) {
         if (flaggedIds.has(q.id)) {
@@ -1151,6 +1143,129 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(500).json({ message: 'Quality sweep failed' });
     }
   });
+
+  // Validate selected questions through the Quality Sweep pipeline (Admin Only).
+  // Runs the same static audit + optional fact-check pipeline as the full sweep
+  // but scoped to specific question IDs instead of the entire approved corpus.
+  const validateRequestSchema = z.object({
+    questionIds: z.array(z.string().min(1)).min(1).max(50),
+    skipFactCheck: z.boolean().optional().default(false),
+  });
+
+  app.post(
+    '/api/admin/quality-sweep/validate',
+    isAuthenticated,
+    isAdmin,
+    aiLimiter,
+    async (req, res) => {
+      try {
+        const parsed = validateRequestSchema.parse(req.body);
+        const { questionIds, skipFactCheck } = parsed;
+
+        // 1. Fetch the requested questions
+        const selectedQuestions = await db
+          .select()
+          .from(questions)
+          .where(inArray(questions.id, questionIds));
+
+        if (selectedQuestions.length === 0) {
+          return res.status(404).json({
+            message: 'No questions found for the provided IDs.',
+            questionIds,
+          });
+        }
+
+        // 2. Static audit
+        const auditRaw = auditQuestionQuality(selectedQuestions);
+
+        // 2.5 Enrich subjective_prompt findings with AI phrase + rewrite
+        await enrichSubjectiveFindings(auditRaw.findings, selectedQuestions);
+
+        // 3. Fact-checking (GPT-4o per question, skippable)
+        const factCheckRaw = skipFactCheck ? null : await batchFactCheck(selectedQuestions);
+
+        // 4. Filter out previously-dismissed findings for these questions
+        const dismissals = await db
+          .select()
+          .from(questionQualitySweepDismissals)
+          .where(inArray(questionQualitySweepDismissals.questionId, questionIds));
+
+        const dismissedStatic = new Set(
+          dismissals
+            .filter((d) => d.findingType === 'static')
+            .map((d) => `${d.questionId}::${d.findingKey}`)
+        );
+        const dismissedFactCheck = new Set(
+          dismissals.filter((d) => d.findingType === 'fact_check').map((d) => d.questionId)
+        );
+
+        const filteredFindings = auditRaw.findings.filter(
+          (f) => !isStaticFindingDismissed(dismissedStatic, f)
+        );
+        const recountedSeverity: Record<'high' | 'medium' | 'low', number> = {
+          high: 0,
+          medium: 0,
+          low: 0,
+        };
+        const recountedRule: Record<string, number> = {};
+        for (const ruleKey of Object.keys(auditRaw.findingsByRule)) {
+          recountedRule[ruleKey] = 0;
+        }
+        for (const f of filteredFindings) {
+          recountedSeverity[f.severity]++;
+          recountedRule[f.rule] = (recountedRule[f.rule] ?? 0) + 1;
+        }
+        const audit = {
+          ...auditRaw,
+          findings: filteredFindings,
+          totalFindings: filteredFindings.length,
+          flaggedQuestionCount: new Set(filteredFindings.map((f) => f.questionId)).size,
+          findingsBySeverity: recountedSeverity,
+          findingsByRule: recountedRule as typeof auditRaw.findingsByRule,
+        };
+
+        const factCheck = factCheckRaw
+          ? {
+              ...factCheckRaw,
+              results: factCheckRaw.results.filter((r) => !dismissedFactCheck.has(r.questionId)),
+            }
+          : null;
+
+        // 5. Build snapshot map for all selected questions
+        const questionsById: Record<string, QuestionSnapshot> = {};
+        for (const q of selectedQuestions) {
+          questionsById[q.id] = {
+            question: q.question,
+            answer: q.answer,
+            tags: (q.tags as string[]) ?? [],
+            category: q.category,
+            pillar: q.pillar,
+            hasSource: !!(q.sourceUrl && q.sourceName),
+            difficulty: q.difficulty,
+            sourceDomain:
+              q.sourceUrl && q.sourceName
+                ? extractSourceDomain(q.sourceUrl, q.sourceName)
+                : null,
+          };
+        }
+
+        res.json({
+          generatedAt: new Date().toISOString(),
+          totalRequested: questionIds.length,
+          totalFound: selectedQuestions.length,
+          audit,
+          factCheck,
+          questionsById,
+        });
+      } catch (error) {
+        console.error('Error validating selected questions:', error);
+        if (error instanceof z.ZodError) {
+          return sendValidationError(res, 'Invalid validate request', error);
+        }
+        res.status(500).json({ message: 'Question validation failed' });
+      }
+    }
+  );
 
   // Dismiss a quality-sweep finding so it stops appearing in future sweeps.
   const dismissRequestSchema = z.object({
