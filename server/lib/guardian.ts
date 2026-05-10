@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { insertQuestionSchema, type InsertQuestion, type Question } from '@shared/models/questions';
 import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
 import { batchFactCheck, type FactCheckVerdict } from './verifier';
+import { VALID_CATEGORIES, CATEGORY_SET } from '@shared/constants/categories';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -48,11 +49,25 @@ function normalizeCandidate(
   topic: string,
   pillar: string
 ): GenerateQuestionInput {
+  const rawCategory = typeof raw.category === 'string' ? raw.category.trim() : '';
+  // Only accept the AI-supplied category if it matches a canonical value; otherwise
+  // default to 'History & Geography' and log so the mismatch is visible.
+  let category: string;
+  if (CATEGORY_SET.has(rawCategory)) {
+    category = rawCategory;
+  } else {
+    console.warn('[guardian] AI returned non-canonical category — defaulting', {
+      received: rawCategory || '(empty)',
+      topic,
+      defaulting: VALID_CATEGORIES[0],
+    });
+    category = VALID_CATEGORIES[0];
+  }
+
   return {
     ...raw,
     id: typeof raw.id === 'string' && raw.id.trim().length > 0 ? raw.id : crypto.randomUUID(),
-    category:
-      typeof raw.category === 'string' && raw.category.trim().length > 0 ? raw.category : topic,
+    category,
     pillar,
     status: 'pending',
     tags: Array.isArray(raw.tags) ? raw.tags : [],
@@ -62,7 +77,7 @@ function normalizeCandidate(
 
 const QUESTION_JSON_SCHEMA = (pillar: string) => `{
   "id": "uuid",
-  "category": "string",
+  "category": "History & Geography | Science & Nature | Sports | Entertainment & Pop Culture | Food & Culture | Technology",
   "difficulty": "Easy | Medium | Hard",
   "question": "string",
   "answer": "string",
@@ -88,6 +103,7 @@ const QUESTION_RULES = (pillar: string) => `Rules:
 - Use a unique UUID as id.
 - Ensure all fields are filled and valid.
 - status must always be "pending".
+- category MUST be exactly one of: ${VALID_CATEGORIES.map((c) => `"${c}"`).join(', ')}. Choose the best fit for the question content.
 - tags must include a region tag (CA, US, or Global), the pillar name, and the category name.
 - sourceUrl MUST be a real, publicly accessible URL (Wikipedia, official government site, reputable encyclopedia, or authoritative reference) that directly supports the stated answer. Never use null, empty string, or a placeholder.
 - sourceName MUST be the human-readable name of that source (e.g. "Wikipedia", "Statistics Canada", "National Geographic"). Never use null or empty string.

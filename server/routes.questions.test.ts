@@ -67,14 +67,14 @@ vi.mock('./lib/verifier', () => ({ batchFactCheck: vi.fn() }));
 const adminRole = { userId: 'admin-user' };
 const questionPayload = {
   id: 'q-1',
-  category: 'Geography',
+  category: 'History & Geography',
   difficulty: 'Easy',
   question: 'What is the capital of Canada?',
   answer: 'Ottawa',
   acceptableAnswers: ['Ottawa, Ontario'],
   explanation: 'Ottawa is the federal capital of Canada.',
   pillar: 'GlobalEh',
-  tags: ['CA', 'GlobalEh', 'Geography'],
+  tags: ['CA', 'GlobalEh', 'History & Geography'],
   sourceUrl: 'https://www.canada.ca/en/canadian-heritage/services/crown-canada/about.html',
   sourceName: 'Government of Canada',
   status: 'approved',
@@ -119,7 +119,7 @@ describe('question routes', () => {
     expect(questionQuery.limit).toHaveBeenCalledWith(1);
     expect(response.body).toMatchObject({
       total: 1,
-      categories: ['Geography'],
+      categories: ['History & Geography'],
       pillars: ['GlobalEh'],
       questions: [{ id: 'q-1', question: questionPayload.question }],
     });
