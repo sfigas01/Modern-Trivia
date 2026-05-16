@@ -160,5 +160,13 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     }
   }
 
+  console.info('[novelty-filter] novelty_filter_result', {
+    event: 'novelty_filter_result',
+    batchSize: batch.length,
+    dropped: dropped.length,
+    survived: kept.length,
+    timestamp: new Date().toISOString(),
+  });
+
   return { kept, dropped };
 }
