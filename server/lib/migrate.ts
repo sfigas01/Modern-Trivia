@@ -7,38 +7,60 @@ import { db } from '../db';
 // Bootstrap it as pre-applied so the runner never tries to execute it directly.
 const BOOTSTRAP_MIGRATION = '0000_daffy_malcolm_colcord.sql';
 
+// Arbitrary fixed lock ID scoped to this app's migration runner.
+// Any process that calls pg_advisory_lock with the same ID will block until
+// the current holder releases it, serializing concurrent startup races.
+const MIGRATION_LOCK_ID = 8_753_210;
+
 export async function runMigrations(): Promise<void> {
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS _sql_migrations (
-      filename TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
+  // Acquire a session-level advisory lock before reading or writing the
+  // migration table. Released in the finally block regardless of outcome.
+  // This prevents two processes that start simultaneously from both seeing
+  // the same migration as pending, executing it twice, and then crashing on
+  // the duplicate-key insert.
+  await db.execute(sql`SELECT pg_advisory_lock(${MIGRATION_LOCK_ID})`);
 
-  // Mark the Drizzle-generated schema file as already applied without running it —
-  // db:push handles the initial schema so re-running 0000 would fail on existing tables.
-  await db.execute(sql`
-    INSERT INTO _sql_migrations (filename)
-    VALUES (${BOOTSTRAP_MIGRATION})
-    ON CONFLICT DO NOTHING
-  `);
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS _sql_migrations (
+        filename TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
 
-  const result = await db.execute<{ filename: string }>(sql`SELECT filename FROM _sql_migrations`);
-  const applied = new Set(result.rows.map((r) => r.filename));
+    // Mark the Drizzle-generated schema file as already applied without running it —
+    // db:push handles the initial schema so re-running 0000 would fail on existing tables.
+    await db.execute(sql`
+      INSERT INTO _sql_migrations (filename)
+      VALUES (${BOOTSTRAP_MIGRATION})
+      ON CONFLICT DO NOTHING
+    `);
 
-  const migrationsDir = path.resolve(process.cwd(), 'migrations');
-  const files = readdirSync(migrationsDir)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
+    const result = await db.execute<{ filename: string }>(
+      sql`SELECT filename FROM _sql_migrations`
+    );
+    const applied = new Set(result.rows.map((r) => r.filename));
 
-  for (const file of files) {
-    if (applied.has(file)) continue;
+    const migrationsDir = path.resolve(process.cwd(), 'migrations');
+    const files = readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
 
-    const content = readFileSync(path.join(migrationsDir, file), 'utf-8');
-    await db.transaction(async (tx) => {
-      await tx.execute(sql.raw(content));
-      await tx.execute(sql`INSERT INTO _sql_migrations (filename) VALUES (${file})`);
-    });
-    console.log(`[migrate] Applied: ${file}`);
+    for (const file of files) {
+      if (applied.has(file)) continue;
+
+      const content = readFileSync(path.join(migrationsDir, file), 'utf-8');
+      await db.transaction(async (tx) => {
+        await tx.execute(sql.raw(content));
+        // ON CONFLICT DO NOTHING is a belt-and-suspenders guard in case the
+        // advisory lock is ever bypassed (e.g. a future refactor, a manual run).
+        await tx.execute(
+          sql`INSERT INTO _sql_migrations (filename) VALUES (${file}) ON CONFLICT DO NOTHING`
+        );
+      });
+      console.log(`[migrate] Applied: ${file}`);
+    }
+  } finally {
+    await db.execute(sql`SELECT pg_advisory_unlock(${MIGRATION_LOCK_ID})`);
   }
 }
