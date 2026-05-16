@@ -260,6 +260,63 @@ describe('filterNovelQuestions — within-batch collisions', () => {
   });
 });
 
+describe('filterNovelQuestions — observability logging', () => {
+  it('emits novelty_filter_result with correct counts when duplicates are dropped', async () => {
+    const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const existing = [
+      makeQuestion({ id: 'e1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ];
+    const batch = [
+      makeQuestion({ id: 'b1', question: 'What is the capital of France?', answer: 'Paris' }),
+      makeQuestion({ id: 'b2', question: 'What is the longest river in Asia?', answer: 'Yangtze' }),
+    ];
+
+    await filterNovelQuestions(batch, existing);
+
+    const logCall = spy.mock.calls.find(
+      (call) =>
+        typeof call[1] === 'object' &&
+        (call[1] as Record<string, unknown>)?.event === 'novelty_filter_result'
+    );
+    expect(logCall).toBeDefined();
+    expect(logCall![1]).toMatchObject({
+      event: 'novelty_filter_result',
+      batchSize: 2,
+      dropped: 1,
+      survived: 1,
+    });
+
+    spy.mockRestore();
+  });
+
+  it('emits novelty_filter_result with zero dropped when no duplicates exist', async () => {
+    const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    const batch = [
+      makeQuestion({ id: 'b1', question: 'What is the capital of Canada?', answer: 'Ottawa' }),
+      makeQuestion({ id: 'b2', question: 'What is the tallest mountain?', answer: 'Everest' }),
+    ];
+
+    await filterNovelQuestions(batch, []);
+
+    const logCall = spy.mock.calls.find(
+      (call) =>
+        typeof call[1] === 'object' &&
+        (call[1] as Record<string, unknown>)?.event === 'novelty_filter_result'
+    );
+    expect(logCall).toBeDefined();
+    expect(logCall![1]).toMatchObject({
+      event: 'novelty_filter_result',
+      batchSize: 2,
+      dropped: 0,
+      survived: 2,
+    });
+
+    spy.mockRestore();
+  });
+});
+
 describe('filterNovelQuestions — performance guards', () => {
   it('does not call GPT-4o when no batch/existing pair has similar answers', async () => {
     const existing = [
