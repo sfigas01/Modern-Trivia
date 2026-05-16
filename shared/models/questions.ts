@@ -12,6 +12,7 @@ import {
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { users } from './auth';
+import { VALID_CATEGORIES } from '../constants/categories';
 
 // Questions table — stores all trivia questions (migrated from client/src/lib/questions.json)
 export const questions = pgTable('questions', {
@@ -36,6 +37,7 @@ export const questions = pgTable('questions', {
 });
 
 export const insertQuestionSchema = createInsertSchema(questions, {
+  category: z.enum(VALID_CATEGORIES),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']),
   pillar: z.enum(['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors']),
   status: z.enum(['draft', 'pending', 'approved', 'rejected']).default('approved'),
