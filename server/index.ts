@@ -3,6 +3,7 @@ import { registerRoutes } from './routes';
 import { serveStatic } from './static';
 import { createServer } from 'http';
 import { generalLimiter } from './middleware/rateLimiter';
+import { runMigrations } from './lib/migrate';
 import { seedQuestions } from './seed';
 
 const app = express();
@@ -68,6 +69,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await runMigrations();
   await seedQuestions();
   await registerRoutes(httpServer, app);
 
