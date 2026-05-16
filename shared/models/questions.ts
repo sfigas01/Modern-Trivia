@@ -17,6 +17,8 @@ import { VALID_CATEGORIES } from '../constants/categories';
 // Questions table — stores all trivia questions (migrated from client/src/lib/questions.json)
 export const questions = pgTable('questions', {
   id: varchar('id').primaryKey(),
+  // DB-level CHECK constraint enforces VALID_CATEGORIES — see migration 0002_category_check_constraint.sql
+  // Drizzle ORM's DSL does not support CHECK constraints; enforcement is in raw SQL only.
   category: varchar('category').notNull(),
   difficulty: varchar('difficulty', { length: 10 }).notNull(), // 'Easy' | 'Medium' | 'Hard'
   question: text('question').notNull(),
