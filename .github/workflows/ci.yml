@@ -123,6 +123,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trivia_test
 
+      - name: Run SQL migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trivia_test
+
       - name: Run E2E smoke tests
         run: npx playwright test
         env:

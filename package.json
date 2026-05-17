@@ -11,6 +11,7 @@
     "check": "tsc",
     "db:check": "tsx script/check-db.ts",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx script/migrate.ts",
     "db:seed": "tsx script/seed-questions.ts",
     "audit:questions": "node --import tsx script/question-quality-audit.ts",
     "audit:questions:strict": "node --import tsx script/question-quality-audit.ts --fail-on-high",
