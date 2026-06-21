@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, varchar, timestamp, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, jsonb } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -17,6 +17,9 @@ export * from './models/quality-sweep';
 
 // Export quality sweep dismissals (DB table)
 export * from './models/quality-sweep-dismissals';
+
+// Export multiplayer rooms tables and API contract
+export * from './models/rooms';
 
 // Disputes table for QA logging
 export const disputes = pgTable('disputes', {
