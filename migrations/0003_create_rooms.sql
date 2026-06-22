@@ -1,8 +1,18 @@
-CREATE TYPE "public"."room_status" AS ENUM ('lobby', 'active', 'finished', 'abandoned');
+DO $$
+BEGIN
+	CREATE TYPE "public"."room_status" AS ENUM ('lobby', 'active', 'finished', 'abandoned');
+EXCEPTION
+	WHEN duplicate_object THEN NULL;
+END $$;
 --> statement-breakpoint
-CREATE TYPE "public"."room_phase" AS ENUM ('LOBBY', 'QUESTION', 'REVEAL', 'ROUND_SCORE', 'GAME_OVER');
+DO $$
+BEGIN
+	CREATE TYPE "public"."room_phase" AS ENUM ('LOBBY', 'QUESTION', 'REVEAL', 'ROUND_SCORE', 'GAME_OVER');
+EXCEPTION
+	WHEN duplicate_object THEN NULL;
+END $$;
 --> statement-breakpoint
-CREATE TABLE "rooms" (
+CREATE TABLE IF NOT EXISTS "rooms" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"code" varchar(5) NOT NULL,
 	"status" "room_status" DEFAULT 'lobby' NOT NULL,
@@ -21,7 +31,7 @@ CREATE TABLE "rooms" (
 	CONSTRAINT "rooms_code_unique" UNIQUE("code")
 );
 --> statement-breakpoint
-CREATE TABLE "room_players" (
+CREATE TABLE IF NOT EXISTS "room_players" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"room_id" uuid NOT NULL,
 	"nickname" varchar(20) NOT NULL,
@@ -36,12 +46,33 @@ CREATE TABLE "room_players" (
 	CONSTRAINT "room_players_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-ALTER TABLE "room_players" ADD CONSTRAINT "room_players_room_id_rooms_id_fk" FOREIGN KEY ("room_id") REFERENCES "public"."rooms"("id") ON DELETE cascade ON UPDATE no action;
+DO $$
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1 FROM pg_constraint WHERE conname = 'room_players_room_id_rooms_id_fk'
+	) THEN
+		ALTER TABLE "room_players" ADD CONSTRAINT "room_players_room_id_rooms_id_fk" FOREIGN KEY ("room_id") REFERENCES "public"."rooms"("id") ON DELETE cascade ON UPDATE no action;
+	END IF;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "rooms" ADD CONSTRAINT "rooms_host_player_id_room_players_id_fk" FOREIGN KEY ("host_player_id") REFERENCES "public"."room_players"("id") ON DELETE set null ON UPDATE no action;
+DO $$
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1 FROM pg_constraint WHERE conname = 'rooms_host_player_id_room_players_id_fk'
+	) THEN
+		ALTER TABLE "rooms" ADD CONSTRAINT "rooms_host_player_id_room_players_id_fk" FOREIGN KEY ("host_player_id") REFERENCES "public"."room_players"("id") ON DELETE set null ON UPDATE no action;
+	END IF;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "rooms" ADD CONSTRAINT "rooms_active_player_id_room_players_id_fk" FOREIGN KEY ("active_player_id") REFERENCES "public"."room_players"("id") ON DELETE set null ON UPDATE no action;
+DO $$
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1 FROM pg_constraint WHERE conname = 'rooms_active_player_id_room_players_id_fk'
+	) THEN
+		ALTER TABLE "rooms" ADD CONSTRAINT "rooms_active_player_id_room_players_id_fk" FOREIGN KEY ("active_player_id") REFERENCES "public"."room_players"("id") ON DELETE set null ON UPDATE no action;
+	END IF;
+END $$;
 --> statement-breakpoint
-CREATE INDEX "idx_room_players_room" ON "room_players" USING btree ("room_id");
+CREATE INDEX IF NOT EXISTS "idx_room_players_room" ON "room_players" USING btree ("room_id");
 --> statement-breakpoint
-CREATE UNIQUE INDEX "uq_room_players_room_nickname_ci" ON "room_players" USING btree ("room_id", lower("nickname"));
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_room_players_room_nickname_ci" ON "room_players" USING btree ("room_id", lower("nickname"));
