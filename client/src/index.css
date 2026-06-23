@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Jersey+25&family=VT323&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -58,3 +59,71 @@
     @apply font-display font-bold tracking-tight;
   }
 }
+
+/* ============================================================
+   Trivia Clash pixel-art design system tokens (ste-126)
+   Scoped under .tc-* so they don't conflict with Tailwind vars
+   ============================================================ */
+:root {
+  --tc-sky-100: #d8efff;
+  --tc-sky-200: #b6dcff;
+  --tc-sky-300: #7ec0ff;
+  --tc-sky-400: #4aa3f7;
+  --tc-sky-500: #2b7fde;
+
+  --tc-panel-100: #5ea0ff;
+  --tc-panel-200: #3a78db;
+  --tc-panel-300: #2b5ec0;
+  --tc-panel-400: #1d4499;
+  --tc-panel-500: #142e75;
+  --tc-panel-600: #0b1c4a;
+
+  --tc-coin-100: #ffe89c;
+  --tc-coin-300: #ffc92e;
+  --tc-coin-500: #e08a00;
+  --tc-coin-700: #6b3a00;
+
+  --tc-red-300: #ff6c5a;
+  --tc-red-500: #d83a2a;
+  --tc-red-700: #7a1812;
+
+  --tc-magenta-300: #e26ad7;
+  --tc-magenta-500: #b23bb0;
+  --tc-magenta-700: #5e1c66;
+
+  --tc-stone-100: #d8d4cc;
+  --tc-stone-300: #a09a91;
+  --tc-stone-500: #6f6a63;
+  --tc-stone-700: #2f2a26;
+
+  --tc-ink: #0a0a0f;
+
+  --tc-font-pixel: 'Press Start 2P', system-ui, monospace;
+  --tc-font-body:  'VT323', 'Press Start 2P', monospace;
+}
+
+/* Sky backdrop used by the QUESTION screen */
+.tc-sky-bg {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 30% at 80% 75%, #2b7fde 0%, transparent 60%),
+    radial-gradient(ellipse 40% 20% at 15% 50%, #b6dcff 0%, transparent 50%),
+    radial-gradient(ellipse 30% 15% at 70% 30%, #fff 0%, transparent 60%),
+    radial-gradient(ellipse 25% 12% at 25% 20%, #fff 0%, transparent 60%),
+    radial-gradient(ellipse 30% 14% at 90% 15%, #d8efff 0%, transparent 70%),
+    linear-gradient(180deg, #7ec0ff 0%, #4aa3f7 60%, #2b7fde 100%);
+  z-index: 0;
+}
+.tc-sky-bg::before,
+.tc-sky-bg::after {
+  content: "";
+  position: absolute;
+  width: 140px; height: 70px;
+  background: linear-gradient(180deg, #7fe26a 0 18%, #3aa83a 18% 38%, #1a5c1f 38% 50%, #5a3a14 50% 100%);
+  border: 4px solid #0a0a0f;
+  border-radius: 8px 8px 12px 12px;
+  box-shadow: 4px 4px 0 0 rgba(0,0,0,.4);
+}
+.tc-sky-bg::before { left: -30px; top: 40%; transform: rotate(-3deg); }
+.tc-sky-bg::after  { right: -30px; bottom: 25%; width: 180px; height: 90px; transform: rotate(2deg); }

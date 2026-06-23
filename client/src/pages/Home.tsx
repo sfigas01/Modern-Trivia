@@ -1,34 +1,28 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
-import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
-import { useAuth } from '@/hooks/use-auth';
-import { useAdmin } from '@/hooks/use-admin';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle } from 'lucide-react';
+import { useGame } from '@/lib/store';
+import { PIXEL_UI } from '@/lib/featureFlags';
+import HomeClassic from './HomeClassic';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  SNES_COLORS,
+  CAP_COLORS,
+  SKY_GRADIENT,
+  pixelText,
+  teamRow,
+  btnBase,
+  CloudKingdomBg,
+  BevelButton,
+  GamePanel,
+  GamePanelHeader,
+  CSSAvatar,
+  StatusOrb,
+} from '@/components/snes';
 
-export default function Home() {
+function HomeSnes() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
-  const { user, isAuthenticated, logout } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { state, addTeam, removeTeam, startGame } = useGame();
   const [newTeamName, setNewTeamName] = useState('');
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    state.questions.forEach((q) => {
-      counts[q.category] = (counts[q.category] || 0) + 1;
-    });
-    counts['All'] = state.questions.length;
-    return counts;
-  }, [state.questions]);
-
-  const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const availableCount = categoryCounts[state.selectedCategory] || 0;
-  const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,225 +37,268 @@ export default function Home() {
     setLocation('/game');
   };
 
-  const statusLabel =
-    state.phase === 'SETUP'
-      ? 'Not Started'
-      : state.phase === 'GAME_OVER'
-        ? 'Completed'
-        : 'In Progress';
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-50" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] opacity-50" />
-      </div>
+    <main
+      className="min-h-screen flex flex-col items-center justify-between pb-8 pt-12 overflow-y-auto"
+      style={{ background: SKY_GRADIENT, fontFamily: 'Arial, Helvetica, sans-serif' }}
+    >
+      <CloudKingdomBg />
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10 space-y-8"
-      >
-        <div className="text-center space-y-2">
-          <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            TRIVIA
-            <br />
-            CLASH
-          </h1>
-          <p className="text-muted-foreground font-medium tracking-wide">
-            THE COMPETITIVE PARTY GAME
-          </p>
-          <div className="flex justify-center">
-            <Badge variant="outline" className="border-primary/40 text-primary">
-              {statusLabel}
-            </Badge>
-          </div>
+      {/* ── Header: 3D Bubbly Gold Title (SVG) ── */}
+      <header className="w-full flex justify-center mb-4 z-10 px-4">
+        <div className="w-full max-w-md">
+          <h1 className="sr-only">TRIVIA CLASH</h1>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 800 450"
+            width="100%"
+            aria-hidden="true"
+          >
+            <defs>
+              <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap');
+                .title-text {
+                  font-family: 'Luckiest Guy', sans-serif;
+                  text-anchor: middle;
+                  dominant-baseline: central;
+                  letter-spacing: 2px;
+                }
+                .word-top { font-size: 130px; }
+                .word-bottom { font-size: 155px; }
+                .layer-shadow {
+                  fill: #15295e;
+                  stroke: #15295e;
+                  stroke-width: 45px;
+                  stroke-linejoin: round;
+                }
+                .layer-extrusion {
+                  fill: #2d62c3;
+                  stroke: #2d62c3;
+                  stroke-width: 45px;
+                  stroke-linejoin: round;
+                }
+                .layer-outline {
+                  fill: #15295e;
+                  stroke: #15295e;
+                  stroke-width: 16px;
+                  stroke-linejoin: round;
+                }
+                .layer-face {
+                  fill: url(#goldGradient);
+                }
+              `}</style>
+              <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffee73" />
+                <stop offset="35%" stopColor="#ffc824" />
+                <stop offset="70%" stopColor="#fa9c00" />
+                <stop offset="100%" stopColor="#e36300" />
+              </linearGradient>
+            </defs>
+            <g transform="translate(400, 140)" role="text" aria-label="TRIVIA">
+              <text className="title-text word-top layer-shadow" y="22">
+                TRIVIA
+              </text>
+              <text className="title-text word-top layer-extrusion" y="11">
+                TRIVIA
+              </text>
+              <text className="title-text word-top layer-outline" y="0">
+                TRIVIA
+              </text>
+              <text className="title-text word-top layer-face" y="0">
+                TRIVIA
+              </text>
+            </g>
+            <g transform="translate(400, 270)" role="text" aria-label="CLASH">
+              <text className="title-text word-bottom layer-shadow" y="22">
+                CLASH
+              </text>
+              <text className="title-text word-bottom layer-extrusion" y="11">
+                CLASH
+              </text>
+              <text className="title-text word-bottom layer-outline" y="0">
+                CLASH
+              </text>
+              <text className="title-text word-bottom layer-face" y="0">
+                CLASH
+              </text>
+            </g>
+          </svg>
         </div>
+      </header>
 
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Users className="w-5 h-5 text-primary" />
-              Team Setup
-            </CardTitle>
-            <CardDescription>Add 2-6 teams to begin.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <form onSubmit={handleAddTeam} className="flex gap-2">
-              <Input
-                placeholder="Enter team name..."
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
-                autoFocus
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="h-12 w-12 shrink-0 rounded-xl"
-                disabled={!newTeamName.trim() || state.teams.length >= 6}
+      {/* ── Team Setup Panel ── */}
+      <GamePanel className="w-11/12 max-w-md flex flex-col z-10">
+        <GamePanelHeader>TEAM SETUP</GamePanelHeader>
+
+        <div className="space-y-3">
+          <AnimatePresence mode="popLayout">
+            {state.teams.map((team, i) => (
+              <motion.div
+                key={team.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
               >
-                <Plus className="w-6 h-6" />
-              </Button>
-            </form>
-
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              <AnimatePresence mode="popLayout">
-                {state.teams.map((team) => (
-                  <motion.div
-                    key={team.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 group"
-                  >
-                    <span className="font-medium text-lg truncate px-2">{team.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeTeam(team.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/20 hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-
-              {state.teams.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground italic border-2 border-dashed border-white/5 rounded-lg">
-                  No teams added yet
+                <div className="mb-1 pl-3" style={{ ...pixelText, fontSize: 16 }}>
+                  TEAM {i + 1}
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
-            <CardDescription>Choose a topic for this round.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-              <Button
-                variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => setCategory('All')}
-                className={`border-white/10 hover:bg-white/10 ${
-                  state.selectedCategory === 'All'
-                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                    : ''
-                }`}
-              >
-                All ({categoryCounts['All'] || 0})
-              </Button>
-              {state.categories.filter((c) => c !== 'All').map((category) => (
-                <Button
-                  key={category}
-                  variant={state.selectedCategory === category ? 'default' : 'outline'}
-                  onClick={() => setCategory(category)}
-                  className={`border-white/10 hover:bg-white/10 ${
-                    state.selectedCategory === category
-                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                      : ''
-                  }`}
+                <div
+                  className="flex items-center justify-between relative overflow-hidden"
+                  style={{ ...teamRow, minHeight: 64, padding: '10px 12px' }}
                 >
-                  {category} ({categoryCounts[category] || 0})
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                  {/* Diagonal shine overlay */}
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      right: 120,
+                      top: 0,
+                      width: 70,
+                      height: '100%',
+                      background:
+                        'linear-gradient(135deg, transparent 0% 30%, rgba(255,255,255,.05) 30% 55%, transparent 55%)',
+                      opacity: 0.6,
+                    }}
+                  />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <CSSAvatar capColor={CAP_COLORS[i % CAP_COLORS.length]} />
+                    <span
+                      className="font-extrabold truncate"
+                      style={{
+                        color: '#fff',
+                        fontSize: 14,
+                        textShadow: '0 2px 0 rgba(0,0,0,.32)',
+                        maxWidth: 140,
+                      }}
+                    >
+                      {team.name}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-start gap-2 ml-3 shrink-0">
+                    <div className="flex items-center gap-2">
+                      <StatusOrb />
+                      <span
+                        style={{ ...pixelText, fontSize: 12, WebkitTextStroke: '1.5px #11204d' }}
+                      >
+                        NOT STARTED
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => removeTeam(team.id)}
+                      className="active:translate-y-1"
+                      style={{
+                        ...btnBase,
+                        fontSize: 13,
+                        WebkitTextStroke: '1.5px #5b0005',
+                        textShadow: '0 3px 0 rgba(0,0,0,.25)',
+                        background: `linear-gradient(180deg, ${SNES_COLORS.red1} 0%, ${SNES_COLORS.red2} 55%, ${SNES_COLORS.red3} 100%)`,
+                        padding: '6px 16px',
+                        width: 110,
+                      }}
+                    >
+                      REMOVE
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Zap className="w-4 h-4 text-primary" />
-              Number of Rounds
-            </CardTitle>
-            <CardDescription>How many questions to play.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-2">
-              {[5, 10, 15, 20].map((rounds) => (
-                <Button
-                  key={rounds}
-                  variant={state.numRounds === rounds ? 'default' : 'outline'}
-                  onClick={() => setNumRounds(rounds)}
-                  className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                >
-                  {rounds}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="space-y-4">
-          {hasInsufficientQuestions && (
+          {state.teams.length === 0 && (
             <div
-              className="flex items-start gap-3 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-200 text-sm"
-              data-testid="warning-insufficient-questions"
+              className="text-center py-8"
+              style={{ ...pixelText, fontSize: 14, color: 'rgba(255,255,255,0.4)' }}
             >
-              <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-yellow-300">Not enough questions</p>
-                <p className="mt-1">
-                  {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
-                  <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
-                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn).
-                  The game will use all {availableCount} available.
-                </p>
-              </div>
+              NO TEAMS YET
             </div>
           )}
-          <Button
-            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
-            disabled={state.teams.length < 2}
-            onClick={handleStart}
-            data-testid="button-start-game"
-          >
-            START GAME
-          </Button>
 
-          <div className="flex justify-center gap-4 items-center flex-wrap">
-            {isAuthenticated && isAdmin && (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => setLocation('/admin')}
-                data-testid="link-admin"
+          <div>
+            <div className="mb-1 pl-3" style={{ ...pixelText, fontSize: 16 }}>
+              ADD TEAM
+            </div>
+            <form
+              onSubmit={handleAddTeam}
+              className="flex items-center justify-between"
+              style={{ ...teamRow, minHeight: 64, padding: '10px 12px' }}
+            >
+              <input
+                placeholder="TEAM NAME..."
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                className="bg-transparent outline-none flex-1 min-w-0 mr-3"
+                style={{
+                  ...pixelText,
+                  fontSize: 14,
+                  WebkitTextStroke: '0px transparent',
+                  textShadow: 'none',
+                  color: '#fff',
+                  borderBottom: '2px solid rgba(255,255,255,.2)',
+                  padding: '4px 0',
+                }}
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!newTeamName.trim() || state.teams.length >= 6}
+                className="active:translate-y-1 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                style={{
+                  ...btnBase,
+                  fontSize: 13,
+                  WebkitTextStroke: '1.5px #5b0005',
+                  textShadow: '0 3px 0 rgba(0,0,0,.25)',
+                  background: `linear-gradient(180deg, ${SNES_COLORS.red1} 0%, ${SNES_COLORS.red2} 55%, ${SNES_COLORS.red3} 100%)`,
+                  padding: '6px 16px',
+                  width: 110,
+                }}
               >
-                <Shield className="w-3 h-3 mr-1" />
-                Admin Panel
-              </Button>
-            )}
-
-            {isAuthenticated ? (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => logout()}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-3 h-3 mr-1" />
-                Sign Out ({user?.email?.split('@')[0]})
-              </Button>
-            ) : (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => (window.location.href = '/api/login')}
-                data-testid="button-login"
-              >
-                <LogIn className="w-3 h-3 mr-1" />
-                Sign In
-              </Button>
-            )}
+                ADD TEAM
+              </button>
+            </form>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </GamePanel>
+
+      {/* ── Primary Action Buttons ── */}
+      <section className="w-11/12 max-w-md flex items-end justify-between gap-3 mt-4 z-10">
+        <BevelButton
+          className="disabled:opacity-40 disabled:cursor-not-allowed"
+          bgTop="#fdd835"
+          bgBottom="#e08a0e"
+          borderColor="#8b5e0a"
+          highlightColor="rgba(255,245,180,.55)"
+          shadowColor="rgba(120,70,0,.5)"
+          width="60%"
+          height={86}
+          fontSize={20}
+          disabled={state.teams.length < 2}
+          onClick={handleStart}
+          data-testid="button-start-game"
+        >
+          QUICK
+          <br />
+          PLAY
+        </BevelButton>
+
+        <BevelButton
+          bgTop="#5cdb5c"
+          bgBottom="#238b23"
+          borderColor="#145214"
+          highlightColor="rgba(200,255,200,.45)"
+          shadowColor="rgba(10,60,10,.5)"
+          width="38%"
+          height={56}
+          fontSize={14}
+          onClick={() => setLocation('/admin')}
+          data-testid="link-admin"
+        >
+          ADMIN
+        </BevelButton>
+      </section>
+    </main>
   );
+}
+
+export default function Home() {
+  return PIXEL_UI ? <HomeSnes /> : <HomeClassic />;
 }

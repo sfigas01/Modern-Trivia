@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useGame } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
 import { DisputeModal } from '@/components/DisputeModal';
+import { QuestionScreen } from '@/components/QuestionScreen';
 import { useToast } from '@/hooks/use-toast';
+import { PIXEL_UI } from '@/lib/featureFlags';
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -41,7 +42,9 @@ export default function Game() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground" data-testid="text-loading-game">Loading game...</p>
+          <p className="text-muted-foreground" data-testid="text-loading-game">
+            Loading game...
+          </p>
         </div>
       </div>
     );
@@ -99,7 +102,9 @@ export default function Game() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-muted-foreground" data-testid="text-loading-questions">Loading questions...</p>
+          <p className="text-muted-foreground" data-testid="text-loading-questions">
+            Loading questions...
+          </p>
         </div>
       </div>
     );
@@ -166,7 +171,6 @@ export default function Game() {
 
   const activeTeam = state.teams.find((t) => t.id === state.activeTeamId);
   const isReveal = state.phase === 'REVEAL';
-  const statusLabel = 'In Progress';
   const questionsPerRound = state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
   const completedRounds =
     questionsPerRound > 0 ? Math.floor(state.currentQuestionIndex / questionsPerRound) : 0;
@@ -201,11 +205,70 @@ export default function Game() {
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isReveal && state.typedAnswer.trim()) {
-      submitAnswer();
-    }
-  };
+  // Pixel-art QUESTION phase — renders the full-screen design
+  if (PIXEL_UI && state.phase === 'QUESTION' && currentQ && activeTeam) {
+    return (
+      <>
+        <QuestionScreen
+          question={currentQ}
+          activeTeam={activeTeam}
+          allTeams={state.teams}
+          questionNumber={(activeTeam.questionCount % QUESTIONS_PER_TEAM_ROTATION) + 1}
+          typedAnswer={state.typedAnswer}
+          onType={setTypedAnswer}
+          onSubmit={submitAnswer}
+          onPass={passQuestion}
+        />
+        {/* Quit Confirmation Modal */}
+        <AnimatePresence>
+          {showQuitConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-background border border-white/10 rounded-xl p-6 max-w-md w-full space-y-4"
+              >
+                <div className="text-center space-y-2">
+                  <LogOut className="w-12 h-12 mx-auto text-red-500" />
+                  <h2 className="text-2xl font-bold">End Game Early?</h2>
+                  <p className="text-muted-foreground">
+                    The game will end and final scores will be shown.
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setShowQuitConfirm(false)}
+                    data-testid="button-cancel-quit"
+                  >
+                    Keep Playing
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowQuitConfirm(false);
+                      endGame();
+                    }}
+                    data-testid="button-confirm-quit"
+                  >
+                    End Game
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -267,51 +330,43 @@ export default function Game() {
               exit={{ opacity: 0, y: -20 }}
               className="w-full max-w-4xl space-y-6"
             >
-              {/* Metadata */}
-              <div className="flex justify-between items-center">
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="text-lg px-4 py-2 border-white/20 bg-white/5">
-                    {currentQ?.category}
-                  </Badge>
-                  <Badge
-                    className={`text-lg px-4 py-2 ${currentQ ? getDifficultyColor(currentQ.difficulty) : 'bg-primary'} border-none shadow-lg`}
-                  >
-                    {currentQ?.difficulty}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="text-lg px-4 py-2 border-primary/40 text-primary"
-                  >
-                    {statusLabel}
-                  </Badge>
-                </div>
-                {activeTeam && (
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground uppercase tracking-widest">
-                      Active Team
-                    </div>
-                    <div className="text-xl font-bold text-primary">{activeTeam.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Question {(activeTeam.questionCount % 4) + 1}/4
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* The Question */}
-              <div className="min-h-[200px] flex items-center justify-center text-center p-8 md:p-12 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-                <h1 className="text-3xl md:text-5xl font-bold leading-tight font-display tracking-tight">
-                  {currentQ?.question}
-                </h1>
-              </div>
-
               {/* REVEAL STATE UI */}
-              {isReveal && state.currentAttempt && (
+              {isReveal && state.currentAttempt && currentQ && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="space-y-6"
                 >
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      <Badge
+                        variant="outline"
+                        className="text-lg px-4 py-2 border-white/20 bg-white/5"
+                      >
+                        {currentQ.category}
+                      </Badge>
+                      <Badge
+                        className={`text-lg px-4 py-2 ${getDifficultyColor(currentQ.difficulty)} border-none shadow-lg`}
+                      >
+                        {currentQ.difficulty}
+                      </Badge>
+                    </div>
+                    {activeTeam && (
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground uppercase tracking-widest">
+                          Active Team
+                        </div>
+                        <div className="text-xl font-bold text-primary">{activeTeam.name}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="min-h-[160px] flex items-center justify-center text-center p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
+                    <h1 className="text-3xl md:text-4xl font-bold leading-tight font-display tracking-tight">
+                      {currentQ.question}
+                    </h1>
+                  </div>
+
                   <div className="grid md:grid-cols-2 gap-4">
                     <Card
                       className={`border-2 ${
@@ -342,16 +397,16 @@ export default function Game() {
                         <div className="text-sm uppercase tracking-widest opacity-70 mb-1">
                           Correct Answer
                         </div>
-                        <div className="text-2xl font-bold text-primary">{currentQ?.answer}</div>
+                        <div className="text-2xl font-bold text-primary">{currentQ.answer}</div>
                       </CardContent>
                     </Card>
                   </div>
 
                   <div className="bg-white/5 p-4 rounded-lg text-center text-muted-foreground italic">
-                    {currentQ?.explanation}
+                    {currentQ.explanation}
                   </div>
 
-                  {currentQ?.sourceUrl && (
+                  {currentQ.sourceUrl && (
                     <div className="flex justify-center">
                       <a
                         href={currentQ.sourceUrl}
@@ -396,42 +451,12 @@ export default function Game() {
                   <DisputeModal
                     open={disputeOpen}
                     onOpenChange={setDisputeOpen}
-                    questionId={currentQ?.id || ''}
-                    questionText={currentQ?.question || ''}
-                    correctAnswer={currentQ?.answer || ''}
+                    questionId={currentQ.id}
+                    questionText={currentQ.question}
+                    correctAnswer={currentQ.answer}
                     teamName={activeTeam?.name || 'Unknown'}
                     submittedAnswer={state.currentAttempt?.submittedAnswer || null}
                   />
-                </motion.div>
-              )}
-
-              {/* QUESTION STATE UI */}
-              {!isReveal && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4 max-w-2xl mx-auto pt-4"
-                >
-                  <Input
-                    value={state.typedAnswer}
-                    onChange={(e) => setTypedAnswer(e.target.value)}
-                    placeholder="Type answer here..."
-                    className="h-20 text-2xl text-center bg-white/5 border-white/10 focus:border-primary/50"
-                    autoFocus
-                    onKeyDown={handleKeyDown}
-                  />
-                  <div className="grid grid-cols-3 gap-4">
-                    <Button variant="secondary" onClick={passQuestion} className="h-14 text-lg">
-                      Pass
-                    </Button>
-                    <Button
-                      onClick={submitAnswer}
-                      disabled={!state.typedAnswer.trim()}
-                      className="col-span-2 h-14 text-lg font-bold"
-                    >
-                      Submit Answer
-                    </Button>
-                  </div>
                 </motion.div>
               )}
             </motion.div>

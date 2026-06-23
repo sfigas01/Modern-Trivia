@@ -12,6 +12,7 @@ import AdminStaging from '@/pages/admin-staging';
 import AdminQuestions from '@/pages/admin-questions';
 import AdminQualitySweep from '@/pages/admin-quality-sweep';
 import NotFound from '@/pages/not-found';
+import QuestionPreview from '@/pages/QuestionPreview';
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/admin/disputes" component={AdminDisputes} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/quality-sweep" component={AdminQualitySweep} />
+      <Route path="/preview" component={QuestionPreview} />
       <Route component={NotFound} />
     </Switch>
   );
