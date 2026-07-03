@@ -87,6 +87,13 @@ function roomQueryKey(code: string) {
   return ['/api/rooms', code] as const;
 }
 
+// Never let a write (poll or mutation response) regress the cache to an
+// older version — the two can race, since polls and mutations both hit the
+// network concurrently and settle in whatever order the server responds.
+export function newerSnapshot(candidate: RoomSnapshot, current: RoomSnapshot | undefined): RoomSnapshot {
+  return current && current.version >= candidate.version ? current : candidate;
+}
+
 export interface UseRoomResult {
   snapshot: RoomSnapshot | undefined;
   isLoading: boolean;
@@ -110,20 +117,22 @@ export function useRoom(code: string): UseRoomResult {
   const query = useQuery<RoomSnapshot>({
     queryKey,
     queryFn: async () => {
-      const previous = queryClient.getQueryData<RoomSnapshot>(queryKey);
+      const basis = queryClient.getQueryData<RoomSnapshot>(queryKey);
 
       try {
-        const result = await fetchSnapshot(code, previous?.version);
+        const result = await fetchSnapshot(code, basis?.version);
         setFailureCount(0);
 
+        // A mutation (or a faster overlapping poll) may have written a newer
+        // snapshot into the cache while this fetch was in flight.
+        const current = queryClient.getQueryData<RoomSnapshot>(queryKey);
+
         if ('changed' in result) {
-          if (!previous) {
-            throw new Error('Room snapshot unavailable');
-          }
-          return previous;
+          if (current) return current;
+          throw new Error('Room snapshot unavailable');
         }
 
-        return result;
+        return newerSnapshot(result, current);
       } catch (err) {
         setFailureCount((count) => count + 1);
         throw err;
@@ -147,7 +156,7 @@ export function useRoom(code: string): UseRoomResult {
 
   const onActionSuccess = useCallback(
     (response: RoomActionResponse) => {
-      queryClient.setQueryData(queryKey, response.snapshot);
+      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) => newerSnapshot(response.snapshot, current));
     },
     [queryClient, queryKey]
   );
@@ -157,7 +166,7 @@ export function useRoom(code: string): UseRoomResult {
       postRoomAction<JoinRoomRequest, JoinRoomResponse>(code, 'join', body),
     onSuccess: (response) => {
       saveRoomSession({ code, playerId: response.playerId, token: response.token });
-      queryClient.setQueryData(queryKey, response.snapshot);
+      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) => newerSnapshot(response.snapshot, current));
     },
   });
 

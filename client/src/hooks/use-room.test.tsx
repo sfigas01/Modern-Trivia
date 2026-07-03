@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RoomSnapshot } from '@shared/models/rooms';
 
 import { saveRoomSession } from '@/lib/room-session';
-import { buildPollUrl, getPollIntervalMs, useRoom } from './use-room';
+import { buildPollUrl, getPollIntervalMs, newerSnapshot, useRoom } from './use-room';
 
 const baseSnapshot: RoomSnapshot = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -33,7 +33,7 @@ function createWrapper() {
   function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   }
-  return Wrapper;
+  return { Wrapper, queryClient };
 }
 
 function jsonResponse(body: unknown, status = 200) {
@@ -64,6 +64,21 @@ describe('buildPollUrl', () => {
 
   it('appends sinceVersion once a snapshot version is known', () => {
     expect(buildPollUrl('ABCD2', 3)).toBe('/api/rooms/ABCD2?sinceVersion=3');
+  });
+});
+
+describe('newerSnapshot', () => {
+  it('keeps the current snapshot when the candidate is not newer', () => {
+    const current = { ...baseSnapshot, version: 3 };
+    const candidate = { ...baseSnapshot, version: 2 };
+    expect(newerSnapshot(candidate, current)).toBe(current);
+    expect(newerSnapshot({ ...baseSnapshot, version: 3 }, current)).toBe(current);
+  });
+
+  it('adopts the candidate when it is newer or nothing is cached yet', () => {
+    const candidate = { ...baseSnapshot, version: 4 };
+    expect(newerSnapshot(candidate, { ...baseSnapshot, version: 3 })).toBe(candidate);
+    expect(newerSnapshot(candidate, undefined)).toBe(candidate);
   });
 });
 
@@ -99,7 +114,7 @@ describe('useRoom', () => {
     saveRoomSession({ code: 'ABCD2', playerId: 'player-1', token: 'secret-token' });
     fetchMock.mockResolvedValue(jsonResponse(baseSnapshot));
 
-    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
 
     await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
@@ -112,7 +127,7 @@ describe('useRoom', () => {
   it('omits the token header when no session is stored', async () => {
     fetchMock.mockResolvedValue(jsonResponse(baseSnapshot));
 
-    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
 
     await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
@@ -124,7 +139,7 @@ describe('useRoom', () => {
       .mockResolvedValueOnce(jsonResponse(baseSnapshot))
       .mockResolvedValueOnce(jsonResponse({ changed: false }));
 
-    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
 
     await waitFor(() => expect(result.current.snapshot).toBeDefined());
     const firstSnapshot = result.current.snapshot;
@@ -144,7 +159,7 @@ describe('useRoom', () => {
     vi.useFakeTimers();
     fetchMock.mockResolvedValue(new Response('Server error', { status: 500, statusText: 'Server error' }));
 
-    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
@@ -163,5 +178,66 @@ describe('useRoom', () => {
       await result.current.refetch();
     });
     expect(result.current.isDisconnected).toBe(false);
+  });
+
+  it('does not let a stale in-flight poll roll back a newer snapshot written by a mutation', async () => {
+    let resolveStalePoll!: (res: Response) => void;
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(baseSnapshot)) // initial mount fetch -> version 1
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) => {
+            resolveStalePoll = resolve;
+          })
+      );
+
+    const { Wrapper, queryClient } = createWrapper();
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.snapshot?.version).toBe(1));
+
+    let stalePoll!: Promise<unknown>;
+    act(() => {
+      stalePoll = result.current.refetch();
+    });
+
+    // A mutation (e.g. `answer`) resolves while the poll above is still in
+    // flight and writes a newer snapshot into the cache.
+    const newer = { ...baseSnapshot, version: 2, phase: 'REVEAL' as const };
+    act(() => {
+      queryClient.setQueryData(['/api/rooms', 'ABCD2'], newer);
+    });
+
+    // The stale poll now resolves as unchanged relative to the version it
+    // was sent with (1), which must not overwrite the newer cached data.
+    await act(async () => {
+      resolveStalePoll(jsonResponse({ changed: false }));
+      await stalePoll;
+    });
+
+    await waitFor(() => expect(result.current.snapshot).toEqual(newer));
+  });
+
+  it('does not let a stale mutation response overwrite a newer snapshot already in the cache', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(baseSnapshot));
+
+    const { Wrapper, queryClient } = createWrapper();
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: Wrapper });
+
+    await waitFor(() => expect(result.current.snapshot?.version).toBe(1));
+
+    // A concurrent poll (or another mutation) has already advanced the room
+    // past what this in-flight mutation is about to report.
+    const newer = { ...baseSnapshot, version: 5, phase: 'GAME_OVER' as const };
+    act(() => {
+      queryClient.setQueryData(['/api/rooms', 'ABCD2'], newer);
+    });
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ snapshot: { ...baseSnapshot, version: 2 } }));
+    await act(async () => {
+      await result.current.advance.mutateAsync();
+    });
+
+    await waitFor(() => expect(result.current.snapshot).toEqual(newer));
   });
 });
