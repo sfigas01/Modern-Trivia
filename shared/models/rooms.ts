@@ -84,6 +84,7 @@ export const roomPlayers = pgTable(
   (table) => [
     index('idx_room_players_room').on(table.roomId),
     uniqueIndex('uq_room_players_room_nickname_ci').on(table.roomId, sql`lower(${table.nickname})`),
+    uniqueIndex('uq_room_players_room_join_order').on(table.roomId, table.joinOrder),
   ]
 );
 
@@ -145,16 +146,18 @@ export const roomPlayerSnapshotSchema = z.object({
   leftAt: z.string().datetime().nullable(),
 });
 
-export const redactedRoomQuestionSchema = z.object({
-  id: z.string().min(1),
-  category: z.enum(VALID_CATEGORIES),
-  difficulty: z.enum(['Easy', 'Medium', 'Hard']),
-  question: z.string().min(1),
-  pillar: z.string().min(1),
-  tags: z.array(z.string()),
-  sourceUrl: z.string().url().nullable(),
-  sourceName: z.string().nullable(),
-});
+export const redactedRoomQuestionSchema = z
+  .object({
+    id: z.string().min(1),
+    category: z.enum(VALID_CATEGORIES),
+    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+    question: z.string().min(1),
+    pillar: z.string().min(1),
+    tags: z.array(z.string()),
+    sourceUrl: z.string().url().nullable(),
+    sourceName: z.string().nullable(),
+  })
+  .strict();
 
 export const revealedRoomQuestionSchema = redactedRoomQuestionSchema.extend({
   answer: z.string().min(1),
@@ -162,17 +165,15 @@ export const revealedRoomQuestionSchema = redactedRoomQuestionSchema.extend({
   explanation: z.string().min(1),
 });
 
-export const roomQuestionSnapshotSchema = redactedRoomQuestionSchema.extend({
-  answer: z.string().min(1).optional(),
-  acceptableAnswers: z.array(z.string()).optional(),
-  explanation: z.string().min(1).optional(),
-});
+export const roomQuestionSnapshotSchema = z.union([
+  redactedRoomQuestionSchema,
+  revealedRoomQuestionSchema,
+]);
 
-export const roomSnapshotSchema = z.object({
+const roomSnapshotBaseSchema = z.object({
   id: z.string().uuid(),
   code: roomCodeSchema,
   status: roomStatusSchema,
-  phase: roomPhaseSchema,
   version: z.number().int().positive(),
   hostPlayerId: z.string().uuid().nullable(),
   category: roomCategorySchema,
@@ -180,12 +181,34 @@ export const roomSnapshotSchema = z.object({
   currentQuestionIndex: z.number().int().nonnegative(),
   activePlayerId: z.string().uuid().nullable(),
   currentAttempt: roomAttemptSchema.nullable(),
-  currentQuestion: roomQuestionSnapshotSchema.nullable(),
   players: z.array(roomPlayerSnapshotSchema).max(4),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   expiresAt: z.string().datetime(),
 });
+
+export const roomSnapshotSchema = z.discriminatedUnion('phase', [
+  roomSnapshotBaseSchema.extend({
+    phase: z.literal('LOBBY'),
+    currentQuestion: redactedRoomQuestionSchema.nullable(),
+  }),
+  roomSnapshotBaseSchema.extend({
+    phase: z.literal('QUESTION'),
+    currentQuestion: redactedRoomQuestionSchema,
+  }),
+  roomSnapshotBaseSchema.extend({
+    phase: z.literal('REVEAL'),
+    currentQuestion: revealedRoomQuestionSchema,
+  }),
+  roomSnapshotBaseSchema.extend({
+    phase: z.literal('ROUND_SCORE'),
+    currentQuestion: revealedRoomQuestionSchema,
+  }),
+  roomSnapshotBaseSchema.extend({
+    phase: z.literal('GAME_OVER'),
+    currentQuestion: revealedRoomQuestionSchema,
+  }),
+]);
 
 export type RoomPlayerSnapshot = z.infer<typeof roomPlayerSnapshotSchema>;
 export type RedactedRoomQuestion = z.infer<typeof redactedRoomQuestionSchema>;

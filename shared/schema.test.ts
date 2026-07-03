@@ -234,6 +234,29 @@ describe('RoomSnapshot contract', () => {
     expect(revealedRoomQuestionSchema.safeParse(revealedQuestion).success).toBe(true);
   });
 
+  it('rejects revealed answer fields before the REVEAL phase', () => {
+    expect(
+      roomSnapshotSchema.safeParse({
+        ...validSnapshot,
+        phase: 'QUESTION',
+        currentQuestion: revealedQuestion,
+      }).success
+    ).toBe(false);
+  });
+
+  it.each(['REVEAL', 'ROUND_SCORE', 'GAME_OVER'] as const)(
+    'requires revealed answer fields for a %s snapshot',
+    (phase) => {
+      expect(
+        roomSnapshotSchema.safeParse({
+          ...validSnapshot,
+          phase,
+          currentQuestion: redactedQuestion,
+        }).success
+      ).toBe(false);
+    }
+  );
+
   it.each([
     ['status', 'waiting'],
     ['phase', 'VERIFYING'],

@@ -76,3 +76,5 @@ END $$;
 CREATE INDEX IF NOT EXISTS "idx_room_players_room" ON "room_players" USING btree ("room_id");
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "uq_room_players_room_nickname_ci" ON "room_players" USING btree ("room_id", lower("nickname"));
+--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_room_players_room_join_order" ON "room_players" USING btree ("room_id", "join_order");
