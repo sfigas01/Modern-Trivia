@@ -7,10 +7,93 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle } from 'lucide-react';
+import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MULTIPLAYER } from '@/lib/featureFlags';
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+  const [mode, setMode] = useState<'choose' | 'solo'>(MULTIPLAYER ? 'choose' : 'solo');
+
+  if (MULTIPLAYER && mode === 'choose') {
+    return (
+      <ModeChooser
+        onPlaySolo={() => setMode('solo')}
+        onHost={() => setLocation('/host')}
+        onJoin={() => setLocation('/join')}
+      />
+    );
+  }
+
+  return <SoloSetup />;
+}
+
+function ModeChooser({
+  onPlaySolo,
+  onHost,
+  onJoin,
+}: {
+  onPlaySolo: () => void;
+  onHost: () => void;
+  onJoin: () => void;
+}) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-50" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] opacity-50" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md z-10 space-y-8"
+      >
+        <div className="text-center space-y-2">
+          <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
+            TRIVIA
+            <br />
+            CLASH
+          </h1>
+          <p className="text-muted-foreground font-medium tracking-wide">
+            THE COMPETITIVE PARTY GAME
+          </p>
+        </div>
+
+        <div className="flex flex-col w-full gap-4">
+          <Button
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
+            onClick={onPlaySolo}
+            data-testid="button-mode-solo"
+          >
+            <Users className="w-5 h-5 mr-2" />
+            Play Solo
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl border-white/10 hover:bg-white/10"
+            onClick={onHost}
+            data-testid="button-mode-host"
+          >
+            <UserPlus className="w-5 h-5 mr-2" />
+            Host a Game
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl border-white/10 hover:bg-white/10"
+            onClick={onJoin}
+            data-testid="button-mode-join"
+          >
+            <LogIn className="w-5 h-5 mr-2" />
+            Join a Game
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function SoloSetup() {
   const [_, setLocation] = useLocation();
   const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
   const { user, isAuthenticated, logout } = useAuth();
