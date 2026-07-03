@@ -77,6 +77,10 @@ vi.mock('wouter', () => ({
   useLocation: () => ['/', vi.fn()],
 }));
 
+vi.mock('@/lib/featureFlags', () => ({
+  MULTIPLAYER: false,
+}));
+
 vi.mock('@/hooks/use-auth', () => ({
   useAuth: () => ({
     user: null,
