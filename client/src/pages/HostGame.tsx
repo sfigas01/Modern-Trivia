@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -6,13 +6,14 @@ import { motion } from 'framer-motion';
 import { UserPlus, Zap } from 'lucide-react';
 import {
   ROOM_ROUND_OPTIONS,
+  roomCategorySchema,
+  roomRoundsSchema,
   type CreateRoomRequest,
   type CreateRoomResponse,
-  type RoomCategory,
-  type RoomRounds,
 } from '@shared/models/rooms';
 
 import { useGame } from '@/lib/store';
+import { useCategoryCounts } from '@/hooks/use-category-counts';
 import { saveRoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,14 +47,7 @@ export default function HostGame() {
   const { state, setCategory, setNumRounds } = useGame();
   const [nickname, setNickname] = useState('');
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    state.questions.forEach((q) => {
-      counts[q.category] = (counts[q.category] || 0) + 1;
-    });
-    counts['All'] = state.questions.length;
-    return counts;
-  }, [state.questions]);
+  const categoryCounts = useCategoryCounts(state.questions);
 
   const createRoomMutation = useMutation({
     mutationFn: createRoom,
@@ -69,12 +63,21 @@ export default function HostGame() {
   const trimmedNickname = nickname.trim();
   const isNicknameValid = trimmedNickname.length > 0;
 
-  const handleCreateRoom = () => {
-    if (!isNicknameValid) return;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isNicknameValid || createRoomMutation.isPending) return;
+
+    const category = roomCategorySchema.safeParse(state.selectedCategory);
+    const numRounds = roomRoundsSchema.safeParse(state.numRounds);
+    if (!category.success || !numRounds.success) {
+      toast.error('Invalid category or rounds selection. Please try again.');
+      return;
+    }
+
     createRoomMutation.mutate({
       nickname: trimmedNickname,
-      category: state.selectedCategory as RoomCategory,
-      numRounds: state.numRounds as RoomRounds,
+      category: category.data,
+      numRounds: numRounds.data,
     });
   };
 
@@ -99,111 +102,116 @@ export default function HostGame() {
           <p className="text-muted-foreground font-medium tracking-wide">SET UP YOUR ROOM</p>
         </div>
 
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <UserPlus className="w-5 h-5 text-primary" />
-              Your Nickname
-            </CardTitle>
-            <CardDescription>Shown to players who join your room.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              placeholder="Enter your nickname..."
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
-              autoFocus
-              maxLength={20}
-              disabled={createRoomMutation.isPending}
-              data-testid="input-nickname"
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
-            <CardDescription>Choose a topic for this room.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-              <Button
-                variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => setCategory('All')}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <UserPlus className="w-5 h-5 text-primary" />
+                Your Nickname
+              </CardTitle>
+              <CardDescription>Shown to players who join your room.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Input
+                placeholder="Enter your nickname..."
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
+                autoFocus
+                maxLength={20}
                 disabled={createRoomMutation.isPending}
-                className={`border-white/10 hover:bg-white/10 ${
-                  state.selectedCategory === 'All'
-                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                    : ''
-                }`}
-              >
-                All ({categoryCounts['All'] || 0})
-              </Button>
-              {state.categories
-                .filter((c) => c !== 'All')
-                .map((category) => (
+                data-testid="input-nickname"
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
+              <CardDescription>Choose a topic for this room.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                <Button
+                  type="button"
+                  variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
+                  onClick={() => setCategory('All')}
+                  disabled={createRoomMutation.isPending}
+                  className={`border-white/10 hover:bg-white/10 ${
+                    state.selectedCategory === 'All'
+                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                      : ''
+                  }`}
+                >
+                  All ({categoryCounts['All'] || 0})
+                </Button>
+                {state.categories
+                  .filter((c) => c !== 'All')
+                  .map((category) => (
+                    <Button
+                      key={category}
+                      type="button"
+                      variant={state.selectedCategory === category ? 'default' : 'outline'}
+                      onClick={() => setCategory(category)}
+                      disabled={createRoomMutation.isPending}
+                      className={`border-white/10 hover:bg-white/10 ${
+                        state.selectedCategory === category
+                          ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                          : ''
+                      }`}
+                    >
+                      {category} ({categoryCounts[category] || 0})
+                    </Button>
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Zap className="w-4 h-4 text-primary" />
+                Number of Rounds
+              </CardTitle>
+              <CardDescription>How many questions to play.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-4 gap-2">
+                {ROOM_ROUND_OPTIONS.map((rounds) => (
                   <Button
-                    key={category}
-                    variant={state.selectedCategory === category ? 'default' : 'outline'}
-                    onClick={() => setCategory(category)}
+                    key={rounds}
+                    type="button"
+                    variant={state.numRounds === rounds ? 'default' : 'outline'}
+                    onClick={() => setNumRounds(rounds)}
                     disabled={createRoomMutation.isPending}
-                    className={`border-white/10 hover:bg-white/10 ${
-                      state.selectedCategory === category
-                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                        : ''
-                    }`}
+                    className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                   >
-                    {category} ({categoryCounts[category] || 0})
+                    {rounds}
                   </Button>
                 ))}
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-white/10 bg-white/5 backdrop-blur-md">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Zap className="w-4 h-4 text-primary" />
-              Number of Rounds
-            </CardTitle>
-            <CardDescription>How many questions to play.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-2">
-              {ROOM_ROUND_OPTIONS.map((rounds) => (
-                <Button
-                  key={rounds}
-                  variant={state.numRounds === rounds ? 'default' : 'outline'}
-                  onClick={() => setNumRounds(rounds)}
-                  disabled={createRoomMutation.isPending}
-                  className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
-                >
-                  {rounds}
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Button
-          className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
-          disabled={!isNicknameValid || createRoomMutation.isPending}
-          onClick={handleCreateRoom}
-          data-testid="button-create-room"
-        >
-          {createRoomMutation.isPending ? (
-            <>
-              <Spinner className="mr-2" />
-              Creating Room...
-            </>
-          ) : (
-            <>
-              <UserPlus className="w-5 h-5 mr-2" />
-              Create Room
-            </>
-          )}
-        </Button>
+          <Button
+            type="submit"
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
+            disabled={!isNicknameValid || createRoomMutation.isPending}
+            data-testid="button-create-room"
+          >
+            {createRoomMutation.isPending ? (
+              <>
+                <Spinner className="mr-2" />
+                Creating Room...
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-5 h-5 mr-2" />
+                Create Room
+              </>
+            )}
+          </Button>
+        </form>
       </motion.div>
     </div>
   );

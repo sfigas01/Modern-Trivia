@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -9,18 +10,20 @@ import { getRoomSession } from '@/lib/room-session';
 
 // Stub localStorage for jsdom compatibility
 const storage: Record<string, string> = {};
-vi.stubGlobal('localStorage', {
-  getItem: (key: string) => storage[key] ?? null,
-  setItem: (key: string, value: string) => {
-    storage[key] = value;
-  },
-  removeItem: (key: string) => {
-    delete storage[key];
-  },
-  clear: () => {
-    for (const key of Object.keys(storage)) delete storage[key];
-  },
-});
+function stubLocalStorage() {
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage[key] ?? null,
+    setItem: (key: string, value: string) => {
+      storage[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete storage[key];
+    },
+    clear: () => {
+      for (const key of Object.keys(storage)) delete storage[key];
+    },
+  });
+}
 
 const mockSetLocation = vi.fn();
 
@@ -100,6 +103,7 @@ function renderHostGame() {
 
 describe('HostGame', () => {
   beforeEach(() => {
+    stubLocalStorage();
     localStorage.clear();
     mockSetLocation.mockClear();
     toastError.mockClear();
@@ -108,6 +112,7 @@ describe('HostGame', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('disables the create room button until a nickname is entered', async () => {
@@ -115,13 +120,13 @@ describe('HostGame', () => {
     renderHostGame();
 
     const createButton = await screen.findByTestId('button-create-room');
-    expect(createButton.hasAttribute('disabled')).toBe(true);
+    expect(createButton).toBeDisabled();
 
     fireEvent.change(screen.getByTestId('input-nickname'), { target: { value: '   ' } });
-    expect(createButton.hasAttribute('disabled')).toBe(true);
+    expect(createButton).toBeDisabled();
 
     fireEvent.change(screen.getByTestId('input-nickname'), { target: { value: 'Steph' } });
-    expect(createButton.hasAttribute('disabled')).toBe(false);
+    expect(createButton).not.toBeDisabled();
   });
 
   it('shows a spinner while the create room request is in flight', async () => {
@@ -136,7 +141,7 @@ describe('HostGame', () => {
     fireEvent.click(screen.getByTestId('button-create-room'));
 
     expect(await screen.findByRole('status', { name: 'Loading' })).toBeDefined();
-    expect(screen.getByTestId('button-create-room').hasAttribute('disabled')).toBe(true);
+    expect(screen.getByTestId('button-create-room')).toBeDisabled();
 
     resolveFetch({
       ok: true,
@@ -171,9 +176,9 @@ describe('HostGame', () => {
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('Room could not be created'));
 
     const nicknameInput = screen.getByTestId('input-nickname') as HTMLInputElement;
-    expect(nicknameInput.hasAttribute('disabled')).toBe(false);
+    expect(nicknameInput).not.toBeDisabled();
     expect(nicknameInput.value).toBe('Steph');
-    expect(screen.getByTestId('button-create-room').hasAttribute('disabled')).toBe(false);
+    expect(screen.getByTestId('button-create-room')).not.toBeDisabled();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 

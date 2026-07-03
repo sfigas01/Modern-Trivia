@@ -1,13 +1,25 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
+import { useCategoryCounts } from '@/hooks/use-category-counts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle, UserPlus } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Settings,
+  Users,
+  Zap,
+  LogIn,
+  LogOut,
+  Shield,
+  AlertTriangle,
+  UserPlus,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MULTIPLAYER } from '@/lib/featureFlags';
 
@@ -100,18 +112,12 @@ function SoloSetup() {
   const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState('');
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    state.questions.forEach((q) => {
-      counts[q.category] = (counts[q.category] || 0) + 1;
-    });
-    counts['All'] = state.questions.length;
-    return counts;
-  }, [state.questions]);
+  const categoryCounts = useCategoryCounts(state.questions);
 
   const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
   const availableCount = categoryCounts[state.selectedCategory] || 0;
-  const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
+  const hasInsufficientQuestions =
+    state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,20 +245,22 @@ function SoloSetup() {
               >
                 All ({categoryCounts['All'] || 0})
               </Button>
-              {state.categories.filter((c) => c !== 'All').map((category) => (
-                <Button
-                  key={category}
-                  variant={state.selectedCategory === category ? 'default' : 'outline'}
-                  onClick={() => setCategory(category)}
-                  className={`border-white/10 hover:bg-white/10 ${
-                    state.selectedCategory === category
-                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                      : ''
-                  }`}
-                >
-                  {category} ({categoryCounts[category] || 0})
-                </Button>
-              ))}
+              {state.categories
+                .filter((c) => c !== 'All')
+                .map((category) => (
+                  <Button
+                    key={category}
+                    variant={state.selectedCategory === category ? 'default' : 'outline'}
+                    onClick={() => setCategory(category)}
+                    className={`border-white/10 hover:bg-white/10 ${
+                      state.selectedCategory === category
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        : ''
+                    }`}
+                  >
+                    {category} ({categoryCounts[category] || 0})
+                  </Button>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -291,10 +299,14 @@ function SoloSetup() {
               <div>
                 <p className="font-semibold text-yellow-300">Not enough questions</p>
                 <p className="mt-1">
-                  {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
-                  <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
-                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn).
-                  The game will use all {availableCount} available.
+                  {state.selectedCategory === 'All'
+                    ? 'All categories have'
+                    : `"${state.selectedCategory}" has`}{' '}
+                  only <span className="font-bold">{availableCount}</span> question
+                  {availableCount !== 1 ? 's' : ''}, but your setup needs{' '}
+                  <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds ×{' '}
+                  {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn). The
+                  game will use all {availableCount} available.
                 </p>
               </div>
             </div>
