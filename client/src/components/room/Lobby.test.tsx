@@ -33,6 +33,7 @@ function makePlayer(overrides: Partial<LobbySnapshot['players'][number]> = {}) {
     questionCount: 0,
     lastRoundDelta: 0,
     isHost: true,
+    presence: 'online' as const,
     lastSeenAt: new Date().toISOString(),
     leftAt: null,
     ...overrides,
@@ -105,7 +106,10 @@ describe('Lobby', () => {
 
   it('enables Start Game with 2 or more active players', () => {
     const snapshot = makeSnapshot({
-      players: [makePlayer({ id: 'host-1' }), makePlayer({ id: 'p2', isHost: false, joinOrder: 1 })],
+      players: [
+        makePlayer({ id: 'host-1' }),
+        makePlayer({ id: 'p2', isHost: false, joinOrder: 1 }),
+      ],
     });
     render(
       <Lobby

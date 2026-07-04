@@ -16,6 +16,7 @@ function makePlayer(overrides: Partial<RoomPlayerSnapshot> = {}): RoomPlayerSnap
     questionCount: 0,
     lastRoundDelta: 0,
     isHost: false,
+    presence: 'online',
     lastSeenAt: new Date(NOW).toISOString(),
     leftAt: null,
     ...overrides,
@@ -32,7 +33,7 @@ describe('PlayerRoster', () => {
       makePlayer({ id: 'p1', nickname: 'Alice', score: 10, joinOrder: 0 }),
       makePlayer({ id: 'p2', nickname: 'Bob', score: 5, joinOrder: 1 }),
     ];
-    render(<PlayerRoster players={players} now={NOW} />);
+    render(<PlayerRoster players={players} />);
 
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('10')).toBeInTheDocument();
@@ -42,28 +43,36 @@ describe('PlayerRoster', () => {
 
   it('marks the current player with a (you) label', () => {
     const players = [makePlayer({ id: 'p1', nickname: 'Alice' })];
-    render(<PlayerRoster players={players} currentPlayerId="p1" now={NOW} />);
+    render(<PlayerRoster players={players} currentPlayerId="p1" />);
 
     expect(screen.getByText('(you)')).toBeInTheDocument();
   });
 
   it('shows an online presence dot for players seen recently', () => {
-    const players = [makePlayer({ id: 'p1', lastSeenAt: new Date(NOW - 2000).toISOString() })];
-    render(<PlayerRoster players={players} now={NOW} />);
+    const players = [makePlayer({ id: 'p1', presence: 'online' })];
+    render(<PlayerRoster players={players} />);
 
     expect(screen.getByTestId('presence-dot-p1')).toHaveAttribute('aria-label', 'Online');
   });
 
-  it('shows an offline presence dot for players not seen recently', () => {
-    const players = [makePlayer({ id: 'p1', lastSeenAt: new Date(NOW - 15000).toISOString() })];
-    render(<PlayerRoster players={players} now={NOW} />);
+  it('shows an away presence dot for players between the online and stale thresholds', () => {
+    const players = [makePlayer({ id: 'p1', presence: 'away' })];
+    render(<PlayerRoster players={players} />);
 
-    expect(screen.getByTestId('presence-dot-p1')).toHaveAttribute('aria-label', 'Offline');
+    expect(screen.getByTestId('presence-dot-p1')).toHaveAttribute('aria-label', 'Away');
+  });
+
+  it('greys out stale players', () => {
+    const players = [makePlayer({ id: 'p1', presence: 'stale' })];
+    render(<PlayerRoster players={players} />);
+
+    expect(screen.getByTestId('presence-dot-p1')).toHaveAttribute('aria-label', 'Stale');
+    expect(screen.getByTestId('player-row-p1').className).toContain('opacity-50');
   });
 
   it('highlights the active player', () => {
     const players = [makePlayer({ id: 'p1' }), makePlayer({ id: 'p2', joinOrder: 1 })];
-    render(<PlayerRoster players={players} activePlayerId="p1" now={NOW} />);
+    render(<PlayerRoster players={players} activePlayerId="p1" />);
 
     expect(screen.getByTestId('player-row-p1').className).toContain('ring-2');
     expect(screen.getByTestId('player-row-p2').className).not.toContain('ring-2');
@@ -71,7 +80,7 @@ describe('PlayerRoster', () => {
 
   it('shows a crown for the host', () => {
     const players = [makePlayer({ id: 'p1', isHost: true })];
-    const { container } = render(<PlayerRoster players={players} now={NOW} />);
+    const { container } = render(<PlayerRoster players={players} />);
 
     expect(container.querySelector('svg')).not.toBeNull();
   });

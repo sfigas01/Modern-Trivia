@@ -4,6 +4,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp } from './test/testApp';
+import { deriveRoomPresence } from './routes.rooms';
 
 const dbMocks = vi.hoisted(() => {
   const selectResults: unknown[][] = [];
@@ -211,6 +212,15 @@ describe('room lifecycle routes', () => {
     consoleErrorSpy.mockRestore();
   });
 
+  it('derives online, away, and stale presence at the exact thresholds', () => {
+    const observedAt = new Date('2026-07-03T15:00:30.000Z');
+
+    expect(deriveRoomPresence(new Date('2026-07-03T15:00:20.001Z'), observedAt)).toBe('online');
+    expect(deriveRoomPresence(new Date('2026-07-03T15:00:20.000Z'), observedAt)).toBe('away');
+    expect(deriveRoomPresence(new Date('2026-07-03T15:00:00.000Z'), observedAt)).toBe('away');
+    expect(deriveRoomPresence(new Date('2026-07-03T14:59:59.999Z'), observedAt)).toBe('stale');
+  });
+
   it('creates a lobby room and its host atomically after cleaning up expired rooms', async () => {
     dbMocks.insertResults.push([room({ hostPlayerId: null })], [player()]);
     const app = await buildTestApp();
@@ -228,10 +238,8 @@ describe('room lifecycle routes', () => {
 
     const cleanupCondition = dbMocks.whereArgs[0] as Parameters<PgDialect['sqlToQuery']>[0];
     const cleanupQuery = new PgDialect().sqlToQuery(cleanupCondition);
-    expect(cleanupQuery.sql).toContain('"rooms"."status" = $1');
-    expect(cleanupQuery.sql).toContain('"rooms"."phase" = $2');
-    expect(cleanupQuery.sql).toContain('"rooms"."expires_at" <= $3');
-    expect(cleanupQuery.params.slice(0, 2)).toEqual(['lobby', 'LOBBY']);
+    expect(cleanupQuery.sql).toContain('"rooms"."expires_at" <= $1');
+    expect(cleanupQuery.params).toHaveLength(1);
   });
 
   it('retries a room-code collision', async () => {
@@ -798,8 +806,249 @@ describe('room lifecycle routes', () => {
     expect(response.body.snapshot).toMatchObject({ status: 'abandoned', phase: 'LOBBY' });
   });
 
-  it('returns unchanged while still refreshing presence', async () => {
-    queueSelect([room()], [player()]);
+  it('lets the host skip an active player stale for more than sixty seconds', async () => {
+    const observedAt = Date.now();
+    const host = player({ lastSeenAt: new Date(observedAt) });
+    const staleGuest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+      lastSeenAt: new Date(observedAt - 60_001),
+    });
+    const questionRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      questionIds: ['question-1', 'question-2'],
+      activePlayerId: guestId,
+    });
+    const skippedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: ['question-1', 'question-2'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: {
+        questionId: 'question-1',
+        playerId: guestId,
+        submittedAnswer: null,
+        verdict: 'PASS',
+        pointsDelta: 0,
+      },
+    });
+    queueSelect(
+      [questionRoom],
+      [host],
+      [host, staleGuest],
+      [host, { ...staleGuest, questionCount: 1 }],
+      [question('question-2')]
+    );
+    dbMocks.updateResults.push([skippedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/skip')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      phase: 'QUESTION',
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: { playerId: guestId, verdict: 'PASS', pointsDelta: 0 },
+      currentQuestion: { id: 'question-2' },
+    });
+    expect(response.body.snapshot.players[1]).toMatchObject({ score: 0, questionCount: 1 });
+  });
+
+  it('rejects skip from a non-host and while the active player is not stale enough', async () => {
+    const observedAt = Date.now();
+    const host = player({ lastSeenAt: new Date(observedAt) });
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+      lastSeenAt: new Date(observedAt - 30_000),
+    });
+    const questionRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      questionIds: ['question-1'],
+      activePlayerId: guestId,
+    });
+    queueSelect([questionRoom], [guest]);
+    const app = await buildTestApp();
+
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/skip')
+          .set('X-Player-Token', 'guest-secret')
+          .send({})
+          .expect(403)
+      ).body.message
+    ).toBe('Host token required');
+
+    queueSelect([questionRoom], [host], [host, guest]);
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/skip')
+          .set('X-Player-Token', 'host-secret')
+          .send({})
+          .expect(409)
+      ).body.message
+    ).toBe('Active player is not stale enough to skip');
+  });
+
+  it('abandons a lobby lazily when a guest polls after the host is stale for five minutes', async () => {
+    const observedAt = Date.now();
+    const staleHost = player({ lastSeenAt: new Date(observedAt - 300_001) });
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+      lastSeenAt: new Date(observedAt),
+    });
+    const abandonedRoom = room({ status: 'abandoned', version: 2 });
+    queueSelect([room()], [guest], [staleHost, guest], [staleHost, guest]);
+    dbMocks.updateResults.push([], [abandonedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/rooms/ABCD2')
+      .set('X-Player-Token', 'guest-secret')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ status: 'abandoned', phase: 'LOBBY', version: 2 });
+  });
+
+  it('promotes the oldest connected player once when the host is stale mid-game', async () => {
+    const observedAt = Date.now();
+    const staleHost = player({ lastSeenAt: new Date(observedAt - 120_001) });
+    const oldestConnected = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+      lastSeenAt: new Date(observedAt),
+    });
+    const newerConnected = player({
+      id: '44444444-4444-4444-8444-444444444444',
+      nickname: 'Newer',
+      token: 'newer-secret',
+      joinOrder: 2,
+      isHost: false,
+      lastSeenAt: new Date(observedAt),
+    });
+    const activeRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      questionIds: ['question-1'],
+      activePlayerId: hostId,
+    });
+    const promotedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      hostPlayerId: guestId,
+      questionIds: ['question-1'],
+      activePlayerId: hostId,
+    });
+    const promotedPlayers = [
+      { ...staleHost, isHost: false },
+      { ...oldestConnected, isHost: true },
+      newerConnected,
+    ];
+    queueSelect(
+      [activeRoom],
+      [oldestConnected],
+      [staleHost, oldestConnected, newerConnected],
+      promotedPlayers,
+      [question()]
+    );
+    dbMocks.updateResults.push([], [promotedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/rooms/ABCD2')
+      .set('X-Player-Token', 'guest-secret')
+      .expect(200);
+
+    expect(response.body).toMatchObject({ hostPlayerId: guestId, version: 2 });
+    expect(response.body.players).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: hostId, isHost: false }),
+        expect.objectContaining({ id: guestId, isHost: true }),
+      ])
+    );
+    expect(
+      dbMocks.valueArgs.filter(
+        (value) => typeof value === 'object' && value !== null && 'hostPlayerId' in value
+      )
+    ).toHaveLength(1);
+  });
+
+  it('keeps abandoned and finished rooms readable', async () => {
+    const abandonedRoom = room({ status: 'abandoned' });
+    queueSelect([abandonedRoom], [player()], [player()]);
+    const app = await buildTestApp();
+
+    expect(
+      (await request(app).get('/api/rooms/ABCD2').set('X-Player-Token', 'host-secret').expect(200))
+        .body.status
+    ).toBe('abandoned');
+
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: null,
+      verdict: 'PASS' as const,
+      pointsDelta: 0,
+    };
+    const finishedRoom = room({
+      status: 'finished',
+      phase: 'GAME_OVER',
+      questionIds: ['question-1'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    queueSelect([finishedRoom], [player()], [player()], [question()]);
+    expect(
+      (await request(app).get('/api/rooms/ABCD2').set('X-Player-Token', 'host-secret').expect(200))
+        .body
+    ).toMatchObject({ status: 'finished', phase: 'GAME_OVER' });
+  });
+
+  it('returns a fresh live-room snapshot when only presence changed', async () => {
+    const refreshedHost = player({ lastSeenAt: new Date() });
+    queueSelect([room()], [player()], [player()], [refreshedHost]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/rooms/ABCD2?sinceVersion=1')
+      .set('X-Player-Token', 'host-secret')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'lobby',
+      version: 1,
+      players: [{ id: hostId, presence: 'online' }],
+    });
+    expect(dbMocks.update).toHaveBeenCalledOnce();
+  });
+
+  it('returns unchanged for a terminal room at the current version', async () => {
+    queueSelect([room({ status: 'abandoned' })], [player()]);
     const app = await buildTestApp();
 
     const response = await request(app)
@@ -868,7 +1117,7 @@ describe('room lifecycle routes', () => {
       sourceUrl: 'https://example.com/ottawa',
       sourceName: 'Ottawa reference',
     };
-    queueSelect([questionRoom], [player()], [player()], [question]);
+    queueSelect([questionRoom], [player()], [player()], [player()], [question]);
     const app = await buildTestApp();
 
     const response = await request(app)
@@ -906,7 +1155,7 @@ describe('room lifecycle routes', () => {
       sourceUrl: 'https://example.com/ottawa',
       sourceName: 'Ottawa reference',
     };
-    queueSelect([revealRoom], [player()], [player()], [question]);
+    queueSelect([revealRoom], [player()], [player()], [player()], [question]);
     const app = await buildTestApp();
 
     const response = await request(app)

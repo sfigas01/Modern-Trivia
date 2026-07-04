@@ -71,6 +71,20 @@ describe('room engine', () => {
     expect(result.phase).toBe('QUESTION');
   });
 
+  it('forces the next player active when a stale turn is skipped', () => {
+    const result = advanceRoomEngine({
+      activePlayerId: hostId,
+      currentAttempt: createRoomAttempt(hostId, null, question),
+      currentQuestionIndex: 0,
+      players: players(),
+      questionCount: 40,
+      forceNextPlayer: true,
+    });
+
+    expect(result.activePlayerId).toBe(guestId);
+    expect(result.players[0]).toMatchObject({ score: 0, questionCount: 1 });
+  });
+
   it('enters round score after every player completes a rotation', () => {
     const result = advanceRoomEngine({
       activePlayerId: guestId,
