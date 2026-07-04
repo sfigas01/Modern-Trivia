@@ -20,6 +20,7 @@ import { VALID_CATEGORIES } from '../constants/categories';
 export const ROOM_STATUSES = ['lobby', 'active', 'finished', 'abandoned'] as const;
 export const ROOM_PHASES = ['LOBBY', 'QUESTION', 'REVEAL', 'ROUND_SCORE', 'GAME_OVER'] as const;
 export const ROOM_VERDICTS = ['CORRECT', 'INCORRECT', 'PASS'] as const;
+export const ROOM_PRESENCES = ['online', 'away', 'stale'] as const;
 export const ROOM_ROUND_OPTIONS = [5, 10, 15, 20] as const;
 export const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/;
 export const MAX_PLAYERS = 4;
@@ -92,6 +93,7 @@ export const roomPlayers = pgTable(
 export const roomStatusSchema = z.enum(ROOM_STATUSES);
 export const roomPhaseSchema = z.enum(ROOM_PHASES);
 export const roomVerdictSchema = z.enum(ROOM_VERDICTS);
+export const roomPresenceSchema = z.enum(ROOM_PRESENCES);
 export const roomCodeSchema = z.string().regex(ROOM_CODE_PATTERN);
 export const roomNicknameSchema = z.string().trim().min(1).max(20);
 export const roomCategorySchema = z.enum(['All', ...VALID_CATEGORIES]);
@@ -105,6 +107,7 @@ export const roomRoundsSchema = z.union([
 export type RoomStatus = z.infer<typeof roomStatusSchema>;
 export type RoomPhase = z.infer<typeof roomPhaseSchema>;
 export type RoomVerdict = z.infer<typeof roomVerdictSchema>;
+export type RoomPresence = z.infer<typeof roomPresenceSchema>;
 export type RoomCategory = z.infer<typeof roomCategorySchema>;
 export type RoomRounds = z.infer<typeof roomRoundsSchema>;
 
@@ -143,6 +146,7 @@ export const roomPlayerSnapshotSchema = z.object({
   questionCount: z.number().int().nonnegative(),
   lastRoundDelta: z.number().int(),
   isHost: z.boolean(),
+  presence: roomPresenceSchema,
   lastSeenAt: z.string().datetime(),
   leftAt: z.string().datetime().nullable(),
 });

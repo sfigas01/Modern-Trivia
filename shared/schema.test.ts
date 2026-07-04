@@ -94,6 +94,7 @@ const validSnapshot = {
       questionCount: 0,
       lastRoundDelta: 0,
       isHost: true,
+      presence: 'online' as const,
       lastSeenAt: timestamp,
       leftAt: null,
     },
@@ -215,6 +216,18 @@ describe('RoomSnapshot contract', () => {
     expect(snapshot.currentQuestion).not.toHaveProperty('acceptableAnswers');
     expect(snapshot.currentQuestion).not.toHaveProperty('explanation');
   });
+
+  it.each(['online', 'away', 'stale'] as const)(
+    'accepts %s as a derived player presence state',
+    (presence) => {
+      expect(
+        roomSnapshotSchema.safeParse({
+          ...validSnapshot,
+          players: [{ ...validSnapshot.players[0], presence }],
+        }).success
+      ).toBe(true);
+    }
+  );
 
   it('accepts revealed answer fields for a REVEAL snapshot', () => {
     expect(

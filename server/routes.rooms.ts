@@ -29,6 +29,8 @@ import {
   seenQuestions,
   startRoomRequestSchema,
   startRoomResponseSchema,
+  skipRoomRequestSchema,
+  skipRoomResponseSchema,
   unchangedRoomPollResponseSchema,
   type Question,
   type Room,
@@ -43,6 +45,11 @@ const LOBBY_TTL_MS = 2 * 60 * 60 * 1000;
 const ACTIVE_TTL_MS = 24 * 60 * 60 * 1000;
 const ROOM_CODE_CONSTRAINT = 'rooms_code_unique';
 const ROOM_NICKNAME_CONSTRAINT = 'uq_room_players_room_nickname_ci';
+const ONLINE_THRESHOLD_MS = 10 * 1000;
+const STALE_THRESHOLD_MS = 30 * 1000;
+const SKIP_THRESHOLD_MS = 60 * 1000;
+const HOST_PROMOTION_THRESHOLD_MS = 2 * 60 * 1000;
+const LOBBY_ABANDONMENT_THRESHOLD_MS = 5 * 60 * 1000;
 
 type RoomReadDatabase = Pick<typeof db, 'select'>;
 
@@ -107,7 +114,14 @@ function toAnswerQuestion(question: Question): AnswerQuestion {
   };
 }
 
-function serializePlayer(player: RoomPlayer) {
+export function deriveRoomPresence(lastSeenAt: Date, now = new Date()) {
+  const ageMs = now.getTime() - lastSeenAt.getTime();
+  if (ageMs < ONLINE_THRESHOLD_MS) return 'online' as const;
+  if (ageMs > STALE_THRESHOLD_MS) return 'stale' as const;
+  return 'away' as const;
+}
+
+function serializePlayer(player: RoomPlayer, now: Date) {
   return {
     id: player.id,
     nickname: player.nickname,
@@ -116,12 +130,17 @@ function serializePlayer(player: RoomPlayer) {
     questionCount: player.questionCount,
     lastRoundDelta: player.lastRoundDelta,
     isHost: player.isHost,
+    presence: deriveRoomPresence(player.lastSeenAt, now),
     lastSeenAt: player.lastSeenAt.toISOString(),
     leftAt: player.leftAt?.toISOString() ?? null,
   };
 }
 
-async function buildRoomSnapshot(database: RoomReadDatabase, room: Room): Promise<RoomSnapshot> {
+async function buildRoomSnapshot(
+  database: RoomReadDatabase,
+  room: Room,
+  now = new Date()
+): Promise<RoomSnapshot> {
   const players = await database
     .select()
     .from(roomPlayers)
@@ -183,7 +202,7 @@ async function buildRoomSnapshot(database: RoomReadDatabase, room: Room): Promis
     activePlayerId: room.activePlayerId,
     currentAttempt: room.currentAttempt,
     currentQuestion,
-    players: players.map(serializePlayer),
+    players: players.map((player) => serializePlayer(player, now)),
     createdAt: room.createdAt.toISOString(),
     updatedAt: room.updatedAt.toISOString(),
     expiresAt: room.expiresAt.toISOString(),
@@ -234,11 +253,9 @@ export function registerRoomRoutes(app: Express): void {
       const input = createRoomRequestSchema.parse(req.body);
       const now = new Date();
 
-      // Only lobby rooms use the short two-hour expiry. Active rooms are
-      // extended by the start transition and must not be removed by this cleanup.
-      await db
-        .delete(rooms)
-        .where(and(eq(rooms.status, 'lobby'), eq(rooms.phase, 'LOBBY'), lte(rooms.expiresAt, now)));
+      // Lobby rooms use a short expiry; active rooms receive a longer expiry
+      // when started. Creation opportunistically cleans up either kind.
+      await db.delete(rooms).where(lte(rooms.expiresAt, now));
 
       for (let attempt = 0; attempt < MAX_ROOM_CODE_ATTEMPTS; attempt++) {
         const code = generateRoomCode();
@@ -739,6 +756,111 @@ export function registerRoomRoutes(app: Express): void {
     }
   });
 
+  app.post('/api/rooms/:code/skip', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      skipRoomRequestSchema.parse(req.body);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.phase !== 'QUESTION' || room.status !== 'active' || !room.activePlayerId) {
+          throw new RoomRouteError(409, 'Room is not ready to skip');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        requireHost(actor, room);
+
+        const players = await tx
+          .select()
+          .from(roomPlayers)
+          .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+          .orderBy(asc(roomPlayers.joinOrder));
+        const activePlayer = players.find((player) => player.id === room.activePlayerId);
+        if (!activePlayer) {
+          throw new RoomRouteError(409, 'Active player is no longer in the room');
+        }
+        if (Date.now() - activePlayer.lastSeenAt.getTime() <= SKIP_THRESHOLD_MS) {
+          throw new RoomRouteError(409, 'Active player is not stale enough to skip');
+        }
+
+        const questionId = room.questionIds[room.currentQuestionIndex];
+        if (!questionId) {
+          throw new Error(`Room question not found at index ${room.currentQuestionIndex}`);
+        }
+        const currentAttempt = {
+          questionId,
+          playerId: activePlayer.id,
+          submittedAnswer: null,
+          verdict: 'PASS' as const,
+          pointsDelta: 0,
+        };
+        const transition = advanceRoomEngine({
+          activePlayerId: activePlayer.id,
+          currentAttempt,
+          currentQuestionIndex: room.currentQuestionIndex,
+          players,
+          questionCount: room.questionIds.length,
+          forceNextPlayer: true,
+        });
+
+        const [skippedRoom] = await tx
+          .update(rooms)
+          .set({
+            status: transition.phase === 'GAME_OVER' ? 'finished' : 'active',
+            phase: transition.phase,
+            currentQuestionIndex: transition.currentQuestionIndex,
+            activePlayerId: transition.activePlayerId,
+            currentAttempt,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.status, 'active'),
+              eq(rooms.phase, 'QUESTION'),
+              eq(rooms.activePlayerId, activePlayer.id),
+              eq(rooms.hostPlayerId, actor.id)
+            )
+          )
+          .returning();
+        if (!skippedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before the turn could be skipped');
+        }
+
+        for (const player of transition.players) {
+          await tx
+            .update(roomPlayers)
+            .set({
+              score: player.score,
+              questionCount: player.questionCount,
+              lastRoundDelta: player.lastRoundDelta,
+            })
+            .where(and(eq(roomPlayers.id, player.id), eq(roomPlayers.roomId, room.id)));
+        }
+
+        return skippedRoom;
+      });
+
+      return res.json(
+        skipRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error skipping room turn:');
+    }
+  });
+
   app.post('/api/rooms/:code/end', async (req, res) => {
     try {
       const code = parseRoomCode(req.params.code);
@@ -798,26 +920,119 @@ export function registerRoomRoutes(app: Express): void {
     try {
       const code = parseRoomCode(req.params.code);
       const { sinceVersion } = pollRoomRequestSchema.parse(req.query);
-      const [room] = await db.select().from(rooms).where(eq(rooms.code, code)).limit(1);
+      const now = new Date();
+      const room = await db.transaction(async (tx) => {
+        const [currentRoom] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
 
-      if (!room) {
-        throw new RoomRouteError(404, 'Room not found');
-      }
-      if (isExpired(room)) {
-        throw new RoomRouteError(404, 'Room expired');
-      }
+        if (!currentRoom) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(currentRoom, now)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
 
-      const player = await authenticateRoomPlayer(req, room.id);
-      await db
-        .update(roomPlayers)
-        .set({ lastSeenAt: new Date() })
-        .where(eq(roomPlayers.id, player.id));
+        const player = await authenticateRoomPlayer(req, currentRoom.id, tx);
+        await tx.update(roomPlayers).set({ lastSeenAt: now }).where(eq(roomPlayers.id, player.id));
+
+        if (currentRoom.status !== 'lobby' && currentRoom.status !== 'active') {
+          return currentRoom;
+        }
+
+        const players = await tx
+          .select()
+          .from(roomPlayers)
+          .where(and(eq(roomPlayers.roomId, currentRoom.id), isNull(roomPlayers.leftAt)))
+          .orderBy(asc(roomPlayers.joinOrder));
+        const effectivePlayers = players.map((roomPlayer) =>
+          roomPlayer.id === player.id ? { ...roomPlayer, lastSeenAt: now } : roomPlayer
+        );
+        const host = effectivePlayers.find(
+          (roomPlayer) => roomPlayer.id === currentRoom.hostPlayerId
+        );
+        if (!host) {
+          return currentRoom;
+        }
+
+        const hostAgeMs = now.getTime() - host.lastSeenAt.getTime();
+        if (
+          currentRoom.status === 'lobby' &&
+          currentRoom.phase === 'LOBBY' &&
+          hostAgeMs > LOBBY_ABANDONMENT_THRESHOLD_MS
+        ) {
+          const [abandonedRoom] = await tx
+            .update(rooms)
+            .set({
+              status: 'abandoned',
+              version: sql`${rooms.version} + 1`,
+              updatedAt: now,
+            })
+            .where(
+              and(
+                eq(rooms.id, currentRoom.id),
+                eq(rooms.status, 'lobby'),
+                eq(rooms.phase, 'LOBBY'),
+                eq(rooms.hostPlayerId, host.id)
+              )
+            )
+            .returning();
+          return abandonedRoom ?? currentRoom;
+        }
+
+        if (currentRoom.status === 'active' && hostAgeMs > HOST_PROMOTION_THRESHOLD_MS) {
+          const promotedHost = effectivePlayers.find(
+            (candidate) =>
+              candidate.id !== host.id &&
+              now.getTime() - candidate.lastSeenAt.getTime() <= STALE_THRESHOLD_MS
+          );
+          if (!promotedHost) {
+            return currentRoom;
+          }
+
+          const [promotedRoom] = await tx
+            .update(rooms)
+            .set({
+              hostPlayerId: promotedHost.id,
+              version: sql`${rooms.version} + 1`,
+              updatedAt: now,
+            })
+            .where(
+              and(
+                eq(rooms.id, currentRoom.id),
+                eq(rooms.status, 'active'),
+                eq(rooms.hostPlayerId, host.id)
+              )
+            )
+            .returning();
+          if (!promotedRoom) {
+            return currentRoom;
+          }
+
+          await tx
+            .update(roomPlayers)
+            .set({ isHost: false })
+            .where(and(eq(roomPlayers.id, host.id), eq(roomPlayers.roomId, currentRoom.id)));
+          await tx
+            .update(roomPlayers)
+            .set({ isHost: true })
+            .where(
+              and(eq(roomPlayers.id, promotedHost.id), eq(roomPlayers.roomId, currentRoom.id))
+            );
+          return promotedRoom;
+        }
+
+        return currentRoom;
+      });
 
       if (sinceVersion === room.version) {
         return res.json(unchangedRoomPollResponseSchema.parse({ changed: false }));
       }
 
-      return res.json(await buildRoomSnapshot(db, room));
+      return res.json(await buildRoomSnapshot(db, room, now));
     } catch (error) {
       return sendRoomError(res, error, 'Error polling room:');
     }

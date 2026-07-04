@@ -14,6 +14,7 @@ export interface AdvanceRoomInput {
   currentQuestionIndex: number;
   players: EnginePlayer[];
   questionCount: number;
+  forceNextPlayer?: boolean;
 }
 
 export interface AdvanceRoomResult {
@@ -74,7 +75,10 @@ export function advanceRoomEngine(input: AdvanceRoomInput): AdvanceRoomResult {
 
   const updatedActivePlayer = players[activePlayerIndex];
   let activePlayerId = input.activePlayerId;
-  if (updatedActivePlayer.questionCount % QUESTIONS_PER_TEAM_ROTATION === 0) {
+  if (
+    input.forceNextPlayer ||
+    updatedActivePlayer.questionCount % QUESTIONS_PER_TEAM_ROTATION === 0
+  ) {
     activePlayerId = players[(activePlayerIndex + 1) % players.length].id;
   }
 
