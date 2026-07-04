@@ -109,13 +109,19 @@ export interface UseRoomResult {
   end: UseMutationResult<EndRoomResponse, Error, void>;
 }
 
-export function useRoom(code: string): UseRoomResult {
+export interface UseRoomOptions {
+  enabled?: boolean;
+}
+
+export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResult {
+  const { enabled = true } = options;
   const queryClient = useQueryClient();
   const queryKey = roomQueryKey(code);
   const [failureCount, setFailureCount] = useState(0);
 
   const query = useQuery<RoomSnapshot>({
     queryKey,
+    enabled,
     queryFn: async () => {
       const basis = queryClient.getQueryData<RoomSnapshot>(queryKey);
 
