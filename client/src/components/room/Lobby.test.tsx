@@ -72,6 +72,8 @@ function makeMutation<TData, TVariables>(
 }
 
 describe('Lobby', () => {
+  const originalClipboard = navigator.clipboard;
+
   beforeEach(() => {
     toastSuccess.mockClear();
     toastError.mockClear();
@@ -83,6 +85,7 @@ describe('Lobby', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    Object.assign(navigator, { clipboard: originalClipboard });
   });
 
   it('disables Start Game with fewer than 2 players', () => {
@@ -97,7 +100,7 @@ describe('Lobby', () => {
     );
 
     expect(screen.getByTestId('button-start-game')).toBeDisabled();
-    expect(screen.getByTestId('text-need-players')).toBeDefined();
+    expect(screen.getByTestId('text-need-players')).toBeInTheDocument();
   });
 
   it('enables Start Game with 2 or more active players', () => {
@@ -146,8 +149,8 @@ describe('Lobby', () => {
       />
     );
 
-    expect(screen.getByTestId('button-start-game')).toBeDefined();
-    expect(screen.getByTestId('button-close-room')).toBeDefined();
+    expect(screen.getByTestId('button-start-game')).toBeInTheDocument();
+    expect(screen.getByTestId('button-close-room')).toBeInTheDocument();
     expect(screen.queryByTestId('text-waiting-host')).toBeNull();
   });
 
@@ -162,7 +165,7 @@ describe('Lobby', () => {
       />
     );
 
-    expect(screen.getByTestId('text-waiting-host')).toBeDefined();
+    expect(screen.getByTestId('text-waiting-host')).toBeInTheDocument();
     expect(screen.queryByTestId('button-start-game')).toBeNull();
     expect(screen.queryByTestId('button-close-room')).toBeNull();
   });
@@ -199,8 +202,8 @@ describe('Lobby', () => {
       />
     );
 
-    expect(screen.getByTestId('lobby-closed')).toBeDefined();
-    expect(screen.getByTestId('link-home')).toBeDefined();
+    expect(screen.getByTestId('lobby-closed')).toBeInTheDocument();
+    expect(screen.getByTestId('link-home')).toBeInTheDocument();
     expect(screen.queryByTestId('text-room-code')).toBeNull();
   });
 });

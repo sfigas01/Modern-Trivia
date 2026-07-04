@@ -34,17 +34,17 @@ describe('PlayerRoster', () => {
     ];
     render(<PlayerRoster players={players} now={NOW} />);
 
-    expect(screen.getByText('Alice')).toBeDefined();
-    expect(screen.getByText('10')).toBeDefined();
-    expect(screen.getByText('Bob')).toBeDefined();
-    expect(screen.getByText('5')).toBeDefined();
+    expect(screen.getByText('Alice')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('Bob')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
   });
 
   it('marks the current player with a (you) label', () => {
     const players = [makePlayer({ id: 'p1', nickname: 'Alice' })];
     render(<PlayerRoster players={players} currentPlayerId="p1" now={NOW} />);
 
-    expect(screen.getByText('(you)')).toBeDefined();
+    expect(screen.getByText('(you)')).toBeInTheDocument();
   });
 
   it('shows an online presence dot for players seen recently', () => {

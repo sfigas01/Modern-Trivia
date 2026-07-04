@@ -22,6 +22,7 @@ export const ROOM_PHASES = ['LOBBY', 'QUESTION', 'REVEAL', 'ROUND_SCORE', 'GAME_
 export const ROOM_VERDICTS = ['CORRECT', 'INCORRECT', 'PASS'] as const;
 export const ROOM_ROUND_OPTIONS = [5, 10, 15, 20] as const;
 export const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/;
+export const MAX_PLAYERS = 4;
 
 export const roomStatusEnum = pgEnum('room_status', ROOM_STATUSES);
 export const roomPhaseEnum = pgEnum('room_phase', ROOM_PHASES);
@@ -181,7 +182,7 @@ const roomSnapshotBaseSchema = z.object({
   currentQuestionIndex: z.number().int().nonnegative(),
   activePlayerId: z.string().uuid().nullable(),
   currentAttempt: roomAttemptSchema.nullable(),
-  players: z.array(roomPlayerSnapshotSchema).max(4),
+  players: z.array(roomPlayerSnapshotSchema).max(MAX_PLAYERS),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   expiresAt: z.string().datetime(),

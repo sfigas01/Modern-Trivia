@@ -11,7 +11,9 @@ export default function Room() {
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const session = useMemo(() => getRoomSession(code), [code]);
-  const { snapshot, isLoading, isDisconnected, error, start, end } = useRoom(code);
+  const { snapshot, isLoading, isDisconnected, error, start, end } = useRoom(code, {
+    enabled: !!session,
+  });
 
   useEffect(() => {
     if (!session) {
@@ -51,7 +53,7 @@ export default function Room() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-4">
       {isDisconnected && (
-        <p className="text-sm text-yellow-400" data-testid="text-disconnected">
+        <p className="text-sm text-yellow-400" data-testid="text-disconnected" aria-live="polite">
           Connection lost. Reconnecting…
         </p>
       )}

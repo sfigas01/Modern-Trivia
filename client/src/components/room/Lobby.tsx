@@ -2,7 +2,7 @@ import { Link } from 'wouter';
 import { toast } from 'sonner';
 import { Copy, DoorOpen, Play } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import type { EndRoomResponse, RoomSnapshot, StartRoomResponse } from '@shared/models/rooms';
+import { MAX_PLAYERS, type EndRoomResponse, type RoomSnapshot, type StartRoomResponse } from '@shared/models/rooms';
 
 import { PlayerRoster } from './PlayerRoster';
 import { Button } from '@/components/ui/button';
@@ -103,7 +103,9 @@ export function Lobby({ snapshot, currentPlayerId, start, end }: LobbyProps) {
 
       <Card className="border-white/10 bg-white/5 backdrop-blur-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Players ({activePlayers.length}/4)</CardTitle>
+          <CardTitle className="text-lg">
+            Players ({activePlayers.length}/{MAX_PLAYERS})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <PlayerRoster players={snapshot.players} currentPlayerId={currentPlayerId} />
