@@ -1,4 +1,5 @@
 import type { Express, NextFunction, Request, Response } from 'express';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,6 +9,8 @@ const dbMocks = vi.hoisted(() => {
   const selectResults: unknown[][] = [];
   const insertResults: unknown[][] = [];
   const updateResults: unknown[][] = [];
+  const valueArgs: unknown[] = [];
+  const whereArgs: unknown[] = [];
 
   function query(result: unknown[]) {
     const promise = Promise.resolve(result);
@@ -19,8 +22,14 @@ const dbMocks = vi.hoisted(() => {
       returning: vi.fn(() => Promise.resolve(result)),
       set: vi.fn(() => chain),
       then: promise.then.bind(promise),
-      values: vi.fn(() => chain),
-      where: vi.fn(() => chain),
+      values: vi.fn((value) => {
+        valueArgs.push(value);
+        return chain;
+      }),
+      where: vi.fn((condition) => {
+        whereArgs.push(condition);
+        return chain;
+      }),
     };
     return chain;
   }
@@ -37,7 +46,15 @@ const dbMocks = vi.hoisted(() => {
     callback(methods)
   );
 
-  return { ...methods, transaction, selectResults, insertResults, updateResults };
+  return {
+    ...methods,
+    transaction,
+    selectResults,
+    insertResults,
+    updateResults,
+    valueArgs,
+    whereArgs,
+  };
 });
 
 const authMocks = vi.hoisted(() => ({
@@ -125,6 +142,8 @@ describe('room lifecycle routes', () => {
     dbMocks.selectResults.length = 0;
     dbMocks.insertResults.length = 0;
     dbMocks.updateResults.length = 0;
+    dbMocks.valueArgs.length = 0;
+    dbMocks.whereArgs.length = 0;
     dbMocks.transaction.mockImplementation(async (callback) =>
       callback({
         delete: dbMocks.delete,
@@ -155,6 +174,13 @@ describe('room lifecycle routes', () => {
     expect(dbMocks.transaction).toHaveBeenCalledOnce();
     expect(dbMocks.insert).toHaveBeenCalledTimes(2);
     expect(dbMocks.update).toHaveBeenCalledOnce();
+
+    const cleanupCondition = dbMocks.whereArgs[0] as Parameters<PgDialect['sqlToQuery']>[0];
+    const cleanupQuery = new PgDialect().sqlToQuery(cleanupCondition);
+    expect(cleanupQuery.sql).toContain('"rooms"."status" = $1');
+    expect(cleanupQuery.sql).toContain('"rooms"."phase" = $2');
+    expect(cleanupQuery.sql).toContain('"rooms"."expires_at" <= $3');
+    expect(cleanupQuery.params.slice(0, 2)).toEqual(['lobby', 'LOBBY']);
   });
 
   it('retries a room-code collision', async () => {
@@ -296,6 +322,40 @@ describe('room lifecycle routes', () => {
       .expect(409);
 
     expect(response.body.message).toBe('Nickname is already taken');
+  });
+
+  it('allocates join order after departed players instead of reusing an indexed value', async () => {
+    const departed = player({
+      id: guestId,
+      nickname: 'Departed',
+      joinOrder: 1,
+      isHost: false,
+      leftAt: new Date('2026-07-03T15:05:00.000Z'),
+    });
+    const active = player({
+      id: '44444444-4444-4444-8444-444444444444',
+      nickname: 'Active',
+      token: 'active-secret',
+      joinOrder: 2,
+      isHost: false,
+    });
+    const newcomer = player({
+      id: '55555555-5555-4555-8555-555555555555',
+      nickname: 'Newcomer',
+      token: 'newcomer-secret',
+      joinOrder: 3,
+      isHost: false,
+    });
+    queueSelect([room()], [player(), departed, active], [player(), departed, active, newcomer]);
+    dbMocks.insertResults.push([newcomer]);
+    dbMocks.updateResults.push([room({ version: 2 })]);
+    const app = await buildTestApp();
+
+    await request(app).post('/api/rooms/ABCD2/join').send({ nickname: 'Newcomer' }).expect(200);
+
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({ nickname: 'Newcomer', joinOrder: 3 })
+    );
   });
 
   it('returns unchanged while still refreshing presence', async () => {

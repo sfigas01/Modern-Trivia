@@ -189,7 +189,11 @@ export function registerRoomRoutes(app: Express): void {
       const input = createRoomRequestSchema.parse(req.body);
       const now = new Date();
 
-      await db.delete(rooms).where(lte(rooms.expiresAt, now));
+      // Only lobby rooms use the short two-hour expiry. Active rooms are
+      // extended by the start transition and must not be removed by this cleanup.
+      await db
+        .delete(rooms)
+        .where(and(eq(rooms.status, 'lobby'), eq(rooms.phase, 'LOBBY'), lte(rooms.expiresAt, now)));
 
       for (let attempt = 0; attempt < MAX_ROOM_CODE_ATTEMPTS; attempt++) {
         const code = generateRoomCode();
@@ -271,17 +275,19 @@ export function registerRoomRoutes(app: Express): void {
             throw new RoomRouteError(409, 'Game has already started');
           }
 
-          const existingPlayers = await tx
+          const allPlayers = await tx
             .select()
             .from(roomPlayers)
-            .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+            .where(eq(roomPlayers.roomId, room.id))
             .orderBy(asc(roomPlayers.joinOrder));
 
-          if (existingPlayers.length >= MAX_PLAYERS) {
+          const activePlayers = allPlayers.filter((player) => player.leftAt === null);
+
+          if (activePlayers.length >= MAX_PLAYERS) {
             throw new RoomRouteError(409, 'Room is full');
           }
           if (
-            existingPlayers.some(
+            activePlayers.some(
               (player) => player.nickname.toLocaleLowerCase() === input.nickname.toLocaleLowerCase()
             )
           ) {
@@ -294,7 +300,7 @@ export function registerRoomRoutes(app: Express): void {
               roomId: room.id,
               nickname: input.nickname,
               token: generatePlayerToken(),
-              joinOrder: existingPlayers.length,
+              joinOrder: (allPlayers.at(-1)?.joinOrder ?? -1) + 1,
               isHost: false,
             })
             .returning();
