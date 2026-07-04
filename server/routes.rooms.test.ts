@@ -17,10 +17,14 @@ const dbMocks = vi.hoisted(() => {
     const chain = {
       for: vi.fn(() => chain),
       from: vi.fn(() => chain),
+      leftJoin: vi.fn(() => chain),
       limit: vi.fn(() => chain),
       orderBy: vi.fn(() => chain),
       returning: vi.fn(() => Promise.resolve(result)),
-      set: vi.fn(() => chain),
+      set: vi.fn((value) => {
+        valueArgs.push(value);
+        return chain;
+      }),
       then: promise.then.bind(promise),
       values: vi.fn((value) => {
         valueArgs.push(value);
@@ -123,6 +127,26 @@ function player(overrides: Record<string, unknown> = {}) {
     lastSeenAt: now,
     leftAt: null,
     ...overrides,
+  };
+}
+
+function question(id = 'question-1') {
+  return {
+    id,
+    category: 'History & Geography',
+    difficulty: 'Easy',
+    question: 'What is the capital of Canada?',
+    answer: 'Ottawa',
+    acceptableAnswers: ['Ottawa, Ontario'],
+    explanation: 'Ottawa is the federal capital.',
+    pillar: 'GlobalEh',
+    tags: ['Canada'],
+    sourceUrl: 'https://example.com/ottawa',
+    sourceName: 'Ottawa reference',
+    status: 'approved',
+    aiAnalysis: null,
+    createdAt: now,
+    updatedAt: now,
   };
 }
 
@@ -356,6 +380,353 @@ describe('room lifecycle routes', () => {
     expect(dbMocks.valueArgs).toContainEqual(
       expect.objectContaining({ nickname: 'Newcomer', joinOrder: 3 })
     );
+  });
+
+  it('starts a room with shuffled approved questions and the first player active', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: selectedQuestions.map(({ id }) => id),
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [player()],
+      [player(), guest],
+      selectedQuestions,
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      status: 'active',
+      phase: 'QUESTION',
+      activePlayerId: hostId,
+      currentQuestion: { id: 'question-1' },
+    });
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({
+        status: 'active',
+        phase: 'QUESTION',
+        activePlayerId: hostId,
+        questionIds: selectedQuestions.map(({ id }) => id),
+      })
+    );
+  });
+
+  it('requires a host and at least two players to start', async () => {
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect([room()], [guest]);
+    const app = await buildTestApp();
+
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/start')
+          .set('X-Player-Token', 'guest-secret')
+          .send({})
+          .expect(403)
+      ).body.message
+    ).toBe('Host token required');
+
+    queueSelect([room()], [player()], [player()]);
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/start')
+          .set('X-Player-Token', 'host-secret')
+          .send({})
+          .expect(409)
+      ).body.message
+    ).toBe('At least two players are required to start');
+  });
+
+  it('accepts an active-player answer and reveals its scored attempt', async () => {
+    const questionRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      questionIds: ['question-1'],
+      activePlayerId: hostId,
+    });
+    const answeredRoom = room({
+      status: 'active',
+      phase: 'REVEAL',
+      version: 2,
+      questionIds: ['question-1'],
+      activePlayerId: hostId,
+      currentAttempt: {
+        questionId: 'question-1',
+        playerId: hostId,
+        submittedAnswer: 'Ottawa',
+        verdict: 'CORRECT',
+        pointsDelta: 1,
+      },
+    });
+    queueSelect([questionRoom], [player()], [question()], [player()], [question()]);
+    dbMocks.updateResults.push([answeredRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/answer')
+      .set('X-Player-Token', 'host-secret')
+      .send({ answer: 'Ottawa' })
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      phase: 'REVEAL',
+      currentAttempt: { verdict: 'CORRECT', pointsDelta: 1 },
+      currentQuestion: { answer: 'Ottawa' },
+    });
+  });
+
+  it('rejects a non-active answer and a duplicate answer', async () => {
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect(
+      [
+        room({
+          status: 'active',
+          phase: 'QUESTION',
+          questionIds: ['question-1'],
+          activePlayerId: hostId,
+        }),
+      ],
+      [guest]
+    );
+    const app = await buildTestApp();
+
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/answer')
+          .set('X-Player-Token', 'guest-secret')
+          .send({ answer: 'Ottawa' })
+          .expect(403)
+      ).body.message
+    ).toBe('Only the active player can answer');
+
+    queueSelect([room({ status: 'active', phase: 'REVEAL' })]);
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/answer')
+          .set('X-Player-Token', 'host-secret')
+          .send({ answer: 'Ottawa' })
+          .expect(409)
+      ).body.message
+    ).toBe('Room is not accepting answers');
+  });
+
+  it('advances once, applies score, and rejects a duplicate advance', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Ottawa',
+      verdict: 'CORRECT' as const,
+      pointsDelta: 1,
+    };
+    const revealRoom = room({
+      status: 'active',
+      phase: 'REVEAL',
+      questionIds: ['question-1', 'question-2'],
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    const advancedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: ['question-1', 'question-2'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    queueSelect(
+      [revealRoom],
+      [player()],
+      [player(), guest],
+      [player({ score: 1, questionCount: 1, lastRoundDelta: 1 }), guest],
+      [question('question-2')]
+    );
+    dbMocks.updateResults.push([advancedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/advance')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      phase: 'QUESTION',
+      currentQuestionIndex: 1,
+      currentQuestion: { id: 'question-2' },
+    });
+    expect(response.body.snapshot.players[0]).toMatchObject({
+      id: hostId,
+      score: 1,
+      questionCount: 1,
+    });
+
+    queueSelect([advancedRoom]);
+    expect(
+      (
+        await request(app)
+          .post('/api/rooms/ABCD2/advance')
+          .set('X-Player-Token', 'host-secret')
+          .send({})
+          .expect(409)
+      ).body.message
+    ).toBe('Room is not ready to advance');
+  });
+
+  it('returns a valid revealed snapshot when the final answer ends the game', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Ottawa',
+      verdict: 'CORRECT' as const,
+      pointsDelta: 1,
+    };
+    const revealRoom = room({
+      status: 'active',
+      phase: 'REVEAL',
+      questionIds: ['question-1'],
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    const finishedRoom = room({
+      status: 'finished',
+      phase: 'GAME_OVER',
+      version: 2,
+      questionIds: ['question-1'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    queueSelect(
+      [revealRoom],
+      [player()],
+      [player(), guest],
+      [player({ score: 1, questionCount: 1, lastRoundDelta: 1 }), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([finishedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/advance')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      status: 'finished',
+      phase: 'GAME_OVER',
+      currentQuestionIndex: 1,
+      currentQuestion: { id: 'question-1', answer: 'Ottawa' },
+    });
+  });
+
+  it('allows only the host to continue from round score', async () => {
+    const attempt = {
+      questionId: 'question-1',
+      playerId: guestId,
+      submittedAnswer: null,
+      verdict: 'PASS' as const,
+      pointsDelta: 0,
+    };
+    const scoreRoom = room({
+      status: 'active',
+      phase: 'ROUND_SCORE',
+      questionIds: ['question-1', 'question-2'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect([scoreRoom], [guest]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/continue')
+      .set('X-Player-Token', 'guest-secret')
+      .send({})
+      .expect(403);
+
+    const continuedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: ['question-1', 'question-2'],
+      currentQuestionIndex: 1,
+      activePlayerId: hostId,
+      currentAttempt: null,
+    });
+    queueSelect([scoreRoom], [player()], [player(), guest], [question('question-2')]);
+    dbMocks.updateResults.push([continuedRoom]);
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/continue')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({ phase: 'QUESTION', currentAttempt: null });
+  });
+
+  it('lets only the host abandon a lobby', async () => {
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect([room()], [guest]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/end')
+      .set('X-Player-Token', 'guest-secret')
+      .send({})
+      .expect(403);
+
+    const abandonedRoom = room({ status: 'abandoned', phase: 'LOBBY', version: 2 });
+    queueSelect([room()], [player()], [player(), guest]);
+    dbMocks.updateResults.push([abandonedRoom]);
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/end')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({ status: 'abandoned', phase: 'LOBBY' });
   });
 
   it('returns unchanged while still refreshing presence', async () => {

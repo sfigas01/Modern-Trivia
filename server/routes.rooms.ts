@@ -1,12 +1,23 @@
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
-import { and, asc, eq, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from './db';
+import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
+import type { AuthenticatedRequest } from './types';
+import { QUESTIONS_PER_TEAM_ROTATION, type Question as AnswerQuestion } from '@shared/lib/answers';
 import {
+  advanceRoomRequestSchema,
+  advanceRoomResponseSchema,
+  answerRoomRequestSchema,
+  answerRoomResponseSchema,
+  continueRoomRequestSchema,
+  continueRoomResponseSchema,
   createRoomRequestSchema,
   createRoomResponseSchema,
+  endRoomRequestSchema,
+  endRoomResponseSchema,
   joinRoomRequestSchema,
   joinRoomResponseSchema,
   pollRoomRequestSchema,
@@ -15,7 +26,11 @@ import {
   roomPlayers,
   roomSnapshotSchema,
   rooms,
+  seenQuestions,
+  startRoomRequestSchema,
+  startRoomResponseSchema,
   unchangedRoomPollResponseSchema,
+  type Question,
   type Room,
   type RoomPlayer,
   type RoomSnapshot,
@@ -25,6 +40,7 @@ const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const MAX_ROOM_CODE_ATTEMPTS = 5;
 const MAX_PLAYERS = 4;
 const LOBBY_TTL_MS = 2 * 60 * 60 * 1000;
+const ACTIVE_TTL_MS = 24 * 60 * 60 * 1000;
 const ROOM_CODE_CONSTRAINT = 'rooms_code_unique';
 const ROOM_NICKNAME_CONSTRAINT = 'uq_room_players_room_nickname_ci';
 
@@ -65,6 +81,32 @@ function isExpired(room: Room, now = new Date()): boolean {
   return room.expiresAt.getTime() <= now.getTime();
 }
 
+function getUserId(req: Request): string | undefined {
+  return (req as AuthenticatedRequest).user?.claims?.sub;
+}
+
+function requireHost(player: RoomPlayer, room: Room): void {
+  if (!player.isHost || player.id !== room.hostPlayerId) {
+    throw new RoomRouteError(403, 'Host token required');
+  }
+}
+
+function toAnswerQuestion(question: Question): AnswerQuestion {
+  return {
+    id: question.id,
+    category: question.category,
+    difficulty: z.enum(['Easy', 'Medium', 'Hard']).parse(question.difficulty),
+    question: question.question,
+    answer: question.answer,
+    acceptableAnswers: question.acceptableAnswers ?? [],
+    explanation: question.explanation,
+    pillar: question.pillar,
+    tags: question.tags ?? [],
+    sourceUrl: question.sourceUrl ?? undefined,
+    sourceName: question.sourceName ?? undefined,
+  };
+}
+
 function serializePlayer(player: RoomPlayer) {
   return {
     id: player.id,
@@ -87,7 +129,10 @@ async function buildRoomSnapshot(database: RoomReadDatabase, room: Room): Promis
     .orderBy(asc(roomPlayers.joinOrder));
 
   let currentQuestion: Record<string, unknown> | null = null;
-  const questionId = room.questionIds[room.currentQuestionIndex];
+  const questionId =
+    room.phase === 'QUESTION'
+      ? room.questionIds[room.currentQuestionIndex]
+      : (room.currentAttempt?.questionId ?? room.questionIds[room.currentQuestionIndex]);
 
   if (room.phase !== 'LOBBY' && questionId) {
     const [question] = await database
@@ -333,6 +378,398 @@ export function registerRoomRoutes(app: Express): void {
       );
     } catch (error) {
       return sendRoomError(res, error, 'Error joining room:');
+    }
+  });
+
+  app.post('/api/rooms/:code/start', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      startRoomRequestSchema.parse(req.body);
+      const userId = getUserId(req);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.status !== 'lobby' || room.phase !== 'LOBBY') {
+          throw new RoomRouteError(409, 'Game has already started');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        requireHost(actor, room);
+
+        const players = await tx
+          .select()
+          .from(roomPlayers)
+          .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+          .orderBy(asc(roomPlayers.joinOrder));
+
+        if (players.length < 2) {
+          throw new RoomRouteError(409, 'At least two players are required to start');
+        }
+
+        const questionLimit = room.numRounds * players.length * QUESTIONS_PER_TEAM_ROTATION;
+        const questionConditions = [eq(questions.status, 'approved')];
+        if (room.category !== 'All') {
+          questionConditions.push(eq(questions.category, room.category));
+        }
+
+        let selectedQuestions: { id: string }[];
+        if (userId) {
+          const cooldownExpr = sql`
+            CASE (${seenQuestions.seenCount} - 1) % 3
+              WHEN 0 THEN INTERVAL '1 month'
+              WHEN 1 THEN INTERVAL '3 months'
+              WHEN 2 THEN INTERVAL '5 months'
+            END
+          `;
+          selectedQuestions = await tx
+            .select({ id: questions.id })
+            .from(questions)
+            .leftJoin(
+              seenQuestions,
+              and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
+            )
+            .where(
+              and(
+                ...questionConditions,
+                sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
+              )
+            )
+            .orderBy(
+              sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
+              sql`random()`
+            )
+            .limit(questionLimit);
+        } else {
+          selectedQuestions = await tx
+            .select({ id: questions.id })
+            .from(questions)
+            .where(and(...questionConditions))
+            .orderBy(sql`random()`)
+            .limit(questionLimit);
+        }
+
+        if (selectedQuestions.length < questionLimit) {
+          throw new RoomRouteError(409, 'Not enough approved questions to start this game');
+        }
+
+        const [startedRoom] = await tx
+          .update(rooms)
+          .set({
+            status: 'active',
+            phase: 'QUESTION',
+            questionIds: selectedQuestions.map((question) => question.id),
+            currentQuestionIndex: 0,
+            activePlayerId: players[0].id,
+            currentAttempt: null,
+            expiresAt: new Date(Date.now() + ACTIVE_TTL_MS),
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.status, 'lobby'),
+              eq(rooms.phase, 'LOBBY'),
+              eq(rooms.hostPlayerId, actor.id)
+            )
+          )
+          .returning();
+
+        if (!startedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before the game could start');
+        }
+        return startedRoom;
+      });
+
+      return res.json(
+        startRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error starting room:');
+    }
+  });
+
+  app.post('/api/rooms/:code/answer', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      const input = answerRoomRequestSchema.parse(req.body);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.phase !== 'QUESTION' || room.status !== 'active') {
+          throw new RoomRouteError(409, 'Room is not accepting answers');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (actor.id !== room.activePlayerId) {
+          throw new RoomRouteError(403, 'Only the active player can answer');
+        }
+
+        const questionId = room.questionIds[room.currentQuestionIndex];
+        const [question] = await tx
+          .select()
+          .from(questions)
+          .where(eq(questions.id, questionId))
+          .limit(1);
+        if (!question) {
+          throw new Error(`Room question not found: ${questionId}`);
+        }
+
+        const currentAttempt = createRoomAttempt(
+          actor.id,
+          input.answer,
+          toAnswerQuestion(question)
+        );
+        const [answeredRoom] = await tx
+          .update(rooms)
+          .set({
+            phase: 'REVEAL',
+            currentAttempt,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.status, 'active'),
+              eq(rooms.phase, 'QUESTION'),
+              eq(rooms.activePlayerId, actor.id)
+            )
+          )
+          .returning();
+
+        if (!answeredRoom) {
+          throw new RoomRouteError(409, 'Room state changed before the answer was accepted');
+        }
+        return answeredRoom;
+      });
+
+      return res.json(
+        answerRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error answering room question:');
+    }
+  });
+
+  app.post('/api/rooms/:code/advance', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      advanceRoomRequestSchema.parse(req.body);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.phase !== 'REVEAL' || room.status !== 'active' || !room.currentAttempt) {
+          throw new RoomRouteError(409, 'Room is not ready to advance');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (actor.id !== room.activePlayerId && actor.id !== room.hostPlayerId) {
+          throw new RoomRouteError(403, 'Only the active player or host can advance');
+        }
+
+        const players = await tx
+          .select()
+          .from(roomPlayers)
+          .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+          .orderBy(asc(roomPlayers.joinOrder));
+        const transition = advanceRoomEngine({
+          activePlayerId: room.activePlayerId ?? '',
+          currentAttempt: room.currentAttempt,
+          currentQuestionIndex: room.currentQuestionIndex,
+          players,
+          questionCount: room.questionIds.length,
+        });
+
+        const [advancedRoom] = await tx
+          .update(rooms)
+          .set({
+            status: transition.phase === 'GAME_OVER' ? 'finished' : 'active',
+            phase: transition.phase,
+            currentQuestionIndex: transition.currentQuestionIndex,
+            activePlayerId: transition.activePlayerId,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.status, 'active'),
+              eq(rooms.phase, 'REVEAL'),
+              or(eq(rooms.activePlayerId, actor.id), eq(rooms.hostPlayerId, actor.id))
+            )
+          )
+          .returning();
+
+        if (!advancedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before it could advance');
+        }
+
+        for (const player of transition.players) {
+          await tx
+            .update(roomPlayers)
+            .set({
+              score: player.score,
+              questionCount: player.questionCount,
+              lastRoundDelta: player.lastRoundDelta,
+            })
+            .where(and(eq(roomPlayers.id, player.id), eq(roomPlayers.roomId, room.id)));
+        }
+
+        return advancedRoom;
+      });
+
+      return res.json(
+        advanceRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error advancing room:');
+    }
+  });
+
+  app.post('/api/rooms/:code/continue', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      continueRoomRequestSchema.parse(req.body);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.phase !== 'ROUND_SCORE' || room.status !== 'active') {
+          throw new RoomRouteError(409, 'Room is not ready for the next round');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        requireHost(actor, room);
+        const [continuedRoom] = await tx
+          .update(rooms)
+          .set({
+            phase: 'QUESTION',
+            currentAttempt: null,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.status, 'active'),
+              eq(rooms.phase, 'ROUND_SCORE'),
+              eq(rooms.hostPlayerId, actor.id)
+            )
+          )
+          .returning();
+        if (!continuedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before the next round');
+        }
+        return continuedRoom;
+      });
+
+      return res.json(
+        continueRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error continuing room:');
+    }
+  });
+
+  app.post('/api/rooms/:code/end', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      endRoomRequestSchema.parse(req.body);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.status === 'finished' || room.status === 'abandoned') {
+          throw new RoomRouteError(409, 'Room has already ended');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        requireHost(actor, room);
+        const isLobby = room.phase === 'LOBBY';
+        const [endedRoom] = await tx
+          .update(rooms)
+          .set({
+            status: isLobby ? 'abandoned' : 'finished',
+            phase: isLobby ? 'LOBBY' : 'GAME_OVER',
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(rooms.id, room.id),
+              eq(rooms.phase, room.phase),
+              eq(rooms.hostPlayerId, actor.id)
+            )
+          )
+          .returning();
+        if (!endedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before it could end');
+        }
+        return endedRoom;
+      });
+
+      return res.json(
+        endRoomResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error ending room:');
     }
   });
 
