@@ -29,6 +29,7 @@ import { filterNovelQuestions } from './lib/novelty-filter';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
+import { registerRoomRoutes } from './routes.rooms';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 type SinglePillar = (typeof VALID_PILLARS)[number];
@@ -200,6 +201,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Setup authentication (MUST be before other routes)
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerRoomRoutes(app);
 
   // Disputes API - admin review routes are protected; player submissions are public.
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
