@@ -20,6 +20,7 @@ const dbMocks = vi.hoisted(() => {
       leftJoin: vi.fn(() => chain),
       limit: vi.fn(() => chain),
       orderBy: vi.fn(() => chain),
+      onConflictDoUpdate: vi.fn(() => chain),
       returning: vi.fn(() => Promise.resolve(result)),
       set: vi.fn((value) => {
         valueArgs.push(value);
@@ -62,10 +63,36 @@ const dbMocks = vi.hoisted(() => {
 });
 
 const authMocks = vi.hoisted(() => ({
-  isAuthenticated: vi.fn((_req: Request, _res: Response, next: NextFunction) => next()),
+  isAuthenticated: vi.fn((req: Request, res: Response, next: NextFunction) => {
+    const user = (req as Request & { user?: TestUser }).user;
+
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    next();
+  }),
   registerAuthRoutes: vi.fn(),
-  setupAuth: vi.fn(async (_app: Express) => undefined),
+  setupAuth: vi.fn(async (app: Express) => {
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+      const userId = req.header('x-test-user-id');
+
+      if (userId) {
+        (req as Request & { user?: TestUser }).user = {
+          claims: { sub: userId },
+          expires_at: Math.floor(Date.now() / 1000) + 60,
+        };
+      }
+
+      next();
+    });
+  }),
 }));
+
+type TestUser = {
+  claims: { sub: string };
+  expires_at: number;
+};
 
 vi.mock('./db', () => ({
   db: {
@@ -430,6 +457,48 @@ describe('room lifecycle routes', () => {
         activePlayerId: hostId,
         questionIds: selectedQuestions.map(({ id }) => id),
       })
+    );
+  });
+
+  it('records the selected questions in seen history for an authenticated host', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: selectedQuestions.map(({ id }) => id),
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [player()],
+      [player(), guest],
+      selectedQuestions,
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .set('x-test-user-id', 'host-user')
+      .send({})
+      .expect(200);
+
+    expect(dbMocks.insert).toHaveBeenCalledTimes(1);
+    expect(dbMocks.valueArgs).toContainEqual(
+      selectedQuestions.map(({ id }) => ({ userId: 'host-user', questionId: id }))
     );
   });
 

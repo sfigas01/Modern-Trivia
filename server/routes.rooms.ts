@@ -464,6 +464,27 @@ export function registerRoomRoutes(app: Express): void {
           throw new RoomRouteError(409, 'Not enough approved questions to start this game');
         }
 
+        if (userId) {
+          await tx
+            .insert(seenQuestions)
+            .values(selectedQuestions.map((question) => ({ userId, questionId: question.id })))
+            .onConflictDoUpdate({
+              target: [seenQuestions.userId, seenQuestions.questionId],
+              set: {
+                seenCount: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN ${seenQuestions.seenCount} + 1
+              ELSE ${seenQuestions.seenCount}
+            END`,
+                seenAt: sql`CASE
+              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
+              THEN NOW()
+              ELSE ${seenQuestions.seenAt}
+            END`,
+              },
+            });
+        }
+
         const [startedRoom] = await tx
           .update(rooms)
           .set({
