@@ -1028,7 +1028,13 @@ export function registerRoomRoutes(app: Express): void {
         return currentRoom;
       });
 
-      if (sinceVersion === room.version) {
+      // Presence is derived from lastSeenAt rather than the gameplay version.
+      // Live rooms therefore need a fresh snapshot even when no gameplay state
+      // changed, otherwise clients keep stale roster presence indefinitely.
+      if (
+        sinceVersion === room.version &&
+        (room.status === 'finished' || room.status === 'abandoned')
+      ) {
         return res.json(unchangedRoomPollResponseSchema.parse({ changed: false }));
       }
 

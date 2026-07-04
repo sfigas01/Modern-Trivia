@@ -1029,8 +1029,26 @@ describe('room lifecycle routes', () => {
     ).toMatchObject({ status: 'finished', phase: 'GAME_OVER' });
   });
 
-  it('returns unchanged while still refreshing presence', async () => {
-    queueSelect([room()], [player()], [player()]);
+  it('returns a fresh live-room snapshot when only presence changed', async () => {
+    const refreshedHost = player({ lastSeenAt: new Date() });
+    queueSelect([room()], [player()], [player()], [refreshedHost]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/rooms/ABCD2?sinceVersion=1')
+      .set('X-Player-Token', 'host-secret')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      status: 'lobby',
+      version: 1,
+      players: [{ id: hostId, presence: 'online' }],
+    });
+    expect(dbMocks.update).toHaveBeenCalledOnce();
+  });
+
+  it('returns unchanged for a terminal room at the current version', async () => {
+    queueSelect([room({ status: 'abandoned' })], [player()]);
     const app = await buildTestApp();
 
     const response = await request(app)
