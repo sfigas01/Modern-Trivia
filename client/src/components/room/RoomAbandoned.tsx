@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import type { RoomSnapshot } from '@shared/models/rooms';
 
@@ -12,6 +13,11 @@ export interface RoomAbandonedProps {
 export function RoomAbandoned({ snapshot }: RoomAbandonedProps) {
   const [, setLocation] = useLocation();
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
+  const homeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    homeButtonRef.current?.focus();
+  }, []);
 
   function handleBackToHome() {
     clearRoomSession(snapshot.code);
@@ -22,10 +28,13 @@ export function RoomAbandoned({ snapshot }: RoomAbandonedProps) {
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       data-testid="room-abandoned"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="room-abandoned-title"
     >
       <Card className="w-full max-w-md border-white/10 bg-white/5 backdrop-blur-md">
         <CardHeader>
-          <CardTitle>Room Closed</CardTitle>
+          <CardTitle id="room-abandoned-title">Room Closed</CardTitle>
           <CardDescription>The host has ended this game.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -45,7 +54,12 @@ export function RoomAbandoned({ snapshot }: RoomAbandonedProps) {
               ))}
             </div>
           )}
-          <Button className="w-full" onClick={handleBackToHome} data-testid="button-abandoned-home">
+          <Button
+            ref={homeButtonRef}
+            className="w-full"
+            onClick={handleBackToHome}
+            data-testid="button-abandoned-home"
+          >
             Back to Home
           </Button>
         </CardContent>

@@ -100,4 +100,19 @@ describe('RoomAbandoned', () => {
     expect(mockClearRoomSession).toHaveBeenCalledWith('ABCDE');
     expect(mockSetLocation).toHaveBeenCalledWith('/');
   });
+
+  it('exposes dialog semantics labelled by the title', () => {
+    render(<RoomAbandoned snapshot={makeSnapshot()} />);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'room-abandoned-title');
+    expect(document.getElementById('room-abandoned-title')).toHaveTextContent('Room Closed');
+  });
+
+  it('auto-focuses the Back to Home button on mount', () => {
+    render(<RoomAbandoned snapshot={makeSnapshot()} />);
+
+    expect(screen.getByTestId('button-abandoned-home')).toHaveFocus();
+  });
 });
