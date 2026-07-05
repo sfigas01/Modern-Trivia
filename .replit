@@ -57,3 +57,8 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_integrations:2.0.0", "linear:1.0.0"]
+
+[userenv]
+
+[userenv.development]
+VITE_MULTIPLAYER = "true"
