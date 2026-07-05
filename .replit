@@ -61,4 +61,6 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_int
 [userenv]
 
 [userenv.development]
+
+[userenv.shared]
 VITE_MULTIPLAYER = "true"
