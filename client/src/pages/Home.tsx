@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'wouter';
 import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 import { useCategoryCounts } from '@/hooks/use-category-counts';
+import { clearRoomSession, listRoomSessions, type RoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,13 +24,56 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { MULTIPLAYER } from '@/lib/featureFlags';
 
+// A stored room session may point at a room that has since been closed or
+// expired. Validate against the server before offering it as a rejoin target.
+function useRejoinableSession(enabled: boolean): RoomSession | null {
+  const [session, setSession] = useState<RoomSession | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const candidate = listRoomSessions()[0];
+    if (!candidate) return;
+
+    let cancelled = false;
+    fetch(`/api/rooms/${encodeURIComponent(candidate.code)}`, {
+      headers: { 'X-Player-Token': candidate.token },
+    })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 404 || res.status === 401) {
+          clearRoomSession(candidate.code);
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === 'abandoned' || data.status === 'finished') {
+          clearRoomSession(candidate.code);
+          return;
+        }
+        setSession(candidate);
+      })
+      .catch(() => {
+        // Transient network error — leave the stored session alone and
+        // simply don't offer the rejoin chip this time.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return session;
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<'choose' | 'solo'>(MULTIPLAYER ? 'choose' : 'solo');
+  const rejoinSession = useRejoinableSession(MULTIPLAYER);
 
   if (MULTIPLAYER && mode === 'choose') {
     return (
       <ModeChooser
+        rejoinSession={rejoinSession}
         onPlaySolo={() => setMode('solo')}
         onHost={() => setLocation('/host')}
         onJoin={() => setLocation('/join')}
@@ -41,10 +85,12 @@ export default function Home() {
 }
 
 function ModeChooser({
+  rejoinSession,
   onPlaySolo,
   onHost,
   onJoin,
 }: {
+  rejoinSession: RoomSession | null;
   onPlaySolo: () => void;
   onHost: () => void;
   onJoin: () => void;
@@ -73,6 +119,17 @@ function ModeChooser({
         </div>
 
         <div className="flex flex-col w-full gap-4">
+          {rejoinSession && (
+            <Link href={`/room/${rejoinSession.code}`}>
+              <Button
+                variant="secondary"
+                className="w-full h-12 text-base font-semibold rounded-2xl border border-primary/30 bg-primary/10 hover:bg-primary/20"
+                data-testid="button-rejoin-room"
+              >
+                Rejoin game {rejoinSession.code}
+              </Button>
+            </Link>
+          )}
           <Button
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
             onClick={onPlaySolo}

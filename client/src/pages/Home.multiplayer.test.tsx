@@ -1,8 +1,10 @@
+import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Home from './Home';
 import { GameProvider } from '@/lib/store';
+import { getRoomSession, saveRoomSession } from '@/lib/room-session';
 
 // Stub localStorage for jsdom compatibility
 const storage: Record<string, string> = {};
@@ -17,6 +19,10 @@ vi.stubGlobal('localStorage', {
   clear: () => {
     for (const key of Object.keys(storage)) delete storage[key];
   },
+  key: (index: number) => Object.keys(storage)[index] ?? null,
+  get length() {
+    return Object.keys(storage).length;
+  },
 });
 
 function createFetchMock() {
@@ -28,6 +34,26 @@ function createFetchMock() {
   );
 }
 
+function createRoomAwareFetchMock(roomResponse: { status: number; body?: unknown }) {
+  return vi.fn((input: string | URL | Request) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+    if (url.includes('/api/rooms/')) {
+      const ok = roomResponse.status >= 200 && roomResponse.status < 300;
+      return Promise.resolve({
+        ok,
+        status: roomResponse.status,
+        json: () => Promise.resolve(roomResponse.body ?? {}),
+      } as Response);
+    }
+
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ questions: [], categories: [] }),
+    } as Response);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mocks — same as Home.test.tsx, but with MULTIPLAYER enabled
 // ---------------------------------------------------------------------------
@@ -36,6 +62,9 @@ const mockSetLocation = vi.fn();
 
 vi.mock('wouter', () => ({
   useLocation: () => ['/', mockSetLocation],
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a href={href}>{children}</a>
+  ),
 }));
 
 vi.mock('@/lib/featureFlags', () => ({
@@ -126,5 +155,67 @@ describe('Home page with VITE_MULTIPLAYER enabled', () => {
     renderHome();
     fireEvent.click(screen.getByTestId('button-mode-solo'));
     expect(await screen.findByText('Team Setup')).toBeDefined();
+  });
+
+  describe('rejoin chip', () => {
+    it('does not show a rejoin chip when no session is stored', () => {
+      renderHome();
+      expect(screen.queryByTestId('button-rejoin-room')).toBeNull();
+    });
+
+    it('shows a rejoin chip for a stored session when the room is still active', async () => {
+      saveRoomSession({ code: 'ABCDE', playerId: 'player-1', token: 'token-1' });
+      vi.stubGlobal('fetch', createRoomAwareFetchMock({ status: 200, body: { status: 'active' } }));
+
+      renderHome();
+
+      expect(await screen.findByTestId('button-rejoin-room')).toHaveTextContent('ABCDE');
+    });
+
+    it('clears the session and hides the chip when the room no longer exists', async () => {
+      saveRoomSession({ code: 'ABCDE', playerId: 'player-1', token: 'token-1' });
+      vi.stubGlobal('fetch', createRoomAwareFetchMock({ status: 404 }));
+
+      renderHome();
+
+      await waitFor(() => expect(getRoomSession('ABCDE')).toBeNull());
+      expect(screen.queryByTestId('button-rejoin-room')).toBeNull();
+    });
+
+    it('clears the session and hides the chip when the room has been abandoned', async () => {
+      saveRoomSession({ code: 'ABCDE', playerId: 'player-1', token: 'token-1' });
+      vi.stubGlobal(
+        'fetch',
+        createRoomAwareFetchMock({ status: 200, body: { status: 'abandoned' } })
+      );
+
+      renderHome();
+
+      await waitFor(() => expect(getRoomSession('ABCDE')).toBeNull());
+      expect(screen.queryByTestId('button-rejoin-room')).toBeNull();
+    });
+
+    it('clears the session and hides the chip when the room has finished', async () => {
+      saveRoomSession({ code: 'ABCDE', playerId: 'player-1', token: 'token-1' });
+      vi.stubGlobal(
+        'fetch',
+        createRoomAwareFetchMock({ status: 200, body: { status: 'finished' } })
+      );
+
+      renderHome();
+
+      await waitFor(() => expect(getRoomSession('ABCDE')).toBeNull());
+      expect(screen.queryByTestId('button-rejoin-room')).toBeNull();
+    });
+
+    it('links the chip to the room route for the stored code', async () => {
+      saveRoomSession({ code: 'ABCDE', playerId: 'player-1', token: 'token-1' });
+      vi.stubGlobal('fetch', createRoomAwareFetchMock({ status: 200, body: { status: 'active' } }));
+
+      renderHome();
+
+      const chip = await screen.findByTestId('button-rejoin-room');
+      expect(chip.closest('a')).toHaveAttribute('href', '/room/ABCDE');
+    });
   });
 });

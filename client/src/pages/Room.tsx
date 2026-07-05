@@ -8,6 +8,7 @@ import { Lobby } from '@/components/room/Lobby';
 import { PlayerRoster } from '@/components/room/PlayerRoster';
 import { QuestionView } from '@/components/room/QuestionView';
 import { RevealView } from '@/components/room/RevealView';
+import { RoomAbandoned } from '@/components/room/RoomAbandoned';
 import { RoundScore } from '@/components/room/RoundScore';
 import { TurnHandoff } from '@/components/room/TurnHandoff';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,8 +21,19 @@ export default function Room() {
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const session = useMemo(() => getRoomSession(code), [code]);
-  const { snapshot, isLoading, isDisconnected, error, start, answer, advance, continueRound, end, refetch } =
-    useRoom(code, { enabled: !!session });
+  const {
+    snapshot,
+    isLoading,
+    isDisconnected,
+    error,
+    start,
+    answer,
+    advance,
+    continueRound,
+    skip,
+    end,
+    refetch,
+  } = useRoom(code, { enabled: !!session });
 
   const [handoffPlayer, setHandoffPlayer] = useState<RoomPlayerSnapshot | null>(null);
   const prevActivePlayerRef = useRef<string | null>(null);
@@ -77,6 +89,10 @@ export default function Room() {
     return null;
   }
 
+  if (snapshot.status === 'abandoned') {
+    return <RoomAbandoned snapshot={snapshot} />;
+  }
+
   const showProgress = snapshot.phase === 'QUESTION' || snapshot.phase === 'REVEAL';
   const activePlayerCount = snapshot.players.filter((player) => !player.leftAt).length;
   const totalQuestions = snapshot.numRounds * activePlayerCount * QUESTIONS_PER_TEAM_ROTATION;
@@ -109,9 +125,15 @@ export default function Room() {
         ))}
 
       {isDisconnected && (
-        <p className="text-sm text-yellow-400" data-testid="text-disconnected" aria-live="polite">
+        <div
+          className={`fixed left-0 w-full z-40 py-2 text-center text-sm font-medium bg-yellow-500/90 text-black ${
+            showProgress ? 'top-2' : 'top-0'
+          }`}
+          data-testid="text-disconnected"
+          aria-live="polite"
+        >
           Connection lost. Reconnecting…
-        </p>
+        </div>
       )}
 
       {snapshot.phase === 'LOBBY' && (
@@ -135,6 +157,7 @@ export default function Room() {
               snapshot={snapshot}
               currentPlayerId={session.playerId}
               answer={answer}
+              skip={skip}
               refetch={refetch}
             />
           )}
