@@ -30,6 +30,30 @@ vi.mock('@/components/room/Lobby', () => ({
   ),
 }));
 
+vi.mock('@/components/room/PlayerRoster', () => ({
+  PlayerRoster: () => <div data-testid="player-roster-mock" />,
+}));
+
+vi.mock('@/components/room/QuestionView', () => ({
+  QuestionView: () => <div data-testid="question-view-mock" />,
+}));
+
+vi.mock('@/components/room/RevealView', () => ({
+  RevealView: () => <div data-testid="reveal-view-mock" />,
+}));
+
+vi.mock('@/components/room/RoundScore', () => ({
+  RoundScore: () => <div data-testid="round-score-mock" />,
+}));
+
+vi.mock('@/components/room/FinalResults', () => ({
+  FinalResults: () => <div data-testid="final-results-mock" />,
+}));
+
+vi.mock('@/components/room/TurnHandoff', () => ({
+  TurnHandoff: () => <div data-testid="turn-handoff-mock" />,
+}));
+
 const SESSION = { code: 'ABCDE', playerId: 'host-1', token: 'test-token' };
 
 function makeSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
@@ -132,17 +156,135 @@ describe('Room', () => {
     render(<Room />);
 
     expect(screen.getByTestId('lobby-mock')).toBeInTheDocument();
+    expect(screen.queryByTestId('player-roster-mock')).toBeNull();
   });
 
-  it('renders a placeholder for non-LOBBY phases', () => {
+  it('renders QuestionView and the PlayerRoster when phase is QUESTION', () => {
     mockGetRoomSession.mockReturnValue(SESSION);
     mockUseRoom.mockReturnValue(
-      makeUseRoomResult({ snapshot: makeSnapshot({ phase: 'QUESTION' }) })
+      makeUseRoomResult({ snapshot: makeSnapshot({ phase: 'QUESTION', activePlayerId: 'host-1' }) })
     );
 
     render(<Room />);
 
-    expect(screen.getByText(/isn't implemented yet/)).toBeInTheDocument();
+    expect(screen.getByTestId('question-view-mock')).toBeInTheDocument();
+    expect(screen.getByTestId('player-roster-mock')).toBeInTheDocument();
     expect(screen.queryByTestId('lobby-mock')).toBeNull();
+  });
+
+  it('renders RevealView when phase is REVEAL', () => {
+    mockGetRoomSession.mockReturnValue(SESSION);
+    mockUseRoom.mockReturnValue(
+      makeUseRoomResult({ snapshot: makeSnapshot({ phase: 'REVEAL', activePlayerId: 'host-1' }) })
+    );
+
+    render(<Room />);
+
+    expect(screen.getByTestId('reveal-view-mock')).toBeInTheDocument();
+  });
+
+  it('renders RoundScore when phase is ROUND_SCORE', () => {
+    mockGetRoomSession.mockReturnValue(SESSION);
+    mockUseRoom.mockReturnValue(
+      makeUseRoomResult({ snapshot: makeSnapshot({ phase: 'ROUND_SCORE', activePlayerId: 'host-1' }) })
+    );
+
+    render(<Room />);
+
+    expect(screen.getByTestId('round-score-mock')).toBeInTheDocument();
+  });
+
+  it('renders FinalResults when phase is GAME_OVER', () => {
+    mockGetRoomSession.mockReturnValue(SESSION);
+    mockUseRoom.mockReturnValue(
+      makeUseRoomResult({ snapshot: makeSnapshot({ phase: 'GAME_OVER', activePlayerId: 'host-1' }) })
+    );
+
+    render(<Room />);
+
+    expect(screen.getByTestId('final-results-mock')).toBeInTheDocument();
+  });
+
+  describe('turn handoff interstitial', () => {
+    const players = [
+      {
+        id: 'p1',
+        nickname: 'Alice',
+        joinOrder: 0,
+        score: 0,
+        questionCount: 0,
+        lastRoundDelta: 0,
+        isHost: true,
+        presence: 'online' as const,
+        lastSeenAt: new Date().toISOString(),
+        leftAt: null,
+      },
+      {
+        id: 'p2',
+        nickname: 'Bob',
+        joinOrder: 1,
+        score: 0,
+        questionCount: 0,
+        lastRoundDelta: 0,
+        isHost: false,
+        presence: 'online' as const,
+        lastSeenAt: new Date().toISOString(),
+        leftAt: null,
+      },
+    ];
+
+    it('does not show on the initial QUESTION phase entry', () => {
+      mockGetRoomSession.mockReturnValue(SESSION);
+      mockUseRoom.mockReturnValue(
+        makeUseRoomResult({
+          snapshot: makeSnapshot({ phase: 'QUESTION', activePlayerId: 'p1', players, version: 2 }),
+        })
+      );
+
+      render(<Room />);
+
+      expect(screen.queryByTestId('turn-handoff-mock')).toBeNull();
+    });
+
+    it('shows when the active player changes mid-game', () => {
+      mockGetRoomSession.mockReturnValue(SESSION);
+      mockUseRoom.mockReturnValue(
+        makeUseRoomResult({
+          snapshot: makeSnapshot({ phase: 'QUESTION', activePlayerId: 'p1', players, version: 2 }),
+        })
+      );
+
+      const { rerender } = render(<Room />);
+      expect(screen.queryByTestId('turn-handoff-mock')).toBeNull();
+
+      mockUseRoom.mockReturnValue(
+        makeUseRoomResult({
+          snapshot: makeSnapshot({ phase: 'QUESTION', activePlayerId: 'p2', players, version: 3 }),
+        })
+      );
+      rerender(<Room />);
+
+      expect(screen.getByTestId('turn-handoff-mock')).toBeInTheDocument();
+    });
+
+    it('does not show on a non-QUESTION phase transition (REVEAL to ROUND_SCORE)', () => {
+      mockGetRoomSession.mockReturnValue(SESSION);
+      mockUseRoom.mockReturnValue(
+        makeUseRoomResult({
+          snapshot: makeSnapshot({ phase: 'REVEAL', activePlayerId: 'p1', players, version: 2 }),
+        })
+      );
+
+      const { rerender } = render(<Room />);
+
+      mockUseRoom.mockReturnValue(
+        makeUseRoomResult({
+          snapshot: makeSnapshot({ phase: 'ROUND_SCORE', activePlayerId: 'p2', players, version: 3 }),
+        })
+      );
+      rerender(<Room />);
+
+      expect(screen.queryByTestId('turn-handoff-mock')).toBeNull();
+    });
   });
 });

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
 import { DisputeModal } from '@/components/DisputeModal';
 import { useToast } from '@/hooks/use-toast';
+import { getDifficultyBadgeClass } from '@/lib/utils';
 
 const QUESTIONS_PER_TEAM_ROTATION = 4;
 
@@ -180,19 +181,6 @@ export default function Game() {
     state.currentAttempt?.disputeSubmitted === true &&
     state.currentAttempt.pointsAwarded !== true;
 
-  const getDifficultyColor = (d: string) => {
-    switch (d) {
-      case 'Easy':
-        return 'bg-[var(--color-difficulty-easy)] text-white';
-      case 'Medium':
-        return 'bg-[var(--color-difficulty-medium)] text-black';
-      case 'Hard':
-        return 'bg-[var(--color-difficulty-hard)] text-white';
-      default:
-        return 'bg-primary';
-    }
-  };
-
   const handleAwardDisputedPoints = () => {
     awardDisputedPoints();
     toast({
@@ -274,7 +262,7 @@ export default function Game() {
                     {currentQ?.category}
                   </Badge>
                   <Badge
-                    className={`text-lg px-4 py-2 ${currentQ ? getDifficultyColor(currentQ.difficulty) : 'bg-primary'} border-none shadow-lg`}
+                    className={`text-lg px-4 py-2 ${currentQ ? getDifficultyBadgeClass(currentQ.difficulty) : 'bg-primary'} border-none shadow-lg`}
                   >
                     {currentQ?.difficulty}
                   </Badge>

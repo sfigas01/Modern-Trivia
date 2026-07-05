@@ -48,6 +48,17 @@ function authHeaders(code: string): HeadersInit {
   return session ? { 'X-Player-Token': session.token } : {};
 }
 
+export interface RoomActionError extends Error {
+  status: number;
+}
+
+// Actions racing against the poll (two players answering, advancing a phase
+// that already moved on, etc.) land as 409s. Callers should reconcile by
+// refetching instead of surfacing an error toast for these.
+export function isRoomConflict(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && (error as RoomActionError).status === 409;
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let message = res.statusText;
@@ -57,7 +68,9 @@ async function parseResponse<T>(res: Response): Promise<T> {
     } catch {
       // response had no JSON body; fall back to statusText
     }
-    throw new Error(message);
+    const error = new Error(message) as RoomActionError;
+    error.status = res.status;
+    throw error;
   }
   return res.json() as Promise<T>;
 }
