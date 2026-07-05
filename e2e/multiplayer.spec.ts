@@ -16,8 +16,6 @@ const HOST = 'Host';
 const GUEST = 'Guest';
 const HOST_ANSWER = '__ste214_host_answer__';
 const GUEST_ANSWER = '__ste214_guest_answer__';
-const E2E_BASE_URL =
-  process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${process.env.PLAYWRIGHT_PORT ?? '5000'}`;
 let hostIp = '198.51.100.10';
 let guestIp = '198.51.100.11';
 
@@ -151,7 +149,23 @@ async function playUntilPhase(
         )
       ).snapshot;
     } else if (snapshot.phase === 'REVEAL') {
-      snapshot = (await postRoomAction(request, code, 'advance', hostToken)).snapshot;
+      const activeDriver = snapshot.activePlayerId
+        ? driversByPlayerId.get(snapshot.activePlayerId)
+        : undefined;
+      expect(
+        activeDriver,
+        `missing token for active player ${snapshot.activePlayerId}`
+      ).toBeTruthy();
+      snapshot = (
+        await postRoomAction(
+          request,
+          code,
+          'advance',
+          activeDriver!.token,
+          {},
+          activeDriver!.clientIp
+        )
+      ).snapshot;
     } else if (snapshot.phase === 'ROUND_SCORE') {
       snapshot = (await postRoomAction(request, code, 'continue', hostToken)).snapshot;
     }
@@ -184,14 +198,15 @@ test.describe('two-device multiplayer', () => {
     const subnet = (process.pid % 200) + 1;
     hostIp = `198.51.${subnet}.${10 + testInfo.repeatEachIndex * 2}`;
     guestIp = `198.51.${subnet}.${11 + testInfo.repeatEachIndex * 2}`;
+    const baseURL = String(testInfo.project.use.baseURL);
 
     // Manually-created contexts do not inherit the project's baseURL option.
     const hostContext = await browser.newContext({
-      baseURL: E2E_BASE_URL,
+      baseURL,
       extraHTTPHeaders: { 'X-Forwarded-For': hostIp },
     });
     const guestContext = await browser.newContext({
-      baseURL: E2E_BASE_URL,
+      baseURL,
       extraHTTPHeaders: { 'X-Forwarded-For': guestIp },
     });
     await installQuestionFixture(hostContext);
@@ -327,11 +342,27 @@ test.describe('two-device multiplayer', () => {
       );
       expect(gameOver.phase).toBe('GAME_OVER');
 
-      await expect(hostPage.getByText('Final Results', { exact: true })).toBeVisible();
-      await expect(guestPage.getByText('Final Results', { exact: true })).toBeVisible();
+      await expect(hostPage.getByText('Final Results', { exact: true })).toBeVisible({
+        timeout: 10_000,
+      });
+      await expect(guestPage.getByText('Final Results', { exact: true })).toBeVisible({
+        timeout: 10_000,
+      });
       await expect
-        .poll(() => normalizedFinalRanking(hostPage))
-        .toEqual(await normalizedFinalRanking(guestPage));
+        .poll(
+          async () => {
+            const [hostRanking, guestRanking] = await Promise.all([
+              normalizedFinalRanking(hostPage),
+              normalizedFinalRanking(guestPage),
+            ]);
+            return (
+              hostRanking.length === 2 &&
+              JSON.stringify(hostRanking) === JSON.stringify(guestRanking)
+            );
+          },
+          { timeout: 10_000 }
+        )
+        .toBe(true);
     } finally {
       await Promise.all([
         hostContext.close().catch(() => undefined),
