@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { UseMutationResult } from '@tanstack/react-query';
-import type { AnswerRoomRequest, AnswerRoomResponse, RoomSnapshot } from '@shared/models/rooms';
+import type {
+  AnswerRoomRequest,
+  AnswerRoomResponse,
+  RoomSnapshot,
+  SkipRoomResponse,
+} from '@shared/models/rooms';
 
 import { isRoomConflict } from '@/hooks/use-room';
 import { Badge } from '@/components/ui/badge';
@@ -12,18 +17,34 @@ import { cn, getDifficultyBadgeClass } from '@/lib/utils';
 
 type QuestionSnapshot = Extract<RoomSnapshot, { phase: 'QUESTION' }>;
 
+// Mirrors the server's SKIP_THRESHOLD_MS (server/routes.rooms.ts) so the
+// button only appears once the skip mutation would actually succeed.
+const SKIP_THRESHOLD_MS = 60_000;
+
 export interface QuestionViewProps {
   snapshot: QuestionSnapshot;
   currentPlayerId: string;
   answer: UseMutationResult<AnswerRoomResponse, Error, AnswerRoomRequest>;
+  skip: UseMutationResult<SkipRoomResponse, Error, void>;
   refetch: () => void;
 }
 
-export function QuestionView({ snapshot, currentPlayerId, answer, refetch }: QuestionViewProps) {
+export function QuestionView({
+  snapshot,
+  currentPlayerId,
+  answer,
+  skip,
+  refetch,
+}: QuestionViewProps) {
   const [value, setValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const isMyTurn = snapshot.activePlayerId === currentPlayerId;
+  const isHost = snapshot.hostPlayerId === currentPlayerId;
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.activePlayerId);
+  const activePlayerStale = activePlayer
+    ? Date.now() - new Date(activePlayer.lastSeenAt).getTime() > SKIP_THRESHOLD_MS
+    : false;
+  const canSkip = isHost && activePlayerStale;
 
   useEffect(() => {
     setValue('');
@@ -48,6 +69,11 @@ export function QuestionView({ snapshot, currentPlayerId, answer, refetch }: Que
     answer.mutate({ answer: null }, { onError: handleActionError });
   }
 
+  function handleSkip() {
+    if (skip.isPending) return;
+    skip.mutate(undefined, { onError: handleActionError });
+  }
+
   return (
     <div className="w-full max-w-lg space-y-4">
       {isMyTurn ? (
@@ -67,6 +93,18 @@ export function QuestionView({ snapshot, currentPlayerId, answer, refetch }: Que
         </p>
       )}
 
+      {canSkip && (
+        <Button
+          variant="outline"
+          onClick={handleSkip}
+          disabled={skip.isPending}
+          className="w-full border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/10"
+          data-testid="button-skip-turn"
+        >
+          {skip.isPending ? 'Skipping…' : `Skip ${activePlayer?.nickname ?? 'their'} turn`}
+        </Button>
+      )}
+
       <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-2xl">
         <CardContent className="p-6 md:p-8 space-y-4">
           <div className="flex flex-wrap gap-2 justify-center">
@@ -74,7 +112,10 @@ export function QuestionView({ snapshot, currentPlayerId, answer, refetch }: Que
               {snapshot.currentQuestion.category}
             </Badge>
             <Badge
-              className={cn('border-none', getDifficultyBadgeClass(snapshot.currentQuestion.difficulty))}
+              className={cn(
+                'border-none',
+                getDifficultyBadgeClass(snapshot.currentQuestion.difficulty)
+              )}
             >
               {snapshot.currentQuestion.difficulty}
             </Badge>
@@ -91,7 +132,9 @@ export function QuestionView({ snapshot, currentPlayerId, answer, refetch }: Que
             ref={inputRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            onFocus={() => inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            onFocus={() =>
+              inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSubmit();
             }}

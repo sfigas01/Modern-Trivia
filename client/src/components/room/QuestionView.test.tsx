@@ -5,7 +5,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import { QuestionView } from './QuestionView';
-import type { AnswerRoomRequest, AnswerRoomResponse, RoomSnapshot } from '@shared/models/rooms';
+import type {
+  AnswerRoomRequest,
+  AnswerRoomResponse,
+  RoomSnapshot,
+  SkipRoomResponse,
+} from '@shared/models/rooms';
 
 const toastError = vi.fn();
 vi.mock('sonner', () => ({
@@ -55,7 +60,10 @@ function makeSnapshot(overrides: Partial<QuestionSnapshot> = {}): QuestionSnapsh
       sourceUrl: null,
       sourceName: null,
     },
-    players: [makePlayer({ id: 'p1', nickname: 'Alice' }), makePlayer({ id: 'p2', nickname: 'Bob', isHost: false })],
+    players: [
+      makePlayer({ id: 'p1', nickname: 'Alice' }),
+      makePlayer({ id: 'p2', nickname: 'Bob', isHost: false }),
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     expiresAt: new Date().toISOString(),
@@ -63,14 +71,26 @@ function makeSnapshot(overrides: Partial<QuestionSnapshot> = {}): QuestionSnapsh
   } as QuestionSnapshot;
 }
 
-function makeMutation(
+function makeMutation<TData, TVars>(
   overrides: Partial<{ isPending: boolean; mutate: ReturnType<typeof vi.fn> }> = {}
-): UseMutationResult<AnswerRoomResponse, Error, AnswerRoomRequest> {
+): UseMutationResult<TData, Error, TVars> {
   return {
     mutate: vi.fn(),
     isPending: false,
     ...overrides,
-  } as unknown as UseMutationResult<AnswerRoomResponse, Error, AnswerRoomRequest>;
+  } as unknown as UseMutationResult<TData, Error, TVars>;
+}
+
+function makeAnswerMutation(
+  overrides: Partial<{ isPending: boolean; mutate: ReturnType<typeof vi.fn> }> = {}
+) {
+  return makeMutation<AnswerRoomResponse, AnswerRoomRequest>(overrides);
+}
+
+function makeSkipMutation(
+  overrides: Partial<{ isPending: boolean; mutate: ReturnType<typeof vi.fn> }> = {}
+) {
+  return makeMutation<SkipRoomResponse, void>(overrides);
 }
 
 describe('QuestionView', () => {
@@ -90,7 +110,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation()}
+        answer={makeAnswerMutation()}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -107,7 +128,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p2"
-        answer={makeMutation()}
+        answer={makeAnswerMutation()}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -124,7 +146,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation()}
+        answer={makeAnswerMutation()}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -140,7 +163,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation({ isPending: true })}
+        answer={makeAnswerMutation({ isPending: true })}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -156,7 +180,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation({ mutate })}
+        answer={makeAnswerMutation({ mutate })}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -174,7 +199,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation({ mutate })}
+        answer={makeAnswerMutation({ mutate })}
+        skip={makeSkipMutation()}
         refetch={vi.fn()}
       />
     );
@@ -196,7 +222,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation({ mutate })}
+        answer={makeAnswerMutation({ mutate })}
+        skip={makeSkipMutation()}
         refetch={refetch}
       />
     );
@@ -217,7 +244,8 @@ describe('QuestionView', () => {
       <QuestionView
         snapshot={snapshot}
         currentPlayerId="p1"
-        answer={makeMutation({ mutate })}
+        answer={makeAnswerMutation({ mutate })}
+        skip={makeSkipMutation()}
         refetch={refetch}
       />
     );
@@ -226,5 +254,144 @@ describe('QuestionView', () => {
 
     expect(refetch).not.toHaveBeenCalled();
     expect(toastError).toHaveBeenCalledWith('Server exploded');
+  });
+
+  describe('skip turn button', () => {
+    function staleTimestamp(msAgo: number) {
+      return new Date(Date.now() - msAgo).toISOString();
+    }
+
+    it('shows the skip button for the host when the active player is stale beyond the threshold', () => {
+      const snapshot = makeSnapshot({
+        activePlayerId: 'p2',
+        players: [
+          makePlayer({ id: 'p1', nickname: 'Alice', isHost: true }),
+          makePlayer({
+            id: 'p2',
+            nickname: 'Bob',
+            isHost: false,
+            lastSeenAt: staleTimestamp(61_000),
+          }),
+        ],
+      });
+      render(
+        <QuestionView
+          snapshot={snapshot}
+          currentPlayerId="p1"
+          answer={makeAnswerMutation()}
+          skip={makeSkipMutation()}
+          refetch={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('button-skip-turn')).toBeInTheDocument();
+    });
+
+    it('hides the skip button when the active player is not stale enough', () => {
+      const snapshot = makeSnapshot({
+        activePlayerId: 'p2',
+        players: [
+          makePlayer({ id: 'p1', nickname: 'Alice', isHost: true }),
+          makePlayer({
+            id: 'p2',
+            nickname: 'Bob',
+            isHost: false,
+            lastSeenAt: staleTimestamp(5_000),
+          }),
+        ],
+      });
+      render(
+        <QuestionView
+          snapshot={snapshot}
+          currentPlayerId="p1"
+          answer={makeAnswerMutation()}
+          skip={makeSkipMutation()}
+          refetch={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId('button-skip-turn')).toBeNull();
+    });
+
+    it('hides the skip button for non-hosts even when the active player is stale', () => {
+      const snapshot = makeSnapshot({
+        activePlayerId: 'p2',
+        players: [
+          makePlayer({ id: 'p1', nickname: 'Alice', isHost: true }),
+          makePlayer({
+            id: 'p2',
+            nickname: 'Bob',
+            isHost: false,
+            lastSeenAt: staleTimestamp(61_000),
+          }),
+        ],
+      });
+      render(
+        <QuestionView
+          snapshot={snapshot}
+          currentPlayerId="p2"
+          answer={makeAnswerMutation()}
+          skip={makeSkipMutation()}
+          refetch={vi.fn()}
+        />
+      );
+
+      expect(screen.queryByTestId('button-skip-turn')).toBeNull();
+    });
+
+    it('calls skip.mutate when the host clicks the skip button', () => {
+      const mutate = vi.fn();
+      const snapshot = makeSnapshot({
+        activePlayerId: 'p2',
+        players: [
+          makePlayer({ id: 'p1', nickname: 'Alice', isHost: true }),
+          makePlayer({
+            id: 'p2',
+            nickname: 'Bob',
+            isHost: false,
+            lastSeenAt: staleTimestamp(61_000),
+          }),
+        ],
+      });
+      render(
+        <QuestionView
+          snapshot={snapshot}
+          currentPlayerId="p1"
+          answer={makeAnswerMutation()}
+          skip={makeSkipMutation({ mutate })}
+          refetch={vi.fn()}
+        />
+      );
+
+      fireEvent.click(screen.getByTestId('button-skip-turn'));
+
+      expect(mutate).toHaveBeenCalledWith(undefined, expect.any(Object));
+    });
+
+    it('disables the skip button while the skip mutation is in flight', () => {
+      const snapshot = makeSnapshot({
+        activePlayerId: 'p2',
+        players: [
+          makePlayer({ id: 'p1', nickname: 'Alice', isHost: true }),
+          makePlayer({
+            id: 'p2',
+            nickname: 'Bob',
+            isHost: false,
+            lastSeenAt: staleTimestamp(61_000),
+          }),
+        ],
+      });
+      render(
+        <QuestionView
+          snapshot={snapshot}
+          currentPlayerId="p1"
+          answer={makeAnswerMutation()}
+          skip={makeSkipMutation({ isPending: true })}
+          refetch={vi.fn()}
+        />
+      );
+
+      expect(screen.getByTestId('button-skip-turn')).toBeDisabled();
+    });
   });
 });
