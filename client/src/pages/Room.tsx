@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
 
 import { FinalResults } from '@/components/room/FinalResults';
 import { Lobby } from '@/components/room/Lobby';
@@ -45,6 +46,8 @@ export default function Room() {
     if (player) setHandoffPlayer(player);
   }, [snapshot]);
 
+  const handleDismissHandoff = useCallback(() => setHandoffPlayer(null), []);
+
   if (!session) {
     return null;
   }
@@ -74,8 +77,37 @@ export default function Room() {
     return null;
   }
 
+  const showProgress = snapshot.phase === 'QUESTION' || snapshot.phase === 'REVEAL';
+  const activePlayerCount = snapshot.players.filter((player) => !player.leftAt).length;
+  const totalQuestions = snapshot.numRounds * activePlayerCount * QUESTIONS_PER_TEAM_ROTATION;
+  const progressPercent =
+    totalQuestions > 0
+      ? Math.min(100, Math.max(0, (snapshot.currentQuestionIndex / totalQuestions) * 100))
+      : null;
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-4">
+      {showProgress &&
+        (progressPercent !== null ? (
+          <div
+            className="fixed top-0 left-0 w-full h-2 bg-white/5 z-30"
+            data-testid="multiplayer-progress-bar"
+          >
+            <motion.div
+              className="h-full bg-primary"
+              initial={{ width: '0%' }}
+              animate={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        ) : (
+          <p
+            className="fixed top-2 left-1/2 -translate-x-1/2 text-xs text-muted-foreground"
+            data-testid="text-question-counter"
+          >
+            Question {snapshot.currentQuestionIndex + 1}
+          </p>
+        ))}
+
       {isDisconnected && (
         <p className="text-sm text-yellow-400" data-testid="text-disconnected" aria-live="polite">
           Connection lost. Reconnecting…
@@ -133,7 +165,7 @@ export default function Room() {
 
       <AnimatePresence>
         {handoffPlayer && (
-          <TurnHandoff nickname={handoffPlayer.nickname} onDismiss={() => setHandoffPlayer(null)} />
+          <TurnHandoff nickname={handoffPlayer.nickname} onDismiss={handleDismissHandoff} />
         )}
       </AnimatePresence>
     </div>
