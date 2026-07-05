@@ -39,3 +39,14 @@ export function getRoomSession(code: string): RoomSession | null {
 export function clearRoomSession(code: string): void {
   localStorage.removeItem(storageKey(code));
 }
+
+export function listRoomSessions(): RoomSession[] {
+  const sessions: RoomSession[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+    const session = getRoomSession(key.slice(STORAGE_PREFIX.length));
+    if (session) sessions.push(session);
+  }
+  return sessions;
+}

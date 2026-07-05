@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { clearRoomSession, getRoomSession, saveRoomSession } from './room-session';
+import {
+  clearRoomSession,
+  getRoomSession,
+  listRoomSessions,
+  saveRoomSession,
+} from './room-session';
 
 // Stub localStorage for jsdom compatibility
 const storage: Record<string, string> = {};
@@ -14,6 +19,10 @@ vi.stubGlobal('localStorage', {
   },
   clear: () => {
     for (const key of Object.keys(storage)) delete storage[key];
+  },
+  key: (index: number) => Object.keys(storage)[index] ?? null,
+  get length() {
+    return Object.keys(storage).length;
   },
 });
 
@@ -58,5 +67,34 @@ describe('room-session', () => {
     saveRoomSession({ code: 'ABCD2', playerId: 'player-1', token: 'token-1' });
     clearRoomSession('ABCD2');
     expect(getRoomSession('ABCD2')).toBeNull();
+  });
+
+  describe('listRoomSessions', () => {
+    it('returns an empty array when no sessions are stored', () => {
+      expect(listRoomSessions()).toEqual([]);
+    });
+
+    it('returns every stored session', () => {
+      saveRoomSession({ code: 'ABCD2', playerId: 'player-1', token: 'token-1' });
+      saveRoomSession({ code: 'WXYZ2', playerId: 'player-2', token: 'token-2' });
+
+      const sessions = listRoomSessions();
+      expect(sessions).toHaveLength(2);
+      expect(sessions).toEqual(
+        expect.arrayContaining([
+          { code: 'ABCD2', playerId: 'player-1', token: 'token-1' },
+          { code: 'WXYZ2', playerId: 'player-2', token: 'token-2' },
+        ])
+      );
+    });
+
+    it('ignores unrelated localStorage entries', () => {
+      saveRoomSession({ code: 'ABCD2', playerId: 'player-1', token: 'token-1' });
+      localStorage.setItem('trivia:some-other-key', 'value');
+
+      expect(listRoomSessions()).toEqual([
+        { code: 'ABCD2', playerId: 'player-1', token: 'token-1' },
+      ]);
+    });
   });
 });
