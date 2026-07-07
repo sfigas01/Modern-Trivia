@@ -75,7 +75,10 @@ async function parseResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function fetchSnapshot(code: string, sinceVersion: number | undefined): Promise<RoomPollResponse> {
+async function fetchSnapshot(
+  code: string,
+  sinceVersion: number | undefined
+): Promise<RoomPollResponse> {
   const res = await fetch(buildPollUrl(code, sinceVersion), {
     credentials: 'include',
     headers: authHeaders(code),
@@ -103,7 +106,10 @@ function roomQueryKey(code: string) {
 // Never let a write (poll or mutation response) regress the cache to an
 // older version — the two can race, since polls and mutations both hit the
 // network concurrently and settle in whatever order the server responds.
-export function newerSnapshot(candidate: RoomSnapshot, current: RoomSnapshot | undefined): RoomSnapshot {
+export function newerSnapshot(
+  candidate: RoomSnapshot,
+  current: RoomSnapshot | undefined
+): RoomSnapshot {
   return current && current.version >= candidate.version ? current : candidate;
 }
 
@@ -120,6 +126,7 @@ export interface UseRoomResult {
   continueRound: UseMutationResult<ContinueRoomResponse, Error, void>;
   skip: UseMutationResult<SkipRoomResponse, Error, void>;
   end: UseMutationResult<EndRoomResponse, Error, void>;
+  awardDispute: UseMutationResult<RoomActionResponse, Error, void>;
 }
 
 export interface UseRoomOptions {
@@ -175,7 +182,9 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
 
   const onActionSuccess = useCallback(
     (response: RoomActionResponse) => {
-      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) => newerSnapshot(response.snapshot, current));
+      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) =>
+        newerSnapshot(response.snapshot, current)
+      );
     },
     [queryClient, queryKey]
   );
@@ -185,7 +194,9 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
       postRoomAction<JoinRoomRequest, JoinRoomResponse>(code, 'join', body),
     onSuccess: (response) => {
       saveRoomSession({ code, playerId: response.playerId, token: response.token });
-      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) => newerSnapshot(response.snapshot, current));
+      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) =>
+        newerSnapshot(response.snapshot, current)
+      );
     },
   });
 
@@ -201,12 +212,14 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
   });
 
   const advance = useMutation({
-    mutationFn: () => postRoomAction<Record<string, never>, AdvanceRoomResponse>(code, 'advance', {}),
+    mutationFn: () =>
+      postRoomAction<Record<string, never>, AdvanceRoomResponse>(code, 'advance', {}),
     onSuccess: onActionSuccess,
   });
 
   const continueRound = useMutation({
-    mutationFn: () => postRoomAction<Record<string, never>, ContinueRoomResponse>(code, 'continue', {}),
+    mutationFn: () =>
+      postRoomAction<Record<string, never>, ContinueRoomResponse>(code, 'continue', {}),
     onSuccess: onActionSuccess,
   });
 
@@ -217,6 +230,12 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
 
   const end = useMutation({
     mutationFn: () => postRoomAction<Record<string, never>, EndRoomResponse>(code, 'end', {}),
+    onSuccess: onActionSuccess,
+  });
+
+  const awardDispute = useMutation({
+    mutationFn: () =>
+      postRoomAction<Record<string, never>, RoomActionResponse>(code, 'award-dispute', {}),
     onSuccess: onActionSuccess,
   });
 
@@ -233,5 +252,6 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
     continueRound,
     skip,
     end,
+    awardDispute,
   };
 }
