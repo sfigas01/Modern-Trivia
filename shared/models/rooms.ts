@@ -228,7 +228,18 @@ export const createRoomRequestSchema = z.object({
   numRounds: roomRoundsSchema,
 });
 export const joinRoomRequestSchema = z.object({ nickname: roomNicknameSchema });
-export const startRoomRequestSchema = z.object({}).strict();
+export const excludeQuestionIdsSchema = z
+  .array(z.string().trim().min(1))
+  .max(500)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: 'excludeQuestionIds must not contain duplicates',
+  });
+
+export const startRoomRequestSchema = z
+  .object({
+    excludeQuestionIds: excludeQuestionIdsSchema.optional(),
+  })
+  .strict();
 export const answerRoomRequestSchema = z.object({ answer: z.string().trim().min(1).nullable() });
 export const advanceRoomRequestSchema = z.object({}).strict();
 export const continueRoomRequestSchema = z.object({}).strict();

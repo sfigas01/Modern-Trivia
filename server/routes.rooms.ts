@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
-import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from './db';
@@ -406,7 +406,7 @@ export function registerRoomRoutes(app: Express): void {
   app.post('/api/rooms/:code/start', async (req, res) => {
     try {
       const code = parseRoomCode(req.params.code);
-      startRoomRequestSchema.parse(req.body);
+      const { excludeQuestionIds = [] } = startRoomRequestSchema.parse(req.body);
       const userId = getUserId(req);
 
       const updatedRoom = await db.transaction(async (tx) => {
@@ -474,12 +474,30 @@ export function registerRoomRoutes(app: Express): void {
             )
             .limit(questionLimit);
         } else {
-          selectedQuestions = await tx
-            .select({ id: questions.id })
-            .from(questions)
-            .where(and(...questionConditions))
-            .orderBy(sql`random()`)
-            .limit(questionLimit);
+          const selectUnexcluded = () =>
+            tx
+              .select({ id: questions.id })
+              .from(questions)
+              .where(and(...questionConditions))
+              .orderBy(sql`random()`)
+              .limit(questionLimit);
+
+          if (excludeQuestionIds.length > 0) {
+            selectedQuestions = await tx
+              .select({ id: questions.id })
+              .from(questions)
+              .where(and(...questionConditions, notInArray(questions.id, excludeQuestionIds)))
+              .orderBy(sql`random()`)
+              .limit(questionLimit);
+
+            // The exclusion list (guest's locally-seen questions) must never
+            // block a game from starting — backfill without it if short.
+            if (selectedQuestions.length < questionLimit) {
+              selectedQuestions = await selectUnexcluded();
+            }
+          } else {
+            selectedQuestions = await selectUnexcluded();
+          }
         }
 
         if (selectedQuestions.length < questionLimit) {

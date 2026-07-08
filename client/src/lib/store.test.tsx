@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GameProvider, useGame, normalize, verifyAttempt } from './store';
 import type { Question } from './store';
+import { getGuestSeenIds, addGuestSeenIds } from './guest-seen';
 
 // Stub localStorage for jsdom compatibility
 const storage: Record<string, string> = {};
@@ -123,6 +124,7 @@ async function setupAndStart(opts?: {
   category?: string;
   numRounds?: number;
   teamNames?: string[];
+  isAuthenticated?: boolean;
 }) {
   const hook = await renderGame();
   const { result } = hook;
@@ -141,10 +143,15 @@ async function setupAndStart(opts?: {
 
   // startGame is async (fetches from API)
   await act(async () => {
-    await result.current.startGame();
+    await result.current.startGame(opts?.isAuthenticated ?? false);
   });
 
   return hook;
+}
+
+function fetchUrlOf(call: unknown[]): string {
+  const input = call[0] as string | URL | Request;
+  return typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 }
 
 /** Submit a typed answer and advance through REVEAL → SCORE_UPDATE for one question. */
@@ -409,8 +416,9 @@ describe('GameProvider state machine', () => {
   it('awards disputed points immediately and flips the attempt to correct', async () => {
     const { result } = await setupAndStart();
     const activeTeamId = result.current.state.activeTeamId!;
-    const startingScore = result.current.state.teams.find((team) => team.id === activeTeamId)!
-      .score;
+    const startingScore = result.current.state.teams.find(
+      (team) => team.id === activeTeamId
+    )!.score;
     const question = submitIncorrectAnswer(result);
     const correctPoints = getCorrectPoints(question.difficulty);
 
@@ -437,8 +445,9 @@ describe('GameProvider state machine', () => {
     act(() => result.current.markDisputeSubmitted());
     act(() => result.current.awardDisputedPoints());
 
-    const scoreAfterAward = result.current.state.teams.find((team) => team.id === activeTeamId)!
-      .score;
+    const scoreAfterAward = result.current.state.teams.find(
+      (team) => team.id === activeTeamId
+    )!.score;
 
     act(() => result.current.advanceToScoreUpdate());
 
@@ -457,8 +466,9 @@ describe('GameProvider state machine', () => {
     act(() => result.current.markDisputeSubmitted());
     act(() => result.current.awardDisputedPoints());
 
-    const scoreAfterAward = result.current.state.teams.find((team) => team.id === activeTeamId)!
-      .score;
+    const scoreAfterAward = result.current.state.teams.find(
+      (team) => team.id === activeTeamId
+    )!.score;
 
     act(() => result.current.awardDisputedPoints());
 
@@ -660,5 +670,140 @@ describe('Full game happy path', () => {
     // At least one team should have a non-zero score (some were correct)
     const totalScore = result.current.state.teams.reduce((sum, t) => sum + Math.abs(t.score), 0);
     expect(totalScore).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// STE-235: guest (non-signed-in) cross-game question repeats
+// ---------------------------------------------------------------------------
+
+describe('Guest question exclusion (STE-235)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal('fetch', createFetchMock());
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('excludes locally-seen question ids for a guest game', async () => {
+    // Mark the first 4 Science questions as already seen; 8 remain unseen.
+    const seenIds = SCIENCE_QUESTIONS.slice(0, 4).map((q) => q.id);
+    addGuestSeenIds(seenIds);
+
+    // numRounds=1, 2 teams -> totalNeeded = 1*2*4 = 8, exactly the unseen supply.
+    const { result } = await setupAndStart({ category: 'Science', numRounds: 1 });
+
+    const ids = result.current.state.questions.map((q) => q.id);
+    expect(ids).toHaveLength(8);
+    seenIds.forEach((id) => expect(ids).not.toContain(id));
+  });
+
+  it('backfills with the oldest-seen questions when the unseen pool runs short', async () => {
+    // Mark 10 of the 12 Science questions as seen (oldest-first: sci-0 .. sci-9);
+    // only sci-10 and sci-11 remain unseen, but 8 are needed.
+    const seenIds = SCIENCE_QUESTIONS.slice(0, 10).map((q) => q.id);
+    addGuestSeenIds(seenIds);
+
+    const { result } = await setupAndStart({ category: 'Science', numRounds: 1 });
+
+    // Starting the game must never fail due to the exclusion list.
+    expect(result.current.state.phase).toBe('QUESTION');
+    const ids = result.current.state.questions.map((q) => q.id);
+    expect(ids).toHaveLength(8);
+    expect(ids).toContain('sci-10');
+    expect(ids).toContain('sci-11');
+    // Deficit of 6 is backfilled with the 6 oldest-seen ids (sci-0 .. sci-5).
+    ['sci-0', 'sci-1', 'sci-2', 'sci-3', 'sci-4', 'sci-5'].forEach((id) =>
+      expect(ids).toContain(id)
+    );
+  });
+
+  it('does not perform an extra network fetch when the question catalog is already loaded', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const hook = await renderGame(); // triggers exactly one catalog fetch on mount
+    const callsBeforeStart = fetchMock.mock.calls.length;
+
+    act(() => {
+      hook.result.current.addTeam('Alpha');
+      hook.result.current.addTeam('Bravo');
+    });
+    await act(async () => {
+      await hook.result.current.startGame(false);
+    });
+
+    const questionFetchesDuringStart = fetchMock.mock.calls
+      .slice(callsBeforeStart)
+      .filter((call) => fetchUrlOf(call).includes('/api/questions'));
+
+    // The catalog was already loaded, so guest selection must not fetch
+    // totalNeeded+N rows from the server merely to filter them client-side.
+    expect(questionFetchesDuringStart).toHaveLength(0);
+  });
+
+  it('records only questions actually shown when a guest game is abandoned before GAME_OVER', async () => {
+    // numRounds=1, 2 teams -> 8 questions selected, but the game is abandoned after 3 are shown.
+    const { result, unmount } = await setupAndStart({ numRounds: 1 });
+    const allIds = result.current.state.questions.map((q) => q.id);
+
+    passAndAdvance(result); // question 0 answered, question 1 now shown
+    passAndAdvance(result); // question 1 answered, question 2 now shown
+
+    const shownIds = allIds.slice(0, 3);
+    const unshownIds = allIds.slice(3);
+
+    await waitFor(() => {
+      expect(getGuestSeenIds()).toEqual(expect.arrayContaining(shownIds));
+    });
+    unshownIds.forEach((id) => expect(getGuestSeenIds()).not.toContain(id));
+
+    unmount();
+  });
+
+  it('writes played question ids to local storage and skips the seen-questions POST for guests', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = await setupAndStart({ numRounds: 1 });
+    const playedIds = result.current.state.questions.map((q) => q.id);
+
+    finishGame(result);
+    expect(result.current.state.phase).toBe('GAME_OVER');
+
+    await waitFor(() => {
+      expect(getGuestSeenIds()).toEqual(expect.arrayContaining(playedIds));
+    });
+
+    const calledSeenPost = fetchMock.mock.calls.some((call) =>
+      fetchUrlOf(call).includes('/api/questions/seen')
+    );
+    expect(calledSeenPost).toBe(false);
+  });
+
+  it('leaves the authenticated path unchanged: server-side exclusion and seen-questions POST', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = await setupAndStart({ numRounds: 1, isAuthenticated: true });
+
+    const startCall = fetchMock.mock.calls.find((call) => {
+      const url = fetchUrlOf(call);
+      return url.includes('/api/questions?') && !url.includes('/api/questions/seen');
+    });
+    expect(startCall).toBeDefined();
+    expect(fetchUrlOf(startCall!)).toContain('excludeSeen=true');
+
+    finishGame(result);
+    expect(result.current.state.phase).toBe('GAME_OVER');
+
+    await waitFor(() => {
+      const calledSeenPost = fetchMock.mock.calls.some((call) =>
+        fetchUrlOf(call).includes('/api/questions/seen')
+      );
+      expect(calledSeenPost).toBe(true);
+    });
   });
 });

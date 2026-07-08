@@ -148,6 +148,10 @@ describe('Game page', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal('fetch', createFetchMock());
+    // Guest selection genuinely shuffles the unseen pool; pin Math.random so
+    // the (stable) sort is a no-op and question order stays deterministic
+    // for these order-sensitive assertions.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
