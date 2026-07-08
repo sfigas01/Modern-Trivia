@@ -6,7 +6,11 @@ import { z } from 'zod';
 import { db } from './db';
 import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
 import type { AuthenticatedRequest } from './types';
-import { QUESTIONS_PER_TEAM_ROTATION, type Question as AnswerQuestion } from '@shared/lib/answers';
+import {
+  QUESTIONS_PER_TEAM_ROTATION,
+  pointsFor,
+  type Question as AnswerQuestion,
+} from '@shared/lib/answers';
 import {
   advanceRoomRequestSchema,
   advanceRoomResponseSchema,
@@ -31,6 +35,7 @@ import {
   startRoomResponseSchema,
   skipRoomRequestSchema,
   skipRoomResponseSchema,
+  roomActionResponseSchema,
   unchangedRoomPollResponseSchema,
   type Question,
   type Room,
@@ -858,6 +863,82 @@ export function registerRoomRoutes(app: Express): void {
       );
     } catch (error) {
       return sendRoomError(res, error, 'Error skipping room turn:');
+    }
+  });
+
+  // Award disputed points — flips an INCORRECT attempt to CORRECT and credits the player
+  app.post('/api/rooms/:code/award-dispute', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.phase !== 'REVEAL' || room.status !== 'active') {
+          throw new RoomRouteError(409, 'Room is not in the reveal phase');
+        }
+        if (!room.currentAttempt || room.currentAttempt.verdict !== 'INCORRECT') {
+          throw new RoomRouteError(409, 'No incorrect attempt to award points for');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (actor.id !== room.hostPlayerId && actor.id !== room.activePlayerId) {
+          throw new RoomRouteError(403, 'Only the host or active player can award disputed points');
+        }
+
+        // Look up the question to calculate the correct point value
+        const questionId = room.currentAttempt.questionId;
+        const [question] = await tx
+          .select()
+          .from(questions)
+          .where(eq(questions.id, questionId))
+          .limit(1);
+        if (!question) {
+          throw new Error(`Question ${questionId} not found`);
+        }
+
+        // Calculate the correct point value for the disputed question
+        const correctPoints = pointsFor(
+          question.difficulty as import('@shared/lib/answers').Difficulty
+        );
+
+        const updatedAttempt = {
+          ...room.currentAttempt,
+          verdict: 'CORRECT' as const,
+          pointsDelta: correctPoints,
+        };
+
+        const [awardedRoom] = await tx
+          .update(rooms)
+          .set({
+            currentAttempt: updatedAttempt,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(rooms.id, room.id), eq(rooms.status, 'active'), eq(rooms.phase, 'REVEAL')))
+          .returning();
+        if (!awardedRoom) {
+          throw new RoomRouteError(409, 'Room state changed before points could be awarded');
+        }
+
+        return awardedRoom;
+      });
+
+      return res.json(
+        roomActionResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error awarding disputed points:');
     }
   });
 

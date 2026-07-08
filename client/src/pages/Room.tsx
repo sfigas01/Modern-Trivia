@@ -32,6 +32,7 @@ export default function Room() {
     continueRound,
     skip,
     end,
+    awardDispute,
     refetch,
   } = useRoom(code, { enabled: !!session });
 
@@ -167,6 +168,7 @@ export default function Room() {
               snapshot={snapshot}
               currentPlayerId={session.playerId}
               advance={advance}
+              awardDispute={awardDispute}
               refetch={refetch}
             />
           )}
