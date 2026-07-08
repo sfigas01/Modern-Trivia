@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalize, verifyAttempt, pointsFor, QUESTIONS_PER_TEAM_ROTATION } from './answers';
+import { normalize, verifyAttempt, pointsFor, damerauLevenshtein, QUESTIONS_PER_TEAM_ROTATION } from './answers';
 import type { Question } from './answers';
 
 function makeQuestion(overrides: Partial<Question> = {}): Question {
@@ -106,6 +106,95 @@ describe('verifyAttempt', () => {
     const q = makeQuestion({ answer: 'Go', difficulty: 'Easy' });
     expect(verifyAttempt('Go', q).verdict).toBe('CORRECT');
     expect(verifyAttempt('Go', q).points).toBe(1);
+  });
+});
+
+describe('damerauLevenshtein', () => {
+  it('returns 0 for identical strings', () => {
+    expect(damerauLevenshtein('abc', 'abc')).toBe(0);
+  });
+
+  it('handles single substitution', () => {
+    expect(damerauLevenshtein('cat', 'bat')).toBe(1);
+  });
+
+  it('handles single insertion', () => {
+    expect(damerauLevenshtein('cat', 'cats')).toBe(1);
+  });
+
+  it('handles single deletion', () => {
+    expect(damerauLevenshtein('cats', 'cat')).toBe(1);
+  });
+
+  it('handles adjacent transposition', () => {
+    expect(damerauLevenshtein('ab', 'ba')).toBe(1);
+    expect(damerauLevenshtein('swift', 'swfit')).toBe(1);
+  });
+
+  it('returns string length when compared with empty string', () => {
+    expect(damerauLevenshtein('abc', '')).toBe(3);
+    expect(damerauLevenshtein('', 'xyz')).toBe(3);
+  });
+});
+
+describe('verifyAttempt — edit-distance typo tolerance (STE-237)', () => {
+  it('accepts "ottowa" for "ottawa" (single substitution, len 6)', () => {
+    const q = makeQuestion({ answer: 'Ottawa', difficulty: 'Medium' });
+    expect(verifyAttempt('ottowa', q).verdict).toBe('CORRECT');
+  });
+
+  it('accepts "emenem" for "eminem" (transposition, len 6)', () => {
+    const q = makeQuestion({ answer: 'Eminem', difficulty: 'Medium' });
+    expect(verifyAttempt('emenem', q).verdict).toBe('CORRECT');
+  });
+
+  it('accepts "taylor swfit" for "taylor swift" (transposition, len 12)', () => {
+    const q = makeQuestion({ answer: 'Taylor Swift', difficulty: 'Medium' });
+    expect(verifyAttempt('taylor swfit', q).verdict).toBe('CORRECT');
+  });
+
+  it('accepts "zendya" for "zendaya" (deletion, len 7)', () => {
+    const q = makeQuestion({ answer: 'Zendaya', difficulty: 'Medium' });
+    expect(verifyAttempt('zendya', q).verdict).toBe('CORRECT');
+  });
+
+  it('still accepts "obamma" for "obama" (Dice ≥0.8)', () => {
+    const q = makeQuestion({ answer: 'Obama', difficulty: 'Medium' });
+    expect(verifyAttempt('obamma', q).verdict).toBe('CORRECT');
+  });
+
+  it('still accepts "the weekend" for "the weeknd" (Dice ≥0.8)', () => {
+    const q = makeQuestion({ answer: 'The Weeknd', difficulty: 'Medium' });
+    expect(verifyAttempt('the weekend', q).verdict).toBe('CORRECT');
+  });
+});
+
+describe('verifyAttempt — numeric guardrail (STE-237)', () => {
+  it('rejects "1998" when answer is "1997" (numeric exact-match only)', () => {
+    const q = makeQuestion({ answer: '1997', difficulty: 'Medium' });
+    expect(verifyAttempt('1998', q).verdict).toBe('INCORRECT');
+  });
+
+  it('accepts exact numeric match', () => {
+    const q = makeQuestion({ answer: '1997', difficulty: 'Medium' });
+    expect(verifyAttempt('1997', q).verdict).toBe('CORRECT');
+  });
+
+  it('rejects "42" when answer is "43" (short numeric)', () => {
+    const q = makeQuestion({ answer: '43', difficulty: 'Easy' });
+    expect(verifyAttempt('42', q).verdict).toBe('INCORRECT');
+  });
+});
+
+describe('verifyAttempt — wrong answers stay rejected (STE-237)', () => {
+  it('rejects "fire" when answer is "water"', () => {
+    const q = makeQuestion({ answer: 'Water', difficulty: 'Medium' });
+    expect(verifyAttempt('fire', q).verdict).toBe('INCORRECT');
+  });
+
+  it('rejects totally different multi-word answers', () => {
+    const q = makeQuestion({ answer: 'Niagara Falls', difficulty: 'Easy' });
+    expect(verifyAttempt('Rocky Mountains', q).verdict).toBe('INCORRECT');
   });
 });
 

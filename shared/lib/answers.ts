@@ -1,5 +1,45 @@
 import stringSimilarity from 'string-similarity';
 
+/**
+ * Damerau–Levenshtein distance (optimal string alignment variant).
+ * Handles insertions, deletions, substitutions, and adjacent transpositions.
+ * Inline to avoid adding an npm dependency.
+ */
+export const damerauLevenshtein = (a: string, b: string): number => {
+  const la = a.length;
+  const lb = b.length;
+  if (la === 0) return lb;
+  if (lb === 0) return la;
+
+  const d: number[][] = Array.from({ length: la + 1 }, () =>
+    new Array<number>(lb + 1).fill(0)
+  );
+
+  for (let i = 0; i <= la; i++) d[i][0] = i;
+  for (let j = 0; j <= lb; j++) d[0][j] = j;
+
+  for (let i = 1; i <= la; i++) {
+    for (let j = 1; j <= lb; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,       // deletion
+        d[i][j - 1] + 1,       // insertion
+        d[i - 1][j - 1] + cost // substitution
+      );
+      // transposition
+      if (
+        i > 1 &&
+        j > 1 &&
+        a[i - 1] === b[j - 2] &&
+        a[i - 2] === b[j - 1]
+      ) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
+      }
+    }
+  }
+  return d[la][lb];
+};
+
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface Question {
@@ -49,16 +89,44 @@ export const verifyAttempt = (
   // Exact match first
   let isCorrect = normInput === normCorrect || acceptable.includes(normInput);
 
-  // Fuzzy match if not exact
-  if (!isCorrect && normInput.length > 2) {
+  // Numeric guardrail: if the correct answer is purely digits, require exact match only.
+  // Years (1997), counts, etc. must not fuzzy-match neighbouring numbers.
+  const isNumericAnswer = /^\d+$/.test(normCorrect);
+
+  // Fuzzy match if not exact and not a numeric answer
+  if (!isCorrect && normInput.length > 2 && !isNumericAnswer) {
+    // --- Dice coefficient check (existing) ---
     const similarity = stringSimilarity.compareTwoStrings(normInput, normCorrect);
     // 0.8 is a good threshold for typos but enough to prevent wild guesses
     if (similarity > 0.8) isCorrect = true;
 
-    // Check acceptable variants with fuzzy logic too
+    // Check acceptable variants with Dice too
     if (!isCorrect) {
       for (const variant of acceptable) {
         if (stringSimilarity.compareTwoStrings(normInput, variant) > 0.8) {
+          isCorrect = true;
+          break;
+        }
+      }
+    }
+
+    // --- Damerau–Levenshtein edit-distance check (new) ---
+    // Covers single-typo / transposition cases that Dice misses on short strings.
+    // Length 3–4: skip (edit distance 1 on very short words is too permissive).
+    // Length 5–8: accept distance ≤ 1.  Length ≥ 9: accept distance ≤ 2.
+    if (!isCorrect) {
+      const allTargets = [normCorrect, ...acceptable];
+      const maxDist = (len: number): number | null => {
+        if (len <= 4) return null; // skip — Dice handles 3–4
+        if (len <= 8) return 1;
+        return 2;
+      };
+
+      for (const target of allTargets) {
+        const refLen = target.length;
+        const threshold = maxDist(refLen);
+        if (threshold === null) continue;
+        if (damerauLevenshtein(normInput, target) <= threshold) {
           isCorrect = true;
           break;
         }
