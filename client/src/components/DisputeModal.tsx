@@ -11,7 +11,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { saveDispute } from '@/lib/disputes';
-import { useGame } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
 interface DisputeModalProps {
@@ -22,6 +21,8 @@ interface DisputeModalProps {
   correctAnswer: string;
   teamName: string;
   submittedAnswer: string | null;
+  /** Callback invoked after a dispute is successfully submitted. In solo mode, this should call markDisputeSubmitted from the game store. In multiplayer, it sets local state. */
+  onDisputeSubmitted: () => void;
 }
 
 export function DisputeModal({
@@ -32,10 +33,10 @@ export function DisputeModal({
   correctAnswer,
   teamName,
   submittedAnswer,
+  onDisputeSubmitted,
 }: DisputeModalProps) {
   const [explanation, setExplanation] = useState('');
   const { toast } = useToast();
-  const { markDisputeSubmitted } = useGame();
 
   const handleSubmit = async () => {
     if (!explanation.trim()) {
@@ -65,7 +66,7 @@ export function DisputeModal({
       return;
     }
 
-    markDisputeSubmitted();
+    onDisputeSubmitted();
 
     toast({
       title: 'Dispute Submitted',
