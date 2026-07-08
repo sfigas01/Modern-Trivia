@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
-import { and, asc, eq, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from './db';
@@ -473,31 +473,41 @@ export function registerRoomRoutes(app: Express): void {
               sql`random()`
             )
             .limit(questionLimit);
-        } else {
-          const selectUnexcluded = () =>
-            tx
-              .select({ id: questions.id })
-              .from(questions)
-              .where(and(...questionConditions))
-              .orderBy(sql`random()`)
-              .limit(questionLimit);
+        } else if (excludeQuestionIds.length > 0) {
+          const unseen = await tx
+            .select({ id: questions.id })
+            .from(questions)
+            .where(and(...questionConditions, notInArray(questions.id, excludeQuestionIds)))
+            .orderBy(sql`random()`)
+            .limit(questionLimit);
 
-          if (excludeQuestionIds.length > 0) {
-            selectedQuestions = await tx
-              .select({ id: questions.id })
-              .from(questions)
-              .where(and(...questionConditions, notInArray(questions.id, excludeQuestionIds)))
-              .orderBy(sql`random()`)
-              .limit(questionLimit);
-
+          if (unseen.length < questionLimit) {
             // The exclusion list (guest's locally-seen questions) must never
-            // block a game from starting — backfill without it if short.
-            if (selectedQuestions.length < questionLimit) {
-              selectedQuestions = await selectUnexcluded();
-            }
+            // block a game from starting. Keep the unseen results already
+            // found and backfill only the deficit from the excluded pool,
+            // preferring the oldest-seen ids first.
+            const deficit = questionLimit - unseen.length;
+            const eligibleSeen = await tx
+              .select({ id: questions.id })
+              .from(questions)
+              .where(and(...questionConditions, inArray(questions.id, excludeQuestionIds)));
+
+            const seenOrder = new Map(excludeQuestionIds.map((id, index) => [id, index]));
+            const backfill = eligibleSeen
+              .sort((a, b) => (seenOrder.get(a.id) ?? 0) - (seenOrder.get(b.id) ?? 0))
+              .slice(0, deficit);
+
+            selectedQuestions = [...unseen, ...backfill];
           } else {
-            selectedQuestions = await selectUnexcluded();
+            selectedQuestions = unseen;
           }
+        } else {
+          selectedQuestions = await tx
+            .select({ id: questions.id })
+            .from(questions)
+            .where(and(...questionConditions))
+            .orderBy(sql`random()`)
+            .limit(questionLimit);
         }
 
         if (selectedQuestions.length < questionLimit) {

@@ -555,7 +555,7 @@ describe('room lifecycle routes', () => {
     expect(exclusionCondition).toBeDefined();
   });
 
-  it('backfills without exclusion for a guest host when the unseen pool is too small', async () => {
+  it('backfills only the deficit, oldest-seen first, for a guest host when the unseen pool is too small', async () => {
     const guest = player({
       id: guestId,
       nickname: 'Guest',
@@ -563,25 +563,28 @@ describe('room lifecycle routes', () => {
       joinOrder: 1,
       isHost: false,
     });
-    const shortSupply = Array.from({ length: 10 }, (_, index) => ({
-      id: `question-${index + 1}`,
+    // 10 unseen questions available; questionLimit is 40 (5 rounds * 2 players * 4),
+    // so 30 more are needed. 35 eligible previously-seen ids are supplied,
+    // oldest-first, and only the 30 oldest should be used to fill the deficit.
+    const unseenQuestions = Array.from({ length: 10 }, (_, index) => ({
+      id: `unseen-${index + 1}`,
     }));
-    const backfilledQuestions = Array.from({ length: 40 }, (_, index) => ({
-      id: `question-${index + 1}`,
-    }));
+    const excludeIds = Array.from({ length: 35 }, (_, index) => `seen-${index + 1}`);
+    const eligibleSeenQuestions = excludeIds.map((id) => ({ id }));
+    const expectedSelection = [...unseenQuestions.map(({ id }) => id), ...excludeIds.slice(0, 30)];
     const startedRoom = room({
       status: 'active',
       phase: 'QUESTION',
       version: 2,
-      questionIds: backfilledQuestions.map(({ id }) => id),
+      questionIds: expectedSelection,
       activePlayerId: hostId,
     });
     queueSelect(
       [room()],
       [player()],
       [player(), guest],
-      shortSupply,
-      backfilledQuestions,
+      unseenQuestions,
+      eligibleSeenQuestions,
       [player(), guest],
       [question()]
     );
@@ -591,12 +594,17 @@ describe('room lifecycle routes', () => {
     const response = await request(app)
       .post('/api/rooms/ABCD2/start')
       .set('X-Player-Token', 'host-secret')
-      .send({ excludeQuestionIds: ['seen-1'] })
+      .send({ excludeQuestionIds: excludeIds })
       .expect(200);
 
-    // Two question-selection queries: the excluded attempt, then the backfill.
+    // Two question-selection queries: the unseen attempt, then the eligible-seen backfill.
     expect(dbMocks.select).toHaveBeenCalledTimes(7);
     expect(response.body.snapshot.status).toBe('active');
+    // The already-found unseen questions are kept; only the deficit (30) is
+    // backfilled, from the oldest-seen ids first — never a fresh unconstrained draw.
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({ questionIds: expectedSelection })
+    );
   });
 
   it('rejects more than 500 excludeQuestionIds with a 422', async () => {
