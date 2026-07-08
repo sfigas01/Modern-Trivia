@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { normalize, verifyAttempt, pointsFor, damerauLevenshtein, QUESTIONS_PER_TEAM_ROTATION } from './answers';
+import {
+  normalize,
+  verifyAttempt,
+  pointsFor,
+  damerauLevenshtein,
+  QUESTIONS_PER_TEAM_ROTATION,
+} from './answers';
 import type { Question } from './answers';
 
 function makeQuestion(overrides: Partial<Question> = {}): Question {
@@ -166,6 +172,14 @@ describe('verifyAttempt — edit-distance typo tolerance (STE-237)', () => {
   it('still accepts "the weekend" for "the weeknd" (Dice ≥0.8)', () => {
     const q = makeQuestion({ answer: 'The Weeknd', difficulty: 'Medium' });
     expect(verifyAttempt('the weekend', q).verdict).toBe('CORRECT');
+  });
+
+  it('rejects a wildly oversized input without hanging (length-diff guard)', () => {
+    const q = makeQuestion({ answer: 'Ottawa', difficulty: 'Medium' });
+    const hugeInput = 'a'.repeat(50_000);
+    const start = Date.now();
+    expect(verifyAttempt(hugeInput, q).verdict).toBe('INCORRECT');
+    expect(Date.now() - start).toBeLessThan(1000);
   });
 });
 

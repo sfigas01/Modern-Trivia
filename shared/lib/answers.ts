@@ -11,9 +11,7 @@ export const damerauLevenshtein = (a: string, b: string): number => {
   if (la === 0) return lb;
   if (lb === 0) return la;
 
-  const d: number[][] = Array.from({ length: la + 1 }, () =>
-    new Array<number>(lb + 1).fill(0)
-  );
+  const d: number[][] = Array.from({ length: la + 1 }, () => new Array<number>(lb + 1).fill(0));
 
   for (let i = 0; i <= la; i++) d[i][0] = i;
   for (let j = 0; j <= lb; j++) d[0][j] = j;
@@ -22,17 +20,12 @@ export const damerauLevenshtein = (a: string, b: string): number => {
     for (let j = 1; j <= lb; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
       d[i][j] = Math.min(
-        d[i - 1][j] + 1,       // deletion
-        d[i][j - 1] + 1,       // insertion
+        d[i - 1][j] + 1, // deletion
+        d[i][j - 1] + 1, // insertion
         d[i - 1][j - 1] + cost // substitution
       );
       // transposition
-      if (
-        i > 1 &&
-        j > 1 &&
-        a[i - 1] === b[j - 2] &&
-        a[i - 2] === b[j - 1]
-      ) {
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
         d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + cost);
       }
     }
@@ -126,6 +119,10 @@ export const verifyAttempt = (
         const refLen = target.length;
         const threshold = maxDist(refLen);
         if (threshold === null) continue;
+        // Edit distance is always >= the length difference, so a mismatch
+        // beyond the threshold can't pass — skip before allocating the
+        // O(len(normInput) * len(target)) matrix.
+        if (Math.abs(normInput.length - refLen) > threshold) continue;
         if (damerauLevenshtein(normInput, target) <= threshold) {
           isCorrect = true;
           break;
