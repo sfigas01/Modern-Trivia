@@ -19,6 +19,7 @@ import type {
   RoomPollResponse,
   RoomSnapshot,
   SkipRoomResponse,
+  StartRoomRequest,
   StartRoomResponse,
 } from '@shared/models/rooms';
 
@@ -120,7 +121,7 @@ export interface UseRoomResult {
   error: Error | null;
   refetch: UseQueryResult<RoomSnapshot, Error>['refetch'];
   join: UseMutationResult<JoinRoomResponse, Error, JoinRoomRequest>;
-  start: UseMutationResult<StartRoomResponse, Error, void>;
+  start: UseMutationResult<StartRoomResponse, Error, StartRoomRequest>;
   answer: UseMutationResult<AnswerRoomResponse, Error, AnswerRoomRequest>;
   advance: UseMutationResult<AdvanceRoomResponse, Error, void>;
   continueRound: UseMutationResult<ContinueRoomResponse, Error, void>;
@@ -201,7 +202,8 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
   });
 
   const start = useMutation({
-    mutationFn: () => postRoomAction<Record<string, never>, StartRoomResponse>(code, 'start', {}),
+    mutationFn: (body: StartRoomRequest = {}) =>
+      postRoomAction<StartRoomRequest, StartRoomResponse>(code, 'start', body),
     onSuccess: onActionSuccess,
   });
 

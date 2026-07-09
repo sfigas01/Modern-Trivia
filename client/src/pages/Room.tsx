@@ -14,6 +14,8 @@ import { TurnHandoff } from '@/components/room/TurnHandoff';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useRoom } from '@/hooks/use-room';
+import { useAuth } from '@/hooks/use-auth';
+import { useRecordGuestRoomQuestion } from '@/hooks/use-record-guest-room-question';
 import { getRoomSession } from '@/lib/room-session';
 import type { RoomPlayerSnapshot } from '@shared/models/rooms';
 
@@ -35,9 +37,12 @@ export default function Room() {
     awardDispute,
     refetch,
   } = useRoom(code, { enabled: !!session });
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [handoffPlayer, setHandoffPlayer] = useState<RoomPlayerSnapshot | null>(null);
   const prevActivePlayerRef = useRef<string | null>(null);
+
+  useRecordGuestRoomQuestion(snapshot?.currentQuestion?.id, isAuthenticated, authLoading);
 
   useEffect(() => {
     if (!session) {

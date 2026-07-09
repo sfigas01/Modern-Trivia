@@ -165,7 +165,7 @@ function ModeChooser({
 function SoloSetup() {
   const [_, setLocation] = useLocation();
   const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState('');
 
@@ -185,7 +185,7 @@ function SoloSetup() {
   };
 
   const handleStart = async () => {
-    await startGame();
+    await startGame(isAuthenticated);
     setLocation('/game');
   };
 
@@ -370,7 +370,7 @@ function SoloSetup() {
           )}
           <Button
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
-            disabled={state.teams.length < 2}
+            disabled={state.teams.length < 2 || authLoading}
             onClick={handleStart}
             data-testid="button-start-game"
           >

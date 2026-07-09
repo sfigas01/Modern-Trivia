@@ -2,18 +2,25 @@ import { Link } from 'wouter';
 import { toast } from 'sonner';
 import { Copy, DoorOpen, Play } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { MAX_PLAYERS, type EndRoomResponse, type RoomSnapshot, type StartRoomResponse } from '@shared/models/rooms';
+import {
+  MAX_PLAYERS,
+  type EndRoomResponse,
+  type RoomSnapshot,
+  type StartRoomRequest,
+  type StartRoomResponse,
+} from '@shared/models/rooms';
 
 import { PlayerRoster } from './PlayerRoster';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getGuestSeenIds } from '@/lib/guest-seen';
 
 type LobbySnapshot = Extract<RoomSnapshot, { phase: 'LOBBY' }>;
 
 export interface LobbyProps {
   snapshot: LobbySnapshot;
   currentPlayerId: string;
-  start: UseMutationResult<StartRoomResponse, Error, void>;
+  start: UseMutationResult<StartRoomResponse, Error, StartRoomRequest>;
   end: UseMutationResult<EndRoomResponse, Error, void>;
 }
 
@@ -34,9 +41,12 @@ export function Lobby({ snapshot, currentPlayerId, start, end }: LobbyProps) {
 
   const handleStart = () => {
     if (!canStart || start.isPending) return;
-    start.mutate(undefined, {
-      onError: (error) => toast.error(error.message || 'Failed to start game. Please try again.'),
-    });
+    start.mutate(
+      { excludeQuestionIds: getGuestSeenIds() },
+      {
+        onError: (error) => toast.error(error.message || 'Failed to start game. Please try again.'),
+      }
+    );
   };
 
   const handleClose = () => {

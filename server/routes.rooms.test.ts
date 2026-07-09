@@ -510,6 +510,184 @@ describe('room lifecycle routes', () => {
     );
   });
 
+  it('honors excludeQuestionIds for a guest host when the unseen pool is sufficient', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: selectedQuestions.map(({ id }) => id),
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [player()],
+      [player(), guest],
+      selectedQuestions,
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .send({ excludeQuestionIds: ['seen-1', 'seen-2'] })
+      .expect(200);
+
+    // Sufficient supply after exclusion — no backfill query needed.
+    expect(dbMocks.select).toHaveBeenCalledTimes(6);
+
+    const exclusionCondition = dbMocks.whereArgs.find((condition) => {
+      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.sql.includes('not in') && query.params.includes('seen-1');
+    });
+    expect(exclusionCondition).toBeDefined();
+  });
+
+  it('backfills only the deficit, oldest-seen first, for a guest host when the unseen pool is too small', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    // 10 unseen questions available; questionLimit is 40 (5 rounds * 2 players * 4),
+    // so 30 more are needed. 35 eligible previously-seen ids are supplied,
+    // oldest-first, and only the 30 oldest should be used to fill the deficit.
+    const unseenQuestions = Array.from({ length: 10 }, (_, index) => ({
+      id: `unseen-${index + 1}`,
+    }));
+    const excludeIds = Array.from({ length: 35 }, (_, index) => `seen-${index + 1}`);
+    const eligibleSeenQuestions = excludeIds.map((id) => ({ id }));
+    const expectedSelection = [...unseenQuestions.map(({ id }) => id), ...excludeIds.slice(0, 30)];
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: expectedSelection,
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [player()],
+      [player(), guest],
+      unseenQuestions,
+      eligibleSeenQuestions,
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .send({ excludeQuestionIds: excludeIds })
+      .expect(200);
+
+    // Two question-selection queries: the unseen attempt, then the eligible-seen backfill.
+    expect(dbMocks.select).toHaveBeenCalledTimes(7);
+    expect(response.body.snapshot.status).toBe('active');
+    // The already-found unseen questions are kept; only the deficit (30) is
+    // backfilled, from the oldest-seen ids first — never a fresh unconstrained draw.
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({ questionIds: expectedSelection })
+    );
+  });
+
+  it('rejects more than 500 excludeQuestionIds with a 422', async () => {
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .send({ excludeQuestionIds: Array.from({ length: 501 }, (_, i) => `q${i}`) })
+      .expect(422);
+
+    expect(dbMocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it('ignores client-supplied excludeQuestionIds for an authenticated host', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: selectedQuestions.map(({ id }) => id),
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [player()],
+      [player(), guest],
+      selectedQuestions,
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .set('x-test-user-id', 'host-user')
+      .send({ excludeQuestionIds: ['some-guest-only-id'] })
+      .expect(200);
+
+    // Same single question-selection query as the plain authenticated flow —
+    // the client's exclusion list never reaches the authenticated branch.
+    expect(dbMocks.select).toHaveBeenCalledTimes(6);
+    const exclusionCondition = dbMocks.whereArgs.find((condition) => {
+      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.params.includes('some-guest-only-id');
+    });
+    expect(exclusionCondition).toBeUndefined();
+  });
+
+  it('returns 409 when the pool is genuinely too small even after backfill', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const stillShort = Array.from({ length: 10 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    queueSelect([room()], [player()], [player(), guest], stillShort.slice(0, 5), stillShort);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .send({ excludeQuestionIds: ['seen-1'] })
+      .expect(409);
+
+    expect(response.body.message).toBe('Not enough approved questions to start this game');
+  });
+
   it('requires a host and at least two players to start', async () => {
     const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
     queueSelect([room()], [guest]);

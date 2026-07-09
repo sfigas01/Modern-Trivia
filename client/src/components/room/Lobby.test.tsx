@@ -5,13 +5,34 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import { Lobby } from './Lobby';
-import type { EndRoomResponse, RoomSnapshot, StartRoomResponse } from '@shared/models/rooms';
+import { addGuestSeenIds } from '@/lib/guest-seen';
+import type {
+  EndRoomResponse,
+  RoomSnapshot,
+  StartRoomRequest,
+  StartRoomResponse,
+} from '@shared/models/rooms';
 
 vi.mock('wouter', () => ({
   Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
     <a href={href}>{children}</a>
   ),
 }));
+
+// Stub localStorage for jsdom compatibility
+const storage: Record<string, string> = {};
+vi.stubGlobal('localStorage', {
+  getItem: (key: string) => storage[key] ?? null,
+  setItem: (key: string, value: string) => {
+    storage[key] = value;
+  },
+  removeItem: (key: string) => {
+    delete storage[key];
+  },
+  clear: () => {
+    for (const key of Object.keys(storage)) delete storage[key];
+  },
+});
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
@@ -78,6 +99,7 @@ describe('Lobby', () => {
   beforeEach(() => {
     toastSuccess.mockClear();
     toastError.mockClear();
+    localStorage.clear();
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
@@ -95,7 +117,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="host-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -115,7 +137,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="host-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -134,7 +156,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="host-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -148,7 +170,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="host-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -164,7 +186,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="guest-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -180,7 +202,7 @@ describe('Lobby', () => {
       <Lobby
         snapshot={snapshot}
         currentPlayerId="host-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );
@@ -195,13 +217,39 @@ describe('Lobby', () => {
     await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
 
+  it('sends the locally-seen guest question ids when starting the game', async () => {
+    addGuestSeenIds(['q1', 'q2']);
+    const snapshot = makeSnapshot({
+      players: [
+        makePlayer({ id: 'host-1' }),
+        makePlayer({ id: 'p2', isHost: false, joinOrder: 1 }),
+      ],
+    });
+    const start = makeMutation<StartRoomResponse, StartRoomRequest>();
+    render(
+      <Lobby
+        snapshot={snapshot}
+        currentPlayerId="host-1"
+        start={start}
+        end={makeMutation<EndRoomResponse, void>()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('button-start-game'));
+
+    expect(start.mutate).toHaveBeenCalledWith(
+      { excludeQuestionIds: ['q1', 'q2'] },
+      expect.anything()
+    );
+  });
+
   it('shows a closed message with a link home when the room is no longer in the lobby status', () => {
     const snapshot = makeSnapshot({ status: 'abandoned' });
     render(
       <Lobby
         snapshot={snapshot}
         currentPlayerId="guest-1"
-        start={makeMutation<StartRoomResponse, void>()}
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
       />
     );

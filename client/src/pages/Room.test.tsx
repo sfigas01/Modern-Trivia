@@ -6,6 +6,25 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Room from './Room';
 import type { RoomSnapshot } from '@shared/models/rooms';
 
+// Stub localStorage for jsdom compatibility. Re-stubbed in beforeEach since
+// afterEach calls vi.unstubAllGlobals(), which would otherwise strip it after
+// the first test.
+const guestSeenStorage: Record<string, string> = {};
+function stubLocalStorage() {
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => guestSeenStorage[key] ?? null,
+    setItem: (key: string, value: string) => {
+      guestSeenStorage[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete guestSeenStorage[key];
+    },
+    clear: () => {
+      for (const key of Object.keys(guestSeenStorage)) delete guestSeenStorage[key];
+    },
+  });
+}
+
 const mockSetLocation = vi.fn();
 let mockParams: { code: string } = { code: 'ABCDE' };
 
@@ -22,6 +41,17 @@ vi.mock('@/lib/room-session', () => ({
 const mockUseRoom = vi.fn();
 vi.mock('@/hooks/use-room', () => ({
   useRoom: (...args: unknown[]) => mockUseRoom(...args),
+}));
+
+const mockUseAuth = vi.fn(() => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  logout: vi.fn(),
+  isLoggingOut: false,
+}));
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 vi.mock('@/components/room/Lobby', () => ({
@@ -107,7 +137,16 @@ describe('Room', () => {
     mockSetLocation.mockClear();
     mockGetRoomSession.mockReset();
     mockUseRoom.mockReset();
+    mockUseAuth.mockReturnValue({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      logout: vi.fn(),
+      isLoggingOut: false,
+    });
     mockParams = { code: 'ABCDE' };
+    stubLocalStorage();
+    localStorage.clear();
   });
 
   afterEach(() => {
