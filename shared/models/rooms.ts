@@ -324,10 +324,12 @@ export const roomSnapshotSchema = z.discriminatedUnion('phase', [
   roomSnapshotBaseSchema.extend({
     phase: z.literal('LOBBY'),
     currentQuestion: redactedRoomQuestionSchema.nullable(),
+    currentDisputeVote: z.null().default(null),
   }),
   roomSnapshotBaseSchema.extend({
     phase: z.literal('QUESTION'),
     currentQuestion: redactedRoomQuestionSchema,
+    currentDisputeVote: z.null().default(null),
   }),
   roomSnapshotBaseSchema.extend({
     phase: z.literal('REVEAL'),
@@ -342,10 +344,12 @@ export const roomSnapshotSchema = z.discriminatedUnion('phase', [
   roomSnapshotBaseSchema.extend({
     phase: z.literal('ROUND_SCORE'),
     currentQuestion: revealedRoomQuestionSchema,
+    currentDisputeVote: z.null().default(null),
   }),
   roomSnapshotBaseSchema.extend({
     phase: z.literal('GAME_OVER'),
     currentQuestion: revealedRoomQuestionSchema,
+    currentDisputeVote: z.null().default(null),
   }),
 ]);
 
@@ -423,7 +427,12 @@ export const leaveRoomResponseSchema = z.object({
 });
 
 export type RoomCodeParams = z.infer<typeof roomCodeParamsSchema>;
-export type CreateRoomRequest = z.input<typeof createRoomRequestSchema>;
+export type CreateRoomRequest = Omit<
+  z.infer<typeof createRoomRequestSchema>,
+  'opponentDisputeVotingEnabled'
+> & {
+  opponentDisputeVotingEnabled?: boolean;
+};
 export type SubmitMultiplayerDisputeRequest = z.infer<typeof submitMultiplayerDisputeRequestSchema>;
 export type CastDisputeVoteRequest = z.infer<typeof castDisputeVoteRequestSchema>;
 export type CancelDisputeVoteRequest = z.infer<typeof cancelDisputeVoteRequestSchema>;

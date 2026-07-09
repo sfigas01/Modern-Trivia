@@ -75,6 +75,17 @@ export const disputes = pgTable('disputes', {
   decidedAt: timestamp('decided_at', { withTimezone: true }),
 });
 
+export const publicDisputeRequestSchema = z
+  .object({
+    questionId: z.string().min(1),
+    questionText: z.string().min(1),
+    correctAnswer: z.string().min(1),
+    teamName: z.string().min(1),
+    submittedAnswer: z.string().nullable().optional(),
+    teamExplanation: z.string().min(1),
+  })
+  .strict();
+
 export const insertDisputeSchema = createInsertSchema(disputes, {
   id: disputeIdSchema.optional(),
   outcome: disputeOutcomeSchema.nullable().optional(),

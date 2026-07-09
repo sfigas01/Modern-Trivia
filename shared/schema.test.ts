@@ -26,6 +26,7 @@ import {
   openDisputeVoteSnapshotSchema,
   pollRoomRequestSchema,
   pollRoomResponseSchema,
+  publicDisputeRequestSchema,
   revealedRoomQuestionSchema,
   roomAttemptSchema,
   roomCodeParamsSchema,
@@ -61,6 +62,7 @@ const validQuestionPayload = {
 const roomId = '11111111-1111-4111-8111-111111111111';
 const hostPlayerId = '22222222-2222-4222-8222-222222222222';
 const guestPlayerId = '33333333-3333-4333-8333-333333333333';
+const disputingPlayerId = '44444444-4444-4444-8444-444444444444';
 const timestamp = '2026-06-20T18:00:00.000Z';
 
 const redactedQuestion = {
@@ -129,12 +131,14 @@ const validOpenDisputeVote = {
 const validFinalizedDisputeVote = {
   ...validOpenDisputeVote,
   status: 'FINALIZED' as const,
+  disputingPlayerId,
+  disputingPlayerName: 'Disputer',
   eligibleVoterIds: [hostPlayerId, guestPlayerId],
-  submittedVoterIds: [guestPlayerId],
+  submittedVoterIds: [hostPlayerId, guestPlayerId],
   threshold: 2,
-  yesCount: 1,
+  yesCount: 2,
   noCount: 0,
-  nonResponseCount: 1,
+  nonResponseCount: 0,
   outcome: 'approved' as const,
   originalPointsDelta: -2,
   finalPointsDelta: 2,
@@ -194,6 +198,20 @@ describe('insertDisputeSchema', () => {
         voterPlayerName: 'Guest',
         approve: true,
         id: 'should-not-be-client-supplied',
+      }).success
+    ).toBe(false);
+  });
+});
+
+describe('publicDisputeRequestSchema', () => {
+  it('rejects room-scoped decision fields from public dispute submissions', () => {
+    expect(
+      publicDisputeRequestSchema.safeParse({
+        ...validDisputePayload,
+        roomId,
+        attemptKey: `${roomId}:0`,
+        votingEnabled: true,
+        outcome: 'approved',
       }).success
     ).toBe(false);
   });
@@ -331,9 +349,9 @@ describe('RoomSnapshot contract', () => {
     });
     expect(parsed.currentDisputeVote).toMatchObject({
       outcome: 'approved',
-      yesCount: 1,
+      yesCount: 2,
       noCount: 0,
-      nonResponseCount: 1,
+      nonResponseCount: 0,
       finalPointsDelta: 2,
     });
   });
@@ -351,10 +369,26 @@ describe('RoomSnapshot contract', () => {
     expect(
       finalizedDisputeVoteSnapshotSchema.safeParse({
         ...validFinalizedDisputeVote,
-        nonResponseCount: 0,
+        yesCount: 1,
       }).success
     ).toBe(false);
   });
+
+  it.each(['LOBBY', 'QUESTION', 'ROUND_SCORE', 'GAME_OVER'] as const)(
+    'rejects dispute vote state from the %s phase',
+    (phase) => {
+      const currentQuestion =
+        phase === 'LOBBY' ? null : phase === 'QUESTION' ? redactedQuestion : revealedQuestion;
+      expect(
+        roomSnapshotSchema.safeParse({
+          ...validSnapshot,
+          phase,
+          currentQuestion,
+          currentDisputeVote: validOpenDisputeVote,
+        }).success
+      ).toBe(false);
+    }
+  );
 
   it.each(['online', 'away', 'stale'] as const)(
     'accepts %s as a derived player presence state',
