@@ -223,6 +223,8 @@ async function buildRoomSnapshot(
     currentQuestionIndex: room.currentQuestionIndex,
     activePlayerId: room.activePlayerId,
     currentAttempt: room.currentAttempt,
+    opponentDisputeVotingEnabled: room.opponentDisputeVotingEnabled,
+    currentDisputeVote: room.currentDisputeVote ?? null,
     currentQuestion,
     players: players.map((player) => serializePlayer(player, now)),
     createdAt: room.createdAt.toISOString(),
@@ -319,6 +321,7 @@ export function registerRoomRoutes(app: Express): void {
                 numRounds: input.numRounds,
                 status: 'lobby',
                 phase: 'LOBBY',
+                opponentDisputeVotingEnabled: input.opponentDisputeVotingEnabled,
                 expiresAt: new Date(now.getTime() + LOBBY_TTL_MS),
               })
               .returning();

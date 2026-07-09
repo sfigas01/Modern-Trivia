@@ -6,7 +6,7 @@ import { db } from './db';
 import {
   disputes,
   adminRoles,
-  insertDisputeSchema,
+  publicDisputeRequestSchema,
   appConfig,
   questions,
   seenQuestions,
@@ -216,7 +216,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post('/api/disputes', async (req, res) => {
     try {
-      const parsed = insertDisputeSchema.parse(req.body);
+      const parsed = publicDisputeRequestSchema.parse(req.body);
       const [newDispute] = await db.insert(disputes).values(parsed).returning();
       res.status(201).json(newDispute);
     } catch (error) {
