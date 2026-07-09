@@ -5,18 +5,25 @@ import {
   advanceRoomResponseSchema,
   answerRoomRequestSchema,
   answerRoomResponseSchema,
+  cancelDisputeVoteRequestSchema,
+  cancelDisputeVoteResponseSchema,
+  castDisputeVoteRequestSchema,
+  castDisputeVoteResponseSchema,
   continueRoomRequestSchema,
   continueRoomResponseSchema,
   createRoomRequestSchema,
   createRoomResponseSchema,
   endRoomRequestSchema,
   endRoomResponseSchema,
+  finalizedDisputeVoteSnapshotSchema,
+  insertDisputeBallotSchema,
   insertDisputeSchema,
   insertQuestionSchema,
   insertRoomPlayerSchema,
   insertRoomSchema,
   joinRoomRequestSchema,
   joinRoomResponseSchema,
+  openDisputeVoteSnapshotSchema,
   pollRoomRequestSchema,
   pollRoomResponseSchema,
   revealedRoomQuestionSchema,
@@ -28,6 +35,8 @@ import {
   skipRoomResponseSchema,
   startRoomRequestSchema,
   startRoomResponseSchema,
+  submitMultiplayerDisputeRequestSchema,
+  submitMultiplayerDisputeResponseSchema,
 } from './schema';
 
 const validDisputePayload = {
@@ -104,6 +113,34 @@ const validSnapshot = {
   expiresAt: '2026-06-21T18:00:00.000Z',
 };
 
+const validOpenDisputeVote = {
+  status: 'OPEN' as const,
+  disputeId: 'dispute-1',
+  disputingPlayerId: hostPlayerId,
+  disputingPlayerName: 'Host',
+  explanation: 'The answer should be accepted because the clue was ambiguous.',
+  eligibleVoterIds: [guestPlayerId],
+  submittedVoterIds: [],
+  threshold: 1,
+  openedAt: timestamp,
+  closesAt: '2026-06-20T18:01:00.000Z',
+};
+
+const validFinalizedDisputeVote = {
+  ...validOpenDisputeVote,
+  status: 'FINALIZED' as const,
+  eligibleVoterIds: [hostPlayerId, guestPlayerId],
+  submittedVoterIds: [guestPlayerId],
+  threshold: 2,
+  yesCount: 1,
+  noCount: 0,
+  nonResponseCount: 1,
+  outcome: 'approved' as const,
+  originalPointsDelta: -2,
+  finalPointsDelta: 2,
+  decidedAt: '2026-06-20T18:01:00.000Z',
+};
+
 describe('insertDisputeSchema', () => {
   it('accepts a valid dispute payload', () => {
     expect(insertDisputeSchema.parse(validDisputePayload)).toEqual(validDisputePayload);
@@ -119,6 +156,46 @@ describe('insertDisputeSchema', () => {
     expect(result.error?.issues.some((issue) => issue.path.join('.') === 'teamExplanation')).toBe(
       true
     );
+  });
+
+  it('accepts persisted multiplayer decision metadata alongside legacy fields', () => {
+    expect(
+      insertDisputeSchema.safeParse({
+        ...validDisputePayload,
+        roomId,
+        roomCode: 'ABCD2',
+        attemptKey: `${roomId}:0`,
+        disputingPlayerId: hostPlayerId,
+        disputingPlayerName: 'Host',
+        votingEnabled: true,
+        eligibleVoterSnapshot: [{ playerId: guestPlayerId, displayName: 'Guest' }],
+        threshold: 1,
+        outcome: 'approved',
+        originalPointsDelta: -2,
+        finalPointsDelta: 2,
+        decidedAt: new Date(timestamp),
+      }).success
+    ).toBe(true);
+  });
+
+  it('validates one persisted ballot and rejects client-supplied identity fields', () => {
+    expect(
+      insertDisputeBallotSchema.safeParse({
+        disputeId: 'dispute-1',
+        voterPlayerId: guestPlayerId,
+        voterPlayerName: 'Guest',
+        approve: true,
+      }).success
+    ).toBe(true);
+    expect(
+      insertDisputeBallotSchema.safeParse({
+        disputeId: 'dispute-1',
+        voterPlayerId: guestPlayerId,
+        voterPlayerName: 'Guest',
+        approve: true,
+        id: 'should-not-be-client-supplied',
+      }).success
+    ).toBe(false);
   });
 });
 
@@ -178,6 +255,7 @@ describe('rooms database schemas', () => {
       category: 'All',
       numRounds: 5,
       questionIds: [],
+      opponentDisputeVotingEnabled: false,
     });
   });
 
@@ -215,6 +293,67 @@ describe('RoomSnapshot contract', () => {
     expect(snapshot.currentQuestion).not.toHaveProperty('answer');
     expect(snapshot.currentQuestion).not.toHaveProperty('acceptableAnswers');
     expect(snapshot.currentQuestion).not.toHaveProperty('explanation');
+  });
+
+  it('defaults voting off and clears active vote state for legacy snapshots', () => {
+    const parsed = roomSnapshotSchema.parse(validSnapshot);
+    expect(parsed.opponentDisputeVotingEnabled).toBe(false);
+    expect(parsed.currentDisputeVote).toBeNull();
+  });
+
+  it('accepts an open DISPUTE_VOTE snapshot without ballot choices', () => {
+    const parsed = roomSnapshotSchema.parse({
+      ...validSnapshot,
+      phase: 'DISPUTE_VOTE',
+      currentQuestion: revealedQuestion,
+      currentDisputeVote: validOpenDisputeVote,
+    });
+
+    expect(parsed.currentDisputeVote).toEqual(validOpenDisputeVote);
+    expect(parsed.currentDisputeVote).not.toHaveProperty('approve');
+    expect(
+      openDisputeVoteSnapshotSchema.safeParse({
+        ...validOpenDisputeVote,
+        ballots: [{ voterPlayerId: guestPlayerId, approve: true }],
+      }).success
+    ).toBe(false);
+  });
+
+  it('accepts finalized aggregate metadata after returning to REVEAL', () => {
+    expect(finalizedDisputeVoteSnapshotSchema.safeParse(validFinalizedDisputeVote).success).toBe(
+      true
+    );
+    const parsed = roomSnapshotSchema.parse({
+      ...validSnapshot,
+      phase: 'REVEAL',
+      currentQuestion: revealedQuestion,
+      currentDisputeVote: validFinalizedDisputeVote,
+    });
+    expect(parsed.currentDisputeVote).toMatchObject({
+      outcome: 'approved',
+      yesCount: 1,
+      noCount: 0,
+      nonResponseCount: 1,
+      finalPointsDelta: 2,
+    });
+  });
+
+  it('rejects inconsistent voting thresholds, voter identities, and aggregate counts', () => {
+    expect(
+      openDisputeVoteSnapshotSchema.safeParse({ ...validOpenDisputeVote, threshold: 2 }).success
+    ).toBe(false);
+    expect(
+      openDisputeVoteSnapshotSchema.safeParse({
+        ...validOpenDisputeVote,
+        submittedVoterIds: [hostPlayerId],
+      }).success
+    ).toBe(false);
+    expect(
+      finalizedDisputeVoteSnapshotSchema.safeParse({
+        ...validFinalizedDisputeVote,
+        nonResponseCount: 0,
+      }).success
+    ).toBe(false);
   });
 
   it.each(['online', 'away', 'stale'] as const)(
@@ -296,12 +435,51 @@ describe('RoomSnapshot contract', () => {
 describe('rooms endpoint contract', () => {
   it('validates create, join, code params, poll query, and error payloads', () => {
     expect(
-      createRoomRequestSchema.safeParse({ nickname: 'Host', category: 'All', numRounds: 5 }).success
+      createRoomRequestSchema.parse({ nickname: 'Host', category: 'All', numRounds: 5 })
+    ).toEqual({
+      nickname: 'Host',
+      category: 'All',
+      numRounds: 5,
+      opponentDisputeVotingEnabled: false,
+    });
+    expect(
+      createRoomRequestSchema.safeParse({
+        nickname: 'Host',
+        category: 'All',
+        numRounds: 5,
+        opponentDisputeVotingEnabled: true,
+      }).success
     ).toBe(true);
     expect(joinRoomRequestSchema.safeParse({ nickname: 'Guest' }).success).toBe(true);
     expect(roomCodeParamsSchema.safeParse({ code: 'ABCD2' }).success).toBe(true);
     expect(pollRoomRequestSchema.parse({ sinceVersion: '2' })).toEqual({ sinceVersion: 2 });
     expect(roomErrorResponseSchema.safeParse({ message: 'Room is full' }).success).toBe(true);
+  });
+
+  it('validates strict multiplayer dispute request and response contracts', () => {
+    expect(
+      submitMultiplayerDisputeRequestSchema.safeParse({ explanation: 'The clue was ambiguous.' })
+        .success
+    ).toBe(true);
+    expect(
+      submitMultiplayerDisputeRequestSchema.safeParse({ explanation: ' ', ignored: true }).success
+    ).toBe(false);
+    expect(castDisputeVoteRequestSchema.safeParse({ approve: true }).success).toBe(true);
+    expect(
+      castDisputeVoteRequestSchema.safeParse({ approve: true, voterPlayerId: guestPlayerId })
+        .success
+    ).toBe(false);
+    expect(cancelDisputeVoteRequestSchema.safeParse({}).success).toBe(true);
+    expect(cancelDisputeVoteRequestSchema.safeParse({ reason: 'changed my mind' }).success).toBe(
+      false
+    );
+    expect(
+      submitMultiplayerDisputeResponseSchema.safeParse({ snapshot: validSnapshot }).success
+    ).toBe(true);
+    expect(castDisputeVoteResponseSchema.safeParse({ snapshot: validSnapshot }).success).toBe(true);
+    expect(cancelDisputeVoteResponseSchema.safeParse({ snapshot: validSnapshot }).success).toBe(
+      true
+    );
   });
 
   it('validates create and join responses', () => {
