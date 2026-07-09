@@ -164,7 +164,7 @@ function ModeChooser({
 
 function SoloSetup() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
+  const { state, addTeam, removeTeam, toggleCategory, setNumRounds, startGame } = useGame();
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState('');
@@ -172,7 +172,10 @@ function SoloSetup() {
   const categoryCounts = useCategoryCounts(state.questions);
 
   const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const availableCount = categoryCounts[state.selectedCategory] || 0;
+  const availableCount =
+    state.selectedCategories.length === 0
+      ? categoryCounts['All'] || 0
+      : state.selectedCategories.reduce((sum, cat) => sum + (categoryCounts[cat] || 0), 0);
   const hasInsufficientQuestions =
     state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
@@ -287,15 +290,15 @@ function SoloSetup() {
         <Card className="border-white/10 bg-white/5 backdrop-blur-md">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
-            <CardDescription>Choose a topic for this round.</CardDescription>
+            <CardDescription>Choose one or more topics for this round.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
               <Button
-                variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => setCategory('All')}
+                variant={state.selectedCategories.length === 0 ? 'default' : 'outline'}
+                onClick={() => toggleCategory('All')}
                 className={`border-white/10 hover:bg-white/10 ${
-                  state.selectedCategory === 'All'
+                  state.selectedCategories.length === 0
                     ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                     : ''
                 }`}
@@ -307,10 +310,10 @@ function SoloSetup() {
                 .map((category) => (
                   <Button
                     key={category}
-                    variant={state.selectedCategory === category ? 'default' : 'outline'}
-                    onClick={() => setCategory(category)}
+                    variant={state.selectedCategories.includes(category) ? 'default' : 'outline'}
+                    onClick={() => toggleCategory(category)}
                     className={`border-white/10 hover:bg-white/10 ${
-                      state.selectedCategory === category
+                      state.selectedCategories.includes(category)
                         ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                         : ''
                     }`}
@@ -356,9 +359,11 @@ function SoloSetup() {
               <div>
                 <p className="font-semibold text-yellow-300">Not enough questions</p>
                 <p className="mt-1">
-                  {state.selectedCategory === 'All'
+                  {state.selectedCategories.length === 0
                     ? 'All categories have'
-                    : `"${state.selectedCategory}" has`}{' '}
+                    : state.selectedCategories.length === 1
+                      ? `"${state.selectedCategories[0]}" has`
+                      : `The selected categories have`}{' '}
                   only <span className="font-bold">{availableCount}</span> question
                   {availableCount !== 1 ? 's' : ''}, but your setup needs{' '}
                   <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds ×{' '}

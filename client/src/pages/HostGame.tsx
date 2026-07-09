@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { UserPlus, Zap } from 'lucide-react';
 import {
   ROOM_ROUND_OPTIONS,
-  roomCategorySchema,
+  roomCategoriesSchema,
   roomRoundsSchema,
   type CreateRoomRequest,
   type CreateRoomResponse,
@@ -44,7 +44,7 @@ async function createRoom(body: CreateRoomRequest): Promise<CreateRoomResponse> 
 
 export default function HostGame() {
   const [, setLocation] = useLocation();
-  const { state, setCategory, setNumRounds } = useGame();
+  const { state, toggleCategory, setNumRounds } = useGame();
   const [nickname, setNickname] = useState('');
 
   const categoryCounts = useCategoryCounts(state.questions);
@@ -67,16 +67,18 @@ export default function HostGame() {
     e.preventDefault();
     if (!isNicknameValid || createRoomMutation.isPending) return;
 
-    const category = roomCategorySchema.safeParse(state.selectedCategory);
+    const categoriesValue =
+      state.selectedCategories.length === 0 ? ['All'] : state.selectedCategories;
+    const categories = roomCategoriesSchema.safeParse(categoriesValue);
     const numRounds = roomRoundsSchema.safeParse(state.numRounds);
-    if (!category.success || !numRounds.success) {
+    if (!categories.success || !numRounds.success) {
       toast.error('Invalid category or rounds selection. Please try again.');
       return;
     }
 
     createRoomMutation.mutate({
       nickname: trimmedNickname,
-      category: category.data,
+      categories: categories.data,
       numRounds: numRounds.data,
     });
   };
@@ -128,17 +130,17 @@ export default function HostGame() {
           <Card className="border-white/10 bg-white/5 backdrop-blur-md">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
-              <CardDescription>Choose a topic for this room.</CardDescription>
+              <CardDescription>Choose one or more topics for this room.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                 <Button
                   type="button"
-                  variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
-                  onClick={() => setCategory('All')}
+                  variant={state.selectedCategories.length === 0 ? 'default' : 'outline'}
+                  onClick={() => toggleCategory('All')}
                   disabled={createRoomMutation.isPending}
                   className={`border-white/10 hover:bg-white/10 ${
-                    state.selectedCategory === 'All'
+                    state.selectedCategories.length === 0
                       ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                       : ''
                   }`}
@@ -151,11 +153,11 @@ export default function HostGame() {
                     <Button
                       key={category}
                       type="button"
-                      variant={state.selectedCategory === category ? 'default' : 'outline'}
-                      onClick={() => setCategory(category)}
+                      variant={state.selectedCategories.includes(category) ? 'default' : 'outline'}
+                      onClick={() => toggleCategory(category)}
                       disabled={createRoomMutation.isPending}
                       className={`border-white/10 hover:bg-white/10 ${
-                        state.selectedCategory === category
+                        state.selectedCategories.includes(category)
                           ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                           : ''
                       }`}

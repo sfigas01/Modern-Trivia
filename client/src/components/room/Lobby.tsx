@@ -124,7 +124,10 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Settings</CardTitle>
           <CardDescription>
-            {snapshot.category} &middot; {snapshot.numRounds} rounds
+            {snapshot.categories.includes('All')
+              ? 'All categories'
+              : snapshot.categories.join(', ')}{' '}
+            &middot; {snapshot.numRounds} rounds
           </CardDescription>
         </CardHeader>
       </Card>
