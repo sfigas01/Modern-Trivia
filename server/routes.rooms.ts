@@ -24,6 +24,8 @@ import {
   endRoomResponseSchema,
   joinRoomRequestSchema,
   joinRoomResponseSchema,
+  leaveRoomRequestSchema,
+  leaveRoomResponseSchema,
   pollRoomRequestSchema,
   questions,
   roomCodeParamsSchema,
@@ -39,6 +41,7 @@ import {
   unchangedRoomPollResponseSchema,
   type Question,
   type Room,
+  type RoomAttempt,
   type RoomPlayer,
   type RoomSnapshot,
 } from '@shared/schema';
@@ -250,6 +253,32 @@ function sendRoomError(res: Response, error: unknown, context: string) {
 
   console.error(context, error);
   return res.status(500).json({ message: 'Internal server error' });
+}
+
+type DbTx = Pick<typeof db, 'select' | 'update'>;
+
+async function promoteHost(
+  tx: DbTx,
+  roomId: string,
+  currentHostId: string,
+  candidates: RoomPlayer[],
+  now: Date
+): Promise<RoomPlayer | null> {
+  const newHost = candidates.find(
+    (p) => p.id !== currentHostId && now.getTime() - p.lastSeenAt.getTime() <= STALE_THRESHOLD_MS
+  );
+  if (!newHost) return null;
+
+  await tx
+    .update(roomPlayers)
+    .set({ isHost: false })
+    .where(and(eq(roomPlayers.id, currentHostId), eq(roomPlayers.roomId, roomId)));
+  await tx
+    .update(roomPlayers)
+    .set({ isHost: true })
+    .where(and(eq(roomPlayers.id, newHost.id), eq(roomPlayers.roomId, roomId)));
+
+  return newHost;
 }
 
 export function registerRoomRoutes(app: Express): void {
@@ -970,6 +999,221 @@ export function registerRoomRoutes(app: Express): void {
     }
   });
 
+  app.post('/api/rooms/:code/leave', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      leaveRoomRequestSchema.parse(req.body);
+      const now = new Date();
+
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) {
+          throw new RoomRouteError(404, 'Room not found');
+        }
+        if (isExpired(room)) {
+          throw new RoomRouteError(404, 'Room expired');
+        }
+        if (room.status === 'finished' || room.status === 'abandoned') {
+          throw new RoomRouteError(409, 'Room has already ended');
+        }
+
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+
+        // Fetch all current (non-departed) players before marking actor as departed
+        // so the leaving player is included and advanceRoomEngine can reference them.
+        const allCurrentPlayers = await tx
+          .select()
+          .from(roomPlayers)
+          .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+          .orderBy(asc(roomPlayers.joinOrder));
+
+        const remainingPlayers = allCurrentPlayers.filter((p) => p.id !== actor.id);
+        const remainingCount = remainingPlayers.length;
+
+        // Mark player as departed
+        await tx.update(roomPlayers).set({ leftAt: now }).where(eq(roomPlayers.id, actor.id));
+
+        // --- Lobby departure ---
+        if (room.status === 'lobby') {
+          if (remainingCount === 0) {
+            const [result] = await tx
+              .update(rooms)
+              .set({ status: 'abandoned', version: sql`${rooms.version} + 1`, updatedAt: now })
+              .where(eq(rooms.id, room.id))
+              .returning();
+            return result;
+          }
+          if (actor.isHost) {
+            const newHost = remainingPlayers[0];
+            await tx
+              .update(roomPlayers)
+              .set({ isHost: false })
+              .where(and(eq(roomPlayers.id, actor.id), eq(roomPlayers.roomId, room.id)));
+            await tx
+              .update(roomPlayers)
+              .set({ isHost: true })
+              .where(and(eq(roomPlayers.id, newHost.id), eq(roomPlayers.roomId, room.id)));
+            const [result] = await tx
+              .update(rooms)
+              .set({
+                hostPlayerId: newHost.id,
+                version: sql`${rooms.version} + 1`,
+                updatedAt: now,
+              })
+              .where(eq(rooms.id, room.id))
+              .returning();
+            return result;
+          }
+          const [result] = await tx
+            .update(rooms)
+            .set({ version: sql`${rooms.version} + 1`, updatedAt: now })
+            .where(eq(rooms.id, room.id))
+            .returning();
+          return result;
+        }
+
+        // --- Active game departure ---
+        if (remainingCount === 0) {
+          const [result] = await tx
+            .update(rooms)
+            .set({ status: 'abandoned', version: sql`${rooms.version} + 1`, updatedAt: now })
+            .where(eq(rooms.id, room.id))
+            .returning();
+          return result;
+        }
+
+        if (remainingCount === 1) {
+          const [result] = await tx
+            .update(rooms)
+            .set({
+              status: 'finished',
+              phase: 'GAME_OVER',
+              version: sql`${rooms.version} + 1`,
+              updatedAt: now,
+            })
+            .where(eq(rooms.id, room.id))
+            .returning();
+          return result;
+        }
+
+        // Game continues (≥2 remaining players)
+
+        // Handle host departure — immediate promotion or abandon
+        let newHostId: string | undefined;
+        if (actor.isHost) {
+          const promoted = await promoteHost(tx, room.id, actor.id, remainingPlayers, now);
+          if (!promoted) {
+            const [result] = await tx
+              .update(rooms)
+              .set({ status: 'abandoned', version: sql`${rooms.version} + 1`, updatedAt: now })
+              .where(eq(rooms.id, room.id))
+              .returning();
+            return result;
+          }
+          newHostId = promoted.id;
+        }
+
+        // Handle active-player departure: auto-pass or auto-advance
+        let transition: ReturnType<typeof advanceRoomEngine> | null = null;
+        let currentAttemptForTransition: RoomAttempt | undefined;
+
+        if (room.activePlayerId === actor.id) {
+          if (room.phase === 'QUESTION') {
+            const questionId = room.questionIds[room.currentQuestionIndex];
+            if (!questionId) {
+              throw new Error(`Room question not found at index ${room.currentQuestionIndex}`);
+            }
+            currentAttemptForTransition = {
+              questionId,
+              playerId: actor.id,
+              submittedAnswer: null,
+              verdict: 'PASS' as const,
+              pointsDelta: 0,
+            };
+            const raw = advanceRoomEngine({
+              activePlayerId: actor.id,
+              currentAttempt: currentAttemptForTransition,
+              currentQuestionIndex: room.currentQuestionIndex,
+              players: allCurrentPlayers,
+              questionCount: room.questionIds.length,
+              forceNextPlayer: true,
+            });
+            transition = {
+              ...raw,
+              players: raw.players.filter((p) => p.id !== actor.id),
+            };
+          } else if (room.phase === 'REVEAL' && room.currentAttempt) {
+            currentAttemptForTransition = room.currentAttempt;
+            const raw = advanceRoomEngine({
+              activePlayerId: actor.id,
+              currentAttempt: room.currentAttempt,
+              currentQuestionIndex: room.currentQuestionIndex,
+              players: allCurrentPlayers,
+              questionCount: room.questionIds.length,
+              forceNextPlayer: true,
+            });
+            transition = {
+              ...raw,
+              players: raw.players.filter((p) => p.id !== actor.id),
+            };
+          }
+        }
+
+        // Assemble room update
+        const [result] = await tx
+          .update(rooms)
+          .set({
+            version: sql`${rooms.version} + 1`,
+            updatedAt: now,
+            ...(newHostId !== undefined ? { hostPlayerId: newHostId } : {}),
+            ...(transition !== null && currentAttemptForTransition !== undefined
+              ? {
+                  phase: transition.phase,
+                  status: transition.phase === 'GAME_OVER' ? 'finished' : ('active' as const),
+                  currentQuestionIndex: transition.currentQuestionIndex,
+                  activePlayerId: transition.activePlayerId,
+                  currentAttempt: currentAttemptForTransition,
+                }
+              : {}),
+          })
+          .where(eq(rooms.id, room.id))
+          .returning();
+        if (!result) {
+          throw new RoomRouteError(409, 'Room state changed concurrently');
+        }
+
+        if (transition) {
+          for (const player of transition.players) {
+            await tx
+              .update(roomPlayers)
+              .set({
+                score: player.score,
+                questionCount: player.questionCount,
+                lastRoundDelta: player.lastRoundDelta,
+              })
+              .where(and(eq(roomPlayers.id, player.id), eq(roomPlayers.roomId, room.id)));
+          }
+        }
+
+        return result;
+      });
+
+      return res.json(
+        leaveRoomResponseSchema.parse({
+          ok: true,
+          snapshot: await buildRoomSnapshot(db, updatedRoom),
+        })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error leaving room:');
+    }
+  });
+
   app.post('/api/rooms/:code/end', async (req, res) => {
     try {
       const code = parseRoomCode(req.params.code);
@@ -1093,10 +1337,12 @@ export function registerRoomRoutes(app: Express): void {
         }
 
         if (currentRoom.status === 'active' && hostAgeMs > HOST_PROMOTION_THRESHOLD_MS) {
-          const promotedHost = effectivePlayers.find(
-            (candidate) =>
-              candidate.id !== host.id &&
-              now.getTime() - candidate.lastSeenAt.getTime() <= STALE_THRESHOLD_MS
+          const promotedHost = await promoteHost(
+            tx,
+            currentRoom.id,
+            host.id,
+            effectivePlayers,
+            now
           );
           if (!promotedHost) {
             return currentRoom;
@@ -1121,16 +1367,6 @@ export function registerRoomRoutes(app: Express): void {
             return currentRoom;
           }
 
-          await tx
-            .update(roomPlayers)
-            .set({ isHost: false })
-            .where(and(eq(roomPlayers.id, host.id), eq(roomPlayers.roomId, currentRoom.id)));
-          await tx
-            .update(roomPlayers)
-            .set({ isHost: true })
-            .where(
-              and(eq(roomPlayers.id, promotedHost.id), eq(roomPlayers.roomId, currentRoom.id))
-            );
           return promotedRoom;
         }
 

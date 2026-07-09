@@ -16,7 +16,9 @@ export interface FinalResultsProps {
 export function FinalResults({ snapshot, currentPlayerId }: FinalResultsProps) {
   const [, setLocation] = useLocation();
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
-  const winner = ranked[0];
+  const topScore = ranked[0]?.score ?? 0;
+  const winners = ranked.filter((p) => p.score === topScore);
+  const isTie = winners.length > 1;
 
   function handleBackToHome() {
     clearRoomSession(snapshot.code);
@@ -30,10 +32,19 @@ export function FinalResults({ snapshot, currentPlayerId }: FinalResultsProps) {
           Game Over
         </Badge>
         <h1 className="text-4xl font-bold">Final Results</h1>
-        {winner && (
+        {isTie ? (
           <p className="text-muted-foreground" data-testid="text-winner">
-            Winner: <span className="text-primary font-semibold">{winner.nickname}</span>
+            It's a tie:{' '}
+            <span className="text-primary font-semibold">
+              {winners.map((w) => w.nickname).join(' & ')}
+            </span>
           </p>
+        ) : (
+          ranked[0] && (
+            <p className="text-muted-foreground" data-testid="text-winner">
+              Winner: <span className="text-primary font-semibold">{ranked[0].nickname}</span>
+            </p>
+          )
         )}
       </div>
       <Card className="border-white/10 bg-white/5 backdrop-blur-md">
@@ -46,10 +57,13 @@ export function FinalResults({ snapshot, currentPlayerId }: FinalResultsProps) {
             >
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">#{index + 1}</span>
-                <span className="font-semibold">
+                <span className={`font-semibold${player.leftAt ? ' text-muted-foreground' : ''}`}>
                   {player.nickname}
                   {player.id === currentPlayerId && (
                     <span className="text-muted-foreground font-normal"> (you)</span>
+                  )}
+                  {player.leftAt && (
+                    <span className="text-muted-foreground font-normal"> (left)</span>
                   )}
                 </span>
               </div>

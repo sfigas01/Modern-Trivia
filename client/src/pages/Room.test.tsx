@@ -34,8 +34,10 @@ vi.mock('wouter', () => ({
 }));
 
 const mockGetRoomSession = vi.fn();
+const mockClearRoomSession = vi.fn();
 vi.mock('@/lib/room-session', () => ({
   getRoomSession: (...args: unknown[]) => mockGetRoomSession(...args),
+  clearRoomSession: (...args: unknown[]) => mockClearRoomSession(...args),
 }));
 
 const mockUseRoom = vi.fn();
@@ -128,6 +130,8 @@ function makeUseRoomResult(overrides: Record<string, unknown> = {}) {
     continueRound: {},
     skip: {},
     end: {},
+    leave: { isPending: false, mutate: vi.fn() },
+    awardDispute: {},
     ...overrides,
   };
 }

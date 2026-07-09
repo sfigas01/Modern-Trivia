@@ -1,14 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'wouter';
 import { toast } from 'sonner';
-import { Copy, DoorOpen, Play } from 'lucide-react';
+import { Copy, DoorOpen, LogOut, Play } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import {
   MAX_PLAYERS,
   type EndRoomResponse,
+  type LeaveRoomResponse,
   type RoomSnapshot,
   type StartRoomRequest,
   type StartRoomResponse,
 } from '@shared/models/rooms';
+
+import { LeaveConfirmModal } from './LeaveConfirmModal';
 
 import { PlayerRoster } from './PlayerRoster';
 import { Button } from '@/components/ui/button';
@@ -22,9 +26,11 @@ export interface LobbyProps {
   currentPlayerId: string;
   start: UseMutationResult<StartRoomResponse, Error, StartRoomRequest>;
   end: UseMutationResult<EndRoomResponse, Error, void>;
+  leave: UseMutationResult<LeaveRoomResponse, Error, void>;
 }
 
-export function Lobby({ snapshot, currentPlayerId, start, end }: LobbyProps) {
+export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyProps) {
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const isHost = snapshot.hostPlayerId === currentPlayerId;
   const activePlayers = snapshot.players.filter((player) => !player.leftAt);
   const canStart = activePlayers.length >= 2;
@@ -53,6 +59,12 @@ export function Lobby({ snapshot, currentPlayerId, start, end }: LobbyProps) {
     if (end.isPending) return;
     end.mutate(undefined, {
       onError: (error) => toast.error(error.message || 'Failed to close room. Please try again.'),
+    });
+  };
+
+  const handleLeaveConfirm = () => {
+    leave.mutate(undefined, {
+      onError: (error) => toast.error(error.message || 'Failed to leave room. Please try again.'),
     });
   };
 
@@ -153,9 +165,31 @@ export function Lobby({ snapshot, currentPlayerId, start, end }: LobbyProps) {
           </Button>
         </div>
       ) : (
-        <p className="text-center text-muted-foreground" data-testid="text-waiting-host">
-          Waiting for host to start…
-        </p>
+        <div className="space-y-3">
+          <p className="text-center text-muted-foreground" data-testid="text-waiting-host">
+            Waiting for host to start…
+          </p>
+          <Button
+            variant="outline"
+            className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+            disabled={leave.isPending}
+            onClick={() => setShowLeaveModal(true)}
+            data-testid="button-leave-room"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Leave Room
+          </Button>
+        </div>
+      )}
+
+      {showLeaveModal && (
+        <LeaveConfirmModal
+          snapshot={snapshot}
+          currentPlayerId={currentPlayerId}
+          isPending={leave.isPending}
+          onConfirm={handleLeaveConfirm}
+          onCancel={() => setShowLeaveModal(false)}
+        />
       )}
     </div>
   );

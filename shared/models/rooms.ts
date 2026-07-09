@@ -245,6 +245,7 @@ export const advanceRoomRequestSchema = z.object({}).strict();
 export const continueRoomRequestSchema = z.object({}).strict();
 export const skipRoomRequestSchema = z.object({}).strict();
 export const endRoomRequestSchema = z.object({}).strict();
+export const leaveRoomRequestSchema = z.object({}).strict();
 export const pollRoomRequestSchema = z.object({
   sinceVersion: z.coerce.number().int().nonnegative().optional(),
 });
@@ -273,6 +274,10 @@ export const advanceRoomResponseSchema = roomActionResponseSchema;
 export const continueRoomResponseSchema = roomActionResponseSchema;
 export const skipRoomResponseSchema = roomActionResponseSchema;
 export const endRoomResponseSchema = roomActionResponseSchema;
+export const leaveRoomResponseSchema = z.object({
+  ok: z.literal(true),
+  snapshot: roomSnapshotSchema,
+});
 
 export type RoomCodeParams = z.infer<typeof roomCodeParamsSchema>;
 export type CreateRoomRequest = z.infer<typeof createRoomRequestSchema>;
@@ -283,6 +288,7 @@ export type AdvanceRoomRequest = z.infer<typeof advanceRoomRequestSchema>;
 export type ContinueRoomRequest = z.infer<typeof continueRoomRequestSchema>;
 export type SkipRoomRequest = z.infer<typeof skipRoomRequestSchema>;
 export type EndRoomRequest = z.infer<typeof endRoomRequestSchema>;
+export type LeaveRoomRequest = z.infer<typeof leaveRoomRequestSchema>;
 export type PollRoomRequest = z.infer<typeof pollRoomRequestSchema>;
 export type CreateRoomResponse = z.infer<typeof createRoomResponseSchema>;
 export type JoinRoomResponse = z.infer<typeof joinRoomResponseSchema>;
@@ -293,6 +299,7 @@ export type AdvanceRoomResponse = RoomActionResponse;
 export type ContinueRoomResponse = RoomActionResponse;
 export type SkipRoomResponse = RoomActionResponse;
 export type EndRoomResponse = RoomActionResponse;
+export type LeaveRoomResponse = z.infer<typeof leaveRoomResponseSchema>;
 export type RoomPollResponse = z.infer<typeof pollRoomResponseSchema>;
 export type UnchangedRoomPollResponse = z.infer<typeof unchangedRoomPollResponseSchema>;
 export type RoomErrorResponse = z.infer<typeof roomErrorResponseSchema>;

@@ -8,6 +8,7 @@ import { Lobby } from './Lobby';
 import { addGuestSeenIds } from '@/lib/guest-seen';
 import type {
   EndRoomResponse,
+  LeaveRoomResponse,
   RoomSnapshot,
   StartRoomRequest,
   StartRoomResponse,
@@ -119,6 +120,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -139,6 +141,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -158,6 +161,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -172,6 +176,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -188,6 +193,7 @@ describe('Lobby', () => {
         currentPlayerId="guest-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -204,6 +210,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -232,6 +239,7 @@ describe('Lobby', () => {
         currentPlayerId="host-1"
         start={start}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
@@ -251,6 +259,7 @@ describe('Lobby', () => {
         currentPlayerId="guest-1"
         start={makeMutation<StartRoomResponse, StartRoomRequest>()}
         end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
       />
     );
 
