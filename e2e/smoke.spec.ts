@@ -12,6 +12,12 @@ const EXPECTED_POINTS_DELTA = -1; // Easy wrong answer
 
 test.describe('SETUP → QUESTION → REVEAL loop', () => {
   test.beforeEach(async ({ page }) => {
+    // Guest question selection shuffles locally-unseen questions; keep this
+    // order-sensitive smoke path deterministic so smoke-q1 is selected first.
+    await page.addInitScript(() => {
+      Math.random = () => 0.5;
+    });
+
     // Intercept both the initial catalog load and startGame shuffle request
     await page.route('**/api/questions**', async (route) => {
       if (route.request().method() === 'GET') {
