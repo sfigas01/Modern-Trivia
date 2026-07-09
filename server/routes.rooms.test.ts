@@ -1598,6 +1598,62 @@ describe('room lifecycle routes', () => {
     expect(response.body.message).toBe('Room has already ended');
   });
 
+  it('active player leaves during ROUND_SCORE — activePlayerId is reassigned to next player', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const thirdId = '44444444-4444-4444-8444-444444444444';
+    const thirdPlayer = player({
+      id: thirdId,
+      nickname: 'Third',
+      token: 'third-secret',
+      joinOrder: 2,
+      isHost: false,
+    });
+    const scoreRoom = room({
+      status: 'active',
+      phase: 'ROUND_SCORE',
+      questionIds: ['question-1', 'question-2', 'question-3'],
+      currentQuestionIndex: 1,
+      activePlayerId: guestId,
+    });
+    const updatedRoom = room({
+      status: 'active',
+      phase: 'ROUND_SCORE',
+      version: 2,
+      questionIds: ['question-1', 'question-2', 'question-3'],
+      currentQuestionIndex: 1,
+      activePlayerId: thirdId,
+    });
+    queueSelect(
+      [scoreRoom],
+      [guest],
+      [player(), guest, thirdPlayer],
+      [player(), guest, thirdPlayer],
+      [question()]
+    );
+    // leftAt update, then room update with new activePlayerId
+    dbMocks.updateResults.push([], [updatedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/leave')
+      .set('X-Player-Token', 'guest-secret')
+      .send({})
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      status: 'active',
+      phase: 'ROUND_SCORE',
+      activePlayerId: thirdId,
+    });
+    expect(dbMocks.update).toHaveBeenCalledTimes(2); // leftAt + room update
+  });
+
   it('requires a valid player token to leave', async () => {
     queueSelect([room({ status: 'active', phase: 'QUESTION' })]);
     const app = await buildTestApp();

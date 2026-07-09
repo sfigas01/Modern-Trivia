@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { Copy, DoorOpen, LogOut, Play } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
@@ -15,6 +15,7 @@ import {
 import { LeaveConfirmModal } from './LeaveConfirmModal';
 
 import { PlayerRoster } from './PlayerRoster';
+import { clearRoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getGuestSeenIds } from '@/lib/guest-seen';
@@ -30,6 +31,7 @@ export interface LobbyProps {
 }
 
 export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyProps) {
+  const [, setLocation] = useLocation();
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const isHost = snapshot.hostPlayerId === currentPlayerId;
   const activePlayers = snapshot.players.filter((player) => !player.leftAt);
@@ -64,6 +66,10 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
 
   const handleLeaveConfirm = () => {
     leave.mutate(undefined, {
+      onSuccess: () => {
+        clearRoomSession(snapshot.code);
+        setLocation('/');
+      },
       onError: (error) => toast.error(error.message || 'Failed to leave room. Please try again.'),
     });
   };

@@ -186,7 +186,7 @@ const roomSnapshotBaseSchema = z.object({
   currentQuestionIndex: z.number().int().nonnegative(),
   activePlayerId: z.string().uuid().nullable(),
   currentAttempt: roomAttemptSchema.nullable(),
-  players: z.array(roomPlayerSnapshotSchema).max(MAX_PLAYERS),
+  players: z.array(roomPlayerSnapshotSchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   expiresAt: z.string().datetime(),

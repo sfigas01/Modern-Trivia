@@ -1121,6 +1121,7 @@ export function registerRoomRoutes(app: Express): void {
         // Handle active-player departure: auto-pass or auto-advance
         let transition: ReturnType<typeof advanceRoomEngine> | null = null;
         let currentAttemptForTransition: RoomAttempt | undefined;
+        let nextActivePlayerId: string | undefined;
 
         if (room.activePlayerId === actor.id) {
           if (room.phase === 'QUESTION') {
@@ -1161,6 +1162,15 @@ export function registerRoomRoutes(app: Express): void {
               ...raw,
               players: raw.players.filter((p) => p.id !== actor.id),
             };
+          } else if (room.phase === 'ROUND_SCORE') {
+            // No question to auto-pass, but activePlayerId must be reassigned so
+            // /continue doesn't enter QUESTION with a departed player as the answerer.
+            const actorIndex = allCurrentPlayers.findIndex((p) => p.id === actor.id);
+            const rotated = [
+              ...allCurrentPlayers.slice(actorIndex + 1),
+              ...allCurrentPlayers.slice(0, actorIndex),
+            ];
+            if (rotated.length > 0) nextActivePlayerId = rotated[0].id;
           }
         }
 
@@ -1179,7 +1189,9 @@ export function registerRoomRoutes(app: Express): void {
                   activePlayerId: transition.activePlayerId,
                   currentAttempt: currentAttemptForTransition,
                 }
-              : {}),
+              : nextActivePlayerId !== undefined
+                ? { activePlayerId: nextActivePlayerId }
+                : {}),
           })
           .where(eq(rooms.id, room.id))
           .returning();
