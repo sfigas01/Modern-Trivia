@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
 
 import { FinalResults } from '@/components/room/FinalResults';
+import { LeaveConfirmModal } from '@/components/room/LeaveConfirmModal';
+import { LeaveGameButton } from '@/components/room/LeaveGameButton';
 import { Lobby } from '@/components/room/Lobby';
 import { PlayerRoster } from '@/components/room/PlayerRoster';
 import { QuestionView } from '@/components/room/QuestionView';
@@ -16,7 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRoom } from '@/hooks/use-room';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecordGuestRoomQuestion } from '@/hooks/use-record-guest-room-question';
-import { getRoomSession } from '@/lib/room-session';
+import { clearRoomSession, getRoomSession } from '@/lib/room-session';
 import type { RoomPlayerSnapshot } from '@shared/models/rooms';
 
 export default function Room() {
@@ -34,12 +36,14 @@ export default function Room() {
     continueRound,
     skip,
     end,
+    leave,
     awardDispute,
     refetch,
   } = useRoom(code, { enabled: !!session });
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [handoffPlayer, setHandoffPlayer] = useState<RoomPlayerSnapshot | null>(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
   const prevActivePlayerRef = useRef<string | null>(null);
 
   useRecordGuestRoomQuestion(snapshot?.currentQuestion?.id, isAuthenticated, authLoading);
@@ -65,6 +69,18 @@ export default function Room() {
   }, [snapshot]);
 
   const handleDismissHandoff = useCallback(() => setHandoffPlayer(null), []);
+
+  const handleLeaveConfirm = useCallback(() => {
+    leave.mutate(undefined, {
+      onSuccess: () => {
+        clearRoomSession(code);
+        setLocation('/');
+      },
+      onError: () => {
+        setShowLeaveModal(false);
+      },
+    });
+  }, [leave, code, setLocation]);
 
   if (!session) {
     return null;
@@ -142,8 +158,28 @@ export default function Room() {
         </div>
       )}
 
+      {snapshot.phase !== 'LOBBY' && snapshot.phase !== 'GAME_OVER' && (
+        <LeaveGameButton onClick={() => setShowLeaveModal(true)} isPending={leave.isPending} />
+      )}
+
+      {showLeaveModal && snapshot && (
+        <LeaveConfirmModal
+          snapshot={snapshot}
+          currentPlayerId={session.playerId}
+          isPending={leave.isPending}
+          onConfirm={handleLeaveConfirm}
+          onCancel={() => setShowLeaveModal(false)}
+        />
+      )}
+
       {snapshot.phase === 'LOBBY' && (
-        <Lobby snapshot={snapshot} currentPlayerId={session.playerId} start={start} end={end} />
+        <Lobby
+          snapshot={snapshot}
+          currentPlayerId={session.playerId}
+          start={start}
+          end={end}
+          leave={leave}
+        />
       )}
 
       {snapshot.phase !== 'LOBBY' && (

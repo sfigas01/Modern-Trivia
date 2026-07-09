@@ -17,10 +17,11 @@ export function PlayerRoster({ players, currentPlayerId, activePlayerId }: Playe
     <div className="space-y-2" data-testid="player-roster">
       <AnimatePresence mode="popLayout">
         {sorted.map((player) => {
-          const online = player.presence === 'online';
-          const stale = player.presence === 'stale';
+          const left = !!player.leftAt;
+          const online = !left && player.presence === 'online';
+          const stale = !left && player.presence === 'stale';
           const isYou = player.id === currentPlayerId;
-          const isActive = player.id === activePlayerId;
+          const isActive = !left && player.id === activePlayerId;
 
           return (
             <motion.div
@@ -32,23 +33,30 @@ export function PlayerRoster({ players, currentPlayerId, activePlayerId }: Playe
               data-testid={`player-row-${player.id}`}
               className={cn(
                 'flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5',
-                stale && 'opacity-50',
+                (stale || left) && 'opacity-50',
                 isActive && 'ring-2 ring-primary'
               )}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span
                   data-testid={`presence-dot-${player.id}`}
-                  aria-label={online ? 'Online' : stale ? 'Stale' : 'Away'}
+                  aria-label={left ? 'Left' : online ? 'Online' : stale ? 'Stale' : 'Away'}
                   className={cn(
                     'w-2 h-2 rounded-full shrink-0',
-                    online ? 'bg-green-500' : stale ? 'bg-muted-foreground/40' : 'bg-yellow-400'
+                    left
+                      ? 'bg-muted-foreground/20'
+                      : online
+                        ? 'bg-green-500'
+                        : stale
+                          ? 'bg-muted-foreground/40'
+                          : 'bg-yellow-400'
                   )}
                 />
                 {player.isHost && <Crown className="w-4 h-4 text-yellow-400 shrink-0" />}
                 <span className="font-medium truncate">
                   {player.nickname}
                   {isYou && <span className="text-muted-foreground font-normal"> (you)</span>}
+                  {left && <span className="text-muted-foreground font-normal"> (left)</span>}
                 </span>
               </div>
               <span className="font-bold tabular-nums">{player.score}</span>

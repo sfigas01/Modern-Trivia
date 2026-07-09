@@ -14,6 +14,7 @@ import type {
   EndRoomResponse,
   JoinRoomRequest,
   JoinRoomResponse,
+  LeaveRoomResponse,
   RoomActionResponse,
   RoomPhase,
   RoomPollResponse,
@@ -127,6 +128,7 @@ export interface UseRoomResult {
   continueRound: UseMutationResult<ContinueRoomResponse, Error, void>;
   skip: UseMutationResult<SkipRoomResponse, Error, void>;
   end: UseMutationResult<EndRoomResponse, Error, void>;
+  leave: UseMutationResult<LeaveRoomResponse, Error, void>;
   awardDispute: UseMutationResult<RoomActionResponse, Error, void>;
 }
 
@@ -241,6 +243,15 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
     onSuccess: onActionSuccess,
   });
 
+  const leave = useMutation({
+    mutationFn: () => postRoomAction<Record<string, never>, LeaveRoomResponse>(code, 'leave', {}),
+    onSuccess: (response) => {
+      queryClient.setQueryData<RoomSnapshot>(queryKey, (current) =>
+        newerSnapshot(response.snapshot, current)
+      );
+    },
+  });
+
   return {
     snapshot: query.data,
     isLoading: query.isLoading,
@@ -254,6 +265,7 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
     continueRound,
     skip,
     end,
+    leave,
     awardDispute,
   };
 }
