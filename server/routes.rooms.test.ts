@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp } from './test/testApp';
-import { deriveRoomPresence } from './routes.rooms';
+import { deriveRoomPresence, determineDisputeVoteOutcome } from './routes.rooms';
 
 const dbMocks = vi.hoisted(() => {
   const selectResults: unknown[][] = [];
@@ -178,6 +178,22 @@ function question(id = 'question-1') {
   };
 }
 
+function openDisputeVote(overrides: Record<string, unknown> = {}) {
+  return {
+    disputeId: 'dispute-1',
+    disputingPlayerId: hostId,
+    disputingPlayerName: 'Host',
+    explanation: 'The alternate answer should count.',
+    eligibleVoterIds: [guestId],
+    submittedVoterIds: [],
+    threshold: 1,
+    openedAt: '2026-07-03T15:00:00.000Z',
+    closesAt: '2099-07-03T15:01:00.000Z',
+    status: 'OPEN' as const,
+    ...overrides,
+  };
+}
+
 function queueSelect(...results: unknown[][]) {
   dbMocks.selectResults.push(...results);
 }
@@ -219,6 +235,273 @@ describe('room lifecycle routes', () => {
     expect(deriveRoomPresence(new Date('2026-07-03T15:00:20.000Z'), observedAt)).toBe('away');
     expect(deriveRoomPresence(new Date('2026-07-03T15:00:00.000Z'), observedAt)).toBe('away');
     expect(deriveRoomPresence(new Date('2026-07-03T14:59:59.999Z'), observedAt)).toBe('stale');
+  });
+
+  it.each([
+    [1, 0, 0, 1, 'approved'],
+    [2, 0, 1, 2, 'approved'],
+    [1, 1, 0, 2, 'tied'],
+    [1, 2, 0, 2, 'rejected'],
+    [1, 0, 2, 2, 'rejected'],
+  ] as const)(
+    'determines dispute outcome for yes=%i no=%i missing=%i threshold=%i',
+    (yesCount, noCount, nonResponseCount, threshold, expected) => {
+      expect(determineDisputeVoteOutcome(yesCount, noCount, nonResponseCount, threshold)).toBe(
+        expected
+      );
+    }
+  );
+
+  it('preserves explicit expiry and cancellation outcomes', () => {
+    expect(determineDisputeVoteOutcome(2, 0, 1, 2, 'expired')).toBe('approved');
+    expect(determineDisputeVoteOutcome(1, 0, 2, 2, 'expired')).toBe('expired');
+    expect(determineDisputeVoteOutcome(2, 0, 0, 2, 'canceled')).toBe('canceled');
+  });
+
+  it('submits a room-scoped dispute and freezes eligible voters', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Toronto',
+      verdict: 'INCORRECT' as const,
+      pointsDelta: -1,
+    };
+    const revealRoom = room({
+      status: 'active',
+      phase: 'REVEAL',
+      activePlayerId: hostId,
+      questionIds: ['question-1'],
+      currentAttempt: attempt,
+      opponentDisputeVotingEnabled: true,
+      activeDisputeId: null,
+      currentDisputeVote: null,
+    });
+    const vote = openDisputeVote();
+    const votingRoom = room({
+      ...revealRoom,
+      phase: 'DISPUTE_VOTE',
+      version: 2,
+      activeDisputeId: 'dispute-1',
+      currentDisputeVote: vote,
+    });
+    queueSelect(
+      [revealRoom],
+      [player()],
+      [question()],
+      [player(), guest],
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.insertResults.push([{ id: 'dispute-1' }]);
+    dbMocks.updateResults.push([votingRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/disputes')
+      .set('X-Player-Token', 'host-secret')
+      .send({ explanation: vote.explanation })
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      phase: 'DISPUTE_VOTE',
+      currentDisputeVote: { eligibleVoterIds: [guestId], threshold: 1 },
+    });
+  });
+
+  it('rejects dispute submission by a non-answering player and duplicate attempts', async () => {
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Toronto',
+      verdict: 'INCORRECT' as const,
+      pointsDelta: -1,
+    };
+    const revealRoom = room({
+      status: 'active',
+      phase: 'REVEAL',
+      activePlayerId: hostId,
+      currentAttempt: attempt,
+    });
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect([revealRoom], [guest]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/disputes')
+      .set('X-Player-Token', 'guest-secret')
+      .send({ explanation: 'Please review this answer.' })
+      .expect(403);
+
+    queueSelect([{ ...revealRoom, activeDisputeId: 'dispute-1' }], [player()]);
+    await request(app)
+      .post('/api/rooms/ABCD2/disputes')
+      .set('X-Player-Token', 'host-secret')
+      .send({ explanation: 'Please review this answer.' })
+      .expect(409);
+  });
+
+  it('requires authentication before an expired vote can finalize', async () => {
+    queueSelect([
+      room({
+        status: 'active',
+        phase: 'DISPUTE_VOTE',
+        activeDisputeId: 'dispute-1',
+        currentDisputeVote: openDisputeVote({ closesAt: '2020-01-01T00:00:00.000Z' }),
+      }),
+    ]);
+    const app = await buildTestApp();
+
+    await request(app).post('/api/rooms/ABCD2/disputes/vote').send({ approve: true }).expect(401);
+    expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
+  it('finalizes an all-ballots approval and converts the attempt once', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Toronto',
+      verdict: 'INCORRECT' as const,
+      pointsDelta: -1,
+    };
+    const vote = openDisputeVote();
+    const votingRoom = room({
+      status: 'active',
+      phase: 'DISPUTE_VOTE',
+      activePlayerId: hostId,
+      questionIds: ['question-1'],
+      currentAttempt: attempt,
+      opponentDisputeVotingEnabled: true,
+      activeDisputeId: 'dispute-1',
+      currentDisputeVote: vote,
+    });
+    const finalizedRoom = room({
+      ...votingRoom,
+      phase: 'REVEAL',
+      version: 2,
+      currentAttempt: { ...attempt, verdict: 'CORRECT', pointsDelta: 1 },
+      currentDisputeVote: {
+        ...vote,
+        submittedVoterIds: [guestId],
+        status: 'FINALIZED',
+        yesCount: 1,
+        noCount: 0,
+        nonResponseCount: 0,
+        outcome: 'approved',
+        originalPointsDelta: -1,
+        finalPointsDelta: 1,
+        decidedAt: '2026-07-03T15:00:30.000Z',
+      },
+    });
+    queueSelect(
+      [votingRoom],
+      [guest],
+      [{ approve: true }],
+      [question()],
+      [player(), guest],
+      [question()]
+    );
+    dbMocks.insertResults.push([]);
+    dbMocks.updateResults.push([], [finalizedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/disputes/vote')
+      .set('X-Player-Token', 'guest-secret')
+      .send({ approve: true })
+      .expect(200);
+
+    expect(response.body.snapshot).toMatchObject({
+      phase: 'REVEAL',
+      currentAttempt: { verdict: 'CORRECT', pointsDelta: 1 },
+      currentDisputeVote: { outcome: 'approved' },
+    });
+  });
+
+  it('requires the host to cancel an open dispute vote', async () => {
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect(
+      [
+        room({
+          status: 'active',
+          phase: 'DISPUTE_VOTE',
+          activeDisputeId: 'dispute-1',
+          currentDisputeVote: openDisputeVote(),
+        }),
+      ],
+      [guest]
+    );
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/disputes/cancel')
+      .set('X-Player-Token', 'guest-secret')
+      .send({})
+      .expect(403);
+  });
+
+  it('finalizes an expired vote during polling and returns the recovered state', async () => {
+    const attempt = {
+      questionId: 'question-1',
+      playerId: hostId,
+      submittedAnswer: 'Toronto',
+      verdict: 'INCORRECT' as const,
+      pointsDelta: -1,
+    };
+    const vote = openDisputeVote({ closesAt: '2020-01-01T00:00:00.000Z' });
+    const votingRoom = room({
+      status: 'active',
+      phase: 'DISPUTE_VOTE',
+      activePlayerId: hostId,
+      questionIds: ['question-1'],
+      currentAttempt: attempt,
+      activeDisputeId: 'dispute-1',
+      currentDisputeVote: vote,
+    });
+    const finalizedRoom = room({
+      ...votingRoom,
+      phase: 'REVEAL',
+      version: 2,
+      currentDisputeVote: {
+        ...vote,
+        status: 'FINALIZED',
+        yesCount: 0,
+        noCount: 0,
+        nonResponseCount: 1,
+        outcome: 'expired',
+        originalPointsDelta: -1,
+        finalPointsDelta: -1,
+        decidedAt: '2026-07-03T15:00:00.000Z',
+      },
+    });
+    const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
+    queueSelect([votingRoom], [player()], [], [question()], [player(), guest], [question()]);
+    dbMocks.updateResults.push([], [], [finalizedRoom]);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/rooms/ABCD2')
+      .set('X-Player-Token', 'host-secret')
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      phase: 'REVEAL',
+      currentAttempt: { verdict: 'INCORRECT', pointsDelta: -1 },
+      currentDisputeVote: { outcome: 'expired' },
+    });
   });
 
   it('creates a lobby room and its host atomically after cleaning up expired rooms', async () => {

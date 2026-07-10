@@ -16,6 +16,10 @@ import {
   advanceRoomResponseSchema,
   answerRoomRequestSchema,
   answerRoomResponseSchema,
+  cancelDisputeVoteRequestSchema,
+  cancelDisputeVoteResponseSchema,
+  castDisputeVoteRequestSchema,
+  castDisputeVoteResponseSchema,
   continueRoomRequestSchema,
   continueRoomResponseSchema,
   createRoomRequestSchema,
@@ -28,6 +32,8 @@ import {
   leaveRoomResponseSchema,
   pollRoomRequestSchema,
   questions,
+  disputeBallots,
+  disputes,
   roomCodeParamsSchema,
   roomPlayers,
   roomSnapshotSchema,
@@ -35,6 +41,8 @@ import {
   seenQuestions,
   startRoomRequestSchema,
   startRoomResponseSchema,
+  submitMultiplayerDisputeRequestSchema,
+  submitMultiplayerDisputeResponseSchema,
   skipRoomRequestSchema,
   skipRoomResponseSchema,
   roomActionResponseSchema,
@@ -59,6 +67,8 @@ const STALE_THRESHOLD_MS = 30 * 1000;
 const SKIP_THRESHOLD_MS = 60 * 1000;
 const HOST_PROMOTION_THRESHOLD_MS = 2 * 60 * 1000;
 const LOBBY_ABANDONMENT_THRESHOLD_MS = 5 * 60 * 1000;
+const DISPUTE_VOTE_DURATION_MS = 60 * 1000;
+const DISPUTE_BALLOT_CONSTRAINT = 'uq_dispute_ballots_dispute_voter';
 
 type RoomReadDatabase = Pick<typeof db, 'select'>;
 
@@ -269,6 +279,91 @@ function sendRoomError(res: Response, error: unknown, context: string) {
 
   console.error(context, error);
   return res.status(500).json({ message: 'Internal server error' });
+}
+
+type RoomTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export function determineDisputeVoteOutcome(
+  yesCount: number,
+  noCount: number,
+  nonResponseCount: number,
+  threshold: number,
+  override?: 'canceled' | 'expired'
+): 'approved' | 'rejected' | 'tied' | 'expired' | 'canceled' {
+  if (override === 'canceled') return override;
+  if (yesCount >= threshold) return 'approved';
+  if (override === 'expired') return override;
+  if (nonResponseCount === 0 && yesCount === noCount) return 'tied';
+  return 'rejected';
+}
+
+async function finalizeDisputeVote(
+  tx: RoomTransaction,
+  room: Room,
+  outcomeOverride?: 'canceled' | 'expired',
+  now = new Date()
+): Promise<Room> {
+  const vote = room.currentDisputeVote;
+  if (!vote || vote.status !== 'OPEN' || !room.activeDisputeId || !room.currentAttempt) {
+    throw new RoomRouteError(409, 'No open dispute vote');
+  }
+
+  const ballots = await tx
+    .select()
+    .from(disputeBallots)
+    .where(eq(disputeBallots.disputeId, room.activeDisputeId));
+  const yesCount = ballots.filter((ballot) => ballot.approve).length;
+  const noCount = ballots.length - yesCount;
+  const nonResponseCount = Math.max(0, vote.eligibleVoterIds.length - ballots.length);
+  const outcome = determineDisputeVoteOutcome(
+    yesCount,
+    noCount,
+    nonResponseCount,
+    vote.threshold,
+    outcomeOverride
+  );
+  const [question] = await tx
+    .select()
+    .from(questions)
+    .where(eq(questions.id, room.currentAttempt.questionId))
+    .limit(1);
+  if (!question) throw new Error(`Question ${room.currentAttempt.questionId} not found`);
+
+  const approved = outcome === 'approved';
+  const finalPointsDelta = approved
+    ? pointsFor(question.difficulty as import('@shared/lib/answers').Difficulty)
+    : room.currentAttempt.pointsDelta;
+  const finalizedVote = {
+    ...vote,
+    status: 'FINALIZED' as const,
+    yesCount,
+    noCount,
+    nonResponseCount,
+    outcome,
+    originalPointsDelta: room.currentAttempt.pointsDelta,
+    finalPointsDelta,
+    decidedAt: now.toISOString(),
+  };
+
+  await tx
+    .update(disputes)
+    .set({ outcome, finalPointsDelta, decidedAt: now })
+    .where(eq(disputes.id, room.activeDisputeId));
+  const [updatedRoom] = await tx
+    .update(rooms)
+    .set({
+      phase: 'REVEAL',
+      currentAttempt: approved
+        ? { ...room.currentAttempt, verdict: 'CORRECT' as const, pointsDelta: finalPointsDelta }
+        : room.currentAttempt,
+      currentDisputeVote: finalizedVote,
+      version: sql`${rooms.version} + 1`,
+      updatedAt: now,
+    })
+    .where(and(eq(rooms.id, room.id), eq(rooms.phase, 'DISPUTE_VOTE')))
+    .returning();
+  if (!updatedRoom) throw new RoomRouteError(409, 'Dispute vote was already finalized');
+  return updatedRoom;
 }
 
 type DbTx = Pick<typeof db, 'select' | 'update'>;
@@ -746,6 +841,8 @@ export function registerRoomRoutes(app: Express): void {
             phase: transition.phase,
             currentQuestionIndex: transition.currentQuestionIndex,
             activePlayerId: transition.activePlayerId,
+            activeDisputeId: null,
+            currentDisputeVote: null,
             version: sql`${rooms.version} + 1`,
             updatedAt: new Date(),
           })
@@ -785,6 +882,216 @@ export function registerRoomRoutes(app: Express): void {
     }
   });
 
+  app.post('/api/rooms/:code/disputes', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      const input = submitMultiplayerDisputeRequestSchema.parse(req.body);
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) throw new RoomRouteError(404, 'Room not found');
+        if (isExpired(room)) throw new RoomRouteError(404, 'Room expired');
+        if (room.status !== 'active' || room.phase !== 'REVEAL' || !room.currentAttempt) {
+          throw new RoomRouteError(409, 'Room is not accepting disputes');
+        }
+        if (room.currentAttempt.verdict !== 'INCORRECT') {
+          throw new RoomRouteError(409, 'Only an incorrect answer can be disputed');
+        }
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (actor.id !== room.activePlayerId || actor.id !== room.currentAttempt.playerId) {
+          throw new RoomRouteError(403, 'Only the answering player can submit a dispute');
+        }
+        if (room.activeDisputeId)
+          throw new RoomRouteError(409, 'A dispute already exists for this attempt');
+
+        const [question] = await tx
+          .select()
+          .from(questions)
+          .where(eq(questions.id, room.currentAttempt.questionId))
+          .limit(1);
+        if (!question) throw new Error(`Question ${room.currentAttempt.questionId} not found`);
+        const eligiblePlayers = room.opponentDisputeVotingEnabled
+          ? await tx
+              .select()
+              .from(roomPlayers)
+              .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+          : [];
+        const eligibleVoters = eligiblePlayers.filter((player) => player.id !== actor.id);
+        const threshold = Math.floor(eligibleVoters.length / 2) + 1;
+        const attemptKey = `${room.id}:${room.currentQuestionIndex}`;
+        const now = new Date();
+        const [dispute] = await tx
+          .insert(disputes)
+          .values({
+            questionId: question.id,
+            questionText: question.question,
+            correctAnswer: question.answer,
+            teamName: actor.nickname,
+            submittedAnswer: room.currentAttempt.submittedAnswer,
+            teamExplanation: input.explanation,
+            roomId: room.id,
+            roomCode: room.code,
+            attemptKey,
+            disputingPlayerId: actor.id,
+            disputingPlayerName: actor.nickname,
+            votingEnabled: room.opponentDisputeVotingEnabled,
+            eligibleVoterSnapshot: eligibleVoters.map((player) => ({
+              playerId: player.id,
+              displayName: player.nickname,
+            })),
+            threshold: eligibleVoters.length ? threshold : null,
+            originalPointsDelta: room.currentAttempt.pointsDelta,
+            finalPointsDelta: eligibleVoters.length ? null : room.currentAttempt.pointsDelta,
+            outcome:
+              room.opponentDisputeVotingEnabled && eligibleVoters.length === 0 ? 'canceled' : null,
+            decidedAt:
+              room.opponentDisputeVotingEnabled && eligibleVoters.length === 0 ? now : null,
+          })
+          .returning();
+
+        const openVote =
+          room.opponentDisputeVotingEnabled && eligibleVoters.length > 0
+            ? {
+                disputeId: dispute.id,
+                disputingPlayerId: actor.id,
+                disputingPlayerName: actor.nickname,
+                explanation: input.explanation,
+                eligibleVoterIds: eligibleVoters.map((player) => player.id),
+                submittedVoterIds: [],
+                threshold,
+                openedAt: now.toISOString(),
+                closesAt: new Date(now.getTime() + DISPUTE_VOTE_DURATION_MS).toISOString(),
+                status: 'OPEN' as const,
+              }
+            : null;
+        const [savedRoom] = await tx
+          .update(rooms)
+          .set({
+            activeDisputeId: dispute.id,
+            currentDisputeVote: openVote,
+            phase: openVote ? 'DISPUTE_VOTE' : 'REVEAL',
+            version: sql`${rooms.version} + 1`,
+            updatedAt: now,
+          })
+          .where(
+            and(eq(rooms.id, room.id), eq(rooms.phase, 'REVEAL'), isNull(rooms.activeDisputeId))
+          )
+          .returning();
+        if (!savedRoom) throw new RoomRouteError(409, 'A dispute already exists for this attempt');
+        return savedRoom;
+      });
+      return res.json(
+        submitMultiplayerDisputeResponseSchema.parse({
+          snapshot: await buildRoomSnapshot(db, updatedRoom),
+        })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error submitting room dispute:');
+    }
+  });
+
+  app.post('/api/rooms/:code/disputes/vote', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      const input = castDisputeVoteRequestSchema.parse(req.body);
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) throw new RoomRouteError(404, 'Room not found');
+        if (
+          room.phase !== 'DISPUTE_VOTE' ||
+          room.currentDisputeVote?.status !== 'OPEN' ||
+          !room.activeDisputeId
+        )
+          throw new RoomRouteError(409, 'No open dispute vote');
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (new Date(room.currentDisputeVote.closesAt) <= new Date())
+          return finalizeDisputeVote(tx, room, 'expired');
+        if (!room.currentDisputeVote.eligibleVoterIds.includes(actor.id))
+          throw new RoomRouteError(403, 'Player is not eligible to vote');
+        try {
+          await tx.insert(disputeBallots).values({
+            disputeId: room.activeDisputeId,
+            voterPlayerId: actor.id,
+            voterPlayerName: actor.nickname,
+            approve: input.approve,
+          });
+        } catch (error) {
+          if (hasConstraint(error, DISPUTE_BALLOT_CONSTRAINT))
+            throw new RoomRouteError(409, 'Player has already voted');
+          throw error;
+        }
+        const submittedVoterIds = [...room.currentDisputeVote.submittedVoterIds, actor.id];
+        const roomWithBallot = {
+          ...room,
+          currentDisputeVote: { ...room.currentDisputeVote, submittedVoterIds },
+        };
+        if (submittedVoterIds.length === room.currentDisputeVote.eligibleVoterIds.length)
+          return finalizeDisputeVote(tx, roomWithBallot);
+        const [savedRoom] = await tx
+          .update(rooms)
+          .set({
+            currentDisputeVote: roomWithBallot.currentDisputeVote,
+            version: sql`${rooms.version} + 1`,
+            updatedAt: new Date(),
+          })
+          .where(and(eq(rooms.id, room.id), eq(rooms.phase, 'DISPUTE_VOTE')))
+          .returning();
+        if (!savedRoom) throw new RoomRouteError(409, 'Dispute vote state changed');
+        return savedRoom;
+      });
+      return res.json(
+        castDisputeVoteResponseSchema.parse({ snapshot: await buildRoomSnapshot(db, updatedRoom) })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error casting dispute vote:');
+    }
+  });
+
+  app.post('/api/rooms/:code/disputes/cancel', async (req, res) => {
+    try {
+      const code = parseRoomCode(req.params.code);
+      cancelDisputeVoteRequestSchema.parse(req.body);
+      const updatedRoom = await db.transaction(async (tx) => {
+        const [room] = await tx
+          .select()
+          .from(rooms)
+          .where(eq(rooms.code, code))
+          .limit(1)
+          .for('update');
+        if (!room) throw new RoomRouteError(404, 'Room not found');
+        if (isExpired(room)) throw new RoomRouteError(404, 'Room expired');
+        if (room.status !== 'active' || room.phase !== 'DISPUTE_VOTE') {
+          throw new RoomRouteError(409, 'No open dispute vote');
+        }
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
+        requireHost(actor, room);
+        if (
+          room.currentDisputeVote?.status === 'OPEN' &&
+          new Date(room.currentDisputeVote.closesAt) <= new Date()
+        ) {
+          return finalizeDisputeVote(tx, room, 'expired');
+        }
+        return finalizeDisputeVote(tx, room, 'canceled');
+      });
+      return res.json(
+        cancelDisputeVoteResponseSchema.parse({
+          snapshot: await buildRoomSnapshot(db, updatedRoom),
+        })
+      );
+    } catch (error) {
+      return sendRoomError(res, error, 'Error canceling dispute vote:');
+    }
+  });
+
   app.post('/api/rooms/:code/continue', async (req, res) => {
     try {
       const code = parseRoomCode(req.params.code);
@@ -814,6 +1121,8 @@ export function registerRoomRoutes(app: Express): void {
           .set({
             phase: 'QUESTION',
             currentAttempt: null,
+            activeDisputeId: null,
+            currentDisputeVote: null,
             version: sql`${rooms.version} + 1`,
             updatedAt: new Date(),
           })
@@ -971,8 +1280,9 @@ export function registerRoomRoutes(app: Express): void {
         }
 
         const actor = await authenticateRoomPlayer(req, room.id, tx);
-        if (actor.id !== room.hostPlayerId && actor.id !== room.activePlayerId) {
-          throw new RoomRouteError(403, 'Only the host or active player can award disputed points');
+        requireHost(actor, room);
+        if (!room.activeDisputeId || room.opponentDisputeVotingEnabled) {
+          throw new RoomRouteError(409, 'No manual dispute award is available');
         }
 
         // Look up the question to calculate the correct point value
@@ -996,6 +1306,11 @@ export function registerRoomRoutes(app: Express): void {
           verdict: 'CORRECT' as const,
           pointsDelta: correctPoints,
         };
+
+        await tx
+          .update(disputes)
+          .set({ outcome: 'approved', finalPointsDelta: correctPoints, decidedAt: new Date() })
+          .where(eq(disputes.id, room.activeDisputeId));
 
         const [awardedRoom] = await tx
           .update(rooms)
@@ -1115,6 +1430,8 @@ export function registerRoomRoutes(app: Express): void {
             .set({
               status: 'finished',
               phase: 'GAME_OVER',
+              activeDisputeId: null,
+              currentDisputeVote: null,
               version: sql`${rooms.version} + 1`,
               updatedAt: now,
             })
@@ -1278,6 +1595,8 @@ export function registerRoomRoutes(app: Express): void {
           .set({
             status: isLobby ? 'abandoned' : 'finished',
             phase: isLobby ? 'LOBBY' : 'GAME_OVER',
+            activeDisputeId: null,
+            currentDisputeVote: null,
             version: sql`${rooms.version} + 1`,
             updatedAt: new Date(),
           })
@@ -1325,6 +1644,14 @@ export function registerRoomRoutes(app: Express): void {
 
         const player = await authenticateRoomPlayer(req, currentRoom.id, tx);
         await tx.update(roomPlayers).set({ lastSeenAt: now }).where(eq(roomPlayers.id, player.id));
+
+        if (
+          currentRoom.phase === 'DISPUTE_VOTE' &&
+          currentRoom.currentDisputeVote?.status === 'OPEN' &&
+          new Date(currentRoom.currentDisputeVote.closesAt) <= now
+        ) {
+          return finalizeDisputeVote(tx, currentRoom, 'expired', now);
+        }
 
         if (currentRoom.status !== 'lobby' && currentRoom.status !== 'active') {
           return currentRoom;
