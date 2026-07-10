@@ -290,8 +290,9 @@ export function determineDisputeVoteOutcome(
   threshold: number,
   override?: 'canceled' | 'expired'
 ): 'approved' | 'rejected' | 'tied' | 'expired' | 'canceled' {
-  if (override) return override;
+  if (override === 'canceled') return override;
   if (yesCount >= threshold) return 'approved';
+  if (override === 'expired') return override;
   if (nonResponseCount === 0 && yesCount === noCount) return 'tied';
   return 'rejected';
 }
@@ -1011,9 +1012,9 @@ export function registerRoomRoutes(app: Express): void {
           !room.activeDisputeId
         )
           throw new RoomRouteError(409, 'No open dispute vote');
+        const actor = await authenticateRoomPlayer(req, room.id, tx);
         if (new Date(room.currentDisputeVote.closesAt) <= new Date())
           return finalizeDisputeVote(tx, room, 'expired');
-        const actor = await authenticateRoomPlayer(req, room.id, tx);
         if (!room.currentDisputeVote.eligibleVoterIds.includes(actor.id))
           throw new RoomRouteError(403, 'Player is not eligible to vote');
         try {
@@ -1067,8 +1068,18 @@ export function registerRoomRoutes(app: Express): void {
           .limit(1)
           .for('update');
         if (!room) throw new RoomRouteError(404, 'Room not found');
+        if (isExpired(room)) throw new RoomRouteError(404, 'Room expired');
+        if (room.status !== 'active' || room.phase !== 'DISPUTE_VOTE') {
+          throw new RoomRouteError(409, 'No open dispute vote');
+        }
         const actor = await authenticateRoomPlayer(req, room.id, tx);
         requireHost(actor, room);
+        if (
+          room.currentDisputeVote?.status === 'OPEN' &&
+          new Date(room.currentDisputeVote.closesAt) <= new Date()
+        ) {
+          return finalizeDisputeVote(tx, room, 'expired');
+        }
         return finalizeDisputeVote(tx, room, 'canceled');
       });
       return res.json(
@@ -1298,7 +1309,7 @@ export function registerRoomRoutes(app: Express): void {
 
         await tx
           .update(disputes)
-          .set({ finalPointsDelta: correctPoints, decidedAt: new Date() })
+          .set({ outcome: 'approved', finalPointsDelta: correctPoints, decidedAt: new Date() })
           .where(eq(disputes.id, room.activeDisputeId));
 
         const [awardedRoom] = await tx
@@ -1419,6 +1430,8 @@ export function registerRoomRoutes(app: Express): void {
             .set({
               status: 'finished',
               phase: 'GAME_OVER',
+              activeDisputeId: null,
+              currentDisputeVote: null,
               version: sql`${rooms.version} + 1`,
               updatedAt: now,
             })
@@ -1582,6 +1595,8 @@ export function registerRoomRoutes(app: Express): void {
           .set({
             status: isLobby ? 'abandoned' : 'finished',
             phase: isLobby ? 'LOBBY' : 'GAME_OVER',
+            activeDisputeId: null,
+            currentDisputeVote: null,
             version: sql`${rooms.version} + 1`,
             updatedAt: new Date(),
           })
