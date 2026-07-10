@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildTestApp } from './test/testApp';
-import { deriveRoomPresence } from './routes.rooms';
+import { deriveRoomPresence, determineDisputeVoteOutcome } from './routes.rooms';
 
 const dbMocks = vi.hoisted(() => {
   const selectResults: unknown[][] = [];
@@ -219,6 +219,26 @@ describe('room lifecycle routes', () => {
     expect(deriveRoomPresence(new Date('2026-07-03T15:00:20.000Z'), observedAt)).toBe('away');
     expect(deriveRoomPresence(new Date('2026-07-03T15:00:00.000Z'), observedAt)).toBe('away');
     expect(deriveRoomPresence(new Date('2026-07-03T14:59:59.999Z'), observedAt)).toBe('stale');
+  });
+
+  it.each([
+    [1, 0, 0, 1, 'approved'],
+    [2, 0, 1, 2, 'approved'],
+    [1, 1, 0, 2, 'tied'],
+    [1, 2, 0, 2, 'rejected'],
+    [1, 0, 2, 2, 'rejected'],
+  ] as const)(
+    'determines dispute outcome for yes=%i no=%i missing=%i threshold=%i',
+    (yesCount, noCount, nonResponseCount, threshold, expected) => {
+      expect(determineDisputeVoteOutcome(yesCount, noCount, nonResponseCount, threshold)).toBe(
+        expected
+      );
+    }
+  );
+
+  it('preserves explicit expiry and cancellation outcomes', () => {
+    expect(determineDisputeVoteOutcome(2, 0, 0, 2, 'expired')).toBe('expired');
+    expect(determineDisputeVoteOutcome(2, 0, 0, 2, 'canceled')).toBe('canceled');
   });
 
   it('creates a lobby room and its host atomically after cleaning up expired rooms', async () => {
