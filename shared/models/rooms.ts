@@ -168,7 +168,8 @@ export const rooms = pgTable('rooms', {
   hostPlayerId: uuid('host_player_id').references((): AnyPgColumn => roomPlayers.id, {
     onDelete: 'set null',
   }),
-  category: varchar('category', { length: 80 }).notNull(),
+  // Stores comma-separated categories or 'All' (extended to 255 by migration 0004)
+  category: varchar('category', { length: 255 }).notNull(),
   numRounds: integer('num_rounds').notNull(),
   questionIds: jsonb('question_ids').$type<string[]>().notNull().default([]),
   currentQuestionIndex: integer('current_question_index').notNull().default(0),
@@ -219,6 +220,8 @@ export const roomVerdictSchema = z.enum(ROOM_VERDICTS);
 export const roomPresenceSchema = z.enum(ROOM_PRESENCES);
 export const roomCodeSchema = z.string().regex(ROOM_CODE_PATTERN);
 export const roomCategorySchema = z.enum(['All', ...VALID_CATEGORIES]);
+// Multi-select: ['All'] means no filter; otherwise a non-empty list of specific categories
+export const roomCategoriesSchema = z.array(roomCategorySchema).min(1);
 export const roomRoundsSchema = z.union([
   z.literal(ROOM_ROUND_OPTIONS[0]),
   z.literal(ROOM_ROUND_OPTIONS[1]),
@@ -231,6 +234,7 @@ export type RoomPhase = z.infer<typeof roomPhaseSchema>;
 export type RoomVerdict = z.infer<typeof roomVerdictSchema>;
 export type RoomPresence = z.infer<typeof roomPresenceSchema>;
 export type RoomCategory = z.infer<typeof roomCategorySchema>;
+export type RoomCategories = z.infer<typeof roomCategoriesSchema>;
 export type RoomRounds = z.infer<typeof roomRoundsSchema>;
 
 export const insertRoomSchema = createInsertSchema(rooms, {
@@ -307,7 +311,7 @@ const roomSnapshotBaseSchema = z.object({
   status: roomStatusSchema,
   version: z.number().int().positive(),
   hostPlayerId: z.string().uuid().nullable(),
-  category: roomCategorySchema,
+  categories: roomCategoriesSchema,
   numRounds: roomRoundsSchema,
   currentQuestionIndex: z.number().int().nonnegative(),
   activePlayerId: z.string().uuid().nullable(),
@@ -362,7 +366,7 @@ export type RoomSnapshot = z.infer<typeof roomSnapshotSchema>;
 export const roomCodeParamsSchema = z.object({ code: roomCodeSchema });
 export const createRoomRequestSchema = z.object({
   nickname: roomNicknameSchema,
-  category: roomCategorySchema,
+  categories: roomCategoriesSchema,
   numRounds: roomRoundsSchema,
   opponentDisputeVotingEnabled: z.boolean().default(false),
 });
@@ -427,12 +431,7 @@ export const leaveRoomResponseSchema = z.object({
 });
 
 export type RoomCodeParams = z.infer<typeof roomCodeParamsSchema>;
-export type CreateRoomRequest = Omit<
-  z.infer<typeof createRoomRequestSchema>,
-  'opponentDisputeVotingEnabled'
-> & {
-  opponentDisputeVotingEnabled?: boolean;
-};
+export type CreateRoomRequest = z.input<typeof createRoomRequestSchema>;
 export type SubmitMultiplayerDisputeRequest = z.infer<typeof submitMultiplayerDisputeRequestSchema>;
 export type CastDisputeVoteRequest = z.infer<typeof castDisputeVoteRequestSchema>;
 export type CancelDisputeVoteRequest = z.infer<typeof cancelDisputeVoteRequestSchema>;

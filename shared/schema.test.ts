@@ -90,7 +90,7 @@ const validSnapshot = {
   phase: 'QUESTION' as const,
   version: 2,
   hostPlayerId,
-  category: 'All' as const,
+  categories: ['All' as const],
   numRounds: 5 as const,
   currentQuestionIndex: 0,
   activePlayerId: hostPlayerId,
@@ -447,7 +447,7 @@ describe('RoomSnapshot contract', () => {
     ['status', 'waiting'],
     ['phase', 'VERIFYING'],
     ['code', 'OOPS1'],
-    ['category', 'History'],
+    ['categories', ['History']],
     ['numRounds', 7],
   ])('rejects an invalid snapshot %s', (field, value) => {
     expect(roomSnapshotSchema.safeParse({ ...validSnapshot, [field]: value }).success).toBe(false);
@@ -469,17 +469,17 @@ describe('RoomSnapshot contract', () => {
 describe('rooms endpoint contract', () => {
   it('validates create, join, code params, poll query, and error payloads', () => {
     expect(
-      createRoomRequestSchema.parse({ nickname: 'Host', category: 'All', numRounds: 5 })
+      createRoomRequestSchema.parse({ nickname: 'Host', categories: ['All'], numRounds: 5 })
     ).toEqual({
       nickname: 'Host',
-      category: 'All',
+      categories: ['All'],
       numRounds: 5,
       opponentDisputeVotingEnabled: false,
     });
     expect(
       createRoomRequestSchema.safeParse({
         nickname: 'Host',
-        category: 'All',
+        categories: ['All'],
         numRounds: 5,
         opponentDisputeVotingEnabled: true,
       }).success
@@ -557,7 +557,7 @@ describe('rooms endpoint contract', () => {
 
   it('rejects invalid endpoint inputs', () => {
     expect(
-      createRoomRequestSchema.safeParse({ nickname: '', category: 'All', numRounds: 5 }).success
+      createRoomRequestSchema.safeParse({ nickname: '', categories: ['All'], numRounds: 5 }).success
     ).toBe(false);
     expect(answerRoomRequestSchema.safeParse({ answer: '' }).success).toBe(false);
     expect(startRoomRequestSchema.safeParse({ unexpected: true }).success).toBe(false);

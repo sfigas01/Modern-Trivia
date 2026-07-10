@@ -227,7 +227,7 @@ describe('room lifecycle routes', () => {
 
     const response = await request(app)
       .post('/api/rooms')
-      .send({ nickname: 'Host', category: 'All', numRounds: 5 })
+      .send({ nickname: 'Host', categories: ['All'], numRounds: 5 })
       .expect(201);
 
     expect(response.body).toMatchObject({ code: 'ABCD2', playerId: hostId, token: 'host-secret' });
@@ -249,7 +249,7 @@ describe('room lifecycle routes', () => {
 
     await request(app)
       .post('/api/rooms')
-      .send({ nickname: 'Host', category: 'All', numRounds: 5 })
+      .send({ nickname: 'Host', categories: ['All'], numRounds: 5 })
       .expect(201);
 
     expect(dbMocks.transaction).toHaveBeenCalledTimes(2);
@@ -261,7 +261,7 @@ describe('room lifecycle routes', () => {
 
     await request(app)
       .post('/api/rooms')
-      .send({ nickname: 'Host', category: 'All', numRounds: 5 })
+      .send({ nickname: 'Host', categories: ['All'], numRounds: 5 })
       .expect(500);
 
     expect(dbMocks.transaction).toHaveBeenCalledTimes(5);
@@ -272,7 +272,7 @@ describe('room lifecycle routes', () => {
 
     await request(app)
       .post('/api/rooms')
-      .send({ nickname: '', category: 'All', numRounds: 3 })
+      .send({ nickname: '', categories: ['All'], numRounds: 3 })
       .expect(422);
 
     expect(dbMocks.delete).not.toHaveBeenCalled();

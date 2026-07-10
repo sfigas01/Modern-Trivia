@@ -42,6 +42,7 @@ import {
   type Question,
   type Room,
   type RoomAttempt,
+  type RoomCategories,
   type RoomPlayer,
   type RoomSnapshot,
 } from '@shared/schema';
@@ -94,6 +95,19 @@ function parseRoomCode(rawCode: string): string {
 
 function isExpired(room: Room, now = new Date()): boolean {
   return room.expiresAt.getTime() <= now.getTime();
+}
+
+function parseRoomCategories(categoryStr: string): RoomCategories {
+  if (!categoryStr || categoryStr === 'All') return ['All'];
+  return categoryStr
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean) as RoomCategories;
+}
+
+function serializeRoomCategories(categories: RoomCategories): string {
+  if (categories.length === 1 && categories[0] === 'All') return 'All';
+  return categories.filter((c) => c !== 'All').join(',');
 }
 
 function getUserId(req: Request): string | undefined {
@@ -204,7 +218,7 @@ async function buildRoomSnapshot(
     phase: room.phase,
     version: room.version,
     hostPlayerId: room.hostPlayerId,
-    category: room.category,
+    categories: parseRoomCategories(room.category),
     numRounds: room.numRounds,
     currentQuestionIndex: room.currentQuestionIndex,
     activePlayerId: room.activePlayerId,
@@ -303,7 +317,7 @@ export function registerRoomRoutes(app: Express): void {
               .insert(rooms)
               .values({
                 code,
-                category: input.category,
+                category: serializeRoomCategories(input.categories),
                 numRounds: input.numRounds,
                 status: 'lobby',
                 phase: 'LOBBY',
@@ -474,8 +488,13 @@ export function registerRoomRoutes(app: Express): void {
 
         const questionLimit = room.numRounds * players.length * QUESTIONS_PER_TEAM_ROTATION;
         const questionConditions = [eq(questions.status, 'approved')];
-        if (room.category !== 'All') {
-          questionConditions.push(eq(questions.category, room.category));
+        const roomCategories = parseRoomCategories(room.category);
+        if (!roomCategories.includes('All')) {
+          if (roomCategories.length === 1) {
+            questionConditions.push(eq(questions.category, roomCategories[0]));
+          } else {
+            questionConditions.push(inArray(questions.category, roomCategories));
+          }
         }
 
         let selectedQuestions: { id: string }[];

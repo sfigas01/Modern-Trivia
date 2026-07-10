@@ -43,7 +43,7 @@ export interface GameState {
   teams: Team[];
   questions: Question[];
   categories: string[];
-  selectedCategory: string;
+  selectedCategories: string[];
   currentQuestionIndex: number;
   phase: Phase;
   activeTeamId: string | null;
@@ -57,7 +57,7 @@ interface GameContextType {
   state: GameState;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
-  setCategory: (category: string) => void;
+  toggleCategory: (category: string) => void;
   setNumRounds: (rounds: number) => void;
   startGame: (isAuthenticated?: boolean) => Promise<void>;
   setTypedAnswer: (text: string) => void;
@@ -81,7 +81,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     teams: [],
     questions: [],
     categories: [],
-    selectedCategory: 'All',
+    selectedCategories: [],
     currentQuestionIndex: 0,
     phase: 'SETUP',
     activeTeamId: null,
@@ -162,14 +162,23 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const setCategory = (category: string) => setState((s) => ({ ...s, selectedCategory: category }));
+  const toggleCategory = (category: string) => {
+    setState((s) => {
+      if (category === 'All') return { ...s, selectedCategories: [] };
+      const isSelected = s.selectedCategories.includes(category);
+      const next = isSelected
+        ? s.selectedCategories.filter((c) => c !== category)
+        : [...s.selectedCategories, category];
+      return { ...s, selectedCategories: next };
+    });
+  };
   const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
   const startGame = async (isAuthenticated = false) => {
     const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
     const categoryParam =
-      state.selectedCategory !== 'All'
-        ? `&category=${encodeURIComponent(state.selectedCategory)}`
+      state.selectedCategories.length > 0
+        ? `&categories=${state.selectedCategories.map(encodeURIComponent).join(',')}`
         : '';
 
     try {
@@ -199,9 +208,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         }
 
         const categoryFiltered =
-          state.selectedCategory === 'All'
+          state.selectedCategories.length === 0
             ? catalog
-            : catalog.filter((q) => q.category === state.selectedCategory);
+            : catalog.filter((q) => state.selectedCategories.includes(q.category));
 
         const guestSeenIds = getGuestSeenIds();
         const seenSet = new Set(guestSeenIds);
@@ -233,9 +242,9 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       // Fallback to client-side shuffle of already-loaded questions
       setState((prev) => {
         let filtered =
-          prev.selectedCategory === 'All'
+          prev.selectedCategories.length === 0
             ? [...prev.questions]
-            : prev.questions.filter((q) => q.category === prev.selectedCategory);
+            : prev.questions.filter((q) => prev.selectedCategories.includes(q.category));
         filtered = filtered.sort(() => Math.random() - 0.5);
         const finalQuestions = filtered.slice(0, totalNeeded);
         return {
@@ -427,7 +436,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       phase: 'SETUP',
       teams: [],
       questions: [],
-      selectedCategory: 'All',
+      selectedCategories: [],
       currentQuestionIndex: 0,
       activeTeamId: null,
       typedAnswer: '',
@@ -522,7 +531,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         state,
         addTeam,
         removeTeam,
-        setCategory,
+        toggleCategory,
         setNumRounds,
         startGame,
         setTypedAnswer,

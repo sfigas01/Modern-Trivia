@@ -388,11 +388,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Questions API
   app.get('/api/questions', async (req, res) => {
     try {
-      const { category, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
+      const { category, categories, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
 
       const conditions = [];
-      if (category && category !== 'All') {
-        conditions.push(eq(questions.category, category as string));
+      // Support comma-separated multi-category filter (?categories=Tech,Science) as well as
+      // the legacy single-value ?category= param used by older callers.
+      const categoryList: string[] = [];
+      if (categories && typeof categories === 'string') {
+        categoryList.push(
+          ...categories
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        );
+      } else if (category && category !== 'All') {
+        categoryList.push(category as string);
+      }
+      if (categoryList.length === 1) {
+        conditions.push(eq(questions.category, categoryList[0]));
+      } else if (categoryList.length > 1) {
+        conditions.push(inArray(questions.category, categoryList));
       }
       if (pillar) {
         conditions.push(eq(questions.pillar, pillar as string));
@@ -1245,9 +1260,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             hasSource: !!(q.sourceUrl && q.sourceName),
             difficulty: q.difficulty,
             sourceDomain:
-              q.sourceUrl && q.sourceName
-                ? extractSourceDomain(q.sourceUrl, q.sourceName)
-                : null,
+              q.sourceUrl && q.sourceName ? extractSourceDomain(q.sourceUrl, q.sourceName) : null,
           };
         }
 

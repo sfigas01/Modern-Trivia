@@ -102,7 +102,7 @@ function makeSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
     phase: 'LOBBY',
     version: 1,
     hostPlayerId: 'host-1',
-    category: 'All',
+    categories: ['All'],
     numRounds: 10,
     currentQuestionIndex: 0,
     activePlayerId: null,
