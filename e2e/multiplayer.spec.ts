@@ -113,7 +113,7 @@ async function joinRoom(request: APIRequestContext, code: string, nickname: stri
 
 async function createRoom(request: APIRequestContext, nickname: string) {
   const response = await request.post('/api/rooms', {
-    data: { nickname, category: 'All', numRounds: 5 },
+    data: { nickname, categories: ['All'], numRounds: 5 },
   });
   return readJson<CreateRoomResponse>(response, `create room for ${nickname}`);
 }
