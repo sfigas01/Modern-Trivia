@@ -5,6 +5,7 @@ import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integra
 import { db } from './db';
 import {
   disputes,
+  disputeBallots,
   adminRoles,
   publicDisputeRequestSchema,
   appConfig,
@@ -207,7 +208,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const allDisputes = await db.select().from(disputes);
-      res.json(allDisputes);
+      if (allDisputes.length === 0) {
+        return res.json([]);
+      }
+
+      // Ballots are admin-only. Fetch them in one bounded query instead of one
+      // query per dispute, then attach at most the persisted rows for each ID.
+      const disputeIds = allDisputes.map((dispute) => dispute.id);
+      const allBallots = await db
+        .select()
+        .from(disputeBallots)
+        .where(inArray(disputeBallots.disputeId, disputeIds));
+      const ballotsByDispute = new Map<string, typeof allBallots>();
+
+      for (const ballot of allBallots) {
+        const ballots = ballotsByDispute.get(ballot.disputeId) ?? [];
+        ballots.push(ballot);
+        ballotsByDispute.set(ballot.disputeId, ballots);
+      }
+
+      res.json(
+        allDisputes.map((dispute) => ({
+          ...dispute,
+          ballots: ballotsByDispute.get(dispute.id) ?? [],
+        }))
+      );
     } catch (error) {
       console.error('Error fetching disputes:', error);
       res.status(500).json({ message: 'Failed to fetch disputes' });
