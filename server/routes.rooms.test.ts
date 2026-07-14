@@ -432,6 +432,48 @@ describe('room lifecycle routes', () => {
     });
   });
 
+  it('maps a Drizzle-wrapped duplicate ballot constraint to 409', async () => {
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    const votingRoom = room({
+      status: 'active',
+      phase: 'DISPUTE_VOTE',
+      activePlayerId: hostId,
+      questionIds: ['question-1'],
+      currentAttempt: {
+        questionId: 'question-1',
+        playerId: hostId,
+        submittedAnswer: 'Toronto',
+        verdict: 'INCORRECT',
+        pointsDelta: -1,
+      },
+      opponentDisputeVotingEnabled: true,
+      activeDisputeId: 'dispute-1',
+      currentDisputeVote: openDisputeVote({ submittedVoterIds: [guestId] }),
+    });
+    queueSelect([votingRoom], [guest]);
+    dbMocks.insert.mockImplementationOnce(() => {
+      throw Object.assign(new Error('Failed query: insert into dispute_ballots'), {
+        cause: postgresUniqueViolation('uq_dispute_ballots_dispute_voter'),
+      });
+    });
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .post('/api/rooms/ABCD2/disputes/vote')
+      .set('X-Player-Token', 'guest-secret')
+      .send({ approve: true })
+      .expect(409);
+
+    expect(response.body.message).toBe('Player has already voted');
+    expect(dbMocks.update).not.toHaveBeenCalled();
+  });
+
   it('requires the host to cancel an open dispute vote', async () => {
     const guest = player({ id: guestId, token: 'guest-secret', isHost: false });
     queueSelect(
