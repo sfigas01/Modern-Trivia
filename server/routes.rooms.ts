@@ -234,6 +234,7 @@ async function buildRoomSnapshot(
     activePlayerId: room.activePlayerId,
     currentAttempt: room.currentAttempt,
     opponentDisputeVotingEnabled: room.opponentDisputeVotingEnabled,
+    activeDisputeId: room.activeDisputeId,
     currentDisputeVote: room.currentDisputeVote ?? null,
     currentQuestion,
     players: players.map((player) => serializePlayer(player, now)),

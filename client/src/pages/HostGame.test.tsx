@@ -104,6 +104,14 @@ function renderHostGame() {
 describe('HostGame', () => {
   beforeEach(() => {
     stubLocalStorage();
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    );
     localStorage.clear();
     mockSetLocation.mockClear();
     toastError.mockClear();
@@ -194,6 +202,45 @@ describe('HostGame', () => {
       code: 'ABCD2',
       playerId: '11111111-1111-4111-8111-111111111111',
       token: 'test-token',
+    });
+  });
+
+  it('sends opponent dispute voting off by default', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    renderHostGame();
+
+    fireEvent.change(await screen.findByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-create-room'));
+
+    await waitFor(() => expect(mockSetLocation).toHaveBeenCalled());
+    const roomRequest = fetchMock.mock.calls.find(([input]) =>
+      String(input).includes('/api/rooms')
+    );
+    expect(JSON.parse((roomRequest?.[1] as RequestInit).body as string)).toMatchObject({
+      opponentDisputeVotingEnabled: false,
+    });
+  });
+
+  it('sends opponent dispute voting when the host enables it', async () => {
+    const fetchMock = createFetchMock();
+    vi.stubGlobal('fetch', fetchMock);
+    renderHostGame();
+
+    const toggle = await screen.findByRole('switch', { name: 'Opponent dispute voting' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.change(screen.getByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-create-room'));
+
+    await waitFor(() => expect(mockSetLocation).toHaveBeenCalled());
+    const roomRequest = fetchMock.mock.calls.find(([input]) =>
+      String(input).includes('/api/rooms')
+    );
+    expect(JSON.parse((roomRequest?.[1] as RequestInit).body as string)).toMatchObject({
+      opponentDisputeVotingEnabled: true,
     });
   });
 });

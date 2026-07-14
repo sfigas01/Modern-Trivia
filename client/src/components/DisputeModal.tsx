@@ -21,8 +21,10 @@ interface DisputeModalProps {
   correctAnswer: string;
   teamName: string;
   submittedAnswer: string | null;
-  /** Callback invoked after a dispute is successfully submitted. In solo mode, this should call markDisputeSubmitted from the game store. In multiplayer, it sets local state. */
+  /** Callback invoked after a dispute is successfully submitted. */
   onDisputeSubmitted: () => void;
+  /** Optional room-scoped submission. Solo callers omit this and keep using saveDispute. */
+  submitDispute?: (explanation: string) => Promise<void>;
 }
 
 export function DisputeModal({
@@ -34,8 +36,10 @@ export function DisputeModal({
   teamName,
   submittedAnswer,
   onDisputeSubmitted,
+  submitDispute,
 }: DisputeModalProps) {
   const [explanation, setExplanation] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async () => {
@@ -48,30 +52,46 @@ export function DisputeModal({
       return;
     }
 
-    const result = await saveDispute({
-      questionId,
-      questionText,
-      correctAnswer,
-      teamName,
-      submittedAnswer,
-      teamExplanation: explanation,
-    });
+    setIsSubmitting(true);
+    try {
+      if (submitDispute) {
+        await submitDispute(explanation.trim());
+      } else {
+        const result = await saveDispute({
+          questionId,
+          questionText,
+          correctAnswer,
+          teamName,
+          submittedAnswer,
+          teamExplanation: explanation,
+        });
 
-    if (!result.success) {
-      toast({
-        title: 'Error',
-        description: result.message || 'Failed to submit dispute. Please try again.',
-        variant: 'destructive',
-      });
+        if (!result.success) throw new Error(result.message || 'Failed to submit dispute.');
+      }
+    } catch (error) {
+      if ((error as { status?: number }).status !== 409) {
+        toast({
+          title: 'Error',
+          description:
+            error instanceof Error && error.message
+              ? error.message
+              : 'Failed to submit dispute. Please try again.',
+          variant: 'destructive',
+        });
+      }
       return;
+    } finally {
+      setIsSubmitting(false);
+    }
+
+    if (!submitDispute) {
+      toast({
+        title: 'Dispute Submitted',
+        description: "Thank you for helping us improve the game. We'll review this.",
+      });
     }
 
     onDisputeSubmitted();
-
-    toast({
-      title: 'Dispute Submitted',
-      description: "Thank you for helping us improve the game. We'll review this.",
-    });
 
     setExplanation('');
     onOpenChange(false);
@@ -120,9 +140,16 @@ export function DisputeModal({
         </div>
 
         <div className="flex gap-2 justify-end">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSubmit} className="bg-primary">
-            Submit Dispute
+          <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(event) => {
+              event.preventDefault();
+              void handleSubmit();
+            }}
+            className="bg-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Submitting…' : 'Submit Dispute'}
           </AlertDialogAction>
         </div>
       </AlertDialogContent>

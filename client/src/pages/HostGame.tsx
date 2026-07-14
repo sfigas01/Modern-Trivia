@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 
 async function createRoom(body: CreateRoomRequest): Promise<CreateRoomResponse> {
   const res = await fetch('/api/rooms', {
@@ -46,6 +47,7 @@ export default function HostGame() {
   const [, setLocation] = useLocation();
   const { state, toggleCategory, setNumRounds } = useGame();
   const [nickname, setNickname] = useState('');
+  const [opponentDisputeVotingEnabled, setOpponentDisputeVotingEnabled] = useState(false);
 
   const categoryCounts = useCategoryCounts(state.questions);
 
@@ -80,6 +82,7 @@ export default function HostGame() {
       nickname: trimmedNickname,
       categories: categories.data,
       numRounds: numRounds.data,
+      opponentDisputeVotingEnabled,
     });
   };
 
@@ -193,6 +196,28 @@ export default function HostGame() {
                 ))}
               </div>
             </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle className="text-lg">Opponent dispute voting</CardTitle>
+                  <CardDescription id="opponent-dispute-voting-description">
+                    Opposing players vote on disputed incorrect answers; majority approval awards
+                    normal points.
+                  </CardDescription>
+                </div>
+                <Switch
+                  checked={opponentDisputeVotingEnabled}
+                  onCheckedChange={setOpponentDisputeVotingEnabled}
+                  disabled={createRoomMutation.isPending}
+                  aria-label="Opponent dispute voting"
+                  aria-describedby="opponent-dispute-voting-description"
+                  data-testid="switch-opponent-dispute-voting"
+                />
+              </div>
+            </CardHeader>
           </Card>
 
           <Button

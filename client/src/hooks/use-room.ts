@@ -10,6 +10,10 @@ import type {
   AdvanceRoomResponse,
   AnswerRoomRequest,
   AnswerRoomResponse,
+  CancelDisputeVoteRequest,
+  CancelDisputeVoteResponse,
+  CastDisputeVoteRequest,
+  CastDisputeVoteResponse,
   ContinueRoomResponse,
   EndRoomResponse,
   JoinRoomRequest,
@@ -22,13 +26,15 @@ import type {
   SkipRoomResponse,
   StartRoomRequest,
   StartRoomResponse,
+  SubmitMultiplayerDisputeRequest,
+  SubmitMultiplayerDisputeResponse,
 } from '@shared/models/rooms';
 
 import { getRoomSession, saveRoomSession } from '@/lib/room-session';
 
 const FAST_POLL_MS = 2000;
 const SLOW_POLL_MS = 5000;
-const FAST_POLL_PHASES: readonly RoomPhase[] = ['LOBBY', 'QUESTION', 'REVEAL'];
+const FAST_POLL_PHASES: readonly RoomPhase[] = ['LOBBY', 'QUESTION', 'REVEAL', 'DISPUTE_VOTE'];
 const DISCONNECT_THRESHOLD = 2;
 
 export function getPollIntervalMs(phase: RoomPhase | undefined): number {
@@ -130,6 +136,13 @@ export interface UseRoomResult {
   end: UseMutationResult<EndRoomResponse, Error, void>;
   leave: UseMutationResult<LeaveRoomResponse, Error, void>;
   awardDispute: UseMutationResult<RoomActionResponse, Error, void>;
+  submitDispute: UseMutationResult<
+    SubmitMultiplayerDisputeResponse,
+    Error,
+    SubmitMultiplayerDisputeRequest
+  >;
+  castDisputeVote: UseMutationResult<CastDisputeVoteResponse, Error, CastDisputeVoteRequest>;
+  cancelDisputeVote: UseMutationResult<CancelDisputeVoteResponse, Error, void>;
 }
 
 export interface UseRoomOptions {
@@ -243,6 +256,32 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
     onSuccess: onActionSuccess,
   });
 
+  const submitDispute = useMutation({
+    mutationFn: (body: SubmitMultiplayerDisputeRequest) =>
+      postRoomAction<SubmitMultiplayerDisputeRequest, SubmitMultiplayerDisputeResponse>(
+        code,
+        'disputes',
+        body
+      ),
+    onSuccess: onActionSuccess,
+  });
+
+  const castDisputeVote = useMutation({
+    mutationFn: (body: CastDisputeVoteRequest) =>
+      postRoomAction<CastDisputeVoteRequest, CastDisputeVoteResponse>(code, 'disputes/vote', body),
+    onSuccess: onActionSuccess,
+  });
+
+  const cancelDisputeVote = useMutation({
+    mutationFn: () =>
+      postRoomAction<CancelDisputeVoteRequest, CancelDisputeVoteResponse>(
+        code,
+        'disputes/cancel',
+        {}
+      ),
+    onSuccess: onActionSuccess,
+  });
+
   const leave = useMutation({
     mutationFn: () => postRoomAction<Record<string, never>, LeaveRoomResponse>(code, 'leave', {}),
     onSuccess: (response) => {
@@ -267,5 +306,8 @@ export function useRoom(code: string, options: UseRoomOptions = {}): UseRoomResu
     end,
     leave,
     awardDispute,
+    submitDispute,
+    castDisputeVote,
+    cancelDisputeVote,
   };
 }

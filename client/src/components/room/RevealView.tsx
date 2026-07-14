@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { ArrowRight, ExternalLink, Flag } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import type { AdvanceRoomResponse, RoomActionResponse, RoomSnapshot } from '@shared/models/rooms';
+import type {
+  AdvanceRoomResponse,
+  RoomActionResponse,
+  RoomSnapshot,
+  SubmitMultiplayerDisputeRequest,
+  SubmitMultiplayerDisputeResponse,
+} from '@shared/models/rooms';
 
 import { isRoomConflict } from '@/hooks/use-room';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +24,11 @@ export interface RevealViewProps {
   currentPlayerId: string;
   advance: UseMutationResult<AdvanceRoomResponse, Error, void>;
   awardDispute: UseMutationResult<RoomActionResponse, Error, void>;
+  submitDispute: UseMutationResult<
+    SubmitMultiplayerDisputeResponse,
+    Error,
+    SubmitMultiplayerDisputeRequest
+  >;
   refetch: () => void;
 }
 
@@ -26,6 +37,7 @@ export function RevealView({
   currentPlayerId,
   advance,
   awardDispute,
+  submitDispute,
   refetch,
 }: RevealViewProps) {
   const attempt = snapshot.currentAttempt;
@@ -37,12 +49,15 @@ export function RevealView({
     : undefined;
 
   const [disputeOpen, setDisputeOpen] = useState(false);
-  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
-
-  // Show dispute button when the attempt is INCORRECT and hasn't been disputed yet
-  const canDispute = attempt?.verdict === 'INCORRECT' && !disputeSubmitted;
-  // Show award-points button after a dispute has been submitted (and points not yet awarded)
-  const canAwardPoints = disputeSubmitted && attempt?.verdict === 'INCORRECT';
+  const disputeSubmitted = snapshot.activeDisputeId !== null;
+  const finalizedVote = snapshot.currentDisputeVote;
+  const canDispute =
+    isActive && attempt?.verdict === 'INCORRECT' && snapshot.activeDisputeId === null;
+  const canAwardPoints =
+    isHost &&
+    !snapshot.opponentDisputeVotingEnabled &&
+    disputeSubmitted &&
+    attempt?.verdict === 'INCORRECT';
 
   function handleNext() {
     if (advance.isPending) return;
@@ -62,7 +77,6 @@ export function RevealView({
     awardDispute.mutate(undefined, {
       onSuccess: () => {
         toast.success(`Points awarded to ${answeringPlayer?.nickname || 'player'}.`);
-        setDisputeSubmitted(false);
       },
       onError: (error) => {
         if (isRoomConflict(error)) {
@@ -72,6 +86,16 @@ export function RevealView({
         toast.error(error.message || 'Failed to award points.');
       },
     });
+  }
+
+  async function handleSubmitDispute(explanation: string) {
+    try {
+      await submitDispute.mutateAsync({ explanation });
+      toast.success('Dispute submitted.');
+    } catch (error) {
+      if (isRoomConflict(error)) refetch();
+      throw error;
+    }
   }
 
   return (
@@ -139,6 +163,37 @@ export function RevealView({
         {snapshot.currentQuestion.explanation}
       </div>
 
+      {finalizedVote && (
+        <Card
+          className={cn(
+            'border-2',
+            finalizedVote.outcome === 'approved'
+              ? 'border-green-500/50 bg-green-500/10'
+              : 'border-amber-500/50 bg-amber-500/10'
+          )}
+          aria-live="polite"
+          data-testid="card-dispute-outcome"
+        >
+          <CardContent className="p-4 text-center">
+            <div className="font-bold capitalize">Dispute {finalizedVote.outcome}</div>
+            <div className="text-sm text-muted-foreground">
+              Final score change: {finalizedVote.finalPointsDelta > 0 ? '+' : ''}
+              {finalizedVote.finalPointsDelta}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {disputeSubmitted && !finalizedVote && (
+        <p
+          className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-sm"
+          aria-live="polite"
+          data-testid="text-dispute-submitted"
+        >
+          Dispute submitted. The host can award points if the group agrees.
+        </p>
+      )}
+
       {snapshot.currentQuestion.sourceUrl && (
         <div className="flex justify-center">
           <a
@@ -204,7 +259,8 @@ export function RevealView({
           correctAnswer={snapshot.currentQuestion.answer}
           teamName={answeringPlayer?.nickname || 'Unknown'}
           submittedAnswer={attempt.submittedAnswer}
-          onDisputeSubmitted={() => setDisputeSubmitted(true)}
+          onDisputeSubmitted={() => undefined}
+          submitDispute={handleSubmitDispute}
         />
       )}
     </div>

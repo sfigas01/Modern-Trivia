@@ -311,6 +311,7 @@ describe('room lifecycle routes', () => {
 
     expect(response.body.snapshot).toMatchObject({
       phase: 'DISPUTE_VOTE',
+      activeDisputeId: 'dispute-1',
       currentDisputeVote: { eligibleVoterIds: [guestId], threshold: 1 },
     });
   });

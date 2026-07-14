@@ -317,6 +317,7 @@ const roomSnapshotBaseSchema = z.object({
   activePlayerId: z.string().uuid().nullable(),
   currentAttempt: roomAttemptSchema.nullable(),
   opponentDisputeVotingEnabled: z.boolean().default(false),
+  activeDisputeId: disputeIdSchema.nullable().default(null),
   currentDisputeVote: roomDisputeVoteSnapshotSchema.nullable().default(null),
   players: z.array(roomPlayerSnapshotSchema),
   createdAt: z.string().datetime(),
