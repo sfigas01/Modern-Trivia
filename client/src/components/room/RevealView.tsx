@@ -58,6 +58,8 @@ export function RevealView({
     !snapshot.opponentDisputeVotingEnabled &&
     disputeSubmitted &&
     attempt?.verdict === 'INCORRECT';
+  const hasPendingManualDispute =
+    disputeSubmitted && !finalizedVote && attempt?.verdict === 'INCORRECT';
 
   function handleNext() {
     if (advance.isPending) return;
@@ -184,7 +186,7 @@ export function RevealView({
         </Card>
       )}
 
-      {disputeSubmitted && !finalizedVote && (
+      {hasPendingManualDispute && (
         <p
           className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-sm"
           aria-live="polite"

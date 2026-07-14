@@ -260,6 +260,35 @@ describe('RevealView', () => {
     expect(screen.getByRole('button', { name: /group agreed/i })).toBeInTheDocument();
   });
 
+  it('hides the pending dispute banner after a disabled-mode manual award', () => {
+    const snapshot = makeSnapshot({
+      hostPlayerId: 'p2',
+      activePlayerId: 'p1',
+      activeDisputeId: 'dispute-1',
+      opponentDisputeVotingEnabled: false,
+      currentAttempt: {
+        questionId: 'q1',
+        playerId: 'p1',
+        submittedAnswer: 'Venus',
+        verdict: 'CORRECT',
+        pointsDelta: 3,
+      },
+    });
+
+    render(
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p2"
+        advance={makeMutation()}
+        awardDispute={makeMutation()}
+        refetch={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('text-dispute-submitted')).toBeNull();
+    expect(screen.queryByRole('button', { name: /group agreed/i })).toBeNull();
+  });
+
   it.each([
     ['approved', 5, 'Dispute approved', '+5'],
     ['rejected', -3, 'Dispute rejected', '-3'],
