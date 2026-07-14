@@ -145,6 +145,7 @@ export const insertDisputeBallotSchema = createInsertSchema(disputeBallots, {
 
 export type InsertDisputeBallot = z.infer<typeof insertDisputeBallotSchema>;
 export type DisputeBallot = typeof disputeBallots.$inferSelect;
+export type AdminDispute = Dispute & { ballots: DisputeBallot[] };
 
 // App configuration for LLM settings (stored securely)
 export const appConfig = pgTable('app_config', {

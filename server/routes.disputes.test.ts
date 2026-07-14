@@ -80,6 +80,18 @@ const disputeRow = {
   timestamp: new Date('2026-01-01T00:00:00Z'),
   resolutionNote: null,
   aiAnalysis: null,
+  roomId: null,
+  roomCode: null,
+  attemptKey: null,
+  disputingPlayerId: null,
+  disputingPlayerName: null,
+  votingEnabled: false,
+  eligibleVoterSnapshot: null,
+  threshold: null,
+  outcome: null,
+  originalPointsDelta: null,
+  finalPointsDelta: null,
+  decidedAt: null,
 };
 
 let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -201,7 +213,8 @@ describe('dispute routes', () => {
   it('lists disputes for admins', async () => {
     dbMocks.select
       .mockReturnValueOnce(createQueryMock([adminRole]))
-      .mockReturnValueOnce(createQueryMock([disputeRow]));
+      .mockReturnValueOnce(createQueryMock([disputeRow]))
+      .mockReturnValueOnce(createQueryMock([]));
     const app = await buildTestApp();
 
     const response = await request(app)
@@ -209,7 +222,60 @@ describe('dispute routes', () => {
       .set('x-test-user-id', 'admin-user')
       .expect(200);
 
-    expect(response.body).toMatchObject([{ id: 'dispute-1', teamName: 'Alpha' }]);
+    expect(response.body).toMatchObject([{ id: 'dispute-1', teamName: 'Alpha', ballots: [] }]);
+    expect(dbMocks.select).toHaveBeenCalledTimes(3);
+  });
+
+  it('loads all admin ballots in one query and groups them by dispute', async () => {
+    const multiplayerDispute = {
+      ...disputeRow,
+      id: 'dispute-2',
+      roomId: '11111111-1111-4111-8111-111111111111',
+      roomCode: 'ABCD2',
+      votingEnabled: true,
+    };
+    const ballot = {
+      id: 'ballot-1',
+      disputeId: multiplayerDispute.id,
+      voterPlayerId: '22222222-2222-4222-8222-222222222222',
+      voterPlayerName: 'Bravo',
+      approve: true,
+      castAt: new Date('2026-01-01T00:01:00Z'),
+    };
+    const disputesQuery = createQueryMock([disputeRow, multiplayerDispute]);
+    const ballotsQuery = createQueryMock([ballot]);
+    dbMocks.select
+      .mockReturnValueOnce(createQueryMock([adminRole]))
+      .mockReturnValueOnce(disputesQuery)
+      .mockReturnValueOnce(ballotsQuery);
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/disputes')
+      .set('x-test-user-id', 'admin-user')
+      .expect(200);
+
+    expect(dbMocks.select).toHaveBeenCalledTimes(3);
+    expect(ballotsQuery.where).toHaveBeenCalledOnce();
+    expect(response.body).toMatchObject([
+      { id: 'dispute-1', ballots: [] },
+      { id: 'dispute-2', ballots: [{ id: 'ballot-1', approve: true }] },
+    ]);
+  });
+
+  it('does not query ballots when there are no disputes', async () => {
+    dbMocks.select
+      .mockReturnValueOnce(createQueryMock([adminRole]))
+      .mockReturnValueOnce(createQueryMock([]));
+    const app = await buildTestApp();
+
+    const response = await request(app)
+      .get('/api/disputes')
+      .set('x-test-user-id', 'admin-user')
+      .expect(200);
+
+    expect(response.body).toEqual([]);
+    expect(dbMocks.select).toHaveBeenCalledTimes(2);
   });
 
   it.each(['resolved', 'rejected'])('updates disputes to %s for admins', async (status) => {
