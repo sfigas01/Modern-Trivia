@@ -316,6 +316,7 @@ describe('RoomSnapshot contract', () => {
   it('defaults voting off and clears active vote state for legacy snapshots', () => {
     const parsed = roomSnapshotSchema.parse(validSnapshot);
     expect(parsed.opponentDisputeVotingEnabled).toBe(false);
+    expect(parsed.activeDisputeId).toBeNull();
     expect(parsed.currentDisputeVote).toBeNull();
   });
 
@@ -324,9 +325,11 @@ describe('RoomSnapshot contract', () => {
       ...validSnapshot,
       phase: 'DISPUTE_VOTE',
       currentQuestion: revealedQuestion,
+      activeDisputeId: validOpenDisputeVote.disputeId,
       currentDisputeVote: validOpenDisputeVote,
     });
 
+    expect(parsed.activeDisputeId).toBe(validOpenDisputeVote.disputeId);
     expect(parsed.currentDisputeVote).toEqual(validOpenDisputeVote);
     expect(parsed.currentDisputeVote).not.toHaveProperty('approve');
     expect(

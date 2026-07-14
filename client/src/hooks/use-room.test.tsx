@@ -19,6 +19,9 @@ const baseSnapshot: RoomSnapshot = {
   currentQuestionIndex: 0,
   activePlayerId: null,
   currentAttempt: null,
+  opponentDisputeVotingEnabled: false,
+  activeDisputeId: null,
+  currentDisputeVote: null,
   currentQuestion: null,
   players: [],
   createdAt: '2026-01-01T00:00:00.000Z',
@@ -44,9 +47,12 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 describe('getPollIntervalMs', () => {
-  it.each(['LOBBY', 'QUESTION', 'REVEAL'] as const)('polls every 2s during %s', (phase) => {
-    expect(getPollIntervalMs(phase)).toBe(2000);
-  });
+  it.each(['LOBBY', 'QUESTION', 'REVEAL', 'DISPUTE_VOTE'] as const)(
+    'polls every 2s during %s',
+    (phase) => {
+      expect(getPollIntervalMs(phase)).toBe(2000);
+    }
+  );
 
   it.each(['ROUND_SCORE', 'GAME_OVER'] as const)('polls every 5s during %s', (phase) => {
     expect(getPollIntervalMs(phase)).toBe(5000);
@@ -131,7 +137,10 @@ describe('useRoom', () => {
 
     await waitFor(() => expect(result.current.snapshot).toBeDefined());
 
-    expect(fetchMock).toHaveBeenCalledWith(buildPollUrl('ABCD2'), expect.objectContaining({ headers: {} }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      buildPollUrl('ABCD2'),
+      expect.objectContaining({ headers: {} })
+    );
   });
 
   it('requests sinceVersion on the next poll and keeps the same snapshot reference when unchanged', async () => {
@@ -157,7 +166,9 @@ describe('useRoom', () => {
 
   it('marks the room disconnected after two consecutive poll failures and recovers on the next success', async () => {
     vi.useFakeTimers();
-    fetchMock.mockResolvedValue(new Response('Server error', { status: 500, statusText: 'Server error' }));
+    fetchMock.mockResolvedValue(
+      new Response('Server error', { status: 500, statusText: 'Server error' })
+    );
 
     const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
 
@@ -239,5 +250,54 @@ describe('useRoom', () => {
     });
 
     await waitFor(() => expect(result.current.snapshot).toEqual(newer));
+  });
+
+  it('posts room-scoped dispute actions with shared payloads and the player token', async () => {
+    saveRoomSession({ code: 'ABCD2', playerId: 'player-1', token: 'secret-token' });
+    fetchMock.mockResolvedValueOnce(jsonResponse(baseSnapshot));
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
+    await waitFor(() => expect(result.current.snapshot).toBeDefined());
+
+    for (const [mutation, response] of [
+      [
+        () => result.current.submitDispute.mutateAsync({ explanation: 'The source supports us.' }),
+        2,
+      ],
+      [() => result.current.castDisputeVote.mutateAsync({ approve: true }), 3],
+      [() => result.current.cancelDisputeVote.mutateAsync(), 4],
+    ] as const) {
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse({ snapshot: { ...baseSnapshot, version: response } })
+      );
+      await act(async () => {
+        await mutation();
+      });
+    }
+
+    const postCalls = fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST');
+    expect(postCalls.map(([url]) => url)).toEqual([
+      '/api/rooms/ABCD2/disputes',
+      '/api/rooms/ABCD2/disputes/vote',
+      '/api/rooms/ABCD2/disputes/cancel',
+    ]);
+    expect(postCalls.map(([, init]) => JSON.parse(init.body as string))).toEqual([
+      { explanation: 'The source supports us.' },
+      { approve: true },
+      {},
+    ]);
+    for (const [, init] of postCalls) {
+      expect(init.headers).toMatchObject({ 'X-Player-Token': 'secret-token' });
+    }
+  });
+
+  it('preserves 409 status on dispute action errors for caller refetch handling', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(baseSnapshot));
+    const { result } = renderHook(() => useRoom('ABCD2'), { wrapper: createWrapper().Wrapper });
+    await waitFor(() => expect(result.current.snapshot).toBeDefined());
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'Player has already voted' }, 409));
+
+    await expect(
+      result.current.castDisputeVote.mutateAsync({ approve: false })
+    ).rejects.toMatchObject({ status: 409, message: 'Player has already voted' });
   });
 });

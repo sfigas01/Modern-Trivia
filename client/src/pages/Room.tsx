@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
 
 import { FinalResults } from '@/components/room/FinalResults';
+import { DisputeVoteView } from '@/components/room/DisputeVoteView';
 import { LeaveConfirmModal } from '@/components/room/LeaveConfirmModal';
 import { LeaveGameButton } from '@/components/room/LeaveGameButton';
 import { Lobby } from '@/components/room/Lobby';
@@ -38,6 +39,9 @@ export default function Room() {
     end,
     leave,
     awardDispute,
+    submitDispute,
+    castDisputeVote,
+    cancelDisputeVote,
     refetch,
   } = useRoom(code, { enabled: !!session });
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -115,7 +119,10 @@ export default function Room() {
     return <RoomAbandoned snapshot={snapshot} />;
   }
 
-  const showProgress = snapshot.phase === 'QUESTION' || snapshot.phase === 'REVEAL';
+  const showProgress =
+    snapshot.phase === 'QUESTION' ||
+    snapshot.phase === 'REVEAL' ||
+    snapshot.phase === 'DISPUTE_VOTE';
   const activePlayerCount = snapshot.players.filter((player) => !player.leftAt).length;
   const totalQuestions = snapshot.numRounds * activePlayerCount * QUESTIONS_PER_TEAM_ROTATION;
   const progressPercent =
@@ -210,6 +217,17 @@ export default function Room() {
               currentPlayerId={session.playerId}
               advance={advance}
               awardDispute={awardDispute}
+              submitDispute={submitDispute}
+              refetch={refetch}
+            />
+          )}
+
+          {snapshot.phase === 'DISPUTE_VOTE' && (
+            <DisputeVoteView
+              snapshot={snapshot}
+              currentPlayerId={session.playerId}
+              castDisputeVote={castDisputeVote}
+              cancelDisputeVote={cancelDisputeVote}
               refetch={refetch}
             />
           )}

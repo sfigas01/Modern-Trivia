@@ -189,6 +189,22 @@ function normalizedFinalRanking(page: Page) {
 }
 
 test.describe('two-device multiplayer', () => {
+  test('host setup offers opponent dispute voting off by default', async ({ page }) => {
+    await installQuestionFixture(page.context());
+    await page.goto('/host');
+
+    const toggle = page.getByRole('switch', { name: 'Opponent dispute voting' });
+    await expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await expect(
+      page.getByText(
+        'Opposing players vote on disputed incorrect answers; majority approval awards normal points.'
+      )
+    ).toBeVisible();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  });
+
   test('host and guest complete a synchronized full game', async ({
     browser,
     request,
