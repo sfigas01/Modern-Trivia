@@ -74,6 +74,10 @@ vi.mock('@/components/room/RevealView', () => ({
   RevealView: () => <div data-testid="reveal-view-mock" />,
 }));
 
+vi.mock('@/components/room/DisputeVoteView', () => ({
+  DisputeVoteView: () => <div data-testid="dispute-vote-view-mock" />,
+}));
+
 vi.mock('@/components/room/RoundScore', () => ({
   RoundScore: () => <div data-testid="round-score-mock" />,
 }));
@@ -102,7 +106,7 @@ function makeSnapshot(overrides: Partial<RoomSnapshot> = {}): RoomSnapshot {
     phase: 'LOBBY',
     version: 1,
     hostPlayerId: 'host-1',
-    category: 'All',
+    categories: ['All'],
     numRounds: 10,
     currentQuestionIndex: 0,
     activePlayerId: null,
@@ -132,6 +136,9 @@ function makeUseRoomResult(overrides: Record<string, unknown> = {}) {
     end: {},
     leave: { isPending: false, mutate: vi.fn() },
     awardDispute: {},
+    submitDispute: {},
+    castDisputeVote: {},
+    cancelDisputeVote: {},
     ...overrides,
   };
 }
@@ -232,6 +239,18 @@ describe('Room', () => {
     expect(screen.getByTestId('reveal-view-mock')).toBeInTheDocument();
   });
 
+  it('renders DisputeVoteView when reconnecting into DISPUTE_VOTE', () => {
+    mockGetRoomSession.mockReturnValue(SESSION);
+    mockUseRoom.mockReturnValue(
+      makeUseRoomResult({
+        snapshot: makeSnapshot({ phase: 'DISPUTE_VOTE', activePlayerId: 'host-1' }),
+      })
+    );
+    render(<Room />);
+    expect(screen.getByTestId('dispute-vote-view-mock')).toBeInTheDocument();
+    expect(screen.queryByTestId('reveal-view-mock')).toBeNull();
+  });
+
   it('renders RoundScore when phase is ROUND_SCORE', () => {
     mockGetRoomSession.mockReturnValue(SESSION);
     mockUseRoom.mockReturnValue(
@@ -282,6 +301,7 @@ describe('Room', () => {
       ['LOBBY', 'lobby-mock'],
       ['QUESTION', 'question-view-mock'],
       ['REVEAL', 'reveal-view-mock'],
+      ['DISPUTE_VOTE', 'dispute-vote-view-mock'],
       ['ROUND_SCORE', 'round-score-mock'],
       ['GAME_OVER', 'final-results-mock'],
     ] as const)(

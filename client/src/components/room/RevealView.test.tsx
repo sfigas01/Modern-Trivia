@@ -51,6 +51,9 @@ function makeSnapshot(overrides: Partial<RevealSnapshot> = {}): RevealSnapshot {
       verdict: 'CORRECT',
       pointsDelta: 5,
     },
+    opponentDisputeVotingEnabled: false,
+    activeDisputeId: null,
+    currentDisputeVote: null,
     currentQuestion: {
       id: 'q1',
       category: 'Science',
@@ -64,7 +67,10 @@ function makeSnapshot(overrides: Partial<RevealSnapshot> = {}): RevealSnapshot {
       acceptableAnswers: ['Mercury'],
       explanation: 'Mercury orbits closest to the sun.',
     },
-    players: [makePlayer({ id: 'p1', nickname: 'Alice' }), makePlayer({ id: 'p2', nickname: 'Bob', isHost: false })],
+    players: [
+      makePlayer({ id: 'p1', nickname: 'Alice' }),
+      makePlayer({ id: 'p2', nickname: 'Bob', isHost: false }),
+    ],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     expiresAt: new Date().toISOString(),
@@ -96,7 +102,12 @@ describe('RevealView', () => {
   it('shows the submitted answer, verdict, points, and correct answer', () => {
     const snapshot = makeSnapshot();
     render(
-      <RevealView snapshot={snapshot} currentPlayerId="p1" advance={makeMutation()} refetch={vi.fn()} />
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p1"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
     );
 
     expect(screen.getByText('Mercury', { selector: '.text-primary' })).toBeInTheDocument();
@@ -107,7 +118,12 @@ describe('RevealView', () => {
   it('shows the Next button for the active player', () => {
     const snapshot = makeSnapshot({ activePlayerId: 'p1', hostPlayerId: 'p2' });
     render(
-      <RevealView snapshot={snapshot} currentPlayerId="p1" advance={makeMutation()} refetch={vi.fn()} />
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p1"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
     );
 
     expect(screen.getByTestId('button-next')).toBeInTheDocument();
@@ -117,7 +133,12 @@ describe('RevealView', () => {
   it('shows the Next button for the host even when not active', () => {
     const snapshot = makeSnapshot({ activePlayerId: 'p1', hostPlayerId: 'p2' });
     render(
-      <RevealView snapshot={snapshot} currentPlayerId="p2" advance={makeMutation()} refetch={vi.fn()} />
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p2"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
     );
 
     expect(screen.getByTestId('button-next')).toBeInTheDocument();
@@ -134,7 +155,12 @@ describe('RevealView', () => {
       ],
     });
     render(
-      <RevealView snapshot={snapshot} currentPlayerId="p3" advance={makeMutation()} refetch={vi.fn()} />
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p3"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
     );
 
     expect(screen.queryByTestId('button-next')).toBeNull();
@@ -181,4 +207,130 @@ describe('RevealView', () => {
     expect(refetch).toHaveBeenCalled();
     expect(toastError).not.toHaveBeenCalled();
   });
+
+  it('only shows Dispute to the answering player for an undisputed incorrect answer', () => {
+    const snapshot = makeSnapshot({
+      activePlayerId: 'p1',
+      currentAttempt: {
+        questionId: 'q1',
+        playerId: 'p1',
+        submittedAnswer: 'Venus',
+        verdict: 'INCORRECT',
+        pointsDelta: -3,
+      },
+    });
+    const props = {
+      snapshot,
+      advance: makeMutation(),
+      awardDispute: makeMutation(),
+      refetch: vi.fn(),
+    };
+    const { rerender } = render(<RevealView {...props} currentPlayerId="p2" />);
+    expect(screen.queryByRole('button', { name: /dispute/i })).toBeNull();
+
+    rerender(<RevealView {...props} currentPlayerId="p1" />);
+    expect(screen.getByRole('button', { name: /dispute/i })).toBeInTheDocument();
+  });
+
+  it('shows synchronized disabled-mode submission state and manual award only to the host', () => {
+    const snapshot = makeSnapshot({
+      hostPlayerId: 'p2',
+      activePlayerId: 'p1',
+      activeDisputeId: 'dispute-1',
+      opponentDisputeVotingEnabled: false,
+      currentAttempt: {
+        questionId: 'q1',
+        playerId: 'p1',
+        submittedAnswer: 'Venus',
+        verdict: 'INCORRECT',
+        pointsDelta: -3,
+      },
+    });
+    const props = {
+      snapshot,
+      advance: makeMutation(),
+      awardDispute: makeMutation(),
+      refetch: vi.fn(),
+    };
+    const { rerender } = render(<RevealView {...props} currentPlayerId="p1" />);
+    expect(screen.getByTestId('text-dispute-submitted')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /group agreed/i })).toBeNull();
+
+    rerender(<RevealView {...props} currentPlayerId="p2" />);
+    expect(screen.getByRole('button', { name: /group agreed/i })).toBeInTheDocument();
+  });
+
+  it('hides the pending dispute banner after a disabled-mode manual award', () => {
+    const snapshot = makeSnapshot({
+      hostPlayerId: 'p2',
+      activePlayerId: 'p1',
+      activeDisputeId: 'dispute-1',
+      opponentDisputeVotingEnabled: false,
+      currentAttempt: {
+        questionId: 'q1',
+        playerId: 'p1',
+        submittedAnswer: 'Venus',
+        verdict: 'CORRECT',
+        pointsDelta: 3,
+      },
+    });
+
+    render(
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p2"
+        advance={makeMutation()}
+        awardDispute={makeMutation()}
+        refetch={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByTestId('text-dispute-submitted')).toBeNull();
+    expect(screen.queryByRole('button', { name: /group agreed/i })).toBeNull();
+  });
+
+  it.each([
+    ['approved', 5, 'Dispute approved', '+5'],
+    ['rejected', -3, 'Dispute rejected', '-3'],
+    ['tied', -3, 'Dispute tied', '-3'],
+    ['expired', -3, 'Dispute expired', '-3'],
+    ['canceled', -3, 'Dispute canceled', '-3'],
+  ] as const)(
+    'renders the server-finalized %s outcome and delta',
+    (outcome, delta, label, points) => {
+      const snapshot = makeSnapshot({
+        activeDisputeId: 'dispute-1',
+        currentDisputeVote: {
+          disputeId: 'dispute-1',
+          disputingPlayerId: 'p1',
+          disputingPlayerName: 'Alice',
+          explanation: 'Mercury was intended.',
+          eligibleVoterIds: ['p2'],
+          submittedVoterIds: ['p2'],
+          threshold: 1,
+          openedAt: '2026-01-01T00:00:00.000Z',
+          closesAt: '2026-01-01T00:01:00.000Z',
+          status: 'FINALIZED',
+          yesCount: outcome === 'approved' ? 1 : 0,
+          noCount: outcome === 'rejected' ? 1 : 0,
+          nonResponseCount: outcome === 'rejected' || outcome === 'approved' ? 0 : 1,
+          outcome,
+          originalPointsDelta: -3,
+          finalPointsDelta: delta,
+          decidedAt: '2026-01-01T00:00:30.000Z',
+        },
+      });
+      render(
+        <RevealView
+          snapshot={snapshot}
+          currentPlayerId="p1"
+          advance={makeMutation()}
+          awardDispute={makeMutation()}
+          refetch={vi.fn()}
+        />
+      );
+      expect(screen.getByTestId('card-dispute-outcome')).toHaveTextContent(label);
+      expect(screen.getByTestId('card-dispute-outcome')).toHaveTextContent(points);
+    }
+  );
 });

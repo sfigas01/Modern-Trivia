@@ -1,7 +1,21 @@
 import { sql } from 'drizzle-orm';
-import { pgTable, text, varchar, timestamp, jsonb } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  timestamp,
+  text,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
+
+import { DISPUTE_VOTE_OUTCOMES, disputeIdSchema, roomNicknameSchema } from './models/rooms';
 
 // Export auth models (REQUIRED for Replit Auth)
 export * from './models/auth';
@@ -22,6 +36,17 @@ export * from './models/quality-sweep-dismissals';
 export * from './models/rooms';
 
 // Disputes table for QA logging
+export const disputeOutcomeSchema = z.enum(DISPUTE_VOTE_OUTCOMES);
+export const disputeOutcomeEnum = pgEnum('dispute_outcome', DISPUTE_VOTE_OUTCOMES);
+export const disputeVoterSnapshotSchema = z
+  .object({
+    playerId: z.string().uuid(),
+    displayName: roomNicknameSchema,
+  })
+  .strict();
+
+export type DisputeVoterSnapshot = z.infer<typeof disputeVoterSnapshotSchema>;
+
 export const disputes = pgTable('disputes', {
   id: varchar('id')
     .primaryKey()
@@ -36,18 +61,91 @@ export const disputes = pgTable('disputes', {
   status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, resolved, rejected
   resolutionNote: text('resolution_note'),
   aiAnalysis: jsonb('ai_analysis'),
+  roomId: uuid('room_id'),
+  roomCode: varchar('room_code', { length: 5 }),
+  attemptKey: varchar('attempt_key', { length: 255 }),
+  disputingPlayerId: uuid('disputing_player_id'),
+  disputingPlayerName: varchar('disputing_player_name', { length: 20 }),
+  votingEnabled: boolean('voting_enabled').notNull().default(false),
+  eligibleVoterSnapshot: jsonb('eligible_voter_snapshot').$type<DisputeVoterSnapshot[]>(),
+  threshold: integer('threshold'),
+  outcome: disputeOutcomeEnum('outcome'),
+  originalPointsDelta: integer('original_points_delta'),
+  finalPointsDelta: integer('final_points_delta'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
 });
 
-export const insertDisputeSchema = createInsertSchema(disputes).omit({
-  id: true,
-  timestamp: true,
-  status: true,
-  resolutionNote: true,
-  aiAnalysis: true,
-});
+export const publicDisputeRequestSchema = z
+  .object({
+    questionId: z.string().min(1),
+    questionText: z.string().min(1),
+    correctAnswer: z.string().min(1),
+    teamName: z.string().min(1),
+    submittedAnswer: z.string().nullable().optional(),
+    teamExplanation: z.string().min(1),
+  })
+  .strict();
+
+export const insertDisputeSchema = createInsertSchema(disputes, {
+  id: disputeIdSchema.optional(),
+  outcome: disputeOutcomeSchema.nullable().optional(),
+  eligibleVoterSnapshot: z.array(disputeVoterSnapshotSchema).max(4).nullable().optional(),
+})
+  .omit({
+    id: true,
+    timestamp: true,
+    status: true,
+    resolutionNote: true,
+    aiAnalysis: true,
+  })
+  .extend({
+    roomId: z.string().uuid().nullable().optional(),
+    roomCode: z
+      .string()
+      .regex(/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/)
+      .nullable()
+      .optional(),
+    attemptKey: z.string().trim().min(1).max(255).nullable().optional(),
+    disputingPlayerId: z.string().uuid().nullable().optional(),
+    disputingPlayerName: roomNicknameSchema.nullable().optional(),
+    threshold: z.number().int().positive().nullable().optional(),
+    originalPointsDelta: z.number().int().nullable().optional(),
+    finalPointsDelta: z.number().int().nullable().optional(),
+    decidedAt: z.date().nullable().optional(),
+  });
 
 export type InsertDispute = z.infer<typeof insertDisputeSchema>;
 export type Dispute = typeof disputes.$inferSelect;
+
+export const disputeBallots = pgTable(
+  'dispute_ballots',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    disputeId: varchar('dispute_id', { length: 255 }).notNull(),
+    voterPlayerId: uuid('voter_player_id').notNull(),
+    voterPlayerName: varchar('voter_player_name', { length: 20 }).notNull(),
+    approve: boolean('approve').notNull(),
+    castAt: timestamp('cast_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_dispute_ballots_dispute').on(table.disputeId),
+    uniqueIndex('uq_dispute_ballots_dispute_voter').on(table.disputeId, table.voterPlayerId),
+  ]
+);
+
+export const insertDisputeBallotSchema = createInsertSchema(disputeBallots, {
+  disputeId: disputeIdSchema,
+  voterPlayerId: z.string().uuid(),
+  voterPlayerName: roomNicknameSchema,
+})
+  .omit({ id: true, castAt: true })
+  .strict();
+
+export type InsertDisputeBallot = z.infer<typeof insertDisputeBallotSchema>;
+export type DisputeBallot = typeof disputeBallots.$inferSelect;
+export type AdminDispute = Dispute & { ballots: DisputeBallot[] };
 
 // App configuration for LLM settings (stored securely)
 export const appConfig = pgTable('app_config', {

@@ -73,15 +73,16 @@ function createFetchMock(options?: { questions?: Array<(typeof ALL_TEST_QUESTION
       return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as Response);
     }
 
-    // GET /api/questions?shuffle=true&limit=...&category=...
+    // GET /api/questions?shuffle=true&limit=...&categories=...
     if (url.includes('/api/questions')) {
       const parsed = new URL(url, 'http://localhost');
-      const category = parsed.searchParams.get('category');
+      const categoriesParam = parsed.searchParams.get('categories');
       const limit = parsed.searchParams.get('limit');
 
       let questions = [...questionPool];
-      if (category) {
-        questions = questions.filter((q) => q.category === category);
+      if (categoriesParam) {
+        const selectedCats = categoriesParam.split(',').map((s) => decodeURIComponent(s.trim()));
+        questions = questions.filter((q) => selectedCats.includes(q.category));
       }
       // Shuffle (deterministic for tests: just reverse)
       questions = questions.reverse();
@@ -135,7 +136,7 @@ async function setupAndStart(opts?: {
   });
 
   if (opts?.category) {
-    act(() => result.current.setCategory(opts.category!));
+    act(() => result.current.toggleCategory(opts.category!));
   }
   if (opts?.numRounds) {
     act(() => result.current.setNumRounds(opts.numRounds!));
@@ -578,7 +579,7 @@ describe('GameProvider state machine', () => {
     expect(result.current.state.teams).toHaveLength(0);
     expect(result.current.state.currentQuestionIndex).toBe(0);
     expect(result.current.state.activeTeamId).toBeNull();
-    expect(result.current.state.selectedCategory).toBe('All');
+    expect(result.current.state.selectedCategories).toEqual([]);
     expect(result.current.state.numRounds).toBe(10);
   });
 
