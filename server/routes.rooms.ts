@@ -81,11 +81,20 @@ class RoomRouteError extends Error {
   }
 }
 
-type PostgresError = Error & { code?: string; constraint?: string };
+type PostgresError = Error & { code?: string; constraint?: string; cause?: unknown };
 
 function hasConstraint(error: unknown, constraint: string): boolean {
-  const postgresError = error as PostgresError;
-  return postgresError?.code === '23505' && postgresError.constraint === constraint;
+  const seen = new Set<unknown>();
+  let current = error;
+
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    const postgresError = current as PostgresError;
+    if (postgresError.code === '23505' && postgresError.constraint === constraint) return true;
+    current = postgresError.cause;
+  }
+
+  return false;
 }
 
 export function generateRoomCode(): string {
