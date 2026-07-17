@@ -122,6 +122,7 @@ Before starting any `STE-12` child issue, read `docs/guides/ste_12_parallel_plan
 1. Include the Linear issue ID in the PR title (e.g., `feat(api): add endpoint [STE-42]`) or link it in the description.
 2. Write a brief description: what changed and why. Reviewers should understand the PR without reading every diff.
 3. Keep PRs focused on a single issue or feature. Split large changes into smaller PRs when possible.
+4. Open completed PRs ready for review after validation. Do not create draft PRs unless the user explicitly requests a draft or approves an intentionally incomplete handoff.
 
 ## Quality Gates
 
