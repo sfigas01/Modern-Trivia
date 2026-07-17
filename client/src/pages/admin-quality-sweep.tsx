@@ -39,7 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
-import { useGame, type Question } from '@/lib/store';
+import { useGame, type Question, type QuestionPatch } from '@/lib/store';
 import {
   buildStaticFindingKey,
   duplicatePairKey,
@@ -248,7 +248,7 @@ function ProposedFixDisplay({ rule, fix }: { rule: string; fix: Record<string, u
 // can be auto-applied, or null when manual editing is required.
 // ---------------------------------------------------------------------------
 
-type ApplyFixFn = (q: Question) => Partial<Question>;
+type ApplyFixFn = (q: Question) => QuestionPatch;
 
 function extractApplicableFix(
   rule: string,
@@ -1561,9 +1561,8 @@ export default function AdminQualitySweep() {
     setBusyKey(editKey);
     try {
       const patch = applyFn(sourceQ);
-      const updated = { ...sourceQ, ...patch };
-      await updateQuestion(updated);
-      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? updated : q)));
+      const persisted = await updateQuestion(questionId, patch);
+      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? persisted : q)));
     } catch (error) {
       toast({
         title: 'Apply fix failed',
@@ -1659,14 +1658,12 @@ export default function AdminQualitySweep() {
 
     setBusyKey(editKey);
     try {
-      const updated = {
-        ...sourceQ,
+      const persisted = await updateQuestion(questionId, {
         question: draft.question.trim(),
         answer: draft.answer.trim(),
         explanation: draft.explanation.trim() || sourceQ.explanation,
-      };
-      await updateQuestion(updated);
-      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? updated : q)));
+      });
+      setAllQuestions((prev) => prev.map((q) => (q.id === questionId ? persisted : q)));
       setEditingKey(null);
       setEditDrafts((prev) => {
         const next = { ...prev };

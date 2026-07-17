@@ -53,6 +53,21 @@ export interface GameState {
   isAuthenticated: boolean;
 }
 
+const QUESTION_PATCH_FIELDS = [
+  'category',
+  'difficulty',
+  'question',
+  'answer',
+  'acceptableAnswers',
+  'explanation',
+  'pillar',
+  'tags',
+  'sourceUrl',
+  'sourceName',
+] as const satisfies ReadonlyArray<keyof Question>;
+
+export type QuestionPatch = Partial<Pick<Question, (typeof QUESTION_PATCH_FIELDS)[number]>>;
+
 interface GameContextType {
   state: GameState;
   addTeam: (name: string) => void;
@@ -70,7 +85,7 @@ interface GameContextType {
   endGame: () => void;
   resetGame: () => void;
   addQuestion: (q: Question) => Promise<void>;
-  updateQuestion: (q: Question) => Promise<void>;
+  updateQuestion: (id: string, patch: QuestionPatch) => Promise<Question>;
   deleteQuestion: (id: string) => Promise<void>;
 }
 
@@ -466,30 +481,57 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateQuestion = async (updatedQ: Question) => {
+  const updateQuestion = async (id: string, patch: QuestionPatch): Promise<Question> => {
     try {
+      const explicitPatch = Object.fromEntries(
+        QUESTION_PATCH_FIELDS.filter((field) => Object.hasOwn(patch, field)).map((field) => [
+          field,
+          patch[field],
+        ])
+      ) as QuestionPatch;
       const opts = {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include' as const,
-        body: JSON.stringify(updatedQ),
+        body: JSON.stringify(explicitPatch),
       };
-      let res = await fetch(`/api/questions/${updatedQ.id}`, opts);
+      let res = await fetch(`/api/questions/${id}`, opts);
 
       if (res.status === 401) {
         await fetch('/api/auth/user', { credentials: 'include' });
-        res = await fetch(`/api/questions/${updatedQ.id}`, opts);
+        res = await fetch(`/api/questions/${id}`, opts);
       }
 
       if (res.status === 401) {
         throw new Error('Session expired — please reload the page and sign in again.');
       }
-      if (!res.ok) throw new Error('Failed to update question');
+      if (!res.ok) {
+        const responseText = await res.text();
+        let message = responseText || res.statusText || 'Failed to update question';
+        try {
+          const payload = JSON.parse(responseText) as {
+            message?: string;
+            errors?: Array<{ message?: string; path?: Array<string | number> }>;
+          };
+          const details = payload.errors
+            ?.map((item) => {
+              const path = item.path?.join('.');
+              return [path, item.message].filter(Boolean).join(': ');
+            })
+            .filter(Boolean)
+            .join('; ');
+          message = [payload.message, details].filter(Boolean).join(': ') || message;
+        } catch {
+          // Keep the plain-text response when the server did not return JSON.
+        }
+        throw new Error(message);
+      }
       const updated = await res.json();
       setState((prev) => ({
         ...prev,
         questions: prev.questions.map((q) => (q.id === updated.id ? updated : q)),
       }));
+      return updated;
     } catch (error) {
       console.error('Failed to update question:', error);
       throw error;
