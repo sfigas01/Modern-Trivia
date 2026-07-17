@@ -168,23 +168,27 @@ export default function AdminDisputes() {
     }
   };
 
+  const persistDisputeStatus = async (id: string, status: 'resolved' | 'rejected') => {
+    await apiRequest('PATCH', `/api/disputes/${id}`, {
+      status,
+      resolutionNote: status === 'resolved' ? 'Accepted by admin' : 'Rejected by admin',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
+  };
+
   const handleResolve = async (id: string, status: 'resolved' | 'rejected') => {
     setResolvingId(id);
     try {
-      await apiRequest('PATCH', `/api/disputes/${id}`, {
-        status,
-        resolutionNote: status === 'resolved' ? 'Accepted by admin' : 'Rejected by admin',
-      });
-      await queryClient.invalidateQueries({ queryKey: ['/api/disputes'] });
+      await persistDisputeStatus(id, status);
       toast({
         title: status === 'resolved' ? 'Dispute Accepted' : 'Dispute Rejected',
         description: `The dispute has been marked as ${status}.`,
       });
       return true;
-    } catch {
+    } catch (error) {
       toast({
         title: 'Action Failed',
-        description: 'Could not update dispute status.',
+        description: error instanceof Error ? error.message : 'Could not update dispute status.',
         variant: 'destructive',
       });
       return false;
@@ -219,20 +223,16 @@ export default function AdminDisputes() {
       return;
     }
 
-    const resolved = await handleResolve(dispute.id, 'resolved');
-    if (!resolved) {
-      return;
-    }
-
-    const updatedQuestion: Question = {
-      ...sourceQuestion,
-      question: nextQuestion,
-      answer: nextAnswer,
-      explanation: nextExplanation || sourceQuestion.explanation,
-    };
-
+    setResolvingId(dispute.id);
+    let questionSaved = false;
     try {
-      await updateQuestion(updatedQuestion);
+      await updateQuestion(dispute.questionId, {
+        question: nextQuestion,
+        answer: nextAnswer,
+        explanation: nextExplanation || sourceQuestion.explanation,
+      });
+      questionSaved = true;
+      await persistDisputeStatus(dispute.id, 'resolved');
       setResolutionDrafts((prev) => {
         if (!prev[dispute.id]) {
           return prev;
@@ -246,13 +246,18 @@ export default function AdminDisputes() {
         title: 'Fix Applied',
         description: 'The question was updated and the dispute was resolved.',
       });
-    } catch {
+    } catch (error) {
       toast({
-        title: 'Error',
-        description:
-          'Failed to update question. The dispute was resolved but the fix was not applied.',
+        title: questionSaved ? 'Question saved — dispute pending' : 'Fix not applied',
+        description: questionSaved
+          ? 'The question was saved, but the dispute could not be resolved. It remains pending.'
+          : error instanceof Error
+            ? error.message
+            : 'Failed to update question. The dispute remains pending.',
         variant: 'destructive',
       });
+    } finally {
+      setResolvingId(null);
     }
   };
 

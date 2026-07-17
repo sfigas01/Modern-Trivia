@@ -232,19 +232,28 @@ describe('question routes', () => {
     expect(response.body).toEqual({ message: 'Question not found' });
   });
 
-  it('rejects unsafe question update fields before writing', async () => {
-    dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
-    const app = await buildTestApp();
+  it.each([
+    ['id', 'different-id'],
+    ['createdAt', '2026-01-01T00:00:00.000Z'],
+    ['updatedAt', '2026-01-02T00:00:00.000Z'],
+    ['aiAnalysis', { verdict: 'pass' }],
+    ['unknownField', 'must not be accepted'],
+  ])(
+    'rejects server-owned or unknown question update field %s before writing',
+    async (field, value) => {
+      dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));
+      const app = await buildTestApp();
 
-    const response = await request(app)
-      .patch('/api/questions/q-1')
-      .set('x-test-user-id', 'admin-user')
-      .send({ id: 'different-id', answer: 'Ottawa' })
-      .expect(422);
+      const response = await request(app)
+        .patch('/api/questions/q-1')
+        .set('x-test-user-id', 'admin-user')
+        .send({ [field]: value, answer: 'Ottawa' })
+        .expect(422);
 
-    expect(response.body).toMatchObject({ message: 'Invalid question update' });
-    expect(dbMocks.update).not.toHaveBeenCalled();
-  });
+      expect(response.body).toMatchObject({ message: 'Invalid question update' });
+      expect(dbMocks.update).not.toHaveBeenCalled();
+    }
+  );
 
   it('rejects invalid question status values before writing', async () => {
     dbMocks.select.mockReturnValueOnce(createQueryMock([adminRole]));

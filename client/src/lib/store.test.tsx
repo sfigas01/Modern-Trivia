@@ -201,6 +201,124 @@ function finishGame(result: { current: ReturnType<typeof useGame> }) {
   return { questionsAnswered, roundBreaks };
 }
 
+describe('question updates', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends only explicitly supplied editable fields in the PATCH body', async () => {
+    const persisted = {
+      ...SCIENCE_QUESTIONS[0],
+      question: 'Persisted question text?',
+    };
+    const fetchMock = vi.fn(
+      (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url === `/api/questions/${persisted.id}` && init?.method === 'PATCH') {
+          return Promise.resolve(
+            new Response(JSON.stringify(persisted), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          );
+        }
+        return createFetchMock()(input, init);
+      }
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = await renderGame();
+
+    await act(async () => {
+      await result.current.updateQuestion(persisted.id, {
+        question: 'Persisted question text?',
+        id: persisted.id,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+        aiAnalysis: { verdict: 'pass' },
+        status: 'approved',
+        unrelatedField: 'must not leak',
+      } as Parameters<typeof result.current.updateQuestion>[1]);
+    });
+
+    const patchCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'PATCH');
+    expect(patchCall).toBeDefined();
+    expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual({
+      question: 'Persisted question text?',
+    });
+  });
+
+  it('returns the persisted response and refreshes local state from it', async () => {
+    const source = SCIENCE_QUESTIONS[1];
+    const persisted = {
+      ...source,
+      question: 'Canonical server question?',
+      answer: 'Canonical server answer',
+      explanation: 'Canonical server explanation',
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string | URL | Request, init?: RequestInit) => {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url === `/api/questions/${source.id}` && init?.method === 'PATCH') {
+          return Promise.resolve(
+            new Response(JSON.stringify(persisted), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            })
+          );
+        }
+        return createFetchMock()(input, init);
+      })
+    );
+    const { result } = await renderGame();
+
+    let returned: Question | undefined;
+    await act(async () => {
+      returned = await result.current.updateQuestion(source.id, { answer: 'client draft' });
+    });
+
+    expect(returned).toEqual(persisted);
+    expect(result.current.state.questions.find((question) => question.id === source.id)).toEqual(
+      persisted
+    );
+  });
+
+  it('propagates useful server validation errors', async () => {
+    const source = SCIENCE_QUESTIONS[2];
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string | URL | Request, init?: RequestInit) => {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url === `/api/questions/${source.id}` && init?.method === 'PATCH') {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                message: 'Invalid question update',
+                errors: [{ path: ['answer'], message: 'Answer is required' }],
+              }),
+              { status: 422, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return createFetchMock()(input, init);
+      })
+    );
+    const { result } = await renderGame();
+
+    await expect(
+      act(async () => result.current.updateQuestion(source.id, { answer: '' }))
+    ).rejects.toThrow('Invalid question update: answer: Answer is required');
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Pure function tests
 // ---------------------------------------------------------------------------
