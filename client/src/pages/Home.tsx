@@ -1,34 +1,183 @@
-import { useState, useMemo } from 'react';
-import { useLocation } from 'wouter';
+import { useEffect, useState } from 'react';
+import { Link, useLocation } from 'wouter';
 import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
+import { useCategoryCounts } from '@/hooks/use-category-counts';
+import { clearRoomSession, listRoomSessions, type RoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Settings, Users, Zap, LogIn, LogOut, Shield, AlertTriangle } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Settings,
+  Users,
+  Zap,
+  LogIn,
+  LogOut,
+  Shield,
+  AlertTriangle,
+  UserPlus,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MULTIPLAYER } from '@/lib/featureFlags';
+
+// A stored room session may point at a room that has since been closed or
+// expired. Validate against the server before offering it as a rejoin target.
+function useRejoinableSession(enabled: boolean): RoomSession | null {
+  const [session, setSession] = useState<RoomSession | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const candidate = listRoomSessions()[0];
+    if (!candidate) return;
+
+    let cancelled = false;
+    fetch(`/api/rooms/${encodeURIComponent(candidate.code)}`, {
+      headers: { 'X-Player-Token': candidate.token },
+    })
+      .then(async (res) => {
+        if (cancelled) return;
+        if (res.status === 404 || res.status === 401) {
+          clearRoomSession(candidate.code);
+          return;
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === 'abandoned' || data.status === 'finished') {
+          clearRoomSession(candidate.code);
+          return;
+        }
+        setSession(candidate);
+      })
+      .catch(() => {
+        // Transient network error — leave the stored session alone and
+        // simply don't offer the rejoin chip this time.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled]);
+
+  return session;
+}
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+  const [mode, setMode] = useState<'choose' | 'solo'>(MULTIPLAYER ? 'choose' : 'solo');
+  const rejoinSession = useRejoinableSession(MULTIPLAYER);
+
+  if (MULTIPLAYER && mode === 'choose') {
+    return (
+      <ModeChooser
+        rejoinSession={rejoinSession}
+        onPlaySolo={() => setMode('solo')}
+        onHost={() => setLocation('/host')}
+        onJoin={() => setLocation('/join')}
+      />
+    );
+  }
+
+  return <SoloSetup />;
+}
+
+function ModeChooser({
+  rejoinSession,
+  onPlaySolo,
+  onHost,
+  onJoin,
+}: {
+  rejoinSession: RoomSession | null;
+  onPlaySolo: () => void;
+  onHost: () => void;
+  onJoin: () => void;
+}) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-50" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] opacity-50" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md z-10 space-y-8"
+      >
+        <div className="text-center space-y-2">
+          <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
+            TRIVIA
+            <br />
+            CLASH
+          </h1>
+          <p className="text-muted-foreground font-medium tracking-wide">
+            THE COMPETITIVE PARTY GAME
+          </p>
+        </div>
+
+        <div className="flex flex-col w-full gap-4">
+          {rejoinSession && (
+            <Link href={`/room/${rejoinSession.code}`}>
+              <Button
+                variant="secondary"
+                className="w-full h-12 text-base font-semibold rounded-2xl border border-primary/30 bg-primary/10 hover:bg-primary/20"
+                data-testid="button-rejoin-room"
+              >
+                Rejoin game {rejoinSession.code}
+              </Button>
+            </Link>
+          )}
+          <Button
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
+            onClick={onPlaySolo}
+            data-testid="button-mode-solo"
+          >
+            <Users className="w-5 h-5 mr-2" />
+            Play Solo
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl border-white/10 hover:bg-white/10"
+            onClick={onHost}
+            data-testid="button-mode-host"
+          >
+            <UserPlus className="w-5 h-5 mr-2" />
+            Host a Game
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl border-white/10 hover:bg-white/10"
+            onClick={onJoin}
+            data-testid="button-mode-join"
+          >
+            <LogIn className="w-5 h-5 mr-2" />
+            Join a Game
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function SoloSetup() {
   const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, setCategory, setNumRounds, startGame } = useGame();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { state, addTeam, removeTeam, toggleCategory, setNumRounds, startGame } = useGame();
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { isAdmin } = useAdmin();
   const [newTeamName, setNewTeamName] = useState('');
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    state.questions.forEach((q) => {
-      counts[q.category] = (counts[q.category] || 0) + 1;
-    });
-    counts['All'] = state.questions.length;
-    return counts;
-  }, [state.questions]);
+  const categoryCounts = useCategoryCounts(state.questions);
 
   const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const availableCount = categoryCounts[state.selectedCategory] || 0;
-  const hasInsufficientQuestions = state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
+  const availableCount =
+    state.selectedCategories.length === 0
+      ? categoryCounts['All'] || 0
+      : state.selectedCategories.reduce((sum, cat) => sum + (categoryCounts[cat] || 0), 0);
+  const hasInsufficientQuestions =
+    state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
 
   const handleAddTeam = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +188,7 @@ export default function Home() {
   };
 
   const handleStart = async () => {
-    await startGame();
+    await startGame(isAuthenticated);
     setLocation('/game');
   };
 
@@ -141,35 +290,37 @@ export default function Home() {
         <Card className="border-white/10 bg-white/5 backdrop-blur-md">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">Category</CardTitle>
-            <CardDescription>Choose a topic for this round.</CardDescription>
+            <CardDescription>Choose one or more topics for this round.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
               <Button
-                variant={state.selectedCategory === 'All' ? 'default' : 'outline'}
-                onClick={() => setCategory('All')}
+                variant={state.selectedCategories.length === 0 ? 'default' : 'outline'}
+                onClick={() => toggleCategory('All')}
                 className={`border-white/10 hover:bg-white/10 ${
-                  state.selectedCategory === 'All'
+                  state.selectedCategories.length === 0
                     ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
                     : ''
                 }`}
               >
                 All ({categoryCounts['All'] || 0})
               </Button>
-              {state.categories.filter((c) => c !== 'All').map((category) => (
-                <Button
-                  key={category}
-                  variant={state.selectedCategory === category ? 'default' : 'outline'}
-                  onClick={() => setCategory(category)}
-                  className={`border-white/10 hover:bg-white/10 ${
-                    state.selectedCategory === category
-                      ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
-                      : ''
-                  }`}
-                >
-                  {category} ({categoryCounts[category] || 0})
-                </Button>
-              ))}
+              {state.categories
+                .filter((c) => c !== 'All')
+                .map((category) => (
+                  <Button
+                    key={category}
+                    variant={state.selectedCategories.includes(category) ? 'default' : 'outline'}
+                    onClick={() => toggleCategory(category)}
+                    className={`border-white/10 hover:bg-white/10 ${
+                      state.selectedCategories.includes(category)
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
+                        : ''
+                    }`}
+                  >
+                    {category} ({categoryCounts[category] || 0})
+                  </Button>
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -208,17 +359,23 @@ export default function Home() {
               <div>
                 <p className="font-semibold text-yellow-300">Not enough questions</p>
                 <p className="mt-1">
-                  {state.selectedCategory === 'All' ? 'All categories have' : `"${state.selectedCategory}" has`} only{' '}
-                  <span className="font-bold">{availableCount}</span> question{availableCount !== 1 ? 's' : ''}, but your
-                  setup needs <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds × {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn).
-                  The game will use all {availableCount} available.
+                  {state.selectedCategories.length === 0
+                    ? 'All categories have'
+                    : state.selectedCategories.length === 1
+                      ? `"${state.selectedCategories[0]}" has`
+                      : `The selected categories have`}{' '}
+                  only <span className="font-bold">{availableCount}</span> question
+                  {availableCount !== 1 ? 's' : ''}, but your setup needs{' '}
+                  <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds ×{' '}
+                  {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn). The
+                  game will use all {availableCount} available.
                 </p>
               </div>
             </div>
           )}
           <Button
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
-            disabled={state.teams.length < 2}
+            disabled={state.teams.length < 2 || authLoading}
             onClick={handleStart}
             data-testid="button-start-game"
           >

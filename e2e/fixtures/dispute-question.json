@@ -1,0 +1,14 @@
+{
+  "id": "ste245-dispute-easy",
+  "category": "Science & Nature",
+  "difficulty": "Easy",
+  "question": "Which formula represents water?",
+  "answer": "H2O",
+  "acceptableAnswers": ["H₂O"],
+  "explanation": "Water contains two hydrogen atoms and one oxygen atom.",
+  "pillar": "GlobalEh",
+  "tags": ["Global", "Science", "GlobalEh"],
+  "sourceUrl": "https://en.wikipedia.org/wiki/Water",
+  "sourceName": "Wikipedia",
+  "status": "approved"
+}
