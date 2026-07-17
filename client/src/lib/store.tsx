@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import stringSimilarity from 'string-similarity';
+import { verifyAttempt, pointsFor, QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
+import type { Question } from '@shared/lib/answers';
+import { getGuestSeenIds, addGuestSeenIds } from './guest-seen';
+export type { Difficulty, Question } from '@shared/lib/answers';
+export {
+  normalize,
+  verifyAttempt,
+  pointsFor,
+  QUESTIONS_PER_TEAM_ROTATION,
+} from '@shared/lib/answers';
 
-export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type Phase =
   | 'SETUP'
   | 'QUESTION'
@@ -11,20 +19,6 @@ export type Phase =
   | 'ROUND_SCORE'
   | 'GAME_OVER';
 export type Verdict = 'CORRECT' | 'INCORRECT' | 'PASS' | 'PENDING';
-
-export interface Question {
-  id: string;
-  category: string;
-  difficulty: Difficulty;
-  question: string;
-  answer: string;
-  acceptableAnswers?: string[];
-  explanation: string;
-  pillar: string;
-  tags: string[];
-  sourceUrl?: string;
-  sourceName?: string;
-}
 
 export interface Team {
   id: string;
@@ -49,22 +43,23 @@ export interface GameState {
   teams: Team[];
   questions: Question[];
   categories: string[];
-  selectedCategory: string;
+  selectedCategories: string[];
   currentQuestionIndex: number;
   phase: Phase;
   activeTeamId: string | null;
   typedAnswer: string;
   currentAttempt: Attempt | null;
   numRounds: number;
+  isAuthenticated: boolean;
 }
 
 interface GameContextType {
   state: GameState;
   addTeam: (name: string) => void;
   removeTeam: (id: string) => void;
-  setCategory: (category: string) => void;
+  toggleCategory: (category: string) => void;
   setNumRounds: (rounds: number) => void;
-  startGame: () => Promise<void>;
+  startGame: (isAuthenticated?: boolean) => Promise<void>;
   setTypedAnswer: (text: string) => void;
   submitAnswer: () => void;
   passQuestion: () => void;
@@ -81,78 +76,19 @@ interface GameContextType {
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-export const QUESTIONS_PER_TEAM_ROTATION = 4;
-
-export const normalize = (str: string): string => {
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[.,!?'"]/g, '') // Remove punctuation
-    .replace(/\b(a|an|the)\b/g, '') // Remove articles (simple regex)
-    .replace(/\b(zero|0)\b/g, '0')
-    .replace(/\b(one|1)\b/g, '1')
-    .replace(/\b(two|2)\b/g, '2')
-    .replace(/\b(three|3)\b/g, '3')
-    .replace(/\b(four|4)\b/g, '4')
-    .replace(/\b(five|5)\b/g, '5')
-    .replace(/\b(six|6)\b/g, '6')
-    .replace(/\b(seven|7)\b/g, '7')
-    .replace(/\b(eight|8)\b/g, '8')
-    .replace(/\b(nine|9)\b/g, '9')
-    .replace(/\s+/g, ' ') // Collapse whitespace
-    .trim(); // Final trim after article removal may leave leading/trailing space
-};
-
-export const verifyAttempt = (input: string, q: Question): { verdict: Verdict; points: number } => {
-  const normInput = normalize(input);
-  const normCorrect = normalize(q.answer);
-  const acceptable = (q.acceptableAnswers || []).map(normalize);
-
-  // Exact match first
-  let isCorrect = normInput === normCorrect || acceptable.includes(normInput);
-
-  // Fuzzy match if not exact
-  if (!isCorrect && normInput.length > 2) {
-    const similarity = stringSimilarity.compareTwoStrings(normInput, normCorrect);
-    // 0.8 is a good threshold for typos but enough to prevent wild guesses
-    if (similarity > 0.8) isCorrect = true;
-
-    // Check acceptable variants with fuzzy logic too
-    if (!isCorrect) {
-      for (const variant of acceptable) {
-        if (stringSimilarity.compareTwoStrings(normInput, variant) > 0.8) {
-          isCorrect = true;
-          break;
-        }
-      }
-    }
-  }
-
-  if (isCorrect) {
-    const p = q.difficulty === 'Easy' ? 1 : q.difficulty === 'Medium' ? 2 : 3;
-    return { verdict: 'CORRECT', points: p };
-  } else {
-    const p = q.difficulty === 'Easy' ? -1 : q.difficulty === 'Medium' ? -2 : -3;
-    return { verdict: 'INCORRECT', points: p };
-  }
-};
-
-const getCorrectPoints = (difficulty: Difficulty): number => {
-  return difficulty === 'Easy' ? 1 : difficulty === 'Medium' ? 2 : 3;
-};
-
 export function GameProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<GameState>({
     teams: [],
     questions: [],
     categories: [],
-    selectedCategory: 'All',
+    selectedCategories: [],
     currentQuestionIndex: 0,
     phase: 'SETUP',
     activeTeamId: null,
     typedAnswer: '',
     currentAttempt: null,
     numRounds: 10,
+    isAuthenticated: false,
   });
 
   // Load questions from the database API whenever we enter SETUP phase
@@ -179,14 +115,27 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     loadQuestions();
   }, [state.phase]);
 
-  // Record only actually-presented questions as seen when game ends
+  // Record each guest-seen question the moment it's actually displayed, so an
+  // abandoned game (one that never reaches GAME_OVER) still preserves
+  // history. Only presented questions are recorded — never the unused
+  // remainder of a preselected pool.
   useEffect(() => {
-    if (state.phase === 'GAME_OVER' && state.questions.length > 0) {
+    if (state.isAuthenticated || state.phase !== 'QUESTION') return;
+    const currentQuestion = state.questions[state.currentQuestionIndex];
+    if (!currentQuestion) return;
+    addGuestSeenIds([currentQuestion.id]);
+  }, [state.phase, state.currentQuestionIndex, state.isAuthenticated]);
+
+  // Record presented questions in server history when an authenticated game
+  // ends. Guests already had their history written incrementally above.
+  useEffect(() => {
+    if (state.phase === 'GAME_OVER' && state.questions.length > 0 && state.isAuthenticated) {
       // currentQuestionIndex points past the last asked question, so slice(0, index)
       // captures exactly the questions that were presented to players
       const askedQuestions = state.questions.slice(0, state.currentQuestionIndex);
       if (askedQuestions.length === 0) return;
       const seenIds = askedQuestions.map((q) => q.id);
+
       fetch('/api/questions/seen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -213,39 +162,89 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
-  const setCategory = (category: string) => setState((s) => ({ ...s, selectedCategory: category }));
+  const toggleCategory = (category: string) => {
+    setState((s) => {
+      if (category === 'All') return { ...s, selectedCategories: [] };
+      const isSelected = s.selectedCategories.includes(category);
+      const next = isSelected
+        ? s.selectedCategories.filter((c) => c !== category)
+        : [...s.selectedCategories, category];
+      return { ...s, selectedCategories: next };
+    });
+  };
   const setNumRounds = (rounds: number) => setState((s) => ({ ...s, numRounds: rounds }));
 
-  const startGame = async () => {
+  const startGame = async (isAuthenticated = false) => {
     const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
     const categoryParam =
-      state.selectedCategory !== 'All'
-        ? `&category=${encodeURIComponent(state.selectedCategory)}`
+      state.selectedCategories.length > 0
+        ? `&categories=${state.selectedCategories.map(encodeURIComponent).join(',')}`
         : '';
 
     try {
-      const res = await fetch(
-        `/api/questions?shuffle=true&limit=${totalNeeded}&excludeSeen=true${categoryParam}`,
-        { credentials: 'include' }
-      );
-      if (!res.ok) throw new Error('Failed to fetch game questions');
-      const data = await res.json();
+      let gameQuestions: Question[];
+
+      if (isAuthenticated) {
+        // Signed-in users get server-side exclusion of previously-seen questions.
+        const res = await fetch(
+          `/api/questions?shuffle=true&limit=${totalNeeded}&excludeSeen=true${categoryParam}`,
+          { credentials: 'include' }
+        );
+        if (!res.ok) throw new Error('Failed to fetch game questions');
+        const data = await res.json();
+        gameQuestions = data.questions;
+      } else {
+        // Guests have no server-side history. Select from the already-loaded
+        // approved-question catalog (fetching it once if it isn't loaded yet)
+        // and filter out locally-seen ids client-side. Never let the
+        // exclusion list itself prevent a game from starting: backfill with
+        // the oldest-seen questions if the unseen pool comes up short.
+        let catalog = state.questions;
+        if (catalog.length === 0) {
+          const res = await fetch('/api/questions', { credentials: 'include' });
+          if (!res.ok) throw new Error('Failed to fetch game questions');
+          const data = await res.json();
+          catalog = data.questions;
+        }
+
+        const categoryFiltered =
+          state.selectedCategories.length === 0
+            ? catalog
+            : catalog.filter((q) => state.selectedCategories.includes(q.category));
+
+        const guestSeenIds = getGuestSeenIds();
+        const seenSet = new Set(guestSeenIds);
+        const unseen = categoryFiltered
+          .filter((q) => !seenSet.has(q.id))
+          .sort(() => Math.random() - 0.5);
+        gameQuestions = unseen.slice(0, totalNeeded);
+
+        if (gameQuestions.length < totalNeeded) {
+          const deficit = totalNeeded - gameQuestions.length;
+          const seenOrder = new Map(guestSeenIds.map((id, index) => [id, index]));
+          const seenInPool = categoryFiltered
+            .filter((q) => seenSet.has(q.id))
+            .sort((a, b) => (seenOrder.get(a.id) ?? 0) - (seenOrder.get(b.id) ?? 0));
+          gameQuestions = [...gameQuestions, ...seenInPool.slice(0, deficit)];
+        }
+      }
 
       setState((prev) => ({
         ...prev,
-        questions: data.questions,
+        questions: gameQuestions,
         phase: 'QUESTION',
         activeTeamId: prev.teams[0].id,
         currentQuestionIndex: 0,
+        isAuthenticated,
       }));
     } catch (error) {
       console.error('Failed to fetch questions from API, falling back to client-side:', error);
       // Fallback to client-side shuffle of already-loaded questions
       setState((prev) => {
         let filtered =
-          prev.selectedCategory === 'All'
+          prev.selectedCategories.length === 0
             ? [...prev.questions]
-            : prev.questions.filter((q) => q.category === prev.selectedCategory);
+            : prev.questions.filter((q) => prev.selectedCategories.includes(q.category));
         filtered = filtered.sort(() => Math.random() - 0.5);
         const finalQuestions = filtered.slice(0, totalNeeded);
         return {
@@ -254,6 +253,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
           phase: 'QUESTION',
           activeTeamId: prev.teams[0].id,
           currentQuestionIndex: 0,
+          isAuthenticated,
         };
       });
     }
@@ -339,7 +339,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         return prev;
       }
 
-      const correctPoints = getCorrectPoints(currentQ.difficulty);
+      const correctPoints = pointsFor(currentQ.difficulty);
       const scoreAdjustment = attempt.processed
         ? correctPoints - attempt.pointsDelta
         : correctPoints;
@@ -436,12 +436,13 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
       phase: 'SETUP',
       teams: [],
       questions: [],
-      selectedCategory: 'All',
+      selectedCategories: [],
       currentQuestionIndex: 0,
       activeTeamId: null,
       typedAnswer: '',
       currentAttempt: null,
       numRounds: 10,
+      isAuthenticated: false,
     }));
   };
 
@@ -530,7 +531,7 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         state,
         addTeam,
         removeTeam,
-        setCategory,
+        toggleCategory,
         setNumRounds,
         startGame,
         setTypedAnswer,

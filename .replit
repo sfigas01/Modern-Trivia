@@ -14,6 +14,10 @@ localPort = 5001
 externalPort = 3000
 
 [[ports]]
+localPort = 5090
+externalPort = 8099
+
+[[ports]]
 localPort = 5904
 externalPort = 3001
 
@@ -24,6 +28,10 @@ externalPort = 3002
 [[ports]]
 localPort = 23637
 externalPort = 5000
+
+[[ports]]
+localPort = 23638
+externalPort = 3003
 
 [env]
 PORT = "5000"
@@ -57,3 +65,10 @@ waitForPort = 5000
 [agent]
 mockupState = "FULLSTACK"
 integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_integrations:2.0.0", "linear:1.0.0"]
+
+[userenv]
+
+[userenv.development]
+
+[userenv.shared]
+VITE_MULTIPLAYER = "true"

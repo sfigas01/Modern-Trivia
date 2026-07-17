@@ -113,11 +113,16 @@ Use Conventional Commits: `<type>(<scope>): <description>`
 
 When closing a sub-issue with a `parentId`, follow `.agent/workflows/linear-parent-sync.md` to sync the parent. This workflow verifies PR links, updates parent progress, and can be invoked standalone.
 
+## STE-12 Parallel Plan
+
+Before starting any `STE-12` child issue, read `docs/guides/ste_12_parallel_plan.md` in addition to the Linear issue and linked feature spec. After opening or handing off each PR for `STE-12`, review the current state of all `STE-12` child issues, including tickets owned by other agents, and recommend the next ticket to start based on that guide and current Linear status.
+
 ## Pull Requests
 
 1. Include the Linear issue ID in the PR title (e.g., `feat(api): add endpoint [STE-42]`) or link it in the description.
 2. Write a brief description: what changed and why. Reviewers should understand the PR without reading every diff.
 3. Keep PRs focused on a single issue or feature. Split large changes into smaller PRs when possible.
+4. Open completed PRs ready for review after validation. Do not create draft PRs unless the user explicitly requests a draft or approves an intentionally incomplete handoff.
 
 ## Quality Gates
 

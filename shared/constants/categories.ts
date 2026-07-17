@@ -29,4 +29,12 @@ export const LEGACY_CATEGORY_MAP: Record<string, string> = {
   literature: 'Food & Culture',
   technology: 'Technology',
   'general knowledge': 'Science & Nature',
+  general: 'Science & Nature',
+  baseball: 'Sports',
+  'tv shows': 'Entertainment & Pop Culture',
+  'harry potter': 'Entertainment & Pop Culture',
+  'harry potter universe': 'Entertainment & Pop Culture',
+  'musical instruments': 'Entertainment & Pop Culture',
+  'music history': 'Entertainment & Pop Culture',
+  characters: 'Entertainment & Pop Culture',
 };

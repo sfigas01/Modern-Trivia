@@ -23,6 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useGame, Question } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
+import { DisputeVoteAudit } from '@/components/admin/DisputeVoteAudit';
+import type { AdminDispute } from '@shared/schema';
 
 type ResolutionField = 'question' | 'answer' | 'explanation';
 
@@ -39,7 +41,12 @@ export default function AdminDisputes() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
   const { state, updateQuestion } = useGame();
-  const { data: disputes = [], isLoading } = useQuery<Dispute[]>({
+  const {
+    data: disputes = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<AdminDispute[]>({
     queryKey: ['/api/disputes'],
   });
 
@@ -75,7 +82,8 @@ export default function AdminDisputes() {
     analysis: AIAnalysis | null
   ): ResolutionDraft => {
     return {
-      question: analysis?.suggestedFix?.question || sourceQuestion?.question || dispute.questionText,
+      question:
+        analysis?.suggestedFix?.question || sourceQuestion?.question || dispute.questionText,
       answer: analysis?.suggestedFix?.answer || sourceQuestion?.answer || dispute.correctAnswer,
       explanation: analysis?.suggestedFix?.explanation || sourceQuestion?.explanation || '',
       touched: {
@@ -98,7 +106,9 @@ export default function AdminDisputes() {
       ...baseDraft,
       question: storedDraft.touched.question ? storedDraft.question : baseDraft.question,
       answer: storedDraft.touched.answer ? storedDraft.answer : baseDraft.answer,
-      explanation: storedDraft.touched.explanation ? storedDraft.explanation : baseDraft.explanation,
+      explanation: storedDraft.touched.explanation
+        ? storedDraft.explanation
+        : baseDraft.explanation,
       touched: { ...storedDraft.touched },
     };
   };
@@ -111,7 +121,8 @@ export default function AdminDisputes() {
     value: string
   ) => {
     setResolutionDrafts((prev) => {
-      const existingDraft = prev[dispute.id] ?? buildResolutionDraft(dispute, sourceQuestion, analysis);
+      const existingDraft =
+        prev[dispute.id] ?? buildResolutionDraft(dispute, sourceQuestion, analysis);
       return {
         ...prev,
         [dispute.id]: {
@@ -170,7 +181,7 @@ export default function AdminDisputes() {
         description: `The dispute has been marked as ${status}.`,
       });
       return true;
-    } catch (error) {
+    } catch {
       toast({
         title: 'Action Failed',
         description: 'Could not update dispute status.',
@@ -182,10 +193,7 @@ export default function AdminDisputes() {
     }
   };
 
-  const handleApplyFix = async (
-    dispute: Dispute,
-    analysis: AIAnalysis | null
-  ) => {
+  const handleApplyFix = async (dispute: Dispute, analysis: AIAnalysis | null) => {
     const sourceQuestion = state.questions.find((q) => q.id === dispute.questionId);
     if (!sourceQuestion) {
       toast({
@@ -241,7 +249,8 @@ export default function AdminDisputes() {
     } catch {
       toast({
         title: 'Error',
-        description: 'Failed to update question. The dispute was resolved but the fix was not applied.',
+        description:
+          'Failed to update question. The dispute was resolved but the fix was not applied.',
         variant: 'destructive',
       });
     }
@@ -396,6 +405,21 @@ export default function AdminDisputes() {
               <Skeleton className="h-32 w-full" />
               <Skeleton className="h-32 w-full" />
             </div>
+          ) : isError ? (
+            <Card className="border-red-500/30 bg-red-500/5">
+              <CardContent className="flex flex-col items-center justify-center gap-3 p-12 text-center">
+                <XCircle className="h-12 w-12 text-red-400" />
+                <div>
+                  <p className="font-semibold">Could not load disputes.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your existing review data is unchanged. Try loading it again.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={() => refetch()}>
+                  Retry
+                </Button>
+              </CardContent>
+            </Card>
           ) : disputes.length === 0 ? (
             <Card className="bg-muted/5 border-dashed">
               <CardContent className="flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
@@ -479,6 +503,8 @@ export default function AdminDisputes() {
                         <div className="text-sm bg-muted/20 p-3 rounded italic text-muted-foreground border-l-2 border-primary/50">
                           "{dispute.teamExplanation}"
                         </div>
+
+                        <DisputeVoteAudit dispute={dispute} />
                       </div>
                     </div>
 
@@ -563,7 +589,9 @@ export default function AdminDisputes() {
                             </div>
 
                             <div className="space-y-1">
-                              <p className="text-[10px] uppercase text-muted-foreground">Current question</p>
+                              <p className="text-[10px] uppercase text-muted-foreground">
+                                Current question
+                              </p>
                               <p className="text-xs text-muted-foreground">
                                 {sourceQuestion?.question || dispute.questionText}
                               </p>
@@ -584,7 +612,9 @@ export default function AdminDisputes() {
                             </div>
 
                             <div className="space-y-1">
-                              <p className="text-[10px] uppercase text-muted-foreground">Current answer</p>
+                              <p className="text-[10px] uppercase text-muted-foreground">
+                                Current answer
+                              </p>
                               <p className="text-xs text-muted-foreground">
                                 {sourceQuestion?.answer || dispute.correctAnswer}
                               </p>

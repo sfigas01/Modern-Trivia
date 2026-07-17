@@ -2,10 +2,16 @@ import OpenAI from 'openai';
 import type { QuestionQualityFinding } from './question-quality-audit';
 import type { Question } from '@shared/models/questions';
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+  return _openai;
+}
 
 interface SubjectivityAnalysis {
   questionId: string;
@@ -41,7 +47,7 @@ Questions to analyze:
 ${JSON.stringify(payload, null, 2)}`;
 
   try {
-    const resp = await openai.chat.completions.create({
+    const resp = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },

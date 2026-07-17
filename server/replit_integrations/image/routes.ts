@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from 'express';
 import { z } from 'zod';
 import { aiLimiter } from '../../middleware/rateLimiter';
-import { openai } from './client';
+import { getOpenAI } from './client';
 
 const generateImageSchema = z
   .object({
@@ -15,7 +15,7 @@ export function registerImageRoutes(app: Express): void {
     try {
       const { prompt, size } = generateImageSchema.parse(req.body);
 
-      const response = await openai.images.generate({
+      const response = await getOpenAI().images.generate({
         model: 'gpt-image-1',
         prompt,
         n: 1,
