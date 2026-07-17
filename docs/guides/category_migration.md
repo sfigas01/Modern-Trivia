@@ -64,3 +64,5 @@ If a future import introduces a new legacy category string, update **both**:
 2. `migrations/` — add a new numbered migration with the additional `WHEN` branch
 
 Do **not** edit `0001_migrate_legacy_categories.sql` after it has been applied to production; write a new migration instead.
+
+**Ordering caveat:** any cleanup migration must run **before** `0002_category_check_constraint.sql`, otherwise the CHECK constraint fails on the un-normalized rows and the app crashes on startup (`runMigrations()` runs on boot). The runner (`server/lib/migrate.ts`) applies files in lexicographic order, so a cleanup added after 0002 already exists must be named to sort before it — e.g. `0001a_migrate_remaining_legacy_categories.sql` slots between `0001_` and `0002_` (`"0001_" < "0001a_" < "0002_"`).

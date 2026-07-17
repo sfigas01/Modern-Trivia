@@ -12,6 +12,12 @@ const EXPECTED_POINTS_DELTA = -1; // Easy wrong answer
 
 test.describe('SETUP → QUESTION → REVEAL loop', () => {
   test.beforeEach(async ({ page }) => {
+    // Guest question selection shuffles locally-unseen questions; keep this
+    // order-sensitive smoke path deterministic so smoke-q1 is selected first.
+    await page.addInitScript(() => {
+      Math.random = () => 0.5;
+    });
+
     // Intercept both the initial catalog load and startGame shuffle request
     await page.route('**/api/questions**', async (route) => {
       if (route.request().method() === 'GET') {
@@ -37,6 +43,8 @@ test.describe('SETUP → QUESTION → REVEAL loop', () => {
 
     // Assert SETUP UI is visible
     await expect(page.getByRole('heading', { name: 'TRIVIA' })).toBeVisible();
+    const playSoloButton = page.getByRole('button', { name: 'Play Solo' });
+    await playSoloButton.click();
     await expect(page.getByText('Team Setup')).toBeVisible();
 
     // Add TeamA
@@ -104,5 +112,95 @@ test.describe('SETUP → QUESTION → REVEAL loop', () => {
       .locator('span.font-mono');
 
     await expect(teamAScore).toHaveText(String(EXPECTED_POINTS_DELTA));
+  });
+});
+
+test.describe('admin dispute audit', () => {
+  test('shows multiplayer vote evidence separately from QA status on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('**/api/auth/user', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'admin-user', email: 'admin@example.com' }),
+      })
+    );
+    await page.route('**/api/admin/check', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ isAdmin: true }),
+      })
+    );
+    await page.route('**/api/questions**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(fixtureData),
+      })
+    );
+    await page.route('**/api/disputes', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            id: 'audit-dispute',
+            questionId: 'smoke-q1',
+            questionText: 'What is the chemical formula for water?',
+            correctAnswer: 'H2O',
+            teamName: 'Alpha',
+            submittedAnswer: 'Water',
+            teamExplanation: 'The plain-language answer should count.',
+            timestamp: '2026-07-14T12:00:00.000Z',
+            status: 'pending',
+            resolutionNote: null,
+            aiAnalysis: null,
+            roomId: '33333333-3333-4333-8333-333333333333',
+            roomCode: 'ABCD2',
+            attemptKey: '33333333-3333-4333-8333-333333333333:0',
+            disputingPlayerId: '44444444-4444-4444-8444-444444444444',
+            disputingPlayerName: 'Alpha',
+            votingEnabled: true,
+            eligibleVoterSnapshot: [
+              { playerId: '11111111-1111-4111-8111-111111111111', displayName: 'Bravo' },
+              { playerId: '22222222-2222-4222-8222-222222222222', displayName: 'Charlie' },
+            ],
+            threshold: 2,
+            outcome: 'approved',
+            originalPointsDelta: -1,
+            finalPointsDelta: 1,
+            decidedAt: '2026-07-14T12:01:00.000Z',
+            ballots: [
+              {
+                id: 'ballot-1',
+                disputeId: 'audit-dispute',
+                voterPlayerId: '11111111-1111-4111-8111-111111111111',
+                voterPlayerName: 'Bravo',
+                approve: true,
+                castAt: '2026-07-14T12:00:30.000Z',
+              },
+            ],
+          },
+        ]),
+      })
+    );
+
+    await page.goto('/admin/disputes');
+
+    const audit = page.getByTestId('vote-audit-audit-dispute');
+    await expect(audit.getByText('Gameplay decision audit')).toBeVisible();
+    await expect(audit.getByText('approved')).toBeVisible();
+    await expect(audit.getByText('pending')).toBeVisible();
+    await expect(audit.getByText('1 yes / 0 no / 1 no response')).toBeVisible();
+    await expect(audit.getByText('-1 → +1')).toBeVisible();
+
+    await page.getByText('Ballot details (1/2 responded)').click();
+    await expect(
+      page.getByTestId('ballot-row-11111111-1111-4111-8111-111111111111').getByText('Agree')
+    ).toBeVisible();
+    await expect(
+      page.getByTestId('ballot-row-22222222-2222-4222-8222-222222222222').getByText('No response')
+    ).toBeVisible();
   });
 });

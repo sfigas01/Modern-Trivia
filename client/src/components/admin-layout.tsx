@@ -28,15 +28,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Sidebar */}
-      <div className="w-64 border-r border-white/10 bg-muted/5 p-4 flex flex-col">
-        <div className="mb-8 px-4 py-2">
+      <div className="w-full shrink-0 border-b border-white/10 bg-muted/5 p-3 md:w-64 md:border-b-0 md:border-r md:p-4 flex flex-col">
+        <div className="mb-3 px-2 py-1 md:mb-8 md:px-4 md:py-2">
           <h1 className="text-xl font-bold tracking-tight text-primary">Trivia Admin</h1>
           <p className="text-xs text-muted-foreground">Control Panel</p>
         </div>
 
-        <nav className="flex-1 space-y-1">
+        <nav
+          className="flex flex-1 gap-1 overflow-x-auto pb-1 md:block md:space-y-1 md:overflow-visible md:pb-0"
+          aria-label="Admin sections"
+        >
           {navItems.map((item) => {
             const isActive = location === item.href;
             return (
@@ -44,7 +47,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-4 py-2 text-sm font-medium rounded-md transition-colors',
+                  'flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors md:gap-3 md:px-4',
                   isActive
                     ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
@@ -57,7 +60,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           })}
         </nav>
 
-        <div className="pt-4 border-t border-white/10">
+        <div className="hidden pt-4 border-t border-white/10 md:block">
           <Link href="/" className="block">
             <Button
               variant="ghost"
@@ -71,8 +74,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8 max-w-6xl mx-auto">{children}</div>
+      <div className="min-w-0 flex-1 overflow-auto">
+        <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">{children}</div>
       </div>
     </div>
   );

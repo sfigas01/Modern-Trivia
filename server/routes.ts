@@ -5,8 +5,9 @@ import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integra
 import { db } from './db';
 import {
   disputes,
+  disputeBallots,
   adminRoles,
-  insertDisputeSchema,
+  publicDisputeRequestSchema,
   appConfig,
   questions,
   seenQuestions,
@@ -29,6 +30,7 @@ import { filterNovelQuestions } from './lib/novelty-filter';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
+import { registerRoomRoutes } from './routes.rooms';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 type SinglePillar = (typeof VALID_PILLARS)[number];
@@ -200,12 +202,37 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Setup authentication (MUST be before other routes)
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerRoomRoutes(app);
 
   // Disputes API - admin review routes are protected; player submissions are public.
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const allDisputes = await db.select().from(disputes);
-      res.json(allDisputes);
+      if (allDisputes.length === 0) {
+        return res.json([]);
+      }
+
+      // Ballots are admin-only. Fetch them in one bounded query instead of one
+      // query per dispute, then attach at most the persisted rows for each ID.
+      const disputeIds = allDisputes.map((dispute) => dispute.id);
+      const allBallots = await db
+        .select()
+        .from(disputeBallots)
+        .where(inArray(disputeBallots.disputeId, disputeIds));
+      const ballotsByDispute = new Map<string, typeof allBallots>();
+
+      for (const ballot of allBallots) {
+        const ballots = ballotsByDispute.get(ballot.disputeId) ?? [];
+        ballots.push(ballot);
+        ballotsByDispute.set(ballot.disputeId, ballots);
+      }
+
+      res.json(
+        allDisputes.map((dispute) => ({
+          ...dispute,
+          ballots: ballotsByDispute.get(dispute.id) ?? [],
+        }))
+      );
     } catch (error) {
       console.error('Error fetching disputes:', error);
       res.status(500).json({ message: 'Failed to fetch disputes' });
@@ -214,7 +241,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.post('/api/disputes', async (req, res) => {
     try {
-      const parsed = insertDisputeSchema.parse(req.body);
+      const parsed = publicDisputeRequestSchema.parse(req.body);
       const [newDispute] = await db.insert(disputes).values(parsed).returning();
       res.status(201).json(newDispute);
     } catch (error) {
@@ -386,11 +413,26 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Questions API
   app.get('/api/questions', async (req, res) => {
     try {
-      const { category, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
+      const { category, categories, pillar, difficulty, excludeSeen, limit, shuffle } = req.query;
 
       const conditions = [];
-      if (category && category !== 'All') {
-        conditions.push(eq(questions.category, category as string));
+      // Support comma-separated multi-category filter (?categories=Tech,Science) as well as
+      // the legacy single-value ?category= param used by older callers.
+      const categoryList: string[] = [];
+      if (categories && typeof categories === 'string') {
+        categoryList.push(
+          ...categories
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean)
+        );
+      } else if (category && category !== 'All') {
+        categoryList.push(category as string);
+      }
+      if (categoryList.length === 1) {
+        conditions.push(eq(questions.category, categoryList[0]));
+      } else if (categoryList.length > 1) {
+        conditions.push(inArray(questions.category, categoryList));
       }
       if (pillar) {
         conditions.push(eq(questions.pillar, pillar as string));
@@ -1243,9 +1285,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             hasSource: !!(q.sourceUrl && q.sourceName),
             difficulty: q.difficulty,
             sourceDomain:
-              q.sourceUrl && q.sourceName
-                ? extractSourceDomain(q.sourceUrl, q.sourceName)
-                : null,
+              q.sourceUrl && q.sourceName ? extractSourceDomain(q.sourceUrl, q.sourceName) : null,
           };
         }
 
