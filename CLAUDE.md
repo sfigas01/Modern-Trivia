@@ -85,6 +85,15 @@ These rules apply whenever two or more agent sessions (Claude, Codex, or any com
 5. **Merge PRs one at a time — never simultaneously.** When multiple parallel sessions finish, merge them sequentially. After each merge, every remaining open PR branch must pull the updated main before that PR is reviewed or merged.
 6. **Flag file-level conflict risk before starting.** If a new session's issue is likely to touch the same files as another currently in-progress session, stop and flag this to the user before starting work. Parallel sessions should target different areas of the codebase where possible (e.g. one API, one client).
 
+## Replit Sync
+
+After any PR is merged to main, remind the user to sync Replit before making changes there:
+
+1. Open Replit Shell
+2. Run `git pull origin main` (or `git fetch origin && git reset --hard origin/main` if there are conflicts)
+
+This prevents PUSH_REJECTED errors caused by Replit's local copy being behind GitHub.
+
 ## Commit Messages
 
 Use Conventional Commits: `<type>(<scope>): <description>`
