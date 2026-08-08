@@ -1,6 +1,11 @@
 import type { NextFunction, Request, Response } from 'express';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Importing replitAuth chains into ./storage -> server/db, whose module body
+// throws when DATABASE_URL is unset (e.g. in CI). These are unit tests for the
+// Bearer token logic and never touch the DB, so stub the db module out.
+vi.mock('../../db', () => ({ db: {}, pool: {} }));
+
 import { isAuthenticated } from './replitAuth';
 
 const VALID_KEY = 'a'.repeat(64);
