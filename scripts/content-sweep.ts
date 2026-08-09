@@ -389,8 +389,10 @@ const DEMONYMS = new Set(
   ].map((d) => d.toLowerCase())
 );
 
-// Matches "not a Canadian", "not Canadian", "is not an American", etc.
-const NOT_A_PATTERN = /\bnot\s+(?:an?\s+)?([A-Za-z][A-Za-z-]+(?:\s+[A-Z][a-z]+)?)/g;
+// Matches "not a Canadian", "Not Canadian", "is not an American", etc.
+// Case-insensitive: answers are written in sentence case ("Not a Canadian"),
+// so a case-sensitive `not` would miss the most common real occurrences.
+const NOT_A_PATTERN = /\bnot\s+(?:an?\s+)?([A-Za-z][A-Za-z-]+(?:\s+[A-Z][a-z]+)?)/gi;
 
 function looksLikeDemonym(word: string): boolean {
   const w = word.trim().toLowerCase();
