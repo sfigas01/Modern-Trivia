@@ -3,8 +3,12 @@ name: CI
 on:
   push:
     branches: [main, develop]
+  # No base-branch filter: the "Quality Gates" job is a required status check
+  # on main, so it must run (and post its check) on every PR regardless of
+  # base branch — otherwise a PR can sit forever with a missing required check.
   pull_request:
-    branches: [main]
+  # Allow manually re-posting the check on a stuck PR branch.
+  workflow_dispatch:
 
 jobs:
   quality-gates:
