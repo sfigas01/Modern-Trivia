@@ -93,6 +93,7 @@ function sleep(ms: number): Promise<void> {
 interface ApiClient {
   get<T>(pathAndQuery: string): Promise<T>;
   patch<T>(pathAndQuery: string, body: unknown): Promise<T>;
+  post<T>(pathAndQuery: string, body: unknown): Promise<T>;
 }
 
 function createApiClient(baseUrl: string, apiKey: string): ApiClient {
@@ -103,7 +104,7 @@ function createApiClient(baseUrl: string, apiKey: string): ApiClient {
   };
 
   async function request<T>(
-    method: 'GET' | 'PATCH',
+    method: 'GET' | 'PATCH' | 'POST',
     pathAndQuery: string,
     body?: unknown
   ): Promise<T> {
@@ -138,6 +139,7 @@ function createApiClient(baseUrl: string, apiKey: string): ApiClient {
   return {
     get: (p) => request('GET', p),
     patch: (p, b) => request('PATCH', p, b),
+    post: (p, b) => request('POST', p, b),
   };
 }
 
@@ -148,6 +150,8 @@ interface AdminQuestion {
   answer: string;
   pillar: string;
   tags: string[] | null;
+  acceptableAnswers: string[] | null;
+  status: string;
 }
 
 interface AdminQuestionsResponse {
@@ -252,6 +256,89 @@ async function runTagPhase(
 }
 
 // ---------------------------------------------------------------------------
+// Phase: acceptable (AI-generated acceptable-answer variants; additive)
+// ---------------------------------------------------------------------------
+
+interface AcceptableChange {
+  questionId: string;
+  count: number;
+}
+
+/** Coerce the ai-fix `suggestion` (a JSON string) into a clean string[]. */
+function parseAcceptable(suggestion: string): string[] {
+  let arr: unknown;
+  try {
+    arr = JSON.parse(suggestion);
+  } catch {
+    const m = suggestion.match(/\[[\s\S]*\]/);
+    if (!m) return [];
+    try {
+      arr = JSON.parse(m[0]);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const v of arr) {
+    if (typeof v !== 'string') continue;
+    const t = v.trim();
+    const key = t.toLowerCase();
+    if (t && !seen.has(key)) {
+      seen.add(key);
+      out.push(t);
+    }
+  }
+  return out;
+}
+
+async function runAcceptablePhase(
+  api: ApiClient,
+  questions: AdminQuestion[],
+  apply: boolean
+): Promise<AcceptableChange[]> {
+  // Only approved (player-facing) questions with no acceptable answers yet.
+  // Idempotent + resumable: anything already populated is skipped, so a re-run
+  // after an interruption continues where it left off.
+  const targets = questions.filter(
+    (q) => q.status === 'approved' && (q.acceptableAnswers ?? []).length === 0
+  );
+  console.info(`  ${targets.length} approved question(s) missing acceptableAnswers.`);
+  if (!apply) {
+    console.info('  DRY-RUN — no changes written. Re-run with --apply to write them.');
+    return targets.map((q) => ({ questionId: q.id, count: 0 }));
+  }
+
+  const changes: AcceptableChange[] = [];
+  let done = 0;
+  for (const q of targets) {
+    // ai-fix is AI-rate-limited (20 / 15 min); the request() 429 backoff paces us.
+    const { suggestion } = await api.post<{ suggestion: string }>(
+      `/api/admin/questions/${q.id}/ai-fix`,
+      { field: 'acceptableAnswers' }
+    );
+    const variants = parseAcceptable(suggestion);
+    // Guard: the primary answer must be present; skip empty/degenerate results.
+    if (variants.length === 0) {
+      console.warn(`  skipped ${q.id} — AI returned no usable variants`);
+      continue;
+    }
+    await api.patch(`/api/admin/questions/${q.id}/field`, {
+      field: 'acceptableAnswers',
+      value: variants,
+      aiSuggested: true,
+    });
+    changes.push({ questionId: q.id, count: variants.length });
+    done++;
+    if (done % 10 === 0) console.info(`  …populated ${done}/${targets.length}`);
+    await sleep(300);
+  }
+  console.info(`  populated acceptableAnswers on ${done} question(s).`);
+  return changes;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -278,12 +365,16 @@ async function main(): Promise<void> {
   const questions = await fetchAllQuestions(api);
   console.info(`  fetched ${questions.length} question(s)`);
 
-  if (options.phase !== 'tags') {
-    throw new Error(`Unknown phase "${options.phase}". Supported: tags`);
+  let changes: unknown[];
+  if (options.phase === 'tags') {
+    console.info('▶ Phase: tags (deterministic, additive)…');
+    changes = await runTagPhase(api, questions, options.apply);
+  } else if (options.phase === 'acceptable') {
+    console.info('▶ Phase: acceptable (AI-generated variants, additive)…');
+    changes = await runAcceptablePhase(api, questions, options.apply);
+  } else {
+    throw new Error(`Unknown phase "${options.phase}". Supported: tags, acceptable`);
   }
-
-  console.info('▶ Phase: tags (deterministic, additive)…');
-  const changes = await runTagPhase(api, questions, options.apply);
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   const logPath = path.join(
