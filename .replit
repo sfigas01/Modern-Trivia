@@ -72,3 +72,7 @@ integrations = ["javascript_log_in_with_replit:2.0.0", "javascript_openai_ai_int
 
 [userenv.shared]
 VITE_MULTIPLAYER = "true"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
