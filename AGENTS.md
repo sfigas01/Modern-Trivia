@@ -27,6 +27,27 @@ Linear (Modern Trivia project) is the source of truth for priorities, status, an
 3. Put production secrets in Replit Secrets.
 4. If hardcoded secrets are found, stop and flag immediately.
 
+## Admin API & Content Sweep Tooling
+
+Scripts in `scripts/` run admin operations against a deployed app over HTTP without a browser login, using an API key. This powers the content quality sweep (STE-238); see `docs/guides/content-sweep-plan.md` for the full plan and endpoint reference.
+
+### Access mechanism
+
+- A request carrying `Authorization: Bearer <ADMIN_API_KEY>` bypasses the OIDC session and acts as the admin whose Replit user ID is `ADMIN_API_KEY_USER_ID`. Implementation: `server/replit_integrations/auth/replitAuth.ts`.
+- Required env vars are documented **by name only** in `.env.example`: `ADMIN_API_KEY`, `ADMIN_API_KEY_USER_ID`, `PROD_URL`.
+
+### Secret handling (required)
+
+1. `ADMIN_API_KEY` grants full admin access — treat it as a credential, not config.
+2. Store it only in Replit Secrets (prod) and a local, gitignored `.env.local`. Never in `.env.example`, source, or docs.
+3. Never commit it or paste it into chat, PRs, issues, commit messages, logs, or reports. Scripts read it from `.env.local` at runtime — never hardcode, echo, or print it.
+4. Rotate with `openssl rand -hex 32`; rotate immediately if it is ever exposed.
+
+### Running the sweep
+
+- `npx tsx scripts/content-sweep.ts` — read-only; writes **answer-redacted** reports to `reports/` (gitignored). Reports must never contain answers (the operator may be a player).
+- `npx tsx scripts/content-sweep-apply.ts [--phase=tags|acceptable] [--apply]` — defaults to dry-run; `--apply` is required to write. Never deletes; logs every change to `reports/`.
+
 ## Git, Branch, and Worktree Rules
 
 ### Core workflow
