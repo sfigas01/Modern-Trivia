@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
-import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from './db';
@@ -658,12 +658,16 @@ export function registerRoomRoutes(app: Express): void {
           roomUserIds.length > 0 ? inArray(seenQuestions.userId, roomUserIds) : sql`false`
         );
 
-        // Ordering: never-seen first (tier), then for reused questions prefer the
-        // ones eligible for the whole room soonest, then oldest guest-seen first
-        // (preserving the per-guest FIFO fallback), then random for variety.
-        const orderBy = [roomTierExpr, roomEligibleAtExpr];
+        // Ordering: never-seen first (tier). Among reused questions, guest FIFO
+        // takes precedence -- oldest guest-seen first -- so a guest's newer
+        // question is never replayed before their older one, even when the newer
+        // one also carries a signed-in player's (non-null) cooldown expiry that
+        // would otherwise sort ahead of an older guest-only (NULL-expiry) one.
+        // Cooldown eligibility (soonest whole-room eligible) orders the rest,
+        // then random for variety.
+        const orderBy: SQL[] = [roomTierExpr];
         if (hasGuestSeen) orderBy.push(roomGuestSeenOrdinalExpr(guestSeenUnion));
-        orderBy.push(sql`random()`);
+        orderBy.push(roomEligibleAtExpr, sql`random()`);
 
         const tiered = await tx
           .select({ id: questions.id, tier: roomTierExpr })
