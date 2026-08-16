@@ -880,7 +880,7 @@ describe('room lifecycle routes', () => {
     );
   });
 
-  it('records the selected questions in seen history for an authenticated host', async () => {
+  it('does not write seen history at start (recording is per-presented-question on the client)', async () => {
     const guest = player({
       id: guestId,
       nickname: 'Guest',
@@ -916,10 +916,14 @@ describe('room lifecycle routes', () => {
       .send({})
       .expect(200);
 
-    expect(dbMocks.insert).toHaveBeenCalledTimes(1);
-    expect(dbMocks.valueArgs).toContainEqual(
-      selectedQuestions.map(({ id }) => ({ userId: 'host-user', questionId: id }))
+    // Allocating the whole preselected pool as "seen" at start would mark
+    // questions a player may never reach (abandoned game / early leaver) and
+    // wrongly advance their cooldown. History is instead recorded per presented
+    // question by each client. So start must not insert seen_questions.
+    const seenInsert = dbMocks.valueArgs.find(
+      (value) => Array.isArray(value) && value.length > 0 && 'questionId' in (value[0] as object)
     );
+    expect(seenInsert).toBeUndefined();
   });
 
   it('honors excludeQuestionIds for a guest host when the unseen pool is sufficient', async () => {
@@ -1078,18 +1082,6 @@ describe('room lifecycle routes', () => {
       return query.params.includes('host-user') && query.params.includes('guest-user');
     });
     expect(seenJoin).toBeDefined();
-
-    // And the game's questions are recorded against both players' histories.
-    const seenInsert = dbMocks.valueArgs.find(
-      (value): value is { userId: string; questionId: string }[] =>
-        Array.isArray(value) && value.length > 0 && 'questionId' in value[0]
-    );
-    expect(seenInsert).toEqual(
-      expect.arrayContaining([
-        { userId: 'host-user', questionId: 'question-1' },
-        { userId: 'guest-user', questionId: 'question-1' },
-      ])
-    );
   });
 
   it('rejects more than 500 excludeQuestionIds with a 422', async () => {

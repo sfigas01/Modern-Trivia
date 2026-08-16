@@ -688,36 +688,12 @@ export function registerRoomRoutes(app: Express): void {
           throw new RoomRouteError(409, 'Not enough approved questions to start this game');
         }
 
-        // Record this game's questions against every signed-in player in the
-        // room (STE-273), not just the host, so each participant's server-side
-        // history stays accurate for future selection.
-        if (roomUserIds.length > 0) {
-          await tx
-            .insert(seenQuestions)
-            .values(
-              roomUserIds.flatMap((playerUserId) =>
-                selectedQuestions.map((question) => ({
-                  userId: playerUserId,
-                  questionId: question.id,
-                }))
-              )
-            )
-            .onConflictDoUpdate({
-              target: [seenQuestions.userId, seenQuestions.questionId],
-              set: {
-                seenCount: sql`CASE
-              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
-              THEN ${seenQuestions.seenCount} + 1
-              ELSE ${seenQuestions.seenCount}
-            END`,
-                seenAt: sql`CASE
-              WHEN ${seenQuestions.seenAt} < NOW() - INTERVAL '24 hours'
-              THEN NOW()
-              ELSE ${seenQuestions.seenAt}
-            END`,
-              },
-            });
-        }
+        // Seen-question history is recorded per presented question by each
+        // player's client (guests via localStorage, signed-in via
+        // POST /api/questions/seen -- see useRecordRoomQuestion), never as a
+        // bulk allocation of the whole preselected pool at start. Otherwise an
+        // abandoned game or an early leaver would mark questions the player
+        // never saw as seen and wrongly advance their cooldown cycle (STE-273).
 
         const [startedRoom] = await tx
           .update(rooms)
