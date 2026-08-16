@@ -9,7 +9,7 @@
 //   Tier 2: seen before and still within the cooldown window (last resort,
 //           soonest-to-expire first)
 import { sql, type SQL } from 'drizzle-orm';
-import { seenQuestions } from '@shared/schema';
+import { questions, seenQuestions } from '@shared/schema';
 
 export const cooldownIntervalExpr = sql`
   CASE (${seenQuestions.seenCount} - 1) % 3
@@ -53,8 +53,34 @@ export function roomQuestionTierExpr(guestSeenCondition?: SQL): SQL<number> {
   return sql<number>`GREATEST(MAX(${questionTierExpr}), ${guestTier})`;
 }
 
-/** Soonest cooldown expiry across a room's players, for last-resort ordering. */
-export const roomSoonestCooldownExpr = sql`MIN(${cooldownExpiresAtExpr})`;
+/**
+ * When a question becomes eligible for the WHOLE room again, for last-resort
+ * ordering of tier-2 (still-in-cooldown) questions. The room tier is the worst
+ * (highest) per-player tier, so eligibility is gated by the LAST cooldown to
+ * clear — i.e. the maximum expiry across the room's players, not the earliest.
+ * Using MIN here would let an already-expired participant make a question whose
+ * other cooldown lasts months sort ahead of one clearing tomorrow.
+ */
+export const roomEligibleAtExpr = sql`MAX(${cooldownExpiresAtExpr})`;
+
+/**
+ * 1-based position of a question within the room's unioned guest-seen list, or
+ * NULL when it is not guest-seen. `getGuestSeenIds()` stores ids oldest-first,
+ * so ordering by this ascending preserves the oldest-first fallback the
+ * per-guest path guaranteed (a newer-seen question is never replayed while an
+ * older one is still available). NULLs sort last under ASC, keeping non-guest
+ * questions unaffected.
+ */
+export function roomGuestSeenOrdinalExpr(guestSeenIds: string[]): SQL<number | null> {
+  // Build ARRAY[$1, $2, ...]::text[] explicitly: interpolating the JS array
+  // directly makes drizzle emit a row constructor `($1, $2, ...)`, which is not
+  // a valid array argument to array_position.
+  const arrayLiteral = sql`ARRAY[${sql.join(
+    guestSeenIds.map((id) => sql`${id}`),
+    sql`, `
+  )}]::text[]`;
+  return sql<number | null>`array_position(${arrayLiteral}, ${questions.id}::text)`;
+}
 
 // Upper bound on the unioned guest exclusion list passed to a single room-start
 // query. Each player's list is already capped at 500 (schema), so with the

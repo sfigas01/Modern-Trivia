@@ -1023,6 +1023,14 @@ describe('room lifecycle routes', () => {
     expect(tierQuery.params).toEqual(
       expect.arrayContaining(['guest-seen-1', 'guest-seen-2', 'host-seen-1'])
     );
+
+    // Guest-seen questions fall back oldest-first via array_position over the
+    // union, not an arbitrary random tie-break.
+    const ordinalExpr = dbMocks.orderByArgs.find((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.sql.toLowerCase().includes('array_position');
+    });
+    expect(ordinalExpr).toBeDefined();
   });
 
   it('unions server-side seen history across every signed-in player, not just the host', async () => {
@@ -1114,14 +1122,10 @@ describe('room lifecycle routes', () => {
       questionIds: selectedQuestions.map(({ id }) => id),
       activePlayerId: hostId,
     });
-    queueSelect(
-      [room()],
-      [player()],
-      [player(), guest],
-      selectedQuestions,
-      [player(), guest],
-      [question()]
-    );
+    // The host's persisted room identity is signed-in (userId set on their
+    // row), so their client-supplied list must be ignored regardless of session.
+    const host = player({ userId: 'host-user' });
+    queueSelect([room()], [host], [host, guest], selectedQuestions, [host, guest], [question()]);
     dbMocks.updateResults.push([startedRoom]);
     const app = await buildTestApp();
 
@@ -1132,14 +1136,14 @@ describe('room lifecycle routes', () => {
       .send({ excludeQuestionIds: ['some-guest-only-id'] })
       .expect(200);
 
-    // Same single question-selection query as the plain authenticated flow —
-    // the client's exclusion list never reaches the authenticated branch.
     expect(dbMocks.select).toHaveBeenCalledTimes(6);
-    const exclusionCondition = dbMocks.whereArgs.find((condition) => {
-      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
+    // The client's exclusion list never reaches selection at all — neither the
+    // WHERE conditions nor the tier/ordering expressions reference it.
+    const sawExclusion = [...dbMocks.whereArgs, ...dbMocks.orderByArgs].some((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
       return query.params.includes('some-guest-only-id');
     });
-    expect(exclusionCondition).toBeUndefined();
+    expect(sawExclusion).toBe(false);
   });
 
   it('returns 409 when the pool is genuinely too small even after backfill', async () => {

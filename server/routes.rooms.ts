@@ -8,7 +8,8 @@ import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
 import {
   logQuestionPoolBackfill,
   roomQuestionTierExpr,
-  roomSoonestCooldownExpr,
+  roomEligibleAtExpr,
+  roomGuestSeenOrdinalExpr,
   ROOM_GUEST_SEEN_CAP,
 } from './lib/question-pool';
 import type { AuthenticatedRequest } from './types';
@@ -572,7 +573,6 @@ export function registerRoomRoutes(app: Express): void {
     try {
       const code = parseRoomCode(req.params.code);
       const { excludeQuestionIds = [] } = startRoomRequestSchema.parse(req.body);
-      const userId = getUserId(req);
 
       const updatedRoom = await db.transaction(async (tx) => {
         const [room] = await tx
@@ -633,9 +633,12 @@ export function registerRoomRoutes(app: Express): void {
           }
         }
         // The start payload's excludeQuestionIds is the host's own fresh list.
-        // Trust it only for a guest host; an authenticated host is always
+        // Trust it only for a guest host, judged by the host's *persisted* room
+        // identity (actor.userId) rather than the current HTTP session -- a host
+        // who signs in or out between creating the room and starting it must not
+        // flip how their list is treated. An authenticated host is always
         // server-authoritative and their client-supplied list is ignored.
-        if (!userId) {
+        if (!actor.userId) {
           for (const id of excludeQuestionIds) guestSeenSet.add(id);
         }
         let guestSeenUnion = Array.from(guestSeenSet);
@@ -647,13 +650,20 @@ export function registerRoomRoutes(app: Express): void {
           guestSeenUnion = guestSeenUnion.slice(0, ROOM_GUEST_SEEN_CAP);
         }
 
-        const guestSeenCondition =
-          guestSeenUnion.length > 0 ? inArray(questions.id, guestSeenUnion) : undefined;
+        const hasGuestSeen = guestSeenUnion.length > 0;
+        const guestSeenCondition = hasGuestSeen ? inArray(questions.id, guestSeenUnion) : undefined;
         const roomTierExpr = roomQuestionTierExpr(guestSeenCondition);
         const seenJoinCondition = and(
           eq(questions.id, seenQuestions.questionId),
           roomUserIds.length > 0 ? inArray(seenQuestions.userId, roomUserIds) : sql`false`
         );
+
+        // Ordering: never-seen first (tier), then for reused questions prefer the
+        // ones eligible for the whole room soonest, then oldest guest-seen first
+        // (preserving the per-guest FIFO fallback), then random for variety.
+        const orderBy = [roomTierExpr, roomEligibleAtExpr];
+        if (hasGuestSeen) orderBy.push(roomGuestSeenOrdinalExpr(guestSeenUnion));
+        orderBy.push(sql`random()`);
 
         const tiered = await tx
           .select({ id: questions.id, tier: roomTierExpr })
@@ -661,7 +671,7 @@ export function registerRoomRoutes(app: Express): void {
           .leftJoin(seenQuestions, seenJoinCondition)
           .where(and(...questionConditions))
           .groupBy(questions.id)
-          .orderBy(roomTierExpr, roomSoonestCooldownExpr, sql`random()`)
+          .orderBy(...orderBy)
           .limit(questionLimit);
 
         logQuestionPoolBackfill(
