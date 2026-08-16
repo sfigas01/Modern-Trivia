@@ -5,6 +5,11 @@ import { z } from 'zod';
 
 import { db } from './db';
 import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
+import {
+  questionTierExpr,
+  cooldownExpiresAtExpr,
+  logQuestionPoolBackfill,
+} from './lib/question-pool';
 import type { AuthenticatedRequest } from './types';
 import {
   QUESTIONS_PER_TEAM_ROTATION,
@@ -604,31 +609,26 @@ export function registerRoomRoutes(app: Express): void {
 
         let selectedQuestions: { id: string }[];
         if (userId) {
-          const cooldownExpr = sql`
-            CASE (${seenQuestions.seenCount} - 1) % 3
-              WHEN 0 THEN INTERVAL '1 month'
-              WHEN 1 THEN INTERVAL '3 months'
-              WHEN 2 THEN INTERVAL '5 months'
-            END
-          `;
-          selectedQuestions = await tx
-            .select({ id: questions.id })
+          // Never hard-exclude on cooldown -- rank by preference tier
+          // (never-seen, cooldown-expired, then still-in-cooldown) so a
+          // full game is always possible. See server/lib/question-pool.ts
+          // (STE-138).
+          const tiered = await tx
+            .select({ id: questions.id, tier: questionTierExpr })
             .from(questions)
             .leftJoin(
               seenQuestions,
               and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
             )
-            .where(
-              and(
-                ...questionConditions,
-                sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
-              )
-            )
-            .orderBy(
-              sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
-              sql`random()`
-            )
+            .where(and(...questionConditions))
+            .orderBy(questionTierExpr, cooldownExpiresAtExpr, sql`random()`)
             .limit(questionLimit);
+
+          logQuestionPoolBackfill(
+            'room start',
+            tiered.map((row) => row.tier)
+          );
+          selectedQuestions = tiered.map(({ id }) => ({ id }));
         } else if (excludeQuestionIds.length > 0) {
           const unseen = await tx
             .select({ id: questions.id })
@@ -652,6 +652,11 @@ export function registerRoomRoutes(app: Express): void {
             const backfill = eligibleSeen
               .sort((a, b) => (seenOrder.get(a.id) ?? 0) - (seenOrder.get(b.id) ?? 0))
               .slice(0, deficit);
+
+            console.warn(
+              `[question-pool] room start (guest): backfilled from locally-seen pool ` +
+                `(never-seen=${unseen.length}, previously-seen=${backfill.length})`
+            );
 
             selectedQuestions = [...unseen, ...backfill];
           } else {
