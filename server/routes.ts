@@ -27,6 +27,11 @@ import { detectDuplicates } from './lib/duplicate-detector';
 import { batchFactCheck } from './lib/verifier';
 import { selectTopicContext } from './lib/topic-context';
 import { filterNovelQuestions } from './lib/novelty-filter';
+import {
+  questionTierExpr,
+  cooldownExpiresAtExpr,
+  logQuestionPoolBackfill,
+} from './lib/question-pool';
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
@@ -450,16 +455,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       let results;
       if (shouldExcludeSeen) {
-        // Escalating cooldown cycle: 1 month → 3 months → 5 months, repeating
-        const cooldownExpr = sql`
-          CASE (${seenQuestions.seenCount} - 1) % 3
-            WHEN 0 THEN INTERVAL '1 month'
-            WHEN 1 THEN INTERVAL '3 months'
-            WHEN 2 THEN INTERVAL '5 months'
-          END
-        `;
-
-        // LEFT JOIN to find unseen or cooldown-expired questions
+        // Never hard-exclude on cooldown -- a full pool must always be
+        // selectable. Instead, rank by preference tier (never-seen,
+        // cooldown-expired, then still-in-cooldown) so a full game is
+        // always possible. See server/lib/question-pool.ts (STE-138).
         const query = db
           .select({
             id: questions.id,
@@ -473,34 +472,32 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             tags: questions.tags,
             sourceUrl: questions.sourceUrl,
             sourceName: questions.sourceName,
+            tier: questionTierExpr,
           })
           .from(questions)
           .leftJoin(
             seenQuestions,
             and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
           )
-          .where(
-            and(
-              ...conditions,
-              sql`(${seenQuestions.questionId} IS NULL OR ${seenQuestions.seenAt} + ${cooldownExpr} <= NOW())`
-            )
-          );
+          .where(and(...conditions));
 
-        // Prefer never-seen questions first; only backfill with
-        // cooldown-expired ones when unseen supply is exhausted.
+        // Tier ascending first; within the in-cooldown tier, soonest-to-expire
+        // first; shuffle only breaks ties within a tier.
+        const orderBy = [questionTierExpr, cooldownExpiresAtExpr];
         if (shuffle === 'true') {
-          query.orderBy(
-            sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`,
-            sql`random()`
-          );
-        } else {
-          query.orderBy(sql`CASE WHEN ${seenQuestions.questionId} IS NULL THEN 0 ELSE 1 END`);
+          orderBy.push(sql`random()`);
         }
+        query.orderBy(...orderBy);
         if (limit) {
           query.limit(parseInt(limit as string, 10));
         }
 
-        results = await query;
+        const tiered = await query;
+        logQuestionPoolBackfill(
+          'solo question selection',
+          tiered.map((row) => row.tier)
+        );
+        results = tiered.map(({ tier: _tier, ...question }) => question);
       } else {
         const query = db.select().from(questions);
 
