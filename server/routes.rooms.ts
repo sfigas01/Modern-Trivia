@@ -1,14 +1,15 @@
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
-import { and, asc, eq, inArray, isNull, lte, notInArray, or, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { db } from './db';
 import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
 import {
-  questionTierExpr,
-  cooldownExpiresAtExpr,
   logQuestionPoolBackfill,
+  roomQuestionTierExpr,
+  roomSoonestCooldownExpr,
+  ROOM_GUEST_SEEN_CAP,
 } from './lib/question-pool';
 import type { AuthenticatedRequest } from './types';
 import {
@@ -444,6 +445,7 @@ export function registerRoomRoutes(app: Express): void {
                 token,
                 joinOrder: 0,
                 isHost: true,
+                userId: getUserId(req) ?? null,
               })
               .returning();
 
@@ -517,6 +519,11 @@ export function registerRoomRoutes(app: Express): void {
             throw new RoomRouteError(409, 'Nickname is already taken');
           }
 
+          // Signed-in players are tracked by server-side seen_questions, so we
+          // only persist a client-supplied exclusion list for guests (STE-273).
+          const joiningUserId = getUserId(req) ?? null;
+          const guestSeenIds = joiningUserId === null ? (input.excludeQuestionIds ?? []) : null;
+
           const [player] = await tx
             .insert(roomPlayers)
             .values({
@@ -525,6 +532,8 @@ export function registerRoomRoutes(app: Express): void {
               token: generatePlayerToken(),
               joinOrder: (allPlayers.at(-1)?.joinOrder ?? -1) + 1,
               isHost: false,
+              userId: joiningUserId,
+              guestSeenIds,
             })
             .returning();
 
@@ -607,78 +616,78 @@ export function registerRoomRoutes(app: Express): void {
           }
         }
 
-        let selectedQuestions: { id: string }[];
-        if (userId) {
-          // Never hard-exclude on cooldown -- rank by preference tier
-          // (never-seen, cooldown-expired, then still-in-cooldown) so a
-          // full game is always possible. See server/lib/question-pool.ts
-          // (STE-138).
-          const tiered = await tx
-            .select({ id: questions.id, tier: questionTierExpr })
-            .from(questions)
-            .leftJoin(
-              seenQuestions,
-              and(eq(questions.id, seenQuestions.questionId), eq(seenQuestions.userId, userId))
-            )
-            .where(and(...questionConditions))
-            .orderBy(questionTierExpr, cooldownExpiresAtExpr, sql`random()`)
-            .limit(questionLimit);
+        // Room-wide seen-question exclusion (STE-273): union every player's
+        // history, not just the host's. Signed-in players contribute their
+        // server-side seen_questions; guests contribute the locally-seen list
+        // captured at join (and, for a guest host, the fresh list on this
+        // start request). As with STE-138, nothing is hard-excluded -- history
+        // only reorders preference tiers, so a full game is always startable.
+        const roomUserIds = Array.from(
+          new Set(players.map((player) => player.userId).filter((id): id is string => !!id))
+        );
 
-          logQuestionPoolBackfill(
-            'room start',
-            tiered.map((row) => row.tier)
-          );
-          selectedQuestions = tiered.map(({ id }) => ({ id }));
-        } else if (excludeQuestionIds.length > 0) {
-          const unseen = await tx
-            .select({ id: questions.id })
-            .from(questions)
-            .where(and(...questionConditions, notInArray(questions.id, excludeQuestionIds)))
-            .orderBy(sql`random()`)
-            .limit(questionLimit);
-
-          if (unseen.length < questionLimit) {
-            // The exclusion list (guest's locally-seen questions) must never
-            // block a game from starting. Keep the unseen results already
-            // found and backfill only the deficit from the excluded pool,
-            // preferring the oldest-seen ids first.
-            const deficit = questionLimit - unseen.length;
-            const eligibleSeen = await tx
-              .select({ id: questions.id })
-              .from(questions)
-              .where(and(...questionConditions, inArray(questions.id, excludeQuestionIds)));
-
-            const seenOrder = new Map(excludeQuestionIds.map((id, index) => [id, index]));
-            const backfill = eligibleSeen
-              .sort((a, b) => (seenOrder.get(a.id) ?? 0) - (seenOrder.get(b.id) ?? 0))
-              .slice(0, deficit);
-
-            console.warn(
-              `[question-pool] room start (guest): backfilled from locally-seen pool ` +
-                `(never-seen=${unseen.length}, previously-seen=${backfill.length})`
-            );
-
-            selectedQuestions = [...unseen, ...backfill];
-          } else {
-            selectedQuestions = unseen;
+        const guestSeenSet = new Set<string>();
+        for (const player of players) {
+          if (!player.userId && player.guestSeenIds) {
+            for (const id of player.guestSeenIds) guestSeenSet.add(id);
           }
-        } else {
-          selectedQuestions = await tx
-            .select({ id: questions.id })
-            .from(questions)
-            .where(and(...questionConditions))
-            .orderBy(sql`random()`)
-            .limit(questionLimit);
         }
+        // The start payload's excludeQuestionIds is the host's own fresh list.
+        // Trust it only for a guest host; an authenticated host is always
+        // server-authoritative and their client-supplied list is ignored.
+        if (!userId) {
+          for (const id of excludeQuestionIds) guestSeenSet.add(id);
+        }
+        let guestSeenUnion = Array.from(guestSeenSet);
+        if (guestSeenUnion.length > ROOM_GUEST_SEEN_CAP) {
+          console.warn(
+            `[question-pool] room start: guest exclusion union of ${guestSeenUnion.length} ` +
+              `exceeded cap ${ROOM_GUEST_SEEN_CAP}; truncating`
+          );
+          guestSeenUnion = guestSeenUnion.slice(0, ROOM_GUEST_SEEN_CAP);
+        }
+
+        const guestSeenCondition =
+          guestSeenUnion.length > 0 ? inArray(questions.id, guestSeenUnion) : undefined;
+        const roomTierExpr = roomQuestionTierExpr(guestSeenCondition);
+        const seenJoinCondition = and(
+          eq(questions.id, seenQuestions.questionId),
+          roomUserIds.length > 0 ? inArray(seenQuestions.userId, roomUserIds) : sql`false`
+        );
+
+        const tiered = await tx
+          .select({ id: questions.id, tier: roomTierExpr })
+          .from(questions)
+          .leftJoin(seenQuestions, seenJoinCondition)
+          .where(and(...questionConditions))
+          .groupBy(questions.id)
+          .orderBy(roomTierExpr, roomSoonestCooldownExpr, sql`random()`)
+          .limit(questionLimit);
+
+        logQuestionPoolBackfill(
+          'room start',
+          tiered.map((row) => row.tier)
+        );
+        const selectedQuestions: { id: string }[] = tiered.map(({ id }) => ({ id }));
 
         if (selectedQuestions.length < questionLimit) {
           throw new RoomRouteError(409, 'Not enough approved questions to start this game');
         }
 
-        if (userId) {
+        // Record this game's questions against every signed-in player in the
+        // room (STE-273), not just the host, so each participant's server-side
+        // history stays accurate for future selection.
+        if (roomUserIds.length > 0) {
           await tx
             .insert(seenQuestions)
-            .values(selectedQuestions.map((question) => ({ userId, questionId: question.id })))
+            .values(
+              roomUserIds.flatMap((playerUserId) =>
+                selectedQuestions.map((question) => ({
+                  userId: playerUserId,
+                  questionId: question.id,
+                }))
+              )
+            )
             .onConflictDoUpdate({
               target: [seenQuestions.userId, seenQuestions.questionId],
               set: {

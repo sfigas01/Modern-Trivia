@@ -8,7 +8,7 @@
 //   Tier 1: seen before, but the cooldown window has elapsed
 //   Tier 2: seen before and still within the cooldown window (last resort,
 //           soonest-to-expire first)
-import { sql } from 'drizzle-orm';
+import { sql, type SQL } from 'drizzle-orm';
 import { seenQuestions } from '@shared/schema';
 
 export const cooldownIntervalExpr = sql`
@@ -28,6 +28,38 @@ export const questionTierExpr = sql<number>`
     ELSE 2
   END::int
 `;
+
+/**
+ * Room-wide preference tier for multiplayer selection (STE-273). A room can
+ * have several signed-in players (each with their own seen_questions history)
+ * plus guests (who supply a flat locally-seen id list with no cooldown data).
+ *
+ * The query joins seen_questions for every signed-in player in the room, so a
+ * question may match multiple rows — one per player who has seen it. Grouping
+ * by question id and taking the worst (highest) per-player tier gives the
+ * room's tier: a question is only tier 0 (never-seen) if NO participant has
+ * seen it, and drops to tier 2 if it is still in cooldown for anyone.
+ * Guest-seen ids have no cooldown, so they are treated as tier 1
+ * (previously-seen but eligible), which keeps them out of play while
+ * never-seen supply lasts without ever hard-excluding them.
+ *
+ * `guestSeenCondition` is an already-built `inArray(questions.id, ids)` (or
+ * omitted when there are no guest ids).
+ */
+export function roomQuestionTierExpr(guestSeenCondition?: SQL): SQL<number> {
+  const guestTier = guestSeenCondition
+    ? sql<number>`CASE WHEN ${guestSeenCondition} THEN 1 ELSE 0 END`
+    : sql<number>`0`;
+  return sql<number>`GREATEST(MAX(${questionTierExpr}), ${guestTier})`;
+}
+
+/** Soonest cooldown expiry across a room's players, for last-resort ordering. */
+export const roomSoonestCooldownExpr = sql`MIN(${cooldownExpiresAtExpr})`;
+
+// Upper bound on the unioned guest exclusion list passed to a single room-start
+// query. Each player's list is already capped at 500 (schema), so with the
+// 4-player room cap this is only a defensive ceiling.
+export const ROOM_GUEST_SEEN_CAP = 2000;
 
 const TIER_LABELS = ['never-seen', 'cooldown-expired', 'in-cooldown'] as const;
 
