@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VALID_CATEGORIES } from '@shared/constants/categories';
 import { AdminLayout } from '@/components/admin-layout';
+import { HiddenAnswer } from '@/components/admin/HiddenAnswer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -124,6 +125,12 @@ const FIXABLE_FIELDS = new Set([
   'question',
   'acceptableAnswers',
 ]);
+
+// Fields whose values are (or contain) the answer, so must stay spoiler-free.
+const ANSWER_FIELDS = new Set(['answer', 'acceptableAnswers']);
+function isAnswerField(field: string): boolean {
+  return ANSWER_FIELDS.has(field);
+}
 
 function displayValue(field: string, q: Question): string {
   if (field === 'tags') return (q.tags ?? []).join(', ');
@@ -438,13 +445,26 @@ function EditableField({
           )}
         </div>
       ) : fieldKey === 'acceptableAnswers' ? (
-        <p className="text-xs text-muted-foreground">
-          {(question.acceptableAnswers ?? []).length > 0 ? (
-            (question.acceptableAnswers ?? []).join(', ')
-          ) : (
-            <span className="italic">None</span>
-          )}
-        </p>
+        (question.acceptableAnswers ?? []).length > 0 ? (
+          <HiddenAnswer
+            answer={(question.acceptableAnswers ?? []).join(', ')}
+            label={null}
+            testId={`acceptable-${question.id}`}
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground italic">None</p>
+        )
+      ) : fieldKey === 'answer' ? (
+        isEmpty ? (
+          <p className="text-sm text-red-400 italic">Missing — hover to fix</p>
+        ) : (
+          <HiddenAnswer
+            answer={rawDisplay}
+            label={null}
+            valueClassName="text-sm text-primary font-medium"
+            testId={`answer-${question.id}`}
+          />
+        )
       ) : fieldKey === 'sourceUrl' ? (
         rawDisplay ? (
           <a
@@ -460,9 +480,7 @@ function EditableField({
           <span className="text-red-400 italic text-xs">Missing — hover to fix</span>
         )
       ) : (
-        <p
-          className={`text-sm ${isEmpty ? 'text-red-400 italic' : fieldKey === 'answer' ? 'text-primary font-medium' : 'text-muted-foreground'}`}
-        >
+        <p className={`text-sm ${isEmpty ? 'text-red-400 italic' : 'text-muted-foreground'}`}>
           {rawDisplay || 'Missing — hover to fix'}
         </p>
       )}
@@ -538,13 +556,33 @@ function ChangeLog({ questionId }: { questionId: string }) {
                 </span>
               </div>
               <div className="flex items-start gap-1.5 text-muted-foreground">
-                <span className="line-through opacity-60 max-w-[40%] truncate">
-                  {formatValue(e.oldValue)}
-                </span>
-                <span className="text-white/30">→</span>
-                <span className="text-foreground max-w-[50%] truncate">
-                  {formatValue(e.newValue)}
-                </span>
+                {isAnswerField(e.field) ? (
+                  <>
+                    <HiddenAnswer
+                      answer={formatValue(e.oldValue)}
+                      label={null}
+                      className="line-through opacity-60"
+                      testId={`changelog-old-${e.id}`}
+                    />
+                    <span className="text-white/30">→</span>
+                    <HiddenAnswer
+                      answer={formatValue(e.newValue)}
+                      label={null}
+                      valueClassName="text-foreground"
+                      testId={`changelog-new-${e.id}`}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <span className="line-through opacity-60 max-w-[40%] truncate">
+                      {formatValue(e.oldValue)}
+                    </span>
+                    <span className="text-white/30">→</span>
+                    <span className="text-foreground max-w-[50%] truncate">
+                      {formatValue(e.newValue)}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           ))}

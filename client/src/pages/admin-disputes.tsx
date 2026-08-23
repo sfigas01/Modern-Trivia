@@ -14,6 +14,7 @@ import {
   Sparkles,
   LogIn,
   Shield,
+  Eye,
 } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Dispute, AIAnalysis } from '@shared/schema';
@@ -24,9 +25,49 @@ import { useGame, Question } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 import { DisputeVoteAudit } from '@/components/admin/DisputeVoteAudit';
+import { HiddenAnswer } from '@/components/admin/HiddenAnswer';
 import type { AdminDispute } from '@shared/schema';
 
 type ResolutionField = 'question' | 'answer' | 'explanation';
+
+/**
+ * Answer edit field for the dispute resolver. The admin is also a player, so the
+ * answer stays hidden until they explicitly choose to edit it — the one case
+ * where revealing the answer is expected (STE-248). The draft value lives in the
+ * parent, so gating the textarea never loses in-progress edits.
+ */
+function RevealableAnswerInput({
+  value,
+  onChange,
+  testId,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  testId: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  if (!revealed) {
+    return (
+      <button
+        type="button"
+        onClick={() => setRevealed(true)}
+        className="flex items-center gap-1 text-xs text-muted-foreground opacity-70 hover:opacity-100 transition-opacity"
+        data-testid={`reveal-answer-editor-${testId}`}
+      >
+        <Eye className="w-3 h-3" /> Reveal answer to edit
+      </button>
+    );
+  }
+  return (
+    <Textarea
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="min-h-[70px] text-xs"
+      data-testid={`input-fix-answer-${testId}`}
+      autoFocus
+    />
+  );
+}
 
 interface ResolutionDraft {
   question: string;
@@ -493,15 +534,29 @@ export default function AdminDisputes() {
                             <span className="text-xs font-medium uppercase text-green-500/80">
                               Current Answer
                             </span>
-                            <p className="font-semibold">{dispute.correctAnswer}</p>
+                            <div className="font-semibold">
+                              <HiddenAnswer
+                                answer={dispute.correctAnswer}
+                                label={null}
+                                testId={`dispute-correct-${dispute.id}`}
+                              />
+                            </div>
                           </div>
                           <div className="p-3 rounded-md bg-red-500/5 border border-red-500/10">
                             <span className="text-xs font-medium uppercase text-red-500/80">
                               User Claim
                             </span>
-                            <p className="font-semibold">
-                              {dispute.submittedAnswer || '(No answer)'}
-                            </p>
+                            <div className="font-semibold">
+                              {dispute.submittedAnswer ? (
+                                <HiddenAnswer
+                                  answer={dispute.submittedAnswer}
+                                  label={null}
+                                  testId={`dispute-claim-${dispute.id}`}
+                                />
+                              ) : (
+                                '(No answer)'
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -543,8 +598,14 @@ export default function AdminDisputes() {
                                   </p>
                                 )}
                                 {analysis.suggestedFix.answer && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Answer: <strong>{analysis.suggestedFix.answer}</strong>
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    Answer:{' '}
+                                    <HiddenAnswer
+                                      answer={analysis.suggestedFix.answer}
+                                      label={null}
+                                      valueClassName="font-semibold"
+                                      testId={`dispute-fix-${dispute.id}`}
+                                    />
                                   </p>
                                 )}
                                 {analysis.suggestedFix.explanation && (
@@ -620,22 +681,25 @@ export default function AdminDisputes() {
                               <p className="text-[10px] uppercase text-muted-foreground">
                                 Current answer
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                {sourceQuestion?.answer || dispute.correctAnswer}
-                              </p>
-                              <Textarea
+                              <div className="text-xs text-muted-foreground">
+                                <HiddenAnswer
+                                  answer={sourceQuestion?.answer || dispute.correctAnswer}
+                                  label={null}
+                                  testId={`dispute-current-${dispute.id}`}
+                                />
+                              </div>
+                              <RevealableAnswerInput
                                 value={draft.answer}
-                                onChange={(event) =>
+                                onChange={(value) =>
                                   handleDraftChange(
                                     dispute,
                                     sourceQuestion,
                                     analysis,
                                     'answer',
-                                    event.target.value
+                                    value
                                   )
                                 }
-                                className="min-h-[58px] text-xs"
-                                data-testid={`input-fix-answer-${dispute.id}`}
+                                testId={dispute.id}
                               />
                             </div>
 
