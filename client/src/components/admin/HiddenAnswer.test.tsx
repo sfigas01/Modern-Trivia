@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { HiddenAnswer } from './HiddenAnswer';
+import { HiddenAnswer, containsAnswer } from './HiddenAnswer';
 
 describe('HiddenAnswer', () => {
   afterEach(() => cleanup());
@@ -46,5 +46,26 @@ describe('HiddenAnswer', () => {
   it('always shows a mask even for an empty answer', () => {
     render(<HiddenAnswer answer="" testId="empty" />);
     expect(screen.getByTestId('masked-answer-empty')).toHaveTextContent('•');
+  });
+});
+
+describe('containsAnswer', () => {
+  it('detects the answer inside prose, case-insensitively', () => {
+    expect(containsAnswer('The capital is Calgary, in Alberta.', ['Calgary'])).toBe(true);
+    expect(containsAnswer('the capital is calgary', ['Calgary'])).toBe(true);
+  });
+
+  it('matches any of the acceptable answers', () => {
+    expect(containsAnswer('Also known as H₂O.', ['H2O', 'H₂O'])).toBe(true);
+  });
+
+  it('returns false when no answer is present', () => {
+    expect(containsAnswer('A neutral explanation with no spoilers.', ['Calgary'])).toBe(false);
+  });
+
+  it('handles empty/blank inputs safely', () => {
+    expect(containsAnswer('', ['Calgary'])).toBe(false);
+    expect(containsAnswer(null, ['Calgary'])).toBe(false);
+    expect(containsAnswer('some text', [null, undefined, '  '])).toBe(false);
   });
 });

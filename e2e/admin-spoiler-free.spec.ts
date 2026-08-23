@@ -33,7 +33,9 @@ test.describe('spoiler-free admin surfaces (STE-248)', () => {
       question: 'Which ancient city is referenced here?',
       answer: QUESTION_ANSWER,
       acceptableAnswers: [],
-      explanation: 'An explanation that does not contain the answer.',
+      // Explanation deliberately embeds the answer — expanding the row must not
+      // leak it through the explanation prose either.
+      explanation: `A hint whose prose names ${QUESTION_ANSWER} outright.`,
       pillar: 'GlobalEh',
       tags: ['Culture', 'GlobalEh'],
       sourceUrl: 'https://example.com/x',
@@ -83,7 +85,8 @@ test.describe('spoiler-free admin surfaces (STE-248)', () => {
       correctAnswer: DISPUTE_ANSWER,
       submittedAnswer: DISPUTE_CLAIM,
       teamName: 'Team One',
-      teamExplanation: 'We think our answer is right.',
+      // Team explanation embeds the correct answer — must be masked on load.
+      teamExplanation: `We believe ${DISPUTE_ANSWER} is wrong and ours should count.`,
       status: 'pending',
       timestamp: '2026-07-01T00:00:00.000Z',
       aiAnalysis: null,

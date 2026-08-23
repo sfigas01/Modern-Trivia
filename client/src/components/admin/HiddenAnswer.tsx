@@ -2,6 +2,25 @@ import { useId, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * True when `text` contains any of the given answers (case-insensitive
+ * substring). Used to decide whether free-text prose (explanations, dispute
+ * notes) leaks the answer and must therefore be masked. Deliberately errs
+ * toward hiding: a false positive only over-masks a benign field, which is the
+ * safe direction for spoiler protection.
+ */
+export function containsAnswer(
+  text: string | null | undefined,
+  answers: Array<string | null | undefined>
+): boolean {
+  if (!text) return false;
+  const haystack = text.toLowerCase();
+  return answers.some((a) => {
+    const needle = a?.trim().toLowerCase();
+    return !!needle && haystack.includes(needle);
+  });
+}
+
 interface HiddenAnswerProps {
   /** The answer text to protect. */
   answer: string;

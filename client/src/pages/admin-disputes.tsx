@@ -25,7 +25,7 @@ import { useGame, Question } from '@/lib/store';
 import { useAuth } from '@/hooks/use-auth';
 import { useAdmin } from '@/hooks/use-admin';
 import { DisputeVoteAudit } from '@/components/admin/DisputeVoteAudit';
-import { HiddenAnswer } from '@/components/admin/HiddenAnswer';
+import { HiddenAnswer, containsAnswer } from '@/components/admin/HiddenAnswer';
 import type { AdminDispute } from '@shared/schema';
 
 type ResolutionField = 'question' | 'answer' | 'explanation';
@@ -561,7 +561,18 @@ export default function AdminDisputes() {
                         </div>
 
                         <div className="text-sm bg-muted/20 p-3 rounded italic text-muted-foreground border-l-2 border-primary/50">
-                          "{dispute.teamExplanation}"
+                          {containsAnswer(dispute.teamExplanation, [
+                            dispute.correctAnswer,
+                            dispute.submittedAnswer,
+                          ]) ? (
+                            <HiddenAnswer
+                              answer={dispute.teamExplanation}
+                              label={null}
+                              testId={`dispute-explanation-${dispute.id}`}
+                            />
+                          ) : (
+                            `"${dispute.teamExplanation}"`
+                          )}
                         </div>
 
                         <DisputeVoteAudit dispute={dispute} />
@@ -609,8 +620,20 @@ export default function AdminDisputes() {
                                   </p>
                                 )}
                                 {analysis.suggestedFix.explanation && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Explanation: {analysis.suggestedFix.explanation}
+                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                    Explanation:{' '}
+                                    {containsAnswer(analysis.suggestedFix.explanation, [
+                                      analysis.suggestedFix.answer,
+                                      dispute.correctAnswer,
+                                    ]) ? (
+                                      <HiddenAnswer
+                                        answer={analysis.suggestedFix.explanation}
+                                        label={null}
+                                        testId={`dispute-fix-explanation-${dispute.id}`}
+                                      />
+                                    ) : (
+                                      analysis.suggestedFix.explanation
+                                    )}
                                   </p>
                                 )}
                               </div>
