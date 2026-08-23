@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,9 +15,10 @@ interface HiddenAnswerProps {
   /** Classes applied to the revealed answer text (lets callers preserve emphasis). */
   valueClassName?: string;
   /**
-   * Base used to build the data-testids. Defaults to the first 8 chars of the
-   * answer so tests can target a stable-ish handle; pass an id-based value when
-   * available to keep testids deterministic.
+   * Base used to build the data-testids. Pass an item id (e.g. the question or
+   * dispute id) for deterministic, targetable testids. When omitted, a random
+   * React id is used — never the answer text, which must never appear in the
+   * DOM (including attributes) before an explicit reveal.
    */
   testId?: string;
 }
@@ -36,7 +37,10 @@ export function HiddenAnswer({
   testId,
 }: HiddenAnswerProps) {
   const [revealed, setRevealed] = useState(false);
-  const idBase = testId ?? answer.slice(0, 8);
+  const generatedId = useId();
+  // Never derive the id from `answer` — that would leak the answer into
+  // data-testid attributes before any reveal (STE-248).
+  const idBase = testId ?? generatedId;
   const masked = '•'.repeat(Math.min(answer.length, 12)) || '•••';
 
   return (

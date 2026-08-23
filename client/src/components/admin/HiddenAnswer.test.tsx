@@ -36,6 +36,13 @@ describe('HiddenAnswer', () => {
     expect(screen.queryByText('A:')).not.toBeInTheDocument();
   });
 
+  it('never leaks the answer into the DOM (incl. attributes) before reveal, even without a testId', () => {
+    // Regression: when testId was omitted the answer's first 8 chars were
+    // written into data-testid, leaking short answers like "Toronto".
+    const { container } = render(<HiddenAnswer answer="Toronto" />);
+    expect(container.innerHTML).not.toContain('Toronto');
+  });
+
   it('always shows a mask even for an empty answer', () => {
     render(<HiddenAnswer answer="" testId="empty" />);
     expect(screen.getByTestId('masked-answer-empty')).toHaveTextContent('•');
