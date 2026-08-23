@@ -113,6 +113,8 @@ describe('AdminDisputes corrected-question persistence', () => {
     mocks.updateQuestion.mockResolvedValue({ ...question, answer: 'Water' });
     render(<AdminDisputes />);
 
+    // The answer is spoiler-gated (STE-248) — reveal it before editing.
+    fireEvent.click(screen.getByTestId(`reveal-answer-editor-${dispute.id}`));
     fireEvent.change(screen.getByTestId(`input-fix-answer-${dispute.id}`), {
       target: { value: 'Water' },
     });
