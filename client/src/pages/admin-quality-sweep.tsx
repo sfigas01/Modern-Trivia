@@ -10,13 +10,12 @@ import {
   Trash2,
   Save,
   X,
-  Eye,
-  EyeOff,
   ChevronDown,
   ChevronUp,
   ListFilter,
 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin-layout';
+import { HiddenAnswer } from '@/components/admin/HiddenAnswer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -83,31 +82,6 @@ function MatchTypeBadge({ type }: { type: string }) {
   const variant =
     type === 'exact' ? 'destructive' : type === 'near_duplicate' ? 'secondary' : 'outline';
   return <Badge variant={variant}>{label}</Badge>;
-}
-
-function HiddenAnswer({ answer }: { answer: string }) {
-  const [revealed, setRevealed] = useState(false);
-  return (
-    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-      <span className="font-medium">A:</span>{' '}
-      {revealed ? (
-        <span>{answer}</span>
-      ) : (
-        <span className="tracking-widest select-none">
-          {'•'.repeat(Math.min(answer.length, 12))}
-        </span>
-      )}
-      <button
-        type="button"
-        onClick={() => setRevealed((v) => !v)}
-        className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
-        title={revealed ? 'Hide answer' : 'Reveal answer'}
-        data-testid={`button-toggle-answer-${answer.slice(0, 8)}`}
-      >
-        {revealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-      </button>
-    </span>
-  );
 }
 
 function ProposedFixDisplay({ rule, fix }: { rule: string; fix: Record<string, unknown> }) {
@@ -1355,6 +1329,11 @@ function FactCheckSection({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <VerdictBadge verdict={result.verdict} />
+                  {result.coherence === 'fail' && (
+                    <Badge variant="destructive" className="text-xs">
+                      coherence
+                    </Badge>
+                  )}
                   <span className="text-xs font-mono">{result.confidence}%</span>
                   <span className="font-mono text-xs text-muted-foreground">
                     {result.questionId}
@@ -1388,6 +1367,14 @@ function FactCheckSection({
                   </p>
                 )}
                 <p className="text-sm text-muted-foreground">{result.reason}</p>
+                {result.suggestedQuestion && (
+                  <div className="mt-1 rounded border border-emerald-500/30 bg-emerald-500/10 p-2">
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-300">
+                      Suggested rewrite (keeps the answer, fixes the premise)
+                    </p>
+                    <p className="text-sm text-white/90 leading-snug">{result.suggestedQuestion}</p>
+                  </div>
+                )}
                 {snapshot && (
                   <div className="pt-1">
                     <HiddenAnswer answer={snapshot.answer} />

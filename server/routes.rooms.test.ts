@@ -12,15 +12,24 @@ const dbMocks = vi.hoisted(() => {
   const updateResults: unknown[][] = [];
   const valueArgs: unknown[] = [];
   const whereArgs: unknown[] = [];
+  const leftJoinArgs: unknown[] = [];
+  const orderByArgs: unknown[] = [];
 
   function query(result: unknown[]) {
     const promise = Promise.resolve(result);
     const chain = {
       for: vi.fn(() => chain),
       from: vi.fn(() => chain),
-      leftJoin: vi.fn(() => chain),
+      groupBy: vi.fn(() => chain),
+      leftJoin: vi.fn((_table: unknown, condition: unknown) => {
+        leftJoinArgs.push(condition);
+        return chain;
+      }),
       limit: vi.fn(() => chain),
-      orderBy: vi.fn(() => chain),
+      orderBy: vi.fn((...args: unknown[]) => {
+        orderByArgs.push(...args);
+        return chain;
+      }),
       onConflictDoUpdate: vi.fn(() => chain),
       returning: vi.fn(() => Promise.resolve(result)),
       set: vi.fn((value) => {
@@ -60,6 +69,8 @@ const dbMocks = vi.hoisted(() => {
     updateResults,
     valueArgs,
     whereArgs,
+    leftJoinArgs,
+    orderByArgs,
   };
 });
 
@@ -212,6 +223,8 @@ describe('room lifecycle routes', () => {
     dbMocks.updateResults.length = 0;
     dbMocks.valueArgs.length = 0;
     dbMocks.whereArgs.length = 0;
+    dbMocks.leftJoinArgs.length = 0;
+    dbMocks.orderByArgs.length = 0;
     dbMocks.transaction.mockImplementation(async (callback) =>
       callback({
         delete: dbMocks.delete,
@@ -636,6 +649,79 @@ describe('room lifecycle routes', () => {
     expect(response.body.snapshot.players[1]).not.toHaveProperty('token');
   });
 
+  it('stores a guest joiner’s locally-seen ids and no user id on their row', async () => {
+    const host = player();
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    queueSelect([room()], [host], [host, guest]);
+    dbMocks.insertResults.push([guest]);
+    dbMocks.updateResults.push([room({ version: 2 })]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/join')
+      .send({ nickname: 'Guest', excludeQuestionIds: ['seen-a', 'seen-b'] })
+      .expect(200);
+
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({
+        nickname: 'Guest',
+        userId: null,
+        guestSeenIds: ['seen-a', 'seen-b'],
+      })
+    );
+  });
+
+  it('captures a signed-in joiner’s user id and ignores their client-supplied seen list', async () => {
+    const host = player();
+    const guest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+    });
+    queueSelect([room()], [host], [host, guest]);
+    dbMocks.insertResults.push([guest]);
+    dbMocks.updateResults.push([room({ version: 2 })]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/join')
+      .set('x-test-user-id', 'joiner-user')
+      .send({ nickname: 'Guest', excludeQuestionIds: ['ignored-1'] })
+      .expect(200);
+
+    // Signed-in players are server-authoritative: keep the user id, drop the
+    // client list (guestSeenIds null) so only server history is trusted.
+    expect(dbMocks.valueArgs).toContainEqual(
+      expect.objectContaining({
+        nickname: 'Guest',
+        userId: 'joiner-user',
+        guestSeenIds: null,
+      })
+    );
+  });
+
+  it('rejects a join with more than 500 excludeQuestionIds with a 422', async () => {
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/join')
+      .send({
+        nickname: 'Guest',
+        excludeQuestionIds: Array.from({ length: 501 }, (_, i) => `q${i}`),
+      })
+      .expect(422);
+
+    expect(dbMocks.transaction).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['missing room', [], 404, 'Room not found'],
     [
@@ -794,7 +880,7 @@ describe('room lifecycle routes', () => {
     );
   });
 
-  it('records the selected questions in seen history for an authenticated host', async () => {
+  it('does not write seen history at start (recording is per-presented-question on the client)', async () => {
     const guest = player({
       id: guestId,
       nickname: 'Guest',
@@ -814,10 +900,10 @@ describe('room lifecycle routes', () => {
     });
     queueSelect(
       [room()],
-      [player()],
-      [player(), guest],
+      [player({ userId: 'host-user' })],
+      [player({ userId: 'host-user' }), guest],
       selectedQuestions,
-      [player(), guest],
+      [player({ userId: 'host-user' }), guest],
       [question()]
     );
     dbMocks.updateResults.push([startedRoom]);
@@ -830,10 +916,14 @@ describe('room lifecycle routes', () => {
       .send({})
       .expect(200);
 
-    expect(dbMocks.insert).toHaveBeenCalledTimes(1);
-    expect(dbMocks.valueArgs).toContainEqual(
-      selectedQuestions.map(({ id }) => ({ userId: 'host-user', questionId: id }))
+    // Allocating the whole preselected pool as "seen" at start would mark
+    // questions a player may never reach (abandoned game / early leaver) and
+    // wrongly advance their cooldown. History is instead recorded per presented
+    // question by each client. So start must not insert seen_questions.
+    const seenInsert = dbMocks.valueArgs.find(
+      (value) => Array.isArray(value) && value.length > 0 && 'questionId' in (value[0] as object)
     );
+    expect(seenInsert).toBeUndefined();
   });
 
   it('honors excludeQuestionIds for a guest host when the unseen pool is sufficient', async () => {
@@ -871,66 +961,127 @@ describe('room lifecycle routes', () => {
       .send({ excludeQuestionIds: ['seen-1', 'seen-2'] })
       .expect(200);
 
-    // Sufficient supply after exclusion — no backfill query needed.
+    // Single room-wide tiered selection query — no separate backfill query.
     expect(dbMocks.select).toHaveBeenCalledTimes(6);
 
-    const exclusionCondition = dbMocks.whereArgs.find((condition) => {
-      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
-      return query.sql.includes('not in') && query.params.includes('seen-1');
+    // The guest host's exclusion list feeds the preference-tier expression
+    // (deprioritized, never hard-excluded), so the ids surface in the ORDER BY
+    // tier expression rather than a `not in` WHERE clause.
+    const tierExpr = dbMocks.orderByArgs.find((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.sql.toLowerCase().includes('greatest') && query.params.includes('seen-1');
     });
-    expect(exclusionCondition).toBeDefined();
+    expect(tierExpr).toBeDefined();
   });
 
-  it('backfills only the deficit, oldest-seen first, for a guest host when the unseen pool is too small', async () => {
+  it('unions a non-host guest’s stored seen list with the guest host’s start payload', async () => {
+    // A guest joiner's locally-seen ids are captured on their room_players row
+    // at join; the guest host's fresh list arrives on the start request. Both
+    // must feed the room-wide exclusion tier expression (STE-273).
     const guest = player({
       id: guestId,
       nickname: 'Guest',
       token: 'guest-secret',
       joinOrder: 1,
       isHost: false,
+      userId: null,
+      guestSeenIds: ['guest-seen-1', 'guest-seen-2'],
     });
-    // 10 unseen questions available; questionLimit is 40 (5 rounds * 2 players * 4),
-    // so 30 more are needed. 35 eligible previously-seen ids are supplied,
-    // oldest-first, and only the 30 oldest should be used to fill the deficit.
-    const unseenQuestions = Array.from({ length: 10 }, (_, index) => ({
-      id: `unseen-${index + 1}`,
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
     }));
-    const excludeIds = Array.from({ length: 35 }, (_, index) => `seen-${index + 1}`);
-    const eligibleSeenQuestions = excludeIds.map((id) => ({ id }));
-    const expectedSelection = [...unseenQuestions.map(({ id }) => id), ...excludeIds.slice(0, 30)];
     const startedRoom = room({
       status: 'active',
       phase: 'QUESTION',
       version: 2,
-      questionIds: expectedSelection,
+      questionIds: selectedQuestions.map(({ id }) => id),
       activePlayerId: hostId,
     });
     queueSelect(
       [room()],
       [player()],
       [player(), guest],
-      unseenQuestions,
-      eligibleSeenQuestions,
+      selectedQuestions,
       [player(), guest],
       [question()]
     );
     dbMocks.updateResults.push([startedRoom]);
     const app = await buildTestApp();
 
-    const response = await request(app)
+    await request(app)
       .post('/api/rooms/ABCD2/start')
       .set('X-Player-Token', 'host-secret')
-      .send({ excludeQuestionIds: excludeIds })
+      .send({ excludeQuestionIds: ['host-seen-1'] })
       .expect(200);
 
-    // Two question-selection queries: the unseen attempt, then the eligible-seen backfill.
-    expect(dbMocks.select).toHaveBeenCalledTimes(7);
-    expect(response.body.snapshot.status).toBe('active');
-    // The already-found unseen questions are kept; only the deficit (30) is
-    // backfilled, from the oldest-seen ids first — never a fresh unconstrained draw.
-    expect(dbMocks.valueArgs).toContainEqual(
-      expect.objectContaining({ questionIds: expectedSelection })
+    const tierExpr = dbMocks.orderByArgs.find((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.sql.toLowerCase().includes('greatest');
+    });
+    expect(tierExpr).toBeDefined();
+    const tierQuery = new PgDialect().sqlToQuery(
+      tierExpr as Parameters<PgDialect['sqlToQuery']>[0]
     );
+    // All three ids — the joiner's stored pair and the host's payload id — are
+    // unioned into the exclusion tier.
+    expect(tierQuery.params).toEqual(
+      expect.arrayContaining(['guest-seen-1', 'guest-seen-2', 'host-seen-1'])
+    );
+
+    // Guest-seen questions fall back oldest-first via array_position over the
+    // union, not an arbitrary random tie-break.
+    const ordinalExpr = dbMocks.orderByArgs.find((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.sql.toLowerCase().includes('array_position');
+    });
+    expect(ordinalExpr).toBeDefined();
+  });
+
+  it('unions server-side seen history across every signed-in player, not just the host', async () => {
+    const signedInGuest = player({
+      id: guestId,
+      nickname: 'Guest',
+      token: 'guest-secret',
+      joinOrder: 1,
+      isHost: false,
+      userId: 'guest-user',
+    });
+    const host = player({ userId: 'host-user' });
+    const selectedQuestions = Array.from({ length: 40 }, (_, index) => ({
+      id: `question-${index + 1}`,
+    }));
+    const startedRoom = room({
+      status: 'active',
+      phase: 'QUESTION',
+      version: 2,
+      questionIds: selectedQuestions.map(({ id }) => id),
+      activePlayerId: hostId,
+    });
+    queueSelect(
+      [room()],
+      [host],
+      [host, signedInGuest],
+      selectedQuestions,
+      [host, signedInGuest],
+      [question()]
+    );
+    dbMocks.updateResults.push([startedRoom]);
+    const app = await buildTestApp();
+
+    await request(app)
+      .post('/api/rooms/ABCD2/start')
+      .set('X-Player-Token', 'host-secret')
+      .set('x-test-user-id', 'host-user')
+      .send({})
+      .expect(200);
+
+    // The seen_questions join filters on every signed-in player's id, so a
+    // question seen by any participant is deprioritized for the whole room.
+    const seenJoin = dbMocks.leftJoinArgs.find((condition) => {
+      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
+      return query.params.includes('host-user') && query.params.includes('guest-user');
+    });
+    expect(seenJoin).toBeDefined();
   });
 
   it('rejects more than 500 excludeQuestionIds with a 422', async () => {
@@ -963,14 +1114,10 @@ describe('room lifecycle routes', () => {
       questionIds: selectedQuestions.map(({ id }) => id),
       activePlayerId: hostId,
     });
-    queueSelect(
-      [room()],
-      [player()],
-      [player(), guest],
-      selectedQuestions,
-      [player(), guest],
-      [question()]
-    );
+    // The host's persisted room identity is signed-in (userId set on their
+    // row), so their client-supplied list must be ignored regardless of session.
+    const host = player({ userId: 'host-user' });
+    queueSelect([room()], [host], [host, guest], selectedQuestions, [host, guest], [question()]);
     dbMocks.updateResults.push([startedRoom]);
     const app = await buildTestApp();
 
@@ -981,14 +1128,14 @@ describe('room lifecycle routes', () => {
       .send({ excludeQuestionIds: ['some-guest-only-id'] })
       .expect(200);
 
-    // Same single question-selection query as the plain authenticated flow —
-    // the client's exclusion list never reaches the authenticated branch.
     expect(dbMocks.select).toHaveBeenCalledTimes(6);
-    const exclusionCondition = dbMocks.whereArgs.find((condition) => {
-      const query = new PgDialect().sqlToQuery(condition as Parameters<PgDialect['sqlToQuery']>[0]);
+    // The client's exclusion list never reaches selection at all — neither the
+    // WHERE conditions nor the tier/ordering expressions reference it.
+    const sawExclusion = [...dbMocks.whereArgs, ...dbMocks.orderByArgs].some((expr) => {
+      const query = new PgDialect().sqlToQuery(expr as Parameters<PgDialect['sqlToQuery']>[0]);
       return query.params.includes('some-guest-only-id');
     });
-    expect(exclusionCondition).toBeUndefined();
+    expect(sawExclusion).toBe(false);
   });
 
   it('returns 409 when the pool is genuinely too small even after backfill', async () => {

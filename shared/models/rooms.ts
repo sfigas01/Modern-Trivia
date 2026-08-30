@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -204,6 +205,13 @@ export const roomPlayers = pgTable(
     questionCount: integer('question_count').notNull().default(0),
     lastRoundDelta: integer('last_round_delta').notNull().default(0),
     isHost: boolean('is_host').notNull().default(false),
+    // Authenticated user id for signed-in players (null for guests). Captured at
+    // create/join so room-wide question selection can union every participant's
+    // server-side seen_questions history, not just the host's (STE-273).
+    userId: varchar('user_id'),
+    // Snapshot of a guest player's locally-seen question ids, sent at join time
+    // (null/empty for signed-in players, whose history is server-authoritative).
+    guestSeenIds: text('guest_seen_ids').array(),
     lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
     leftAt: timestamp('left_at', { withTimezone: true }),
   },
@@ -371,13 +379,19 @@ export const createRoomRequestSchema = z.object({
   numRounds: roomRoundsSchema,
   opponentDisputeVotingEnabled: z.boolean().default(false),
 });
-export const joinRoomRequestSchema = z.object({ nickname: roomNicknameSchema });
 export const excludeQuestionIdsSchema = z
   .array(z.string().trim().min(1))
   .max(500)
   .refine((ids) => new Set(ids).size === ids.length, {
     message: 'excludeQuestionIds must not contain duplicates',
   });
+export const joinRoomRequestSchema = z.object({
+  nickname: roomNicknameSchema,
+  // A guest joiner's locally-seen question ids, so room-wide selection can
+  // exclude questions any player has already seen — not just the host (STE-273).
+  // Ignored for signed-in players (their history is server-authoritative).
+  excludeQuestionIds: excludeQuestionIdsSchema.optional(),
+});
 
 export const startRoomRequestSchema = z
   .object({

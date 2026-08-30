@@ -57,6 +57,7 @@ For each question return one of:
 
 Evaluate these Modern Trivia quality rules:
 - Factual correctness: question, answer, and explanation must agree and be verifiable.
+- Question–answer coherence (premise + answer type): the question's premise must hold, and the answer must be a direct answer of the type the question asks for — asks for a band → the answer names a band; asks for a year → the answer is a year; asks for a person → the answer names a person. A negation or trick answer ("not a…", "none", "no such…", "it wasn't…") FAILS coherence unless the question is explicitly framed to invite it (e.g. "Which of these is NOT…"). Example failure: "Which Canadian band released 'Immigrant Song'?" → "Not a Canadian band (Led Zeppelin)" — the fact is right but the premise (that a Canadian band released it) is false, so the pair is unplayable. When coherence fails but the stated fact is defensible, the fix is to rewrite the QUESTION to fit the answer (keep the fact, drop the false premise), e.g. "Which band is known for 'Immigrant Song'?" → "Led Zeppelin".
 - Answer leakage: the answer or a distinctive answer keyword must not appear in the question text.
 - Circular wording: do not ask who/what something is while naming the answer in the question.
 - Clarity and typos: flag misspellings, awkward wording, unclear references, and prompts without one best answer.
@@ -66,14 +67,18 @@ Evaluate these Modern Trivia quality rules:
 - FreshPrints: this pillar should reflect recent culture, news, or trends from roughly the last 3 months. Flag stale items older than the cutoff.
 - Sources: use sourceUrl/sourceName when present; flag missing, vague, or irrelevant sources if they weaken verification.
 
+When "coherence" is "fail", set "verdict" to "fail" as well, and — if the stated fact is defensible — put the rewritten question in "suggestedQuestion" (a question that fits the given answer with the false premise removed). Leave "suggestedQuestion" as an empty string when coherence passes or when no faithful rewrite is possible.
+
 Return valid JSON:
 {
   "results": [
     {
       "id": "<question id>",
       "verdict": "pass" | "flag" | "fail",
+      "coherence": "pass" | "fail",
       "confidence": 0-100,
-      "reason": "one sentence naming the main factual or editorial reason"
+      "reason": "one sentence naming the main factual or editorial reason",
+      "suggestedQuestion": "<rewritten question when coherence fails and the fact is defensible, else empty string>"
     }
   ]
 }
