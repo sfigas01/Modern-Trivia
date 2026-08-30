@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { LogIn, UserPlus } from 'lucide-react';
 import { roomCodeSchema, type JoinRoomRequest, type JoinRoomResponse } from '@shared/models/rooms';
 
+import { getGuestSeenIds } from '@/lib/guest-seen';
 import { saveRoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +64,13 @@ export default function JoinGame() {
     e.preventDefault();
     if (!isCodeValid || !isNicknameValid || joinRoomMutation.isPending) return;
 
-    joinRoomMutation.mutate({ nickname: trimmedNickname });
+    // Send this browser's locally-seen question ids so room-wide selection can
+    // exclude questions this player has already seen, not just the host's
+    // (STE-273). Ignored server-side for signed-in players.
+    joinRoomMutation.mutate({
+      nickname: trimmedNickname,
+      excludeQuestionIds: getGuestSeenIds(),
+    });
   };
 
   return (

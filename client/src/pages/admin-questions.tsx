@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { VALID_CATEGORIES } from '@shared/constants/categories';
 import { AdminLayout } from '@/components/admin-layout';
+import { HiddenAnswer, containsAnswer } from '@/components/admin/HiddenAnswer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -124,6 +125,12 @@ const FIXABLE_FIELDS = new Set([
   'question',
   'acceptableAnswers',
 ]);
+
+// Fields whose values are (or contain) the answer, so must stay spoiler-free.
+const ANSWER_FIELDS = new Set(['answer', 'acceptableAnswers']);
+function isAnswerField(field: string): boolean {
+  return ANSWER_FIELDS.has(field);
+}
 
 function displayValue(field: string, q: Question): string {
   if (field === 'tags') return (q.tags ?? []).join(', ');
@@ -438,13 +445,26 @@ function EditableField({
           )}
         </div>
       ) : fieldKey === 'acceptableAnswers' ? (
-        <p className="text-xs text-muted-foreground">
-          {(question.acceptableAnswers ?? []).length > 0 ? (
-            (question.acceptableAnswers ?? []).join(', ')
-          ) : (
-            <span className="italic">None</span>
-          )}
-        </p>
+        (question.acceptableAnswers ?? []).length > 0 ? (
+          <HiddenAnswer
+            answer={(question.acceptableAnswers ?? []).join(', ')}
+            label={null}
+            testId={`acceptable-${question.id}`}
+          />
+        ) : (
+          <p className="text-xs text-muted-foreground italic">None</p>
+        )
+      ) : fieldKey === 'answer' ? (
+        isEmpty ? (
+          <p className="text-sm text-red-400 italic">Missing — hover to fix</p>
+        ) : (
+          <HiddenAnswer
+            answer={rawDisplay}
+            label={null}
+            valueClassName="text-sm text-primary font-medium"
+            testId={`answer-${question.id}`}
+          />
+        )
       ) : fieldKey === 'sourceUrl' ? (
         rawDisplay ? (
           <a
@@ -459,10 +479,18 @@ function EditableField({
         ) : (
           <span className="text-red-400 italic text-xs">Missing — hover to fix</span>
         )
+      ) : !isEmpty &&
+        containsAnswer(rawDisplay, [question.answer, ...(question.acceptableAnswers ?? [])]) ? (
+        // Free-text prose (e.g. an explanation) that contains the answer must
+        // stay spoiler-free until revealed, just like the answer itself.
+        <HiddenAnswer
+          answer={rawDisplay}
+          label={null}
+          valueClassName="text-sm"
+          testId={`prose-${fieldKey}-${question.id}`}
+        />
       ) : (
-        <p
-          className={`text-sm ${isEmpty ? 'text-red-400 italic' : fieldKey === 'answer' ? 'text-primary font-medium' : 'text-muted-foreground'}`}
-        >
+        <p className={`text-sm ${isEmpty ? 'text-red-400 italic' : 'text-muted-foreground'}`}>
           {rawDisplay || 'Missing — hover to fix'}
         </p>
       )}
@@ -472,7 +500,7 @@ function EditableField({
 
 // ─── ChangeLog ────────────────────────────────────────────────────────────────
 
-function ChangeLog({ questionId }: { questionId: string }) {
+function ChangeLog({ questionId, answers }: { questionId: string; answers: string[] }) {
   const [edits, setEdits] = useState<EditRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -524,30 +552,56 @@ function ChangeLog({ questionId }: { questionId: string }) {
           {!loading && edits.length === 0 && (
             <p className="text-xs text-muted-foreground italic">No edits recorded yet.</p>
           )}
-          {edits.map((e) => (
-            <div key={e.id} className="text-xs rounded bg-white/5 px-3 py-1.5 space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-foreground">{e.field}</span>
-                {e.aiSuggested && (
-                  <Badge className="bg-orange-500/15 text-orange-400 border-orange-500/30 text-xs gap-1 h-4">
-                    <Bot className="w-2.5 h-2.5" /> AI
-                  </Badge>
-                )}
-                <span className="text-muted-foreground ml-auto">
-                  {new Date(e.changedAt).toLocaleString()}
-                </span>
+          {edits.map((e) => {
+            const oldVal = formatValue(e.oldValue);
+            const newVal = formatValue(e.newValue);
+            // Mask a change-log entry if it's an answer field or if either
+            // value contains the answer (e.g. an explanation edit).
+            const maskValues =
+              isAnswerField(e.field) ||
+              containsAnswer(oldVal, answers) ||
+              containsAnswer(newVal, answers);
+            return (
+              <div key={e.id} className="text-xs rounded bg-white/5 px-3 py-1.5 space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-foreground">{e.field}</span>
+                  {e.aiSuggested && (
+                    <Badge className="bg-orange-500/15 text-orange-400 border-orange-500/30 text-xs gap-1 h-4">
+                      <Bot className="w-2.5 h-2.5" /> AI
+                    </Badge>
+                  )}
+                  <span className="text-muted-foreground ml-auto">
+                    {new Date(e.changedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-start gap-1.5 text-muted-foreground">
+                  {maskValues ? (
+                    <>
+                      <HiddenAnswer
+                        answer={oldVal}
+                        label={null}
+                        className="line-through opacity-60"
+                        testId={`changelog-old-${e.id}`}
+                      />
+                      <span className="text-white/30">→</span>
+                      <HiddenAnswer
+                        answer={newVal}
+                        label={null}
+                        valueClassName="text-foreground"
+                        testId={`changelog-new-${e.id}`}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <span className="line-through opacity-60 max-w-[40%] truncate">{oldVal}</span>
+                      <span className="text-white/30">→</span>
+                      <span className="text-foreground max-w-[50%] truncate">{newVal}</span>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="flex items-start gap-1.5 text-muted-foreground">
-                <span className="line-through opacity-60 max-w-[40%] truncate">
-                  {formatValue(e.oldValue)}
-                </span>
-                <span className="text-white/30">→</span>
-                <span className="text-foreground max-w-[50%] truncate">
-                  {formatValue(e.newValue)}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -682,7 +736,7 @@ function ExpandedRow({ q, onUpdated }: { q: Question; onUpdated: (updated: Quest
       </div>
 
       {/* Change log */}
-      <ChangeLog questionId={q.id} />
+      <ChangeLog questionId={q.id} answers={[q.answer, ...(q.acceptableAnswers ?? [])]} />
     </div>
   );
 }

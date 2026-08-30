@@ -135,8 +135,14 @@ function isHardFailure(q: PendingQuestion): boolean {
 
 function describeFailures(q: PendingQuestion): string[] {
   const reasons: string[] = [];
-  if (q.aiAnalysis.factCheck.verdict === 'fail') {
-    reasons.push(`Fact-check FAIL: ${q.aiAnalysis.factCheck.reason}`);
+  const factCheck = q.aiAnalysis.factCheck;
+  if (factCheck.coherence === 'fail') {
+    const rewrite = factCheck.suggestedQuestion
+      ? ` — suggested rewrite: "${factCheck.suggestedQuestion}"`
+      : '';
+    reasons.push(`Coherence FAIL: ${factCheck.reason}${rewrite}`);
+  } else if (factCheck.verdict === 'fail') {
+    reasons.push(`Fact-check FAIL: ${factCheck.reason}`);
   }
   for (const finding of q.aiAnalysis.qaFindings.filter((f) => f.severity === 'high')) {
     reasons.push(`QA high-severity [${finding.rule}]: ${finding.message}`);
@@ -157,6 +163,7 @@ async function runQaOnSingle(
   const factCheck: FactCheckVerdict = factCheckReport.results.find((r) => r.questionId === id) ?? {
     questionId: id,
     verdict: 'flag' as const,
+    coherence: 'pass' as const,
     confidence: 0,
     reason: 'No verdict returned.',
   };
@@ -366,6 +373,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
     ) ?? {
       questionId: id,
       verdict: 'flag' as const,
+      coherence: 'pass' as const,
       confidence: 0,
       reason: 'No verdict returned.',
     };

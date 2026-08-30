@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Spinner } from '@/components/ui/spinner';
 import { useRoom } from '@/hooks/use-room';
 import { useAuth } from '@/hooks/use-auth';
-import { useRecordGuestRoomQuestion } from '@/hooks/use-record-guest-room-question';
+import { useRecordRoomQuestion } from '@/hooks/use-record-room-question';
 import { clearRoomSession, getRoomSession } from '@/lib/room-session';
 import type { RoomPlayerSnapshot } from '@shared/models/rooms';
 
@@ -50,7 +50,7 @@ export default function Room() {
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const prevActivePlayerRef = useRef<string | null>(null);
 
-  useRecordGuestRoomQuestion(snapshot?.currentQuestion?.id, isAuthenticated, authLoading);
+  useRecordRoomQuestion(snapshot?.currentQuestion?.id, isAuthenticated, authLoading);
 
   useEffect(() => {
     if (!session) {

@@ -1,3 +1,5 @@
+import { timingSafeEqual } from 'node:crypto';
+
 import * as client from 'openid-client';
 import { Strategy, type VerifyFunction } from 'openid-client/passport';
 
@@ -27,9 +29,7 @@ export function getSession() {
   const sessionSecret = process.env.SESSION_SECRET;
 
   if (!sessionSecret) {
-    throw new Error(
-      'SESSION_SECRET must be set. Generate one with: openssl rand -hex 32'
-    );
+    throw new Error('SESSION_SECRET must be set. Generate one with: openssl rand -hex 32');
   }
 
   let sessionStore: session.Store;
@@ -159,7 +159,41 @@ export async function setupAuth(app: Express) {
   });
 }
 
+/**
+ * Constant-time comparison of a presented bearer token against the configured
+ * admin API key. Returns false on any length mismatch without leaking timing.
+ */
+function bearerTokenMatches(presented: string, expected: string): boolean {
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) {
+    return false;
+  }
+  return timingSafeEqual(a, b);
+}
+
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // --- API key auth for scripted admin access (e.g. content quality sweeps) ---
+  // When ADMIN_API_KEY is set, a request presenting it via an
+  // `Authorization: Bearer <key>` header is authenticated as the admin user
+  // identified by ADMIN_API_KEY_USER_ID. This bypasses the OIDC session check
+  // only — isAdmin still verifies that user ID against the admin_roles table,
+  // so the key alone does not grant admin unless the ID is a real admin.
+  const adminApiKey = process.env.ADMIN_API_KEY;
+  if (adminApiKey) {
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ') && bearerTokenMatches(authHeader.slice(7), adminApiKey)) {
+      const userId = process.env.ADMIN_API_KEY_USER_ID || 'service-account';
+      // Synthetic user so downstream middleware (isAdmin, aiLimiter) works.
+      (req as any).user = {
+        claims: { sub: userId },
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+      };
+      return next();
+    }
+  }
+  // --- End API key auth ---
+
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
