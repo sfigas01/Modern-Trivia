@@ -13,11 +13,11 @@ import { auditQuestionQuality, type QuestionQualityRule } from './question-quali
  *
  * Failure modes fall into three detector tiers:
  *  - `static`: deterministic heuristics (`auditQuestionQuality`) — always run, no API key.
- *  - `live`:   LLM-backed checks (fact verification, conceptual dedup) — run only when
- *              `runLive` is set and an OpenAI key is present.
+ *  - `live`:   LLM-backed checks (conceptual/string dedup) — run only when `runLive` is set
+ *              and an OpenAI key is present.
  *  - `none`:   no detector implemented yet — the fixtures carry the cases so the sibling
- *              tickets (coherence STE-246, obviousness STE-247, …) have a target to build
- *              against; reported as a coverage gap, never counted against the score.
+ *              tickets (coherence STE-246, obviousness STE-247, fact verification STE-25, …)
+ *              have a target to build against; reported as a coverage gap, never scored.
  */
 
 export type BenchmarkLabel =
@@ -113,10 +113,11 @@ export const LABEL_REGISTRY: Record<BenchmarkLabel, LabelSpec> = {
     description: 'Answer is derivable from the question text alone, or difficulty is mislabelled.',
   },
   factual_error: {
-    tier: 'live',
-    detector: 'verifier.batchFactCheck',
+    tier: 'none',
+    detector: '(not implemented)',
     ownerTicket: 'STE-25',
-    description: 'Answer is factually incorrect (needs LLM / web-search verification).',
+    description:
+      'Answer is factually incorrect. The current verifier also flags editorial issues (missing source, tagging, leakage), so a fact-specific detector is required before scoring this (STE-25).',
   },
   semantic_duplicate: {
     tier: 'live',
@@ -264,16 +265,19 @@ export async function runBenchmark(
   }
 
   if (runLive) {
-    const questions = cases.map((testCase) => toQuestion(testCase.question));
-
-    const { batchFactCheck } = await import('./verifier');
-    const factReport = await batchFactCheck(questions);
-    for (const verdict of factReport.results) {
-      if (verdict.verdict !== 'pass') {
-        detectedByCase.get(verdict.questionId)?.add('factual_error');
-      }
+    if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+      throw new Error(
+        'Live benchmark checks require AI_INTEGRATIONS_OPENAI_API_KEY. Set it, or run without --live.'
+      );
     }
 
+    const questions = cases.map((testCase) => toQuestion(testCase.question));
+
+    // Conceptual + string duplicate detection (STE-26). Fact verification is intentionally
+    // NOT run here: the current verifier returns flag/fail for editorial issues too, not only
+    // factual errors, so mapping its verdicts to `factual_error` would mislabel fixtures that
+    // exercise other defects. `factual_error` stays a coverage gap until STE-25 lands a
+    // fact-specific detector.
     const { detectDuplicates } = await import('./duplicate-detector');
     const dupReport = await detectDuplicates(questions);
     for (const match of dupReport.duplicatesFound) {
