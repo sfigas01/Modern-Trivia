@@ -87,13 +87,15 @@ ${q.sourceUrl ? `Source: ${q.sourceUrl}` : ''}
 Return ONLY the corrected answer as a short string. If the current answer is already correct, return it unchanged.`,
 
   question: (q) =>
-    `Rephrase the following trivia question to make it clearer, less ambiguous, and more engaging while keeping the same answer.
+    `Rephrase the following trivia question to make it clearer, less ambiguous, and more engaging while keeping the SAME answer.
+
+If the question contains a false premise — it asserts something untrue that the answer then has to contradict (e.g. "Which Canadian band released 'Immigrant Song'?" when the band is actually British) — rewrite it to fit the answer with the false premise removed (e.g. "Which band is known for 'Immigrant Song'?"). Keep the underlying fact; never change the answer.
 
 Question: ${q.question}
 Answer: ${q.answer}
 Category: ${q.category}
 
-Return ONLY the rephrased question. No explanation, no quotes.`,
+Return ONLY the rewritten question. No explanation, no quotes.`,
 
   acceptableAnswers: (q) =>
     `List all reasonable acceptable variations of the answer to this trivia question. Include common abbreviations, alternate spellings, and partial answers that would be clearly correct.

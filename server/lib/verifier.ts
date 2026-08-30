@@ -17,8 +17,16 @@ function getOpenAI(): OpenAI {
 export interface FactCheckVerdict {
   questionId: string;
   verdict: 'pass' | 'flag' | 'fail';
+  /**
+   * Question–answer coherence (STE-246): 'fail' when the question's premise is wrong or the
+   * answer is not the type the question asks for (including negation/trick answers). A coherence
+   * failure always forces `verdict` to 'fail'.
+   */
+  coherence: 'pass' | 'fail';
   confidence: number;
   reason: string;
+  /** Proposed rewritten question that fits the answer with the false premise removed. */
+  suggestedQuestion?: string;
 }
 
 export interface FactCheckReport {
@@ -29,8 +37,10 @@ export interface FactCheckReport {
 interface RawVerdict {
   id?: string;
   verdict?: string;
+  coherence?: string;
   confidence?: number;
   reason?: string;
+  suggestedQuestion?: string;
 }
 
 const BATCH_SIZE = 50;
@@ -66,17 +76,26 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
     for (const raw of rawResults) {
       const id = typeof raw.id === 'string' ? raw.id : '';
       if (!id) continue;
-      const verdict = (['pass', 'flag', 'fail'] as const).includes(
+      let verdict = (['pass', 'flag', 'fail'] as const).includes(
         raw.verdict as 'pass' | 'flag' | 'fail'
       )
         ? (raw.verdict as 'pass' | 'flag' | 'fail')
         : 'flag';
+      const coherence: 'pass' | 'fail' = raw.coherence === 'fail' ? 'fail' : 'pass';
+      // A coherence failure always forces an overall fail, even if the model left verdict softer.
+      if (coherence === 'fail') verdict = 'fail';
+      const suggestedQuestion =
+        typeof raw.suggestedQuestion === 'string' && raw.suggestedQuestion.trim().length > 0
+          ? raw.suggestedQuestion.trim()
+          : undefined;
       resultMap.set(id, {
         questionId: id,
         verdict,
+        coherence,
         confidence:
           typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
         reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
+        ...(suggestedQuestion ? { suggestedQuestion } : {}),
       });
     }
 
@@ -92,6 +111,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
         resultMap.get(q.id) ?? {
           questionId: q.id,
           verdict: 'flag' as const,
+          coherence: 'pass' as const,
           confidence: 0,
           reason: 'No verdict returned by fact-checker.',
         }
@@ -101,6 +121,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
     return batch.map((q) => ({
       questionId: q.id,
       verdict: 'flag' as const,
+      coherence: 'pass' as const,
       confidence: 0,
       reason: 'Fact-check could not be completed.',
     }));

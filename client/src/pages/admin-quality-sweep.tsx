@@ -1329,6 +1329,11 @@ function FactCheckSection({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">
                   <VerdictBadge verdict={result.verdict} />
+                  {result.coherence === 'fail' && (
+                    <Badge variant="destructive" className="text-xs">
+                      coherence
+                    </Badge>
+                  )}
                   <span className="text-xs font-mono">{result.confidence}%</span>
                   <span className="font-mono text-xs text-muted-foreground">
                     {result.questionId}
@@ -1362,6 +1367,14 @@ function FactCheckSection({
                   </p>
                 )}
                 <p className="text-sm text-muted-foreground">{result.reason}</p>
+                {result.suggestedQuestion && (
+                  <div className="mt-1 rounded border border-emerald-500/30 bg-emerald-500/10 p-2">
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-300">
+                      Suggested rewrite (keeps the answer, fixes the premise)
+                    </p>
+                    <p className="text-sm text-white/90 leading-snug">{result.suggestedQuestion}</p>
+                  </div>
+                )}
                 {snapshot && (
                   <div className="pt-1">
                     <HiddenAnswer answer={snapshot.answer} />

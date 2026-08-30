@@ -169,8 +169,8 @@
   },
   {
     "id": "type-mismatch-numeric",
-    "expects": ["type_mismatch"],
-    "note": "Question asks for a year but the stored answer is not numeric.",
+    "expects": ["type_mismatch", "coherence"],
+    "note": "Question asks for a year but the stored answer is not numeric — caught by the static answer-type heuristic and, as an answer-type coherence failure, by the live coherence check.",
     "question": {
       "id": "type-mismatch-numeric",
       "category": "History & Geography",
@@ -247,6 +247,40 @@
       "explanation": "Immigrant Song was released by Led Zeppelin, an English rock band, in 1970.",
       "tags": ["Global", "TimeCapsule", "Arts & Entertainment"],
       "sourceUrl": "https://en.wikipedia.org/wiki/Immigrant_Song",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "coherence-wrong-decade",
+    "expects": ["coherence"],
+    "note": "Mis-premised (wrong decade): 'Bad Guy' won a Grammy in 2020, not the 1980s. Fact defensible, premise false.",
+    "question": {
+      "id": "coherence-wrong-decade",
+      "category": "Arts & Entertainment",
+      "difficulty": "Medium",
+      "pillar": "TimeCapsule",
+      "question": "Which song from the 1980s earned Billie Eilish her first Grammy?",
+      "answer": "Bad Guy",
+      "explanation": "'Bad Guy' won Billie Eilish her first Grammy in 2020.",
+      "tags": ["Global", "TimeCapsule", "Arts & Entertainment"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Bad_Guy_(Billie_Eilish_song)",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "coherence-wrong-category",
+    "expects": ["coherence"],
+    "note": "Mis-premised (wrong category of thing): asks for an actor, but Jane Austen was a novelist. Fact defensible, premise false.",
+    "question": {
+      "id": "coherence-wrong-category",
+      "category": "Arts & Entertainment",
+      "difficulty": "Easy",
+      "pillar": "TimeCapsule",
+      "question": "Which actor wrote the novel 'Pride and Prejudice'?",
+      "answer": "Jane Austen",
+      "explanation": "Jane Austen, an English novelist, wrote Pride and Prejudice.",
+      "tags": ["Global", "TimeCapsule", "Arts & Entertainment"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Jane_Austen",
       "sourceName": "Wikipedia"
     }
   },

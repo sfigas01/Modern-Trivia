@@ -13,11 +13,11 @@ import { auditQuestionQuality, type QuestionQualityRule } from './question-quali
  *
  * Failure modes fall into three detector tiers:
  *  - `static`: deterministic heuristics (`auditQuestionQuality`) — always run, no API key.
- *  - `live`:   LLM-backed checks (conceptual/string dedup) — run only when `runLive` is set
- *              and an OpenAI key is present.
+ *  - `live`:   LLM-backed checks (Q–A coherence STE-246, conceptual/string dedup STE-26) — run
+ *              only when `runLive` is set and an OpenAI key is present.
  *  - `none`:   no detector implemented yet — the fixtures carry the cases so the sibling
- *              tickets (coherence STE-246, obviousness STE-247, fact verification STE-25, …)
- *              have a target to build against; reported as a coverage gap, never scored.
+ *              tickets (obviousness STE-247, fact verification STE-25, …) have a target to build
+ *              against; reported as a coverage gap, never scored.
  */
 
 export type BenchmarkLabel =
@@ -101,8 +101,8 @@ export const LABEL_REGISTRY: Record<BenchmarkLabel, LabelSpec> = {
     description: 'Explanation does not reference the answer and there is no source to verify it.',
   },
   coherence: {
-    tier: 'none',
-    detector: '(not implemented)',
+    tier: 'live',
+    detector: 'verifier.batchFactCheck (coherence)',
     ownerTicket: 'STE-246',
     description: 'Answer is defensible but does not match the question premise (mis-premised Q&A).',
   },
@@ -273,11 +273,20 @@ export async function runBenchmark(
 
     const questions = cases.map((testCase) => toQuestion(testCase.question));
 
-    // Conceptual + string duplicate detection (STE-26). Fact verification is intentionally
-    // NOT run here: the current verifier returns flag/fail for editorial issues too, not only
-    // factual errors, so mapping its verdicts to `factual_error` would mislabel fixtures that
-    // exercise other defects. `factual_error` stays a coverage gap until STE-25 lands a
-    // fact-specific detector.
+    // Question–answer coherence (STE-246): the review returns a dedicated `coherence` signal
+    // separate from the overall pass/flag/fail verdict, so we can score it without the
+    // false-positive problem that blocks `factual_error`.
+    const { batchFactCheck } = await import('./verifier');
+    const factReport = await batchFactCheck(questions);
+    for (const verdict of factReport.results) {
+      if (verdict.coherence === 'fail') {
+        detectedByCase.get(verdict.questionId)?.add('coherence');
+      }
+    }
+
+    // Conceptual + string duplicate detection (STE-26). `factual_error` is intentionally NOT
+    // scored: the verifier's pass/flag/fail verdict conflates editorial issues with factual
+    // ones, so it stays a coverage gap until STE-25 lands a fact-specific detector.
     const { detectDuplicates } = await import('./duplicate-detector');
     const dupReport = await detectDuplicates(questions);
     for (const match of dupReport.duplicatesFound) {
