@@ -169,8 +169,8 @@
   },
   {
     "id": "type-mismatch-numeric",
-    "expects": ["type_mismatch"],
-    "note": "Question asks for a year but the stored answer is not numeric.",
+    "expects": ["type_mismatch", "coherence"],
+    "note": "Question asks for a year but the stored answer is not numeric — caught by the static answer-type heuristic and, as an answer-type coherence failure, by the live coherence check.",
     "question": {
       "id": "type-mismatch-numeric",
       "category": "History & Geography",
