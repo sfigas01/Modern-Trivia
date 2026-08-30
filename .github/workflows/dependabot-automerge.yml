@@ -1,0 +1,45 @@
+name: Dependabot auto-merge
+
+# Reviewed-auto-merge policy for Dependabot PRs.
+#
+# Once the required CI checks pass, auto-merge (squash) Dependabot PRs that are:
+#   - patch or minor version updates (any dependency), or
+#   - devDependency updates (any update type), or
+#   - GitHub Actions updates (any update type).
+#
+# MAJOR updates of production dependencies are intentionally NOT auto-merged —
+# they stay open for a human to review and merge.
+#
+# This uses GitHub's native auto-merge (`gh pr merge --auto`), so a PR only merges
+# after the branch-protection required checks (Quality Gates, E2E Smoke Tests) are
+# green. Requires "Allow auto-merge" to be enabled in repo Settings → General.
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  dependabot-auto-merge:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' }}
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for allowed update tiers
+        # patch/minor (any dep) OR any devDependency OR any GitHub Actions bump.
+        # Production major bumps fall through and are left for manual review.
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||
+          steps.metadata.outputs.dependency-type == 'direct:development' ||
+          startsWith(github.event.pull_request.head.ref, 'dependabot/github_actions/')
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
