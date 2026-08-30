@@ -1,0 +1,350 @@
+[
+  {
+    "id": "clean-capital",
+    "expects": [],
+    "note": "Clean control: well-formed factual question, all fields present.",
+    "question": {
+      "id": "clean-capital",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "What is the capital city of Canada?",
+      "answer": "Ottawa",
+      "explanation": "Ottawa became Canada's capital in 1857 by choice of Queen Victoria.",
+      "tags": ["CA", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Ottawa",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "clean-element",
+    "expects": [],
+    "note": "Clean control: short-symbol answer, no leakage.",
+    "question": {
+      "id": "clean-element",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "question": "What is the chemical symbol for gold?",
+      "answer": "Au",
+      "explanation": "Gold is represented by the symbol Au on the periodic table.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Gold",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "clean-strait",
+    "expects": [],
+    "note": "Clean control: GreatOutdoors pillar, no token overlap between question and answer.",
+    "question": {
+      "id": "clean-strait",
+      "category": "History & Geography",
+      "difficulty": "Medium",
+      "question": "What body of water lies between Vancouver Island and the mainland?",
+      "answer": "The Strait of Georgia",
+      "explanation": "The Strait of Georgia separates Vancouver Island from mainland British Columbia.",
+      "tags": ["CA", "GreatOutdoors", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Strait_of_Georgia",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "clean-freshprints",
+    "expects": [],
+    "note": "Clean control: FreshPrints pillar, recent pop-culture item.",
+    "question": {
+      "id": "clean-freshprints",
+      "category": "Arts & Entertainment",
+      "difficulty": "Medium",
+      "question": "Which Canadian broadcaster originally aired the series Schitt's Creek?",
+      "answer": "CBC",
+      "explanation": "Schitt's Creek originally aired on CBC Television in Canada from 2015 to 2020.",
+      "tags": ["CA", "FreshPrints", "Arts & Entertainment"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Schitt%27s_Creek",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "leak-answer-in-question",
+    "expects": ["answer_leakage"],
+    "note": "Answer 'Paris' is stated verbatim in the question text.",
+    "question": {
+      "id": "leak-answer-in-question",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "What is the capital of France, the city home to the Eiffel Tower in Paris?",
+      "answer": "Paris",
+      "explanation": "Paris is the capital and most populous city of France.",
+      "tags": ["Global", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Paris",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "missing-source",
+    "expects": ["missing_source"],
+    "note": "Well-formed question but no source URL or source name.",
+    "question": {
+      "id": "missing-source",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "question": "Which planet is nicknamed the Red Planet?",
+      "answer": "Mars",
+      "explanation": "Mars appears red due to iron oxide on its surface.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"]
+    }
+  },
+  {
+    "id": "invalid-difficulty",
+    "expects": ["invalid_difficulty"],
+    "note": "Difficulty 'Trivial' is not one of Easy/Medium/Hard.",
+    "question": {
+      "id": "invalid-difficulty",
+      "category": "Science & Nature",
+      "difficulty": "Trivial",
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific",
+      "explanation": "The Pacific is the largest and deepest of Earth's oceans.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Pacific_Ocean",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "tagging-gaps",
+    "expects": ["tagging"],
+    "note": "Tags are missing a pillar tag and do not include the category.",
+    "question": {
+      "id": "tagging-gaps",
+      "category": "Arts & Entertainment",
+      "difficulty": "Medium",
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci",
+      "explanation": "Leonardo da Vinci painted the Mona Lisa in the early 16th century.",
+      "tags": ["Global"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Mona_Lisa",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "subjective-wording",
+    "expects": ["subjective"],
+    "note": "'Greatest of all time' is subjective with no single correct answer.",
+    "question": {
+      "id": "subjective-wording",
+      "category": "Sports",
+      "difficulty": "Hard",
+      "question": "Who was the greatest hockey player of all time?",
+      "answer": "Wayne Gretzky",
+      "explanation": "Wayne Gretzky holds numerous NHL scoring records.",
+      "tags": ["CA", "TimeCapsule", "Sports"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Wayne_Gretzky",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "ambiguous-format",
+    "expects": ["ambiguous_format"],
+    "note": "'Which of the following' implies options that are not present.",
+    "question": {
+      "id": "ambiguous-format",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "Which of the following is a province of Canada?",
+      "answer": "Alberta",
+      "explanation": "Alberta is one of Canada's ten provinces.",
+      "tags": ["CA", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Alberta",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "type-mismatch-numeric",
+    "expects": ["type_mismatch"],
+    "note": "Question asks for a year but the stored answer is not numeric.",
+    "question": {
+      "id": "type-mismatch-numeric",
+      "category": "History & Geography",
+      "difficulty": "Medium",
+      "question": "In what year did Canada become a country?",
+      "answer": "Confederation",
+      "explanation": "Canadian Confederation formed the country of Canada.",
+      "tags": ["CA", "TimeCapsule", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Canadian_Confederation",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "multi-answer-single",
+    "expects": ["multi_answer"],
+    "note": "Question asks for two answers but only one is stored.",
+    "question": {
+      "id": "multi-answer-single",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "Name two official languages of Canada.",
+      "answer": "English",
+      "explanation": "English and French are the two official languages of Canada.",
+      "tags": ["CA", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Official_bilingualism_in_Canada",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "missing-field-answer",
+    "expects": ["missing_field"],
+    "note": "Required answer field is empty.",
+    "question": {
+      "id": "missing-field-answer",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "question": "What is the boiling point of water at sea level in Celsius?",
+      "answer": "",
+      "explanation": "Water boils at 100 degrees Celsius at sea level.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Boiling_point",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "unverifiable-no-source",
+    "expects": ["unverifiable", "missing_source"],
+    "note": "Explanation does not reference the answer and there is no source to verify it.",
+    "question": {
+      "id": "unverifiable-no-source",
+      "category": "Science & Nature",
+      "difficulty": "Medium",
+      "question": "Who developed the theory of general relativity?",
+      "answer": "Albert Einstein",
+      "explanation": "This scientific theory reshaped physics in the twentieth century.",
+      "tags": ["Global", "TimeCapsule", "Science & Nature"]
+    }
+  },
+  {
+    "id": "coherence-immigrant-song",
+    "expects": ["coherence"],
+    "note": "Canonical mis-premised Q&A (STE-246): the premise 'Canadian band' is false — Led Zeppelin is British. No detector yet.",
+    "question": {
+      "id": "coherence-immigrant-song",
+      "category": "Arts & Entertainment",
+      "difficulty": "Medium",
+      "question": "Which Canadian band released the song Immigrant Song?",
+      "answer": "Led Zeppelin",
+      "explanation": "Immigrant Song was released by Led Zeppelin, an English rock band, in 1970.",
+      "tags": ["Global", "TimeCapsule", "Arts & Entertainment"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Immigrant_Song",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "obviousness-maple-leafs",
+    "expects": ["obviousness"],
+    "note": "Canonical self-answering Q&A (STE-247): 'Maple Leafs' gives away 'Toronto'. No detector yet.",
+    "question": {
+      "id": "obviousness-maple-leafs",
+      "category": "Sports",
+      "difficulty": "Easy",
+      "question": "Which NHL team is known as the Maple Leafs?",
+      "answer": "Toronto",
+      "explanation": "The Maple Leafs are Toronto's National Hockey League franchise.",
+      "tags": ["CA", "TimeCapsule", "Sports"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "us-centric-globaleh",
+    "expects": ["us_centric"],
+    "note": "US-default content tagged GlobalEh (STE-249/STE-103 strategy). No detector yet.",
+    "question": {
+      "id": "us-centric-globaleh",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "In which US state is Hollywood located?",
+      "answer": "California",
+      "explanation": "Hollywood is a neighborhood in Los Angeles, California.",
+      "tags": ["US", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Hollywood",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "factual-error-canberra",
+    "expects": ["factual_error"],
+    "note": "Factually wrong (STE-25): the capital of Australia is Canberra, not Sydney. Static checks pass; only live fact-check catches it.",
+    "question": {
+      "id": "factual-error-canberra",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "What is the capital of Australia?",
+      "answer": "Sydney",
+      "explanation": "Sydney is a major coastal city in Australia.",
+      "tags": ["Global", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Sydney",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "semantic-dup-a",
+    "expects": ["semantic_duplicate"],
+    "note": "Paraphrase pair with semantic-dup-b (STE-26). String matching misses it; conceptual dedup should catch it.",
+    "question": {
+      "id": "semantic-dup-a",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "What is the capital of Japan?",
+      "answer": "Tokyo",
+      "explanation": "Tokyo is the capital of Japan.",
+      "tags": ["Global", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "semantic-dup-b",
+    "expects": ["semantic_duplicate"],
+    "note": "Paraphrase pair with semantic-dup-a (STE-26).",
+    "question": {
+      "id": "semantic-dup-b",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "question": "Which Japanese city is the seat of the national government?",
+      "answer": "Tokyo",
+      "explanation": "Tokyo serves as the seat of Japan's national government.",
+      "tags": ["Global", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Tokyo",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "string-dup-a",
+    "expects": ["string_duplicate"],
+    "note": "Near-identical pair with string-dup-b (STE-26). Detectable by string similarity.",
+    "question": {
+      "id": "string-dup-a",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "question": "What is the tallest peak on Earth?",
+      "answer": "Mount Everest",
+      "explanation": "Mount Everest is the highest peak above sea level on Earth.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Everest",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "string-dup-b",
+    "expects": ["string_duplicate"],
+    "note": "Near-identical pair with string-dup-a (STE-26).",
+    "question": {
+      "id": "string-dup-b",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "question": "What is the tallest peak on Earth called?",
+      "answer": "Mount Everest",
+      "explanation": "Mount Everest is the highest peak above sea level on Earth.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Mount_Everest",
+      "sourceName": "Wikipedia"
+    }
+  }
+]
