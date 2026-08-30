@@ -109,11 +109,91 @@ describe('batchFactCheck', () => {
         {
           questionId: 'q1',
           verdict: 'fail',
+          coherence: 'pass',
           confidence: 88,
           reason: 'Answer leaks into the prompt.',
         },
       ],
     });
+  });
+
+  it('parses a coherence failure and forces the overall verdict to fail', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  coherence: 'fail',
+                  confidence: 90,
+                  reason: 'Premise is false: Led Zeppelin is a British band.',
+                  suggestedQuestion: "Which band is known for 'Immigrant Song'?",
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({
+        id: 'q1',
+        question: "Which Canadian band released 'Immigrant Song'?",
+        answer: 'Led Zeppelin',
+      }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        // coherence fail overrides the model's softer 'flag' verdict
+        verdict: 'fail',
+        coherence: 'fail',
+        confidence: 90,
+        reason: 'Premise is false: Led Zeppelin is a British band.',
+        suggestedQuestion: "Which band is known for 'Immigrant Song'?",
+      },
+    ]);
+  });
+
+  it('ignores an empty suggestedQuestion and defaults coherence to pass', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'pass',
+                  confidence: 97,
+                  reason: 'Looks good.',
+                  suggestedQuestion: '   ',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'pass',
+        coherence: 'pass',
+        confidence: 97,
+        reason: 'Looks good.',
+      },
+    ]);
   });
 
   it('keeps the missing-model-result fallback as a low-confidence flag', async () => {
@@ -129,6 +209,7 @@ describe('batchFactCheck', () => {
       {
         questionId: 'q1',
         verdict: 'flag',
+        coherence: 'pass',
         confidence: 0,
         reason: 'No verdict returned by fact-checker.',
       },

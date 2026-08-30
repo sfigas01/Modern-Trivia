@@ -268,12 +268,15 @@ function buildMarkdownReport(
     } else {
       lines.push(`${actionable.length} question(s) require attention:`);
       lines.push('');
-      lines.push('| Question ID | Verdict | Confidence | Reason |');
-      lines.push('| --- | --- | ---: | --- |');
+      lines.push('| Question ID | Verdict | Coherence | Confidence | Reason | Suggested rewrite |');
+      lines.push('| --- | --- | --- | ---: | --- | --- |');
 
       for (const result of actionable) {
+        const suggested = result.suggestedQuestion
+          ? escapeCell(truncate(result.suggestedQuestion))
+          : '';
         lines.push(
-          `| ${result.questionId} | ${result.verdict} | ${result.confidence} | ${escapeCell(truncate(result.reason))} |`
+          `| ${result.questionId} | ${result.verdict} | ${result.coherence} | ${result.confidence} | ${escapeCell(truncate(result.reason))} | ${suggested} |`
         );
       }
       lines.push('');

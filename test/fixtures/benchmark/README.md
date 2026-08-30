@@ -36,8 +36,8 @@ precision/recall/accuracy per failure mode plus a per-case expected-vs-detected 
 | Tier     | Meaning                                                                        | Labels                                                                                                                                                                  |
 | -------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `static` | Deterministic heuristics (`question-quality-audit`), always run                | `answer_leakage`, `missing_source`, `invalid_difficulty`, `tagging`, `subjective`, `ambiguous_format`, `type_mismatch`, `multi_answer`, `missing_field`, `unverifiable` |
-| `live`   | LLM-backed, run only with `--live` (requires `AI_INTEGRATIONS_OPENAI_API_KEY`) | `semantic_duplicate` / `string_duplicate` (STE-26)                                                                                                                      |
-| `none`   | No detector yet — fixtures ready, waiting on the owner ticket                  | `coherence` (STE-246), `obviousness` (STE-247), `factual_error` (STE-25), `us_centric` (STE-249)                                                                        |
+| `live`   | LLM-backed, run only with `--live` (requires `AI_INTEGRATIONS_OPENAI_API_KEY`) | `coherence` (STE-246), `semantic_duplicate` / `string_duplicate` (STE-26)                                                                                               |
+| `none`   | No detector yet — fixtures ready, waiting on the owner ticket                  | `obviousness` (STE-247), `factual_error` (STE-25), `us_centric` (STE-249)                                                                                               |
 
 Labels in the `none` tier (and `live` labels in a static run) are reported as
 **coverage gaps**, never counted against the score. As each sibling ticket ships
