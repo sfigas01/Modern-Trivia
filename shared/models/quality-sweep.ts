@@ -75,8 +75,13 @@ export interface DuplicateDetectionReport {
 export interface FactCheckVerdict {
   questionId: string;
   verdict: 'pass' | 'flag' | 'fail';
+  // Question–answer coherence (STE-246): 'fail' when the premise is wrong or the answer is not
+  // the type the question asks for. A coherence failure always forces verdict to 'fail'.
+  coherence: 'pass' | 'fail';
   confidence: number;
   reason: string;
+  // Proposed rewritten question that fits the answer with the false premise removed.
+  suggestedQuestion?: string;
 }
 
 export interface FactCheckReport {
