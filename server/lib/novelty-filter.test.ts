@@ -35,7 +35,7 @@ function makeQuestion(
 
 beforeEach(() => {
   mockCreate.mockReset();
-  // Default: GPT-4o says not a duplicate (prevents conceptual matches from
+  // Default: the model says not a duplicate (prevents conceptual matches from
   // interfering with tests that don't expect them).
   mockCreate.mockResolvedValue({
     choices: [
@@ -115,7 +115,7 @@ describe('filterNovelQuestions — collisions with existing', () => {
     expect(result.dropped[0].matchedExistingId).toBe('e1');
   });
 
-  it('drops a batch question flagged as a conceptual duplicate by GPT-4o', async () => {
+  it('drops a batch question flagged as a conceptual duplicate by the model', async () => {
     mockCreate.mockResolvedValue({
       choices: [
         {
@@ -318,7 +318,7 @@ describe('filterNovelQuestions — observability logging', () => {
 });
 
 describe('filterNovelQuestions — performance guards', () => {
-  it('does not call GPT-4o when no batch/existing pair has similar answers', async () => {
+  it('does not call the model when no batch/existing pair has similar answers', async () => {
     const existing = [
       makeQuestion({ id: 'e1', question: 'What is the capital of France?', answer: 'Paris' }),
     ];
@@ -348,9 +348,9 @@ describe('filterNovelQuestions — performance guards', () => {
     expect(result.dropped).toHaveLength(0);
   });
 
-  it('does not invoke the GPT-4o conceptual check for existing-vs-existing pairs', async () => {
+  it('does not invoke the conceptual model check for existing-vs-existing pairs', async () => {
     // Two existing rows with different question wording but identical answer —
-    // would normally trigger Phase 3 (conceptual GPT-4o call). With the scopeIds
+    // would normally trigger Phase 3 (conceptual model call). With the scopeIds
     // constraint, this pair must be skipped entirely.
     const existing = [
       makeQuestion({
@@ -365,7 +365,7 @@ describe('filterNovelQuestions — performance guards', () => {
       }),
     ];
     // Batch is unrelated to the existing pair — so no batch-involving pair
-    // should trigger GPT-4o either. The only way mockCreate could be called
+    // should trigger the model either. The only way mockCreate could be called
     // is if existing-vs-existing is being evaluated.
     const batch = [
       makeQuestion({ id: 'b1', question: 'What is the tallest mountain?', answer: 'Everest' }),
