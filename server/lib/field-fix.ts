@@ -91,6 +91,8 @@ Return ONLY the corrected answer as a short string. If the current answer is alr
 
 If the question contains a false premise — it asserts something untrue that the answer then has to contradict (e.g. "Which Canadian band released 'Immigrant Song'?" when the band is actually British) — rewrite it to fit the answer with the false premise removed (e.g. "Which band is known for 'Immigrant Song'?"). Keep the underlying fact; never change the answer.
 
+If the question is self-answering — the answer is embedded in or trivially implied by a famous compound name/title used in the question (e.g. "Which team is known as the Maple Leafs?" when the answer is "Toronto" — the nickname alone gives it away) — rewrite it to require real knowledge of the topic instead, e.g. by asking for a related fact the answer doesn't already hand over. If no faithful harder version keeps the same answer, write a different question that still tests "${q.answer}".
+
 Question: ${q.question}
 Answer: ${q.answer}
 Category: ${q.category}

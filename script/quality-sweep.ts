@@ -145,6 +145,13 @@ function buildRecommendations(
     if (failures > 0) recs.push(`${failures} question(s) failed fact-check — review immediately.`);
     if (flags > 0)
       recs.push(`${flags} question(s) flagged by fact-check — verify before next release.`);
+
+    const obvious = factCheckReport.results.filter((r) => r.obviousness === 'fail').length;
+    if (obvious > 0)
+      recs.push(
+        `${obvious} question(s) flagged as obvious (self-answering, trivially constrained, or ` +
+          `difficulty-mislabelled) — rephrase or replace before next release.`
+      );
   }
 
   if (recs.length === 0) {
@@ -183,8 +190,10 @@ function buildMarkdownReport(
   if (factCheckReport) {
     const failed = factCheckReport.results.filter((r) => r.verdict === 'fail').length;
     const flagged = factCheckReport.results.filter((r) => r.verdict === 'flag').length;
+    const obvious = factCheckReport.results.filter((r) => r.obviousness === 'fail').length;
     lines.push(`- Fact-check failures: ${failed}`);
     lines.push(`- Fact-check flags: ${flagged}`);
+    lines.push(`- Obviousness failures: ${obvious}`);
   } else {
     lines.push('- Fact-check: skipped');
   }
@@ -268,15 +277,18 @@ function buildMarkdownReport(
     } else {
       lines.push(`${actionable.length} question(s) require attention:`);
       lines.push('');
-      lines.push('| Question ID | Verdict | Coherence | Confidence | Reason | Suggested rewrite |');
-      lines.push('| --- | --- | --- | ---: | --- | --- |');
+      lines.push(
+        '| Question ID | Verdict | Coherence | Obviousness | Confidence | Reason | Suggested rewrite | Suggested difficulty |'
+      );
+      lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- |');
 
       for (const result of actionable) {
         const suggested = result.suggestedQuestion
           ? escapeCell(truncate(result.suggestedQuestion))
           : '';
+        const suggestedDifficulty = result.suggestedDifficulty ?? '';
         lines.push(
-          `| ${result.questionId} | ${result.verdict} | ${result.coherence} | ${result.confidence} | ${escapeCell(truncate(result.reason))} | ${suggested} |`
+          `| ${result.questionId} | ${result.verdict} | ${result.coherence} | ${result.obviousness} | ${result.confidence} | ${escapeCell(truncate(result.reason))} | ${suggested} | ${suggestedDifficulty} |`
         );
       }
       lines.push('');
@@ -303,6 +315,7 @@ interface SweepReport {
     duplicatePairs: number;
     factCheckFailed: number;
     factCheckFlagged: number;
+    obviousnessFailed: number;
   };
 }
 
@@ -373,6 +386,8 @@ async function main() {
       duplicatePairs: duplicateReport?.duplicatesFound.length ?? 0,
       factCheckFailed: factCheckReport?.results.filter((r) => r.verdict === 'fail').length ?? 0,
       factCheckFlagged: factCheckReport?.results.filter((r) => r.verdict === 'flag').length ?? 0,
+      obviousnessFailed:
+        factCheckReport?.results.filter((r) => r.obviousness === 'fail').length ?? 0,
     },
   };
 

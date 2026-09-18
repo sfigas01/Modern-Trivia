@@ -110,6 +110,7 @@ describe('batchFactCheck', () => {
           questionId: 'q1',
           verdict: 'fail',
           coherence: 'pass',
+          obviousness: 'pass',
           confidence: 88,
           reason: 'Answer leaks into the prompt.',
         },
@@ -153,9 +154,138 @@ describe('batchFactCheck', () => {
         // coherence fail overrides the model's softer 'flag' verdict
         verdict: 'fail',
         coherence: 'fail',
+        obviousness: 'pass',
         confidence: 90,
         reason: 'Premise is false: Led Zeppelin is a British band.',
         suggestedQuestion: "Which band is known for 'Immigrant Song'?",
+      },
+    ]);
+  });
+
+  it('parses an obviousness failure (self-answering) and forces the overall verdict to fail', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 92,
+                  reason:
+                    'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+                  suggestedQuestion:
+                    'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({
+        id: 'q1',
+        question: 'Which NHL team is known as the Maple Leafs?',
+        answer: 'Toronto',
+      }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        // obviousness fail overrides the model's softer 'flag' verdict
+        verdict: 'fail',
+        coherence: 'pass',
+        obviousness: 'fail',
+        confidence: 92,
+        reason: 'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+        suggestedQuestion: 'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+      },
+    ]);
+  });
+
+  it('parses an obviousness failure (difficulty mislabel) with a suggested difficulty', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 85,
+                  reason: 'A universal giveaway fact labelled Hard; it should be Easy.',
+                  suggestedDifficulty: 'Easy',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({
+        id: 'q1',
+        difficulty: 'Hard',
+        question: 'Which planet do humans live on?',
+        answer: 'Earth',
+      }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'fail',
+        coherence: 'pass',
+        obviousness: 'fail',
+        confidence: 85,
+        reason: 'A universal giveaway fact labelled Hard; it should be Easy.',
+        suggestedDifficulty: 'Easy',
+      },
+    ]);
+  });
+
+  it('ignores an invalid suggestedDifficulty value', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 80,
+                  reason: 'Difficulty mislabelled.',
+                  suggestedDifficulty: 'Nightmare',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'fail',
+        coherence: 'pass',
+        obviousness: 'fail',
+        confidence: 80,
+        reason: 'Difficulty mislabelled.',
       },
     ]);
   });
@@ -190,6 +320,7 @@ describe('batchFactCheck', () => {
         questionId: 'q1',
         verdict: 'pass',
         coherence: 'pass',
+        obviousness: 'pass',
         confidence: 97,
         reason: 'Looks good.',
       },
@@ -210,6 +341,7 @@ describe('batchFactCheck', () => {
         questionId: 'q1',
         verdict: 'flag',
         coherence: 'pass',
+        obviousness: 'pass',
         confidence: 0,
         reason: 'No verdict returned by fact-checker.',
       },

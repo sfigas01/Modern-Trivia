@@ -136,12 +136,24 @@ function isHardFailure(q: PendingQuestion): boolean {
 function describeFailures(q: PendingQuestion): string[] {
   const reasons: string[] = [];
   const factCheck = q.aiAnalysis.factCheck;
+  let attributed = false;
   if (factCheck.coherence === 'fail') {
+    attributed = true;
     const rewrite = factCheck.suggestedQuestion
       ? ` — suggested rewrite: "${factCheck.suggestedQuestion}"`
       : '';
     reasons.push(`Coherence FAIL: ${factCheck.reason}${rewrite}`);
-  } else if (factCheck.verdict === 'fail') {
+  }
+  if (factCheck.obviousness === 'fail') {
+    attributed = true;
+    const rewrite = factCheck.suggestedQuestion
+      ? ` — suggested rewrite: "${factCheck.suggestedQuestion}"`
+      : factCheck.suggestedDifficulty
+        ? ` — suggested difficulty: ${factCheck.suggestedDifficulty}`
+        : '';
+    reasons.push(`Obviousness FAIL: ${factCheck.reason}${rewrite}`);
+  }
+  if (!attributed && factCheck.verdict === 'fail') {
     reasons.push(`Fact-check FAIL: ${factCheck.reason}`);
   }
   for (const finding of q.aiAnalysis.qaFindings.filter((f) => f.severity === 'high')) {
@@ -164,6 +176,7 @@ async function runQaOnSingle(
     questionId: id,
     verdict: 'flag' as const,
     coherence: 'pass' as const,
+    obviousness: 'pass' as const,
     confidence: 0,
     reason: 'No verdict returned.',
   };
@@ -204,7 +217,7 @@ ${originalJson}
 Failures found:
 ${failureReasons.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-Please return a corrected version of this question that fixes ALL of the failures above. If the answer itself is factually wrong, either correct it or replace the question entirely with a different fact about "${topic}". Keep the same pillar, difficulty, and general topic area.
+Please return a corrected version of this question that fixes ALL of the failures above. If the answer itself is factually wrong, either correct it or replace the question entirely with a different fact about "${topic}". Keep the same pillar and general topic area. Keep the same difficulty unless a failure above specifies a corrected difficulty, in which case use that difficulty instead.
 
 Return valid JSON for exactly ONE question using this schema:
 ${QUESTION_JSON_SCHEMA(pillar)}
@@ -374,6 +387,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
       questionId: id,
       verdict: 'flag' as const,
       coherence: 'pass' as const,
+      obviousness: 'pass' as const,
       confidence: 0,
       reason: 'No verdict returned.',
     };

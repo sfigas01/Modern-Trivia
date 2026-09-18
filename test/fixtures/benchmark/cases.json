@@ -287,7 +287,7 @@
   {
     "id": "obviousness-maple-leafs",
     "expects": ["obviousness"],
-    "note": "Canonical self-answering Q&A (STE-247): 'Maple Leafs' gives away 'Toronto'. No detector yet.",
+    "note": "Canonical self-answering Q&A (STE-247): 'Maple Leafs' gives away 'Toronto' — no hockey knowledge needed. Caught by the live verifier.batchFactCheck obviousness check.",
     "question": {
       "id": "obviousness-maple-leafs",
       "category": "Sports",
@@ -298,6 +298,57 @@
       "explanation": "The Maple Leafs are Toronto's National Hockey League franchise.",
       "tags": ["CA", "TimeCapsule", "Sports"],
       "sourceUrl": "https://en.wikipedia.org/wiki/Toronto_Maple_Leafs",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "obviousness-binary-planet",
+    "expects": ["obviousness", "answer_leakage"],
+    "note": "Trivially binary/constrained (STE-247): Mercury is famously the smallest planet, so only one plausible answer exists in context — no real astronomy knowledge required. Also caught by the static answer_leakage heuristic since the correct option is named in the question.",
+    "question": {
+      "id": "obviousness-binary-planet",
+      "category": "Science & Nature",
+      "difficulty": "Easy",
+      "pillar": "GlobalEh",
+      "question": "Which planet is bigger — Jupiter or Mercury?",
+      "answer": "Jupiter",
+      "explanation": "Jupiter is the largest planet in the solar system by both mass and volume.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Jupiter",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "obviousness-difficulty-giveaway",
+    "expects": ["obviousness"],
+    "note": "Difficulty calibration (STE-247): a universal giveaway fact labelled Hard — anyone can answer this with zero trivia knowledge; the difficulty should be Easy.",
+    "question": {
+      "id": "obviousness-difficulty-giveaway",
+      "category": "Science & Nature",
+      "difficulty": "Hard",
+      "pillar": "GlobalEh",
+      "question": "Which planet do humans live on?",
+      "answer": "Earth",
+      "explanation": "Humans live on Earth, the third planet from the Sun.",
+      "tags": ["Global", "GlobalEh", "Science & Nature"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Earth",
+      "sourceName": "Wikipedia"
+    }
+  },
+  {
+    "id": "obviousness-difficulty-specialist",
+    "expects": ["obviousness"],
+    "note": "Difficulty calibration (STE-247): specialist medieval-history knowledge labelled Easy — this requires expert-level recall, not a broadly accessible fact; the difficulty should be Hard.",
+    "question": {
+      "id": "obviousness-difficulty-specialist",
+      "category": "History & Geography",
+      "difficulty": "Easy",
+      "pillar": "GlobalEh",
+      "question": "Which 14th-century Mongol khanate controlled trade along the Volga River?",
+      "answer": "The Golden Horde",
+      "explanation": "The Golden Horde was a Mongol khanate that dominated the Volga trade routes from the 13th to 15th centuries.",
+      "tags": ["Global", "GlobalEh", "History & Geography"],
+      "sourceUrl": "https://en.wikipedia.org/wiki/Golden_Horde",
       "sourceName": "Wikipedia"
     }
   },

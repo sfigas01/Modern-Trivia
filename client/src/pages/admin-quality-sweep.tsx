@@ -1334,6 +1334,11 @@ function FactCheckSection({
                       coherence
                     </Badge>
                   )}
+                  {result.obviousness === 'fail' && (
+                    <Badge variant="destructive" className="text-xs">
+                      obvious
+                    </Badge>
+                  )}
                   <span className="text-xs font-mono">{result.confidence}%</span>
                   <span className="font-mono text-xs text-muted-foreground">
                     {result.questionId}
@@ -1370,9 +1375,24 @@ function FactCheckSection({
                 {result.suggestedQuestion && (
                   <div className="mt-1 rounded border border-emerald-500/30 bg-emerald-500/10 p-2">
                     <p className="text-[10px] uppercase tracking-wide text-emerald-300">
-                      Suggested rewrite (keeps the answer, fixes the premise)
+                      {result.coherence === 'fail'
+                        ? 'Suggested rewrite (keeps the answer, fixes the premise)'
+                        : result.obviousness === 'fail'
+                          ? 'Suggested rewrite (tests real knowledge instead of the giveaway)'
+                          : 'Suggested rewrite'}
                     </p>
                     <p className="text-sm text-white/90 leading-snug">{result.suggestedQuestion}</p>
+                  </div>
+                )}
+                {result.suggestedDifficulty && (
+                  <div className="mt-1 rounded border border-emerald-500/30 bg-emerald-500/10 p-2">
+                    <p className="text-[10px] uppercase tracking-wide text-emerald-300">
+                      Suggested difficulty
+                    </p>
+                    <p className="text-sm text-white/90 leading-snug">
+                      {snapshot?.difficulty ? `${snapshot.difficulty} → ` : ''}
+                      {result.suggestedDifficulty}
+                    </p>
                   </div>
                 )}
                 {snapshot && (
