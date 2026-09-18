@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 
 import { batchProcess } from '../replit_integrations/batch';
 import type { Question } from '@shared/models/questions';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
@@ -37,7 +38,7 @@ export interface DetectDuplicatesOptions {
   /**
    * If provided, only evaluate pairs where at least one question's id is in this set.
    * Pairs where neither id is in scope are skipped entirely — no Sørensen-Dice,
-   * no answer comparison, no GPT-4o conceptual check. Useful for "batch vs. corpus"
+   * no answer comparison, no AI conceptual check. Useful for "batch vs. corpus"
    * checks where existing-vs-existing pair work is wasted.
    */
   scopeIds?: Set<string>;
@@ -78,7 +79,7 @@ Respond with JSON:
 
   try {
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         {
           role: 'system',
@@ -87,7 +88,7 @@ Respond with JSON:
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 256,
+      max_completion_tokens: 256,
     });
 
     const content = response.choices[0]?.message?.content || '{}';
@@ -172,7 +173,7 @@ export async function detectDuplicates(
       }
 
       // Phase 3: Collect candidates for conceptual duplicate check
-      // Only check pairs where answers are similar — avoids sending all pairs to GPT-4o
+      // Only check pairs where answers are similar — avoids unnecessary model calls
       if (!seenPairs.has(pairKey)) {
         const answerSimilarity = stringSimilarity.compareTwoStrings(
           normalize(a.answer),
@@ -185,7 +186,7 @@ export async function detectDuplicates(
     }
   }
 
-  // Phase 3: Batch GPT-4o conceptual duplicate check
+  // Phase 3: Batch conceptual duplicate checks
   if (conceptualCandidates.length > 0) {
     const conceptualResults = await batchProcess(
       conceptualCandidates,

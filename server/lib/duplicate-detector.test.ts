@@ -36,7 +36,7 @@ function makeQuestion(
 
 beforeEach(() => {
   mockCreate.mockReset();
-  // Default: GPT-4o says not a duplicate (prevents conceptual matches from
+  // Default: the model says not a duplicate (prevents conceptual matches from
   // interfering with tests that don't expect them)
   mockCreate.mockResolvedValue({
     choices: [
@@ -135,7 +135,7 @@ describe('detectDuplicates — near-duplicates', () => {
 });
 
 describe('detectDuplicates — conceptual duplicates', () => {
-  it('returns a conceptual match when GPT-4o says isDuplicate: true', async () => {
+  it('uses the mini request config and returns a conceptual match', async () => {
     mockCreate.mockResolvedValue({
       choices: [
         {
@@ -157,13 +157,21 @@ describe('detectDuplicates — conceptual duplicates', () => {
 
     const report = await detectDuplicates(questions);
 
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: 'gpt-5.4-mini',
+        reasoning_effort: 'none',
+        max_completion_tokens: 256,
+      })
+    );
+    expect(mockCreate.mock.calls[0][0]).not.toHaveProperty('max_tokens');
     const conceptual = report.duplicatesFound.filter((m) => m.matchType === 'conceptual');
     expect(conceptual.length).toBeGreaterThanOrEqual(1);
     expect(conceptual[0].aiReasoning).toBe('Same underlying question.');
     expect(report.duplicatesByType.conceptual).toBeGreaterThanOrEqual(1);
   });
 
-  it('does not flag a pair as conceptual when GPT-4o returns isDuplicate: false', async () => {
+  it('does not flag a pair as conceptual when the model returns isDuplicate: false', async () => {
     mockCreate.mockResolvedValue({
       choices: [
         {
@@ -193,7 +201,7 @@ describe('detectDuplicates — conceptual duplicates', () => {
     expect(conceptual).toHaveLength(0);
   });
 
-  it('does not call GPT-4o for pairs with dissimilar answers', async () => {
+  it('does not call the model for pairs with dissimilar answers', async () => {
     const questions: Question[] = [
       makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
       makeQuestion({ id: 'q2', question: 'What is the tallest mountain?', answer: 'Everest' }),
