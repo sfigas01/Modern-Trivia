@@ -215,3 +215,23 @@ limits above: model-assisted labels are not human gold labels, an API/model chan
 requires rerunning evaluation, and production timing is not established by these
 controlled workloads. Apply migration 0007 before deploying the feature. Nothing
 has been applied to a production database.
+
+### PR #177 review corrections
+
+Migration 0007 now installs named CHECK constraints independently of table creation,
+so a table previously created by `db:push` receives the positive-dimension,
+JSON-array and vector-length checks. The Drizzle model declares matching checks
+so subsequent schema pushes retain them. Fresh and precreated-table paths were
+verified against disposable PostgreSQL 16, including a repeated migration,
+rejection of all three invalid shapes, and preservation of existing valid rows.
+
+The production-facing `scripts/content-sweep.ts` consumer now emits answer
+conflicts at high severity, describes uncertainty as requiring review, and includes
+all new types in its Markdown counters. Regression tests verify both pair endpoints
+and confirm JSON/Markdown still redact answers. Importing the report builders no
+longer starts the CLI or contacts the configured server.
+
+To run the opt-in PostgreSQL regression, set `STE26_MIGRATION_TEST_DATABASE_URL`
+to a disposable test database and run `npm test`. The normal test run omits these
+two database tests unless that explicit test-only variable is supplied. Application
+`DATABASE_URL` is never used by this test. The full opt-in run passed 612 tests.

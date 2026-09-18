@@ -42,7 +42,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import type { QualitySweepReport } from '../shared/models/quality-sweep';
+import type { QualitySweepReport, DuplicateDetectionReport } from '../shared/models/quality-sweep';
 import type {
   QuestionQualityFinding,
   QuestionQualitySeverity,
@@ -529,7 +529,7 @@ interface SweepReport {
   };
   summary: {
     static: Record<QuestionQualitySeverity, number>;
-    duplicates: { exact: number; near_duplicate: number; conceptual: number } | null;
+    duplicates: DuplicateDetectionReport['duplicatesByType'] | null;
     factCheck: { pass: number; flag: number; fail: number } | null;
     newChecks: { false_nationality_framing: number; missing_acceptable_answers: number };
     byBucket: Record<TriageBucket, number>;
@@ -547,7 +547,7 @@ interface BuildReportArgs {
   options: CliOptions;
 }
 
-function buildReport(args: BuildReportArgs): SweepReport {
+export function buildReport(args: BuildReportArgs): SweepReport {
   const { prodUrl, durationSeconds, sweep, questions, newFindings, options } = args;
 
   // Per-question secret sets, built from the fetched corpus (has answers).
@@ -639,11 +639,14 @@ function buildReport(args: BuildReportArgs): SweepReport {
           questionId: id,
           source: 'duplicate',
           rule: `duplicate_${m.matchType}`,
-          severity: m.matchType === 'exact' ? 'high' : 'medium',
+          severity:
+            m.matchType === 'exact' || m.matchType === 'answer_conflict' ? 'high' : 'medium',
           description:
-            `Possible ${m.matchType.replace('_', ' ')} duplicate (similarity ${m.similarityScore.toFixed(
-              2
-            )}) of question ${otherId}.` +
+            (m.matchType === 'answer_conflict'
+              ? `Potential answer conflict with question ${otherId}; neither answer is established as correct.`
+              : m.matchType === 'review_required'
+                ? `Uncertain semantic relationship with question ${otherId}; human review required.`
+                : `Possible ${m.matchType.replaceAll('_', ' ')} duplicate (similarity ${m.similarityScore.toFixed(2)}) of question ${otherId}.`) +
             (m.aiReasoning ? ` Reasoning: ${redact(m.aiReasoning, bothSecrets)}` : ''),
         });
       }
@@ -749,7 +752,7 @@ function renderBucketSection(title: string, note: string, entries: QuestionRepor
   return lines.join('\n');
 }
 
-function renderMarkdown(report: SweepReport): string {
+export function renderMarkdown(report: SweepReport): string {
   const m = report.metadata;
   const s = report.summary;
   const lines: string[] = [];
@@ -785,7 +788,7 @@ function renderMarkdown(report: SweepReport): string {
   }
   if (s.duplicates) {
     lines.push(
-      `- **Duplicates:** ${s.duplicates.exact} exact · ${s.duplicates.near_duplicate} near · ${s.duplicates.conceptual} conceptual`
+      `- **Duplicates:** ${s.duplicates.exact} exact · ${s.duplicates.near_duplicate} near · ${s.duplicates.conceptual} conceptual · ${s.duplicates.semantic_duplicate ?? 0} semantic · ${s.duplicates.answer_conflict ?? 0} high-severity answer conflicts · ${s.duplicates.review_required ?? 0} review required`
     );
   } else {
     lines.push('- **Duplicates:** skipped');
@@ -894,7 +897,9 @@ async function main(): Promise<void> {
   );
 }
 
-main().catch((error) => {
-  console.error('Content sweep failed:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error('Content sweep failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
