@@ -146,12 +146,14 @@ function describeFailures(q: PendingQuestion): string[] {
   }
   if (factCheck.obviousness === 'fail') {
     attributed = true;
-    const rewrite = factCheck.suggestedQuestion
-      ? ` — suggested rewrite: "${factCheck.suggestedQuestion}"`
-      : factCheck.suggestedDifficulty
-        ? ` — suggested difficulty: ${factCheck.suggestedDifficulty}`
-        : '';
-    reasons.push(`Obviousness FAIL: ${factCheck.reason}${rewrite}`);
+    const hints = [
+      factCheck.suggestedQuestion ? `suggested rewrite: "${factCheck.suggestedQuestion}"` : null,
+      factCheck.suggestedDifficulty
+        ? `suggested difficulty: ${factCheck.suggestedDifficulty}`
+        : null,
+    ].filter((hint): hint is string => hint !== null);
+    const suffix = hints.length > 0 ? ` — ${hints.join('; ')}` : '';
+    reasons.push(`Obviousness FAIL: ${factCheck.reason}${suffix}`);
   }
   if (!attributed && factCheck.verdict === 'fail') {
     reasons.push(`Fact-check FAIL: ${factCheck.reason}`);

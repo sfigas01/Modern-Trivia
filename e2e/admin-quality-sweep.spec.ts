@@ -126,3 +126,114 @@ test.describe('admin quality-sweep editing', () => {
     await expect(page.getByText('The fix has been saved.', { exact: true })).toBeVisible();
   });
 });
+
+const obviousQuestion = {
+  id: 'quality-q2',
+  category: 'Sports',
+  difficulty: 'Easy',
+  question: 'Which NHL team is known as the Maple Leafs?',
+  answer: 'Toronto',
+  acceptableAnswers: [],
+  explanation: "The Maple Leafs are Toronto's National Hockey League franchise.",
+  pillar: 'TimeCapsule',
+  tags: ['CA', 'TimeCapsule', 'Sports'],
+  sourceUrl: 'https://example.com/maple-leafs',
+  sourceName: 'Leafs source',
+  status: 'approved',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+  aiAnalysis: { verdict: 'pass' },
+};
+
+const obviousnessResult = {
+  questionId: obviousQuestion.id,
+  verdict: 'fail',
+  coherence: 'pass',
+  obviousness: 'fail',
+  confidence: 92,
+  reason: 'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+  suggestedQuestion: 'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+  suggestedDifficulty: 'Medium',
+};
+
+const obviousnessReport = {
+  generatedAt: '2026-07-16T12:00:00.000Z',
+  totalQuestions: 1,
+  audit: {
+    generatedAt: '2026-07-16T12:00:00.000Z',
+    totalQuestions: 1,
+    totalFindings: 0,
+    flaggedQuestionCount: 0,
+    findingsBySeverity: { high: 0, medium: 0, low: 0 },
+    findingsByRule: {},
+    findings: [],
+  },
+  duplicates: null,
+  factCheck: {
+    totalChecked: 1,
+    results: [obviousnessResult],
+  },
+  recommendations: [],
+  questionsById: {
+    [obviousQuestion.id]: {
+      question: obviousQuestion.question,
+      answer: obviousQuestion.answer,
+      tags: obviousQuestion.tags,
+      category: obviousQuestion.category,
+      pillar: obviousQuestion.pillar,
+      hasSource: true,
+      difficulty: obviousQuestion.difficulty,
+      sourceDomain: 'example.com',
+    },
+  },
+};
+
+test.describe('admin quality-sweep obviousness findings', () => {
+  test('surfaces an obviousness failure with its suggested rewrite and difficulty', async ({
+    page,
+  }) => {
+    await page.route('**/api/auth/user', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'admin-user', email: 'admin@example.com' }),
+      })
+    );
+    await page.route('**/api/admin/check', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ isAdmin: true }),
+      })
+    );
+    await page.route('**/api/admin/quality-sweep', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(obviousnessReport),
+      })
+    );
+    await page.route('**/api/questions**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          questions: [obviousQuestion],
+          categories: [obviousQuestion.category],
+        }),
+      })
+    );
+
+    await page.goto('/admin/quality-sweep');
+    await page.getByRole('button', { name: 'Run Quality Sweep' }).click();
+
+    await expect(page.getByText('obvious', { exact: true })).toBeVisible();
+    await expect(page.getByText(obviousnessResult.reason)).toBeVisible();
+    await expect(
+      page.getByText('Suggested rewrite (tests real knowledge instead of the giveaway)')
+    ).toBeVisible();
+    await expect(page.getByText(obviousnessResult.suggestedQuestion)).toBeVisible();
+    await expect(page.getByText('Suggested difficulty')).toBeVisible();
+    await expect(page.getByText('Easy → Medium')).toBeVisible();
+  });
+});
