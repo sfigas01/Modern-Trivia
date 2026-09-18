@@ -1,0 +1,99 @@
+[
+  {
+    "id": "diverse-hockey-batch",
+    "topic": "Hockey",
+    "expectDiverse": true,
+    "note": "Positive control: a coverage-planned batch spanning distinct entity x angle cells (origin, location, record, connection) instead of paraphrasing one fact.",
+    "questions": [
+      {
+        "id": "hockey-1",
+        "question": "What year did the 1972 Summit Series between Canada and the Soviet Union take place?",
+        "pillar": "TimeCapsule"
+      },
+      {
+        "id": "hockey-2",
+        "question": "Which Canadian city is home to the Hockey Hall of Fame?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "hockey-3",
+        "question": "Which player holds the NHL record for most career goals?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "hockey-4",
+        "question": "What sport is credited with originating from a similar game played on frozen ponds in 19th-century Canada?",
+        "pillar": "GreatOutdoors"
+      }
+    ]
+  },
+  {
+    "id": "mean-reverted-hockey-batch",
+    "topic": "Hockey",
+    "expectDiverse": false,
+    "note": "Negative control: four paraphrases of the same fact (Gretzky's goal record) — the mean-reversion failure mode coverage planning exists to prevent.",
+    "questions": [
+      {
+        "id": "revert-1",
+        "question": "Which player holds the record for most career NHL goals?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "revert-2",
+        "question": "Who holds the record for the most career goals in NHL history?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "revert-3",
+        "question": "What player has scored the most career goals in the NHL?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "revert-4",
+        "question": "Which NHL player has the highest career goal total of all time?",
+        "pillar": "GlobalEh"
+      }
+    ]
+  },
+  {
+    "id": "diverse-space-batch",
+    "topic": "Space Exploration",
+    "expectDiverse": true,
+    "note": "Positive control on a different topic, also exercising a Mixed-pillar spread for the pillar-distribution diagnostic.",
+    "questions": [
+      {
+        "id": "space-1",
+        "question": "Who was the first human to walk on the Moon?",
+        "pillar": "TimeCapsule"
+      },
+      {
+        "id": "space-2",
+        "question": "Which agency launched the James Webb Space Telescope?",
+        "pillar": "GlobalEh"
+      },
+      {
+        "id": "space-3",
+        "question": "What Canadian astronaut commanded the International Space Station in 2013?",
+        "pillar": "GreatOutdoors"
+      },
+      {
+        "id": "space-4",
+        "question": "Which private company launched the first crewed orbital flight without government astronauts?",
+        "pillar": "FreshPrints"
+      }
+    ]
+  },
+  {
+    "id": "single-question-control",
+    "topic": "Geography",
+    "expectDiverse": true,
+    "note": "Edge case: a batch of one question is trivially its own subtopic.",
+    "questions": [
+      {
+        "id": "geo-1",
+        "question": "What is the longest river in the world by length?",
+        "pillar": "GlobalEh"
+      }
+    ]
+  }
+]
