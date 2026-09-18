@@ -23,10 +23,20 @@ export interface FactCheckVerdict {
    * failure always forces `verdict` to 'fail'.
    */
   coherence: 'pass' | 'fail';
+  /**
+   * Obviousness (STE-247): 'fail' when the answer is derivable from the question text alone
+   * (self-answering compound name/title, or a trivially binary/constrained framing) or when the
+   * stated difficulty doesn't match how hard the question actually is. An obviousness failure
+   * always forces `verdict` to 'fail'.
+   */
+  obviousness: 'pass' | 'fail';
   confidence: number;
   reason: string;
-  /** Proposed rewritten question that fits the answer with the false premise removed. */
+  /** Proposed rewritten question — fits the answer with the false premise removed (coherence), or
+   *  a harder rephrasing/replacement that tests real knowledge (obviousness). */
   suggestedQuestion?: string;
+  /** Recalibrated difficulty when obviousness fails due to a difficulty mislabel. */
+  suggestedDifficulty?: 'Easy' | 'Medium' | 'Hard';
 }
 
 export interface FactCheckReport {
@@ -34,13 +44,17 @@ export interface FactCheckReport {
   results: FactCheckVerdict[];
 }
 
+const DIFFICULTY_LEVELS = new Set(['Easy', 'Medium', 'Hard']);
+
 interface RawVerdict {
   id?: string;
   verdict?: string;
   coherence?: string;
+  obviousness?: string;
   confidence?: number;
   reason?: string;
   suggestedQuestion?: string;
+  suggestedDifficulty?: string;
 }
 
 const BATCH_SIZE = 50;
@@ -82,20 +96,27 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
         ? (raw.verdict as 'pass' | 'flag' | 'fail')
         : 'flag';
       const coherence: 'pass' | 'fail' = raw.coherence === 'fail' ? 'fail' : 'pass';
-      // A coherence failure always forces an overall fail, even if the model left verdict softer.
-      if (coherence === 'fail') verdict = 'fail';
+      const obviousness: 'pass' | 'fail' = raw.obviousness === 'fail' ? 'fail' : 'pass';
+      // A coherence or obviousness failure always forces an overall fail, even if the model left
+      // verdict softer.
+      if (coherence === 'fail' || obviousness === 'fail') verdict = 'fail';
       const suggestedQuestion =
         typeof raw.suggestedQuestion === 'string' && raw.suggestedQuestion.trim().length > 0
           ? raw.suggestedQuestion.trim()
           : undefined;
+      const suggestedDifficulty = DIFFICULTY_LEVELS.has(raw.suggestedDifficulty ?? '')
+        ? (raw.suggestedDifficulty as 'Easy' | 'Medium' | 'Hard')
+        : undefined;
       resultMap.set(id, {
         questionId: id,
         verdict,
         coherence,
+        obviousness,
         confidence:
           typeof raw.confidence === 'number' ? Math.min(100, Math.max(0, raw.confidence)) : 50,
         reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
         ...(suggestedQuestion ? { suggestedQuestion } : {}),
+        ...(suggestedDifficulty ? { suggestedDifficulty } : {}),
       });
     }
 
@@ -112,6 +133,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
           questionId: q.id,
           verdict: 'flag' as const,
           coherence: 'pass' as const,
+          obviousness: 'pass' as const,
           confidence: 0,
           reason: 'No verdict returned by fact-checker.',
         }
@@ -122,6 +144,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
       questionId: q.id,
       verdict: 'flag' as const,
       coherence: 'pass' as const,
+      obviousness: 'pass' as const,
       confidence: 0,
       reason: 'Fact-check could not be completed.',
     }));

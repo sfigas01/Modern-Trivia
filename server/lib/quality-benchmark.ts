@@ -107,8 +107,8 @@ export const LABEL_REGISTRY: Record<BenchmarkLabel, LabelSpec> = {
     description: 'Answer is defensible but does not match the question premise (mis-premised Q&A).',
   },
   obviousness: {
-    tier: 'none',
-    detector: '(not implemented)',
+    tier: 'live',
+    detector: 'verifier.batchFactCheck (obviousness)',
     ownerTicket: 'STE-247',
     description: 'Answer is derivable from the question text alone, or difficulty is mislabelled.',
   },
@@ -273,14 +273,18 @@ export async function runBenchmark(
 
     const questions = cases.map((testCase) => toQuestion(testCase.question));
 
-    // Question–answer coherence (STE-246): the review returns a dedicated `coherence` signal
-    // separate from the overall pass/flag/fail verdict, so we can score it without the
-    // false-positive problem that blocks `factual_error`.
+    // Question–answer coherence (STE-246) and obviousness (STE-247): the review returns
+    // dedicated `coherence` / `obviousness` signals separate from the overall pass/flag/fail
+    // verdict, so we can score them without the false-positive problem that blocks
+    // `factual_error`.
     const { batchFactCheck } = await import('./verifier');
     const factReport = await batchFactCheck(questions);
     for (const verdict of factReport.results) {
       if (verdict.coherence === 'fail') {
         detectedByCase.get(verdict.questionId)?.add('coherence');
+      }
+      if (verdict.obviousness === 'fail') {
+        detectedByCase.get(verdict.questionId)?.add('obviousness');
       }
     }
 
