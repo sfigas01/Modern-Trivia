@@ -16,17 +16,19 @@ git worktree list --porcelain
 git branch -vv
 ```
 
-For every path returned, run:
+For every existing, accessible path returned, run:
 
 ```bash
 git -C <worktree-path> status --short --branch
 ```
 
-If any worktree is dirty or cannot be inspected, stop all cleanup. Report the path, changed files or inspection error, and a recommended next step. Do not automatically stash, commit, reset, remove, or partially clean other candidates. The owning session decides how to preserve its changes.
+If any existing worktree is dirty or cannot be inspected, stop all cleanup. A missing directory is also a blocker unless it qualifies as verified stale metadata below. Report the path, changed files or inspection error, and a recommended next step. Do not automatically stash, commit, reset, remove, or partially clean other candidates. The owning session decides how to preserve its changes.
+
+A missing path may be treated as stale metadata only when `git worktree list --porcelain` explicitly marks its record `prunable`, the directory is confirmed permanently removed (not an unmounted volume or temporarily unavailable path), and owner/session and issue/PR checks confirm no active work depends on it. A locked record is not eligible. Record the path, administrative record ID, recorded HEAD and branch; preserve branch refs and unique commits. If any evidence is uncertain, stop and ask the owner. Do not run `git -C` against a verified missing directory.
 
 ## 2. Audit remote refs and metadata
 
-When all worktrees are clean, run read-only previews:
+When all existing worktrees are clean and any missing records are verified stale as above, run read-only previews:
 
 ```bash
 git fetch --prune --dry-run origin
@@ -59,7 +61,7 @@ Preserve active or uncertain candidates. Detached HEAD, a missing upstream, age,
 
 ## 4. Request approval for one concrete cleanup action
 
-Show the exact candidate, evidence, and command. Obtain explicit approval before each worktree removal or branch deletion. Immediately before executing, recheck every worktree for changes and confirm the candidate is still inactive. Stop if anything changed or any worktree is dirty.
+Show the exact candidate, evidence, and command. Obtain explicit approval before each worktree removal or branch deletion, and for the exact set of stale metadata records before pruning. Immediately before executing, recheck every worktree for changes and confirm the candidate is still inactive. Stop if anything changed or any worktree is dirty.
 
 Approved inactive worktree removal must use ordinary removal:
 
@@ -67,22 +69,32 @@ Approved inactive worktree removal must use ordinary removal:
 git worktree remove <approved-worktree-path>
 ```
 
-Approved merged local branch deletion must use the safe form:
+After verifying integration into the intended target base (not merely its configured upstream), first attempt approved merged local branch deletion with:
 
 ```bash
 git branch -d <approved-branch-name>
 ```
 
-If either refuses, stop and report why. Do not escalate to force-removal, force deletion, hard reset, or filesystem deletion. Do not delete remote branches as incidental cleanup; that requires a separate explicit request and review.
+If ordinary worktree removal refuses, stop; never force-remove it. If `git branch -d` refuses, report why. Only for a verified squash-merged branch may you propose a separate, candidate-specific force deletion:
+
+1. Verify the PR is merged into the intended target branch and its squash commit is reachable from the freshly fetched target.
+2. Record the local branch tip and PR head SHA. Verify the local tip equals the merged PR head; if they differ, stop for manual review rather than guessing that later commits are disposable.
+3. Compare the PR's aggregate patch with the squash commit's patch and confirm all intended changes were integrated. Investigate any mismatch; a merged PR label alone is insufficient evidence. Confirm no unique work remains to preserve.
+4. Confirm the branch is not checked out in any worktree and no active issue/session depends on it.
+5. Present the exact branch, tip, PR, squash commit and evidence, then obtain explicit approval for `git branch -D <approved-squash-merged-branch>`. Earlier approval for `-d` is not approval for `-D`.
+6. Immediately before execution, recheck the worktree inventory and cleanliness, branch tip and target ref. Stop if anything changed.
+
+This exception never permits deleting unverified or unmerged work. Hard resets, force-removing worktrees, and filesystem deletion remain prohibited. Do not delete remote branches as incidental cleanup; that requires a separate explicit request and review.
 
 ## 5. Refresh and verify
 
-If non-destructive ref/metadata maintenance was requested and every worktree remains clean, perform only the reviewed maintenance:
+If remote-ref maintenance was requested and every existing worktree remains clean, with missing records verified as above, perform only the reviewed maintenance:
 
 ```bash
 git fetch --prune origin
-git worktree prune --verbose
 ```
+
+For verified stale metadata, `git worktree prune` operates repository-wide and does not take a candidate path. First show `git worktree prune --dry-run --verbose`, map every listed record to the verified stale inventory, and obtain explicit approval for that exact set. Immediately before executing `git worktree prune --verbose`, repeat the dry run and inventory checks. If the candidate set changes or includes any unverified record, stop. Use the same expiration settings for preview and execution; do not add `--expire now` to broaden an approved operation. Preserve the recorded branches and commits; metadata approval is not branch-deletion approval. If no records are listed, no pruning is needed.
 
 Do not run unrelated garbage collection or rewrite history. Verify each changed candidate after its operation, then finish with:
 
