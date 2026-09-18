@@ -71,9 +71,9 @@ Scripts in `scripts/` run admin operations against a deployed app over HTTP with
    - `git status --short --branch`
    - `git worktree list`
    - local branch inventory
-2. Do not leave temporary worktrees behind; remove them when done and run `git worktree prune`.
-3. Do not leave abandoned dirty state in old worktrees/branches; either commit, stash with a clear dated message, or explicitly report why cleanup was not possible.
-4. Delete local branches that are fully merged into the target base branch; never delete unmerged branches without explicit user approval.
+2. Review temporary worktrees when done. Preserve worktrees tied to active work, planning, or open PRs. Remove an inactive worktree only after the checks and explicit approval in `.agent/workflows/git-cleanup.md`.
+3. Inspect every registered worktree before cleanup. If any is dirty, stop all cleanup and report its path and changed files. Never automatically stash or commit another session's changes.
+4. Branch deletion requires candidate-specific approval and verification of merge, PR, issue, and worktree status. A missing upstream, detached HEAD, or branch prefix is not proof that work is disposable. Do not force-remove worktrees or run blanket deletion commands.
 5. Handoff should leave a clean working tree unless the user asked to preserve local changes; if anything remains, provide a concise inventory.
 
 ### Worktree continuation guardrails

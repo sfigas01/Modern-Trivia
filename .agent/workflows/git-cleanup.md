@@ -1,136 +1,95 @@
 ---
-description: Clean up git branches, worktrees, and stale refs. Run this after vibe coding sessions with Codex or Claude Code, or whenever the git tree feels messy.
+description: Audit git hygiene and preserve parallel sessions; clean verified inactive work only with explicit approval.
 ---
 
 # Git Cleanup
 
-Perform a safe, step-by-step cleanup of the git repository. This removes stale worktrees (from Claude Code), merged local branches, orphaned local branches, and stale remote-tracking refs.
+Use this workflow for audits and requested cleanup. Audit-only requests authorize no deletions. Follow the shared agent manual and preserve active implementation and planning sessions.
 
-## Pre-flight
+## 1. Inspect every worktree
 
-// turbo-all
-
-1. Show current state to the user:
+Run from the repository:
 
 ```bash
-echo "=== WORKTREES ===" && git worktree list && echo "" && echo "=== LOCAL BRANCHES ===" && git branch && echo "" && echo "=== REMOTE BRANCHES ===" && git branch -r && echo "" && echo "=== STATUS ===" && git status --short
+git status --short --branch
+git worktree list --porcelain
+git branch -vv
 ```
 
-2. If there are uncommitted changes, stash them first:
+For every path returned, run:
 
 ```bash
-git stash push -m "git-cleanup: auto-stash before cleanup"
+git -C <worktree-path> status --short --branch
 ```
 
-## Step 1: Sync main
+If any worktree is dirty or cannot be inspected, stop all cleanup. Report the path, changed files or inspection error, and a recommended next step. Do not automatically stash, commit, reset, remove, or partially clean other candidates. The owning session decides how to preserve its changes.
 
-3. Pull the latest main branch:
+## 2. Audit remote refs and metadata
+
+When all worktrees are clean, run read-only previews:
 
 ```bash
-git pull origin main
+git fetch --prune --dry-run origin
+git remote prune origin --dry-run
+git worktree prune --dry-run --verbose
 ```
 
-## Step 2: Remove stale worktrees
+A dry run does not update refs or prove that a branch was merged. If network checks fail, report remote state as unverified and retry with the appropriate access; do not infer deletion safety.
 
-4. List all worktrees and remove any that are NOT the main project directory. These are leftover from Claude Code sessions. Use `--force` if needed:
+When synchronization is requested, fetch and fast-forward the clean main checkout only after confirming it is not being edited by another session:
 
 ```bash
+git fetch origin
+git -C <main-worktree-path> merge --ff-only origin/main
+```
+
+Verify that the target checkout is on main first. Stop if it has diverged. Do not change the branch, HEAD, or files of another session's worktree. New implementation sessions start in separate named issue branches and worktrees based on current main.
+
+## 3. Classify candidates individually
+
+For each proposed worktree or branch cleanup, record:
+
+- Full path, branch and commit, and whether the worktree is clean.
+- Owner/session and linked Linear issue status, including planning sessions.
+- Linked PR state and target branch. Preserve open or unmerged work.
+- Verified merge evidence against the current target base. Ancestry checks alone may not detect squash merges; ambiguous cases need review.
+- Whether the branch is checked out anywhere or has unique work to preserve.
+
+Preserve active or uncertain candidates. Detached HEAD, a missing upstream, age, and prefixes such as codex/ or claude/ are never sufficient evidence. Do not enumerate unregistered directories for blanket deletion.
+
+## 4. Request approval for one concrete cleanup action
+
+Show the exact candidate, evidence, and command. Obtain explicit approval before each worktree removal or branch deletion. Immediately before executing, recheck every worktree for changes and confirm the candidate is still inactive. Stop if anything changed or any worktree is dirty.
+
+Approved inactive worktree removal must use ordinary removal:
+
+```bash
+git worktree remove <approved-worktree-path>
+```
+
+Approved merged local branch deletion must use the safe form:
+
+```bash
+git branch -d <approved-branch-name>
+```
+
+If either refuses, stop and report why. Do not escalate to force-removal, force deletion, hard reset, or filesystem deletion. Do not delete remote branches as incidental cleanup; that requires a separate explicit request and review.
+
+## 5. Refresh and verify
+
+If non-destructive ref/metadata maintenance was requested and every worktree remains clean, perform only the reviewed maintenance:
+
+```bash
+git fetch --prune origin
+git worktree prune --verbose
+```
+
+Do not run unrelated garbage collection or rewrite history. Verify each changed candidate after its operation, then finish with:
+
+```bash
+git status --short --branch
 git worktree list
+git branch -vv
 ```
 
-For each non-main worktree, run:
-
-```bash
-git worktree remove --force <path>
-```
-
-5. Also clean up leftover `.claude/worktrees/` directories:
-
-```bash
-rm -rf .claude/worktrees/*
-```
-
-6. Prune worktree metadata:
-
-```bash
-git worktree prune
-```
-
-## Step 3: Delete merged local branches
-
-7. Delete all local branches that have been merged into main (except main itself and any protected branches like develop, staging, production):
-
-```bash
-git branch --merged main | grep -v '^\*' | grep -vE '^\s*(main|master|develop|staging|production)\s*$' | xargs -r git branch -d
-```
-
-## Step 4: Delete orphaned local branches
-
-8. Delete local branches whose remote tracking branch has been deleted (the PR was merged or branch was removed on GitHub):
-
-```bash
-git branch -vv | grep ': gone]' | awk '{print $1}' | xargs -r git branch -D
-```
-
-## Step 5: Delete remaining stale local branches
-
-9. For any remaining non-main local branches, check if their associated PR was merged on GitHub. If so, delete them with `git branch -D`. Common patterns to look for:
-   - `claude/*` branches — always safe to delete
-   - `codex/*` branches — always safe to delete
-   - `dependabot/*` branches — safe to delete if the PR was merged or closed
-   - `feature/*`, `fix/*`, `chore/*` branches — check if the PR was merged first
-
-## Step 6: Prune remote refs
-
-10. Fetch and prune stale remote-tracking references:
-
-```bash
-git fetch --prune
-```
-
-## Step 7: Delete stale remote branches (optional)
-
-11. Check for remaining remote branches that are not merged into main:
-
-```bash
-git branch -r --no-merged origin/main
-```
-
-12. If there are stale remote branches (old codex/*, claude/*, dependabot/* branches), offer to delete them from GitHub:
-
-```bash
-git push origin --delete <branch-name>
-```
-
-**Ask the user before deleting remote branches** — they may have open PRs.
-
-## Step 8: Garbage collection
-
-13. Run git garbage collection to compress objects:
-
-```bash
-git gc --quiet
-```
-
-## Step 9: Restore stash (if applicable)
-
-14. If changes were stashed in the pre-flight step, pop the stash. Resolve any conflicts if needed:
-
-```bash
-git stash pop
-```
-
-## Step 10: Final report
-
-15. Show the final clean state and summarize what was cleaned up:
-
-```bash
-echo "=== FINAL STATE ===" && echo "Local branches:" && git branch && echo "" && echo "Remote branches:" && git branch -r && echo "" && echo "Worktrees:" && git worktree list && echo "" && echo "Status:" && git status --short
-```
-
-Provide a summary table showing:
-- Worktrees removed
-- Local branches deleted
-- Remote branches deleted
-- Remote refs pruned
-- .git size before/after (if gc was run)
+Report the current state, exact operations performed, preserved active worktrees, unresolved candidates, and one recommended next step. Distinguish previews from executed changes. Confirm documentation updates and their locations; never claim a failed operation succeeded.
