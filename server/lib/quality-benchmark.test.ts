@@ -67,3 +67,68 @@ describe('quality-engine accuracy benchmark', () => {
     expect(LABEL_REGISTRY.obviousness.ownerTicket).toBe('STE-247');
   });
 });
+
+import {
+  scoreSemanticPairs,
+  validateSemanticPairs,
+  type SemanticPairCase,
+} from './quality-benchmark';
+const semanticPairs = JSON.parse(
+  readFileSync(
+    new URL('../../test/fixtures/benchmark/semantic-pairs.json', import.meta.url),
+    'utf8'
+  )
+) as SemanticPairCase[];
+describe('pair-level semantic benchmark', () => {
+  it('rejects malformed labels and duplicate IDs before paid evaluation', () => {
+    expect(() => validateSemanticPairs([{ ...semanticPairs[0], expected: 'unknown' }])).toThrow();
+    expect(() => validateSemanticPairs([semanticPairs[0], semanticPairs[0]])).toThrow();
+    expect(validateSemanticPairs(semanticPairs)).toHaveLength(130);
+  });
+  it('has unique regression cases covering both detectors and hard controls', () => {
+    expect(new Set(semanticPairs.map((p) => p.id)).size).toBe(semanticPairs.length);
+    for (const label of ['semantic_duplicate', 'answer_conflict', 'distinct']) {
+      expect(semanticPairs.filter((p) => p.expected === label).length).toBeGreaterThanOrEqual(40);
+    }
+    expect(semanticPairs.some((p) => p.control === 'alias')).toBe(true);
+    expect(semanticPairs.some((p) => p.control === 'temporal')).toBe(true);
+  });
+  it('validates the separate evaluation sets and minimum per-class support', () => {
+    for (const name of ['semantic-holdout', 'semantic-blind-eval']) {
+      const cases = validateSemanticPairs(
+        JSON.parse(
+          readFileSync(
+            new URL(`../../test/fixtures/benchmark/${name}.json`, import.meta.url),
+            'utf8'
+          )
+        )
+      );
+      for (const label of ['semantic_duplicate', 'answer_conflict', 'distinct']) {
+        expect(cases.filter((c) => c.expected === label).length).toBeGreaterThanOrEqual(40);
+      }
+    }
+  });
+  it('fails missing detector coverage and counts unresolved positives as false negatives', () => {
+    const r = scoreSemanticPairs(
+      semanticPairs,
+      semanticPairs.map(() => 'review_required')
+    );
+    expect(r.passed).toBe(false);
+    expect(r.metrics.every((m) => m.fn === m.support && m.recall === 0)).toBe(true);
+  });
+  it('fails on any false conflict in protected controls, even with otherwise high accuracy', () => {
+    const outcomes = semanticPairs.map((p) =>
+      p.control === 'alias' ? ('answer_conflict' as const) : p.expected
+    );
+    const r = scoreSemanticPairs(semanticPairs, outcomes);
+    expect(r.falseControlConflicts).toBe(10);
+    expect(r.passed).toBe(false);
+  });
+  it('never passes incomplete evaluation', () => {
+    const outcomes = semanticPairs.map(
+      (p) => p.expected as import('./quality-benchmark').SemanticPairOutcome
+    );
+    outcomes[0] = 'incomplete';
+    expect(scoreSemanticPairs(semanticPairs, outcomes).passed).toBe(false);
+  });
+});
