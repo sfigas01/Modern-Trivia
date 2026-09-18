@@ -36,7 +36,7 @@ precision/recall/accuracy per failure mode plus a per-case expected-vs-detected 
 | Tier     | Meaning                                                                        | Labels                                                                                                                                                                  |
 | -------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `static` | Deterministic heuristics (`question-quality-audit`), always run                | `answer_leakage`, `missing_source`, `invalid_difficulty`, `tagging`, `subjective`, `ambiguous_format`, `type_mismatch`, `multi_answer`, `missing_field`, `unverifiable` |
-| `live`   | LLM-backed, run only with `--live` (requires `AI_INTEGRATIONS_OPENAI_API_KEY`) | `coherence` (STE-246), `obviousness` (STE-247), `semantic_duplicate` / `string_duplicate` (STE-26)                                                                      |
+| `live`   | LLM-backed, run only with `--live` (requires `AI_INTEGRATIONS_OPENAI_API_KEY`) | `coherence` (STE-246), `obviousness` (STE-247), `semantic_duplicate` / `string_duplicate` / `answer_conflict` / `review_required` (STE-26)                              |
 | `none`   | No detector yet — fixtures ready, waiting on the owner ticket                  | `factual_error` (STE-25), `us_centric` (STE-249)                                                                                                                        |
 
 Labels in the `none` tier (and `live` labels in a static run) are reported as
@@ -114,3 +114,9 @@ errors. It is retained without score-improving relabeling, and subsequent fixes
 make reruns regression evidence. See `docs/guides/semantic-dedup.md` for the full
 record; none of these corrected reruns is a substitute for independent gold-label
 review and a new untouched evaluation.
+
+`semantic-reviewed-eval.json` is the subsequent pre-reviewed set (140 pairs).
+Forty independently authored relation records were checked for inverted questions,
+ambiguous scope and duplicate subjects BEFORE detector execution, then expanded
+into 40 duplicate/conflict/distinct triples. Ten alias and ten temporal controls
+were added before evaluation. See the guide for provenance and limitations.

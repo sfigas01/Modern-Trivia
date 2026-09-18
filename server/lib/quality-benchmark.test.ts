@@ -94,7 +94,7 @@ describe('pair-level semantic benchmark', () => {
     expect(semanticPairs.some((p) => p.control === 'temporal')).toBe(true);
   });
   it('validates the separate evaluation sets and minimum per-class support', () => {
-    for (const name of ['semantic-holdout', 'semantic-blind-eval']) {
+    for (const name of ['semantic-holdout', 'semantic-blind-eval', 'semantic-reviewed-eval']) {
       const cases = validateSemanticPairs(
         JSON.parse(
           readFileSync(

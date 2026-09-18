@@ -14,7 +14,18 @@ const pair = [
   q('b', 'Name the author of Hamlet.', 'William Shakespeare'),
 ];
 function verdict(value: string) {
-  return { choices: [{ message: { content: JSON.stringify({ verdict: value }) } }] };
+  return {
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            assessment: 'Scoped facts and answer referents compared.',
+            verdict: value,
+          }),
+        },
+      },
+    ],
+  };
 }
 beforeEach(() => {
   vi.resetAllMocks();

@@ -154,5 +154,64 @@ passing any corrected rerun must not be reported as completing that gate.
 
 Synthetic cache measurements above predate this last prompt refinement; they
 measure the same embedding implementation and retrieval threshold, not current
-production end-to-end performance. The source-database connection and separate
-seed-data approval remain unresolved. STE-26 is not ready to merge or mark Done.
+production end-to-end performance. The source-database connection and separate seed-data approval remain unresolved.
+This stage of validation did not establish merge readiness; see the final result below.
+
+### Structured adjudication refinement
+
+The next correction requires a short scope/answer assessment before the verdict,
+validated locally and constrained by a strict provider JSON schema. Assessments
+can contain answers and are discarded; only fixed answer-free reasons are returned
+or logged. The output cap is 512 tokens. Malformed/truncated responses remain
+incomplete failures, never implicit distinct/equivalent decisions. Input and output
+token counts are logged separately for measured cost estimates.
+
+A fourth set, `semantic-reviewed-eval.json`, was independently authored as 40
+relation records, then reviewed by the implementation agent before any detector
+outputs. Pre-run edits corrected two inverted paraphrases, a repeated subject and
+ambiguous survey/ranking scopes. Ten new alias and ten explicit temporal controls
+bring it to 140 pairs: 50 duplicates, 40 conflicts, 50 distinct pairs. This is
+agent-reviewed model annotation, not independent human review. It addresses the
+label-quality problem before evaluation rather than modifying labels after seeing
+results. Provenance and frozen hashes are retained under ignored reports/.
+
+### Final pre-reviewed evaluation
+
+With provider-enforced structured outputs, the unchanged 140-pair pre-reviewed set
+passed in 182.384 seconds: duplicates TP/FP/FN **50/0/0**, conflicts **40/0/0**,
+50/50 distinct pairs correct, zero false conflicts on alias/temporal controls,
+zero unresolved pairs and zero incomplete calls. Precision and recall are 100%
+for both detectors on this set. This is controlled, agent-reviewed evaluation;
+it does not establish 100% accuracy on arbitrary production content.
+
+The same fixture set's earlier run with unconstrained JSON stopped on an incomplete
+call (74 cases unscored). That run is not accuracy evidence. The response-schema
+hardening was prompted by failures in the separate cache test, not by changing
+expected outcomes in this 140-pair set. Only one live evaluation is run at a time
+to avoid competing for account rate limits.
+
+### Final serial cache and legacy checks
+
+Final structured-output implementation, one live workload at a time: the same
+60-question synthetic corpus completed all 1,770 comparisons both cold (9.890 s)
+and warm (8.739 s), with 30 duplicate pairs and no incomplete or uncertain pairs.
+Cold usage: 689 embedding tokens plus 16,037 GPT-4o input / 1,229 output tokens;
+warm: zero embedding tokens plus 16,037 input / 1,216 output tokens. At the linked
+published rates, estimated cost is US$0.052396 cold and US$0.052253 warm, excluding
+any provider/account-specific adjustments. Earlier concurrent runs with incomplete
+calls are not successful timing measurements; failure categories are now redacted
+and explicit. Current production-library scale remains unmeasured.
+
+The final existing STE-28 run is 98.61% (426/432) agreement. Its strict CLI exits
+nonzero on the same five baseline coherence/obviousness mismatches plus a fluctuating
+obviousness result for `coherence-wrong-category`. These come from the unchanged
+verifier; semantic duplicate/conflict labels have no mismatches. No baseline label
+or failure gate was weakened. The broader verifier follow-up belongs with its owner.
+
+Review evidence: 606 unit/integration tests, four browser flows, TypeScript, lint
+(zero errors; 23 existing warnings) and production build pass. The controlled live
+semantic accuracy gates pass on the pre-reviewed set. Reviewers must retain the
+limits above: model-assisted labels are not human gold labels, an API/model change
+requires rerunning evaluation, and production timing is not established by these
+controlled workloads. Apply migration 0007 before deploying the feature. Nothing
+has been applied to a production database.
