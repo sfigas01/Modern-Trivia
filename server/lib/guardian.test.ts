@@ -22,7 +22,12 @@ vi.mock('./verifier', () => ({
   batchFactCheck: mockBatchFactCheck,
 }));
 
-import { computeStrategyQuotas, generateQuestions, STRATEGY_PILLAR_TARGETS } from './guardian';
+import {
+  computeStrategyQuotas,
+  fallbackCoveragePlan,
+  generateQuestions,
+  STRATEGY_PILLAR_TARGETS,
+} from './guardian';
 
 function passingFactCheck(ids: string[]): FactCheckReport {
   const results: FactCheckVerdict[] = ids.map((id) => ({
@@ -162,6 +167,14 @@ describe('generateQuestions — coverage planning', () => {
     expect(result).toHaveLength(1);
     const generationPrompt = mockCreate.mock.calls[1][0].messages[1].content as string;
     expect(generationPrompt).toContain('Subtopic: "Hockey"');
+  });
+
+  it('never repeats an identical cell in the fallback plan, even past a full angle cycle', () => {
+    // 20 is the largest batch size the staging-generate schema allows; 7 angles means the naive
+    // modulo rotation would otherwise repeat cell 0 at cell 7 and cell 14 verbatim.
+    const cells = fallbackCoveragePlan('Hockey', 20);
+    const serialized = cells.map((c) => `${c.subtopic}|${c.angle}`);
+    expect(new Set(serialized).size).toBe(serialized.length);
   });
 
   it('tops up a short coverage plan with fallback cells rather than under-generating', async () => {

@@ -40,11 +40,18 @@ export interface CoverageCell {
   angle: CoverageAngle;
 }
 
-function fallbackCoveragePlan(topic: string, count: number): CoverageCell[] {
-  return Array.from({ length: count }, (_, i) => ({
-    subtopic: topic,
-    angle: COVERAGE_ANGLES[i % COVERAGE_ANGLES.length],
-  }));
+// Exported for testing — verifies the fallback never repeats an identical cell even for the
+// largest allowed batch (20 questions vs. 7 angles), which would otherwise ask the model for the
+// same subtopic + angle twice and defeat the coverage plan's own "one question per cell" rule.
+export function fallbackCoveragePlan(topic: string, count: number): CoverageCell[] {
+  return Array.from({ length: count }, (_, i) => {
+    const cycle = Math.floor(i / COVERAGE_ANGLES.length);
+    const angle = COVERAGE_ANGLES[i % COVERAGE_ANGLES.length];
+    // Past the first full pass through the angle list, disambiguate the subtopic so repeated
+    // angles never collide with an earlier, identical cell.
+    const subtopic = cycle === 0 ? topic : `${topic} (variation ${cycle + 1})`;
+    return { subtopic, angle };
+  });
 }
 
 function buildCoveragePlanBlock(cells: CoverageCell[]): string {
