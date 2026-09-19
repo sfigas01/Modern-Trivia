@@ -29,6 +29,179 @@ export interface ExistingExample {
 
 const MAX_EXISTING_EXAMPLES = 30;
 
+// --- Coverage planning (STE-249) ---
+// Before generating, ask the model to plan an entity x angle grid of distinct subtopics for the
+// topic, diffed against what the existing examples already cover, so generation targets
+// unexplored territory instead of regressing to the same few obvious facts.
+const COVERAGE_ANGLES = ['who', 'what', 'when', 'where', 'record', 'origin', 'connection'] as const;
+type CoverageAngle = (typeof COVERAGE_ANGLES)[number];
+
+export interface CoverageCell {
+  subtopic: string;
+  angle: CoverageAngle;
+}
+
+// Exported for testing — verifies the fallback never repeats an identical cell even for the
+// largest allowed batch (20 questions vs. 7 angles), which would otherwise ask the model for the
+// same subtopic + angle twice and defeat the coverage plan's own "one question per cell" rule.
+export function fallbackCoveragePlan(topic: string, count: number): CoverageCell[] {
+  return Array.from({ length: count }, (_, i) => {
+    const cycle = Math.floor(i / COVERAGE_ANGLES.length);
+    const angle = COVERAGE_ANGLES[i % COVERAGE_ANGLES.length];
+    // Past the first full pass through the angle list, disambiguate the subtopic so repeated
+    // angles never collide with an earlier, identical cell.
+    const subtopic = cycle === 0 ? topic : `${topic} (variation ${cycle + 1})`;
+    return { subtopic, angle };
+  });
+}
+
+function buildCoveragePlanBlock(cells: CoverageCell[]): string {
+  if (cells.length === 0) return '';
+  const list = cells
+    .map((c, i) => `${i + 1}. Subtopic: "${c.subtopic}" — Angle: ${c.angle}`)
+    .join('\n');
+  return `Coverage plan — write exactly ONE question per cell below, matching that cell's specific subtopic and angle, in order. Do not skip a cell or write more than one question for the same cell:\n${list}\n`;
+}
+
+async function planCoverage(
+  topic: string,
+  pillar: string,
+  count: number,
+  existingExamples: ExistingExample[]
+): Promise<CoverageCell[]> {
+  const existingBlock =
+    existingExamples.length > 0
+      ? existingExamples
+          .slice(0, MAX_EXISTING_EXAMPLES)
+          .map((ex, i) => `${i + 1}. ${ex.question}`)
+          .join('\n')
+      : '(none yet — this is the first batch for this topic)';
+
+  const prompt = `Plan coverage for a trivia batch about "${topic}" (pillar: "${pillar}").
+
+Use an entity x angle grid to find distinct, unexplored angles. Angles: who, what, when, where, record, origin, connection.
+
+Questions already written about this topic (do not repeat their subtopic + angle combination):
+${existingBlock}
+
+Return exactly ${count} DISTINCT cells — each a specific subtopic within "${topic}" paired with one angle from the list above — that are NOT already covered by the existing questions. Every cell must be answerable from a knowable, verifiable fact; target "interesting but knowable" — do not plan cells that would require obscure or unanswerable trivia.
+
+Return only valid JSON:
+{ "cells": [ { "subtopic": "string", "angle": "who|what|when|where|record|origin|connection" } ] }`;
+
+  try {
+    const response = await getOpenAI().chat.completions.create({
+      ...TRIVIA_AI_REQUEST_CONFIG,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You plan diverse trivia coverage grids. Always return valid JSON matching the requested schema.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      response_format: { type: 'json_object' },
+      max_completion_tokens: 1024,
+    });
+
+    const content = response.choices[0]?.message?.content || '{}';
+    const parsed = JSON.parse(content) as { cells?: unknown };
+    const rawCells = Array.isArray(parsed.cells) ? parsed.cells : [];
+
+    const cells: CoverageCell[] = [];
+    for (const raw of rawCells) {
+      const subtopic =
+        typeof (raw as { subtopic?: unknown })?.subtopic === 'string'
+          ? (raw as { subtopic: string }).subtopic.trim()
+          : '';
+      if (!subtopic) continue;
+      const angleRaw =
+        typeof (raw as { angle?: unknown })?.angle === 'string'
+          ? (raw as { angle: string }).angle.trim().toLowerCase()
+          : '';
+      const angle: CoverageAngle = (COVERAGE_ANGLES as readonly string[]).includes(angleRaw)
+        ? (angleRaw as CoverageAngle)
+        : 'what';
+      cells.push({ subtopic, angle });
+    }
+
+    if (cells.length === 0) {
+      console.warn(
+        '[guardian] Coverage plan returned no usable cells — falling back to angle rotation',
+        { topic, pillar }
+      );
+      return fallbackCoveragePlan(topic, count);
+    }
+
+    if (cells.length >= count) return cells.slice(0, count);
+
+    // Model returned fewer distinct cells than requested — top up with the angle-rotation
+    // fallback rather than generating a short batch.
+    const fallback = fallbackCoveragePlan(topic, count);
+    return [...cells, ...fallback.slice(cells.length)];
+  } catch (error) {
+    console.error('[guardian] Coverage planning failed — falling back to angle rotation', {
+      topic,
+      pillar,
+      error,
+    });
+    return fallbackCoveragePlan(topic, count);
+  }
+}
+
+// --- Strategy quotas (STE-249) ---
+// CONTENT_STRATEGY.md's pillar distribution target. Used to allocate a Mixed-pillar batch across
+// pillars using live inventory counts, so generation closes strategy gaps instead of amplifying
+// whatever skew already exists in the pool.
+export type StrategyPillar = 'TimeCapsule' | 'GlobalEh' | 'FreshPrints' | 'GreatOutdoors';
+
+export const STRATEGY_PILLAR_TARGETS: Record<StrategyPillar, number> = {
+  TimeCapsule: 0.3,
+  GlobalEh: 0.3,
+  FreshPrints: 0.25,
+  GreatOutdoors: 0.15,
+};
+
+export interface PillarQuota {
+  pillar: StrategyPillar;
+  count: number;
+}
+
+/**
+ * Allocate `count` new questions across the CONTENT_STRATEGY.md pillars, weighting toward
+ * whichever pillars are currently under-represented in the live pool relative to their target
+ * share. With an empty or evenly-distributed pool this reduces to the plain 30/30/25/15 split.
+ */
+export function computeStrategyQuotas(
+  existingCountsByPillar: Partial<Record<StrategyPillar, number>>,
+  count: number
+): PillarQuota[] {
+  const pillars = Object.keys(STRATEGY_PILLAR_TARGETS) as StrategyPillar[];
+  const totalExisting = pillars.reduce((sum, p) => sum + (existingCountsByPillar[p] ?? 0), 0);
+
+  const weights = pillars.map((pillar) => {
+    const target = STRATEGY_PILLAR_TARGETS[pillar];
+    const currentShare =
+      totalExisting > 0 ? (existingCountsByPillar[pillar] ?? 0) / totalExisting : target;
+    const deficit = target - currentShare;
+    // A pillar under its target share gets boosted by its deficit; one at or above target still
+    // keeps a floor of a tenth of its target share so it's never starved to zero.
+    return { pillar, weight: Math.max(target + deficit, target * 0.1) };
+  });
+
+  const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+  const items = weights.map((w) => {
+    const raw = totalWeight > 0 ? (w.weight / totalWeight) * count : count / pillars.length;
+    return { pillar: w.pillar, weight: w.weight, floored: Math.floor(raw), remainder: raw % 1 };
+  });
+
+  let remaining = count - items.reduce((sum, i) => sum + i.floored, 0);
+  items.sort((a, b) => b.remainder - a.remainder || b.weight - a.weight);
+  for (let i = 0; i < remaining; i++) items[i].floored++;
+
+  return items.filter((i) => i.floored > 0).map((i) => ({ pillar: i.pillar, count: i.floored }));
+}
+
 type PendingQuestion = InsertQuestion & { status: 'pending'; aiAnalysis: QuestionAiAnalysis };
 
 const insertQuestionWithPendingStatusSchema = insertQuestionSchema.transform((question) => ({
@@ -284,8 +457,16 @@ export async function generateQuestions(
     negativeExamples: Math.min(existingExamples.length, MAX_EXISTING_EXAMPLES),
   });
 
-  const prompt = `Generate ${normalizedCount} trivia questions about "${topic}" for the "${pillar}" pillar.
+  const coverageCells = await planCoverage(topic, pillar, normalizedCount, existingExamples);
+  console.info('[guardian] Coverage plan', {
+    topic,
+    pillar,
+    cells: coverageCells.map((c) => `${c.subtopic} (${c.angle})`),
+  });
 
+  const prompt = `Generate exactly ${normalizedCount} trivia questions about "${topic}" for the "${pillar}" pillar.
+
+${buildCoveragePlanBlock(coverageCells)}
 Return only valid JSON in this exact envelope:
 {
   "questions": [
@@ -294,7 +475,7 @@ Return only valid JSON in this exact envelope:
 }
 
 ${QUESTION_RULES(pillar)}
-- Return exactly ${normalizedCount} items.
+- Return exactly ${normalizedCount} items, one per coverage cell above, in the same order.
 ${buildNegativeExamplesBlock(existingExamples)}`;
 
   let content = '{}';
@@ -411,6 +592,9 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
       flag: factCheckReport.results.filter((v) => v.verdict === 'flag').length,
       fail: factCheckReport.results.filter((v) => v.verdict === 'fail').length,
     },
+    // STE-247 obviousness check, run on this batch via verifier.batchFactCheck above — surfaced
+    // separately so obscurity drift is visible even when the overall verdict is a softer 'flag'.
+    obviousnessFails: factCheckReport.results.filter((v) => v.obviousness === 'fail').length,
     durationMs: Date.now() - startedAt,
   });
 
