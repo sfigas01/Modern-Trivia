@@ -33,6 +33,24 @@ beforeEach(() => {
   mocks.chat.mockResolvedValue(verdict('equivalent'));
 });
 describe('semantic duplicate detection', () => {
+  it('uses the merged mini config while retaining strict structured adjudication', async () => {
+    await detectDuplicates(pair);
+    const [request, options] = mocks.chat.mock.calls[0];
+    expect(request).toEqual(
+      expect.objectContaining({
+        model: 'gpt-5.4-mini',
+        reasoning_effort: 'none',
+        max_completion_tokens: 512,
+        response_format: expect.objectContaining({
+          type: 'json_schema',
+          json_schema: expect.objectContaining({ strict: true }),
+        }),
+      })
+    );
+    expect(request).not.toHaveProperty('max_tokens');
+    expect(request).not.toHaveProperty('temperature');
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+  });
   it('detects paraphrases even when answer spelling differs', async () => {
     const r = await detectDuplicates(pair);
     expect(r.status).toBe('complete');

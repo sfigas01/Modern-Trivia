@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import stringSimilarity from 'string-similarity';
 import { z } from 'zod';
 import type { Question } from '@shared/models/questions';
@@ -67,8 +68,7 @@ async function adjudicate(a: Question, b: Question, signal: AbortSignal) {
   const response = await withinDeadline(
     semanticClient().chat.completions.create(
       {
-        model: 'gpt-4o',
-        temperature: 0,
+        ...TRIVIA_AI_REQUEST_CONFIG,
         messages: [
           {
             role: 'system',
@@ -122,14 +122,14 @@ Use uncertain if factual scope or answer equivalence is ambiguous. Do not decide
             },
           },
         },
-        max_tokens: 512,
+        max_completion_tokens: 512,
       },
       { signal }
     ),
     signal
   );
   console.info('[semantic] adjudication', {
-    model: 'gpt-4o',
+    ...TRIVIA_AI_REQUEST_CONFIG,
     tokens: response.usage?.total_tokens ?? 0,
     inputTokens: response.usage?.prompt_tokens ?? 0,
     outputTokens: response.usage?.completion_tokens ?? 0,

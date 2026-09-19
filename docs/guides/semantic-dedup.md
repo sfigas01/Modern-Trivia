@@ -1,7 +1,8 @@
 # Semantic duplicate and conflicting-answer detection (STE-26)
 
 The generation gate and library sweep compare question-only embeddings, then ask
-the existing GPT-4o integration to distinguish equivalent facts, incompatible
+the shared trivia model configuration (currently GPT-5.4 mini with reasoning disabled)
+to distinguish equivalent facts, incompatible
 answers, distinct facts, and uncertain pairs. Factual scope includes entity,
 attribute, time period, location and qualifiers. Similarity alone does not prove
 contradiction. Equivalent spellings/aliases must not become answer conflicts.
@@ -102,7 +103,7 @@ import the unmerged quota helper or change guardian.ts.
 - Configured source database refused connection, so no current-library timing or
   cache benchmark was obtained from it. No source database writes were attempted.
 
-User-approved handoff: STE-26 merges first. STE-228 model-change PR #176 then
+Original handoff (superseded by the integration record below): STE-26 merges first. STE-228 model-change PR #176 then
 merges updated main and integrates its overlapping detector/test changes. Its
 proposed model change requires fresh semantic accuracy measurements; GPT-4o
 results cannot be presented as evidence for another model.
@@ -235,3 +236,41 @@ To run the opt-in PostgreSQL regression, set `STE26_MIGRATION_TEST_DATABASE_URL`
 to a disposable test database and run `npm test`. The normal test run omits these
 two database tests unless that explicit test-only variable is supplied. Application
 `DATABASE_URL` is never used by this test. The full opt-in run passed 612 tests.
+
+### Integration after PR #176 merged
+
+PR #176 merged to main as `ba4b9ae` before STE-26. This branch merges that main
+commit and resolves the detector and test conflicts by retaining the semantic
+pipeline while using `TRIVIA_AI_REQUEST_CONFIG`: GPT-5.4 mini, reasoning disabled,
+`max_completion_tokens: 512`, and strict structured outputs. No prompt, expected
+fixture label, retrieval threshold or failure gate was weakened. Embeddings remain
+text-embedding-3-small. A request-contract regression protects the model options,
+structured schema and abort signal. The verifier and generator are unchanged from
+merged main; their changes in the merge commit originate in PR #176.
+
+Validation of the combined implementation:
+
+- 617 tests pass with the disposable PostgreSQL regressions enabled (615 plus two
+  opt-in database tests). TypeScript, lint (zero errors; 23 existing warnings),
+  production build and all four affected browser flows pass.
+- The unchanged pre-reviewed 140-pair evaluation passes on GPT-5.4 mini in
+  167.528 seconds: duplicate TP/FP/FN 50/0/0; conflict 40/0/0; all 50 distinct
+  pairs correct; zero protected-control false conflicts, unresolved pairs or
+  incomplete calls. This is a model-change regression on the existing controlled
+  set, not a new independently human-labeled production evaluation.
+- The broader live STE-28 suite records 429/432 cells agreeing (99.31%). Its strict
+  runner exits nonzero for three existing verifier/label disagreements:
+  `leak-answer-in-question` and `ambiguous-format` additionally flag obviousness;
+  `multi-answer-single` additionally flags coherence. All semantic labels agree.
+  The verifier source and model config exactly match merged main. These results
+  are disclosed, not suppressed or relabeled; the full live suite is not green.
+- The 60-question synthetic cache workload completes all 1,770 comparisons with
+  30 duplicate pairs, zero uncertain pairs and zero failures: 11.668 seconds cold,
+  8.305 seconds warm. The warm run reuses all 60 embeddings. This is controlled
+  timing, not production-library performance or a new billing estimate.
+- The CI-style `db:push` then `db:migrate` sequence passes in disposable PostgreSQL 16. No production schema or content was changed.
+
+The earlier STE-26-before-STE-228 merge order is superseded: STE-228 is already
+merged and its model switch is integrated here. STE-249 still takes the narrow
+routes.ts quota-integration handoff after STE-26 merges. Revalidate against any
+further main changes before merging PR #177.
