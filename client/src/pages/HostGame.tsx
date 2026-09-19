@@ -3,23 +3,45 @@ import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import { UserPlus, Zap } from 'lucide-react';
+import { Sparkles, UserPlus, Zap } from 'lucide-react';
 import {
   ROOM_ROUND_OPTIONS,
   roomCategoriesSchema,
   roomRoundsSchema,
   type CreateRoomRequest,
   type CreateRoomResponse,
+  type ThemeSuggestResponse,
 } from '@shared/models/rooms';
 
 import { useGame } from '@/lib/store';
 import { useCategoryCounts } from '@/hooks/use-category-counts';
 import { saveRoomSession } from '@/lib/room-session';
+import { THEME_ROUNDS } from '@/lib/featureFlags';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
+
+async function suggestThemeCategories(theme: string): Promise<ThemeSuggestResponse> {
+  const res = await fetch('/api/theme/suggest', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ theme }),
+  });
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const data = await res.json();
+      if (typeof data?.message === 'string') message = data.message;
+    } catch {
+      // no JSON body
+    }
+    throw new Error(message);
+  }
+  return res.json() as Promise<ThemeSuggestResponse>;
+}
 
 async function createRoom(body: CreateRoomRequest): Promise<CreateRoomResponse> {
   const res = await fetch('/api/rooms', {
@@ -48,8 +70,39 @@ export default function HostGame() {
   const { state, toggleCategory, setNumRounds } = useGame();
   const [nickname, setNickname] = useState('');
   const [opponentDisputeVotingEnabled, setOpponentDisputeVotingEnabled] = useState(false);
+  const [theme, setTheme] = useState('');
 
   const categoryCounts = useCategoryCounts(state.questions);
+
+  // Drive the selected-category set toward the suggestions using the existing
+  // toggleCategory action, so no shared store change is needed (keeps this
+  // additive for the STE-128 redesign).
+  const applySuggestedCategories = (suggested: string[]) => {
+    const target = new Set(suggested);
+    for (const c of state.selectedCategories) {
+      if (!target.has(c)) toggleCategory(c);
+    }
+    for (const c of suggested) {
+      if (!state.selectedCategories.includes(c)) toggleCategory(c);
+    }
+  };
+
+  const suggestMutation = useMutation({
+    mutationFn: suggestThemeCategories,
+    onSuccess: (response) => {
+      applySuggestedCategories(response.categories);
+      toast.success('Suggested categories applied — adjust them if you like.');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Could not suggest categories. Please try again.');
+    },
+  });
+
+  const trimmedTheme = theme.trim();
+  const handleSuggest = () => {
+    if (trimmedTheme.length < 2 || suggestMutation.isPending) return;
+    suggestMutation.mutate(trimmedTheme);
+  };
 
   const createRoomMutation = useMutation({
     mutationFn: createRoom,
@@ -83,6 +136,9 @@ export default function HostGame() {
       categories: categories.data,
       numRounds: numRounds.data,
       opponentDisputeVotingEnabled,
+      // Only sent when the feature is on and the host entered a theme; the
+      // server ignores it when the flag is off.
+      ...(THEME_ROUNDS && trimmedTheme.length >= 2 ? { theme: trimmedTheme } : {}),
     });
   };
 
@@ -129,6 +185,53 @@ export default function HostGame() {
               />
             </CardContent>
           </Card>
+
+          {THEME_ROUNDS && (
+            <Card className="border-white/10 bg-white/5 backdrop-blur-md">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Theme (optional)
+                </CardTitle>
+                <CardDescription>
+                  Enter a theme (e.g. &ldquo;baseball&rdquo;) to play a themed game. We&rsquo;ll
+                  suggest related categories you can adjust, then generate questions on start.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. baseball, organic chemistry, Friends"
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    className="bg-white/5 border-white/10 focus:border-primary/50"
+                    maxLength={60}
+                    disabled={createRoomMutation.isPending}
+                    data-testid="input-theme"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-white/10 hover:bg-white/10 whitespace-nowrap"
+                    onClick={handleSuggest}
+                    disabled={
+                      trimmedTheme.length < 2 ||
+                      suggestMutation.isPending ||
+                      createRoomMutation.isPending
+                    }
+                    data-testid="button-suggest-categories"
+                  >
+                    {suggestMutation.isPending ? (
+                      <Spinner className="mr-2" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 mr-2" />
+                    )}
+                    Suggest
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="border-white/10 bg-white/5 backdrop-blur-md">
             <CardHeader className="pb-3">
