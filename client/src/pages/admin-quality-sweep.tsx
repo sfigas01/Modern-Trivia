@@ -41,7 +41,7 @@ import { useAdmin } from '@/hooks/use-admin';
 import { useGame, type Question, type QuestionPatch } from '@/lib/store';
 import {
   buildStaticFindingKey,
-  duplicatePairKey,
+  duplicateFindingKey,
   FACT_CHECK_FINDING_KEY,
   isStaticFindingDismissed,
   type DismissFindingRequest,
@@ -78,9 +78,14 @@ function VerdictBadge({ verdict }: { verdict: string }) {
 }
 
 function MatchTypeBadge({ type }: { type: string }) {
-  const label = type === 'near_duplicate' ? 'near-duplicate' : type;
+  const label =
+    type === 'answer_conflict' ? 'answer conflict · high severity' : type.replaceAll('_', ' ');
   const variant =
-    type === 'exact' ? 'destructive' : type === 'near_duplicate' ? 'secondary' : 'outline';
+    type === 'exact' || type === 'answer_conflict'
+      ? 'destructive'
+      : type === 'near_duplicate'
+        ? 'secondary'
+        : 'outline';
   return <Badge variant={variant}>{label}</Badge>;
 }
 
@@ -633,7 +638,7 @@ function filterDuplicates(matches: DuplicateMatch[], removed: RemovedFindings) {
     ) {
       return false;
     }
-    return !removed.duplicate.has(duplicatePairKey(m.questionIdA, m.questionIdB));
+    return !removed.duplicate.has(duplicateFindingKey(m));
   });
 }
 
@@ -831,7 +836,13 @@ function SummarySection({
 }) {
   const allVisible = filterStaticFindings(report.audit.findings, removed);
   const visible = filter.showAudit ? allVisible.filter((f) => filter.auditRules.has(f.rule)) : [];
-  const visibleHigh = visible.filter((f) => f.severity === 'high').length;
+  const visiblePairs =
+    filter.showDuplicates && report.duplicates
+      ? filterDuplicates(report.duplicates.duplicatesFound, removed)
+      : [];
+  const visibleHigh =
+    visible.filter((f) => f.severity === 'high').length +
+    visiblePairs.filter((f) => f.matchType === 'answer_conflict').length;
   const visibleMedium = visible.filter((f) => f.severity === 'medium').length;
   const visibleDupClusters =
     filter.showDuplicates && report.duplicates
@@ -850,7 +861,7 @@ function SummarySection({
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Open findings</p>
-            <p className="text-2xl font-bold">{visible.length}</p>
+            <p className="text-2xl font-bold">{visible.length + visiblePairs.length}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">High</p>
@@ -976,11 +987,18 @@ interface DuplicateCluster {
   questionIds: string[];
   questions: Map<string, { question: string; answer: string }>;
   matches: DuplicateMatch[];
-  worstMatchType: 'exact' | 'near_duplicate' | 'conceptual';
+  worstMatchType: DuplicateMatch['matchType'];
   highestScore: number;
 }
 
-const MATCH_SEVERITY: Record<string, number> = { exact: 3, near_duplicate: 2, conceptual: 1 };
+const MATCH_SEVERITY: Record<DuplicateMatch['matchType'], number> = {
+  answer_conflict: 6,
+  review_required: 5,
+  semantic_duplicate: 4,
+  exact: 3,
+  near_duplicate: 2,
+  conceptual: 1,
+};
 
 function buildClusters(matches: DuplicateMatch[]): DuplicateCluster[] {
   const parent = new Map<string, string>();
@@ -1052,11 +1070,13 @@ function buildClusters(matches: DuplicateMatch[]): DuplicateCluster[] {
 
 function DuplicatesSection({
   duplicates,
+  incomplete,
   removed,
   questionsById,
   actions,
 }: {
   duplicates: DuplicateMatch[];
+  incomplete?: boolean;
   removed: RemovedFindings;
   questionsById: Record<string, QuestionSnapshot> | undefined;
   actions: EditActions;
@@ -1071,7 +1091,11 @@ function DuplicatesSection({
           <CardTitle className="text-lg">Duplicates</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No duplicates found.</p>
+          <p className="text-sm text-muted-foreground">
+            {incomplete
+              ? 'No confirmed pairs in this partial result. Retry the incomplete check.'
+              : 'No duplicates found.'}
+          </p>
         </CardContent>
       </Card>
     );
@@ -1087,7 +1111,8 @@ function DuplicatesSection({
           questions)
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
-          Related questions are grouped together. Review each cluster and delete the extras.
+          Related questions are grouped together. Review conflicting answers before changing either
+          question; no answer is automatically considered correct.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -1114,7 +1139,7 @@ function DuplicatesSection({
                   className="ml-auto border-green-500/30 hover:bg-green-500/10 hover:text-green-500"
                   onClick={async () => {
                     for (const m of cluster.matches) {
-                      const pk = duplicatePairKey(m.questionIdA, m.questionIdB);
+                      const pk = duplicateFindingKey(m);
                       await actions.onAccept('duplicate', m.questionIdA, pk, `dup::${pk}`);
                     }
                   }}
@@ -1149,7 +1174,7 @@ function DuplicatesSection({
                   const busy = actions.busyKey === editKey;
                   const relatedPairKeys = cluster.matches
                     .filter((m) => m.questionIdA === qId || m.questionIdB === qId)
-                    .map((m) => duplicatePairKey(m.questionIdA, m.questionIdB));
+                    .map((m) => duplicateFindingKey(m));
 
                   return (
                     <div
@@ -1868,6 +1893,12 @@ export default function AdminQualitySweep() {
               </p>
             </div>
 
+            {report.duplicates?.status === 'incomplete' && (
+              <div role="alert" className="border border-destructive rounded p-4">
+                Semantic check incomplete ({report.duplicates.failedPairs ?? 0} failed pairs). Retry
+                the sweep; this is not a clean result.
+              </div>
+            )}
             <SummarySection report={report} removed={removed} filter={filter} />
 
             <FilterBar
@@ -1895,6 +1926,7 @@ export default function AdminQualitySweep() {
             {filter.showDuplicates && report.duplicates && (
               <DuplicatesSection
                 duplicates={report.duplicates.duplicatesFound}
+                incomplete={report.duplicates.status === 'incomplete'}
                 removed={removed}
                 questionsById={report.questionsById}
                 actions={editActions}
