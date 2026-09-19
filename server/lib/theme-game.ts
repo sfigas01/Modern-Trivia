@@ -33,7 +33,7 @@ import type { ThemeProgress } from '@shared/models/rooms';
 
 import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import { generateQuestions, type ExistingExample } from './guardian';
-import { filterNovelQuestions } from './novelty-filter';
+import { filterNovelQuestions, SemanticCheckIncompleteError } from './novelty-filter';
 import { selectTopicContext } from './topic-context';
 import {
   roomQuestionTierExpr,
@@ -465,6 +465,16 @@ export async function prepareThemedQuestions(params: {
       const result = await filterNovelQuestions(generated, noveltyExisting);
       kept = result.kept;
     } catch (error) {
+      if (error instanceof SemanticCheckIncompleteError) {
+        console.error('[theme-game] Semantic novelty check failed — aborting preparation', {
+          theme,
+          pillar,
+          batchIndex,
+          category: error.category,
+          failedPairs: error.failedPairs,
+        });
+        throw error;
+      }
       console.error('[theme-game] Generation batch failed — continuing', {
         theme,
         pillar,
@@ -661,6 +671,22 @@ export async function runThemedGamePreparation(params: {
       generated: result.generated,
     });
   } catch (error) {
+    if (error instanceof SemanticCheckIncompleteError) {
+      console.error('[theme-game] Themed preparation stopped by semantic gate', {
+        code: room.code,
+        theme,
+        category: error.category,
+        failedPairs: error.failedPairs,
+      });
+      updateThemeProgress(room.code, {
+        status: 'error',
+        error:
+          error.category === 'configuration' || error.category === 'authentication'
+            ? 'Semantic novelty checking is unavailable because an embeddings-capable provider is not configured. Configure the embeddings provider and try again.'
+            : 'Semantic novelty checking could not finish. No generated questions were approved. Please try again.',
+      });
+      return;
+    }
     console.error('[theme-game] Themed preparation failed', { code: room.code, theme, error });
     updateThemeProgress(room.code, {
       status: 'error',

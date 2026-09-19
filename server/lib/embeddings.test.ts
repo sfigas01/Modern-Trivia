@@ -6,6 +6,7 @@ import {
   databaseEmbeddingCache,
   EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
+  SemanticPipelineError,
   type CachedEmbedding,
 } from './embeddings';
 const mocks = vi.hoisted(() => ({ create: vi.fn(), query: vi.fn() }));
@@ -18,6 +19,9 @@ vi.mock('../db', () => ({ pool: { query: mocks.query } }));
 const vector = Array.from({ length: EMBEDDING_DIMENSIONS }, (_, i) => (i === 0 ? 1 : 0));
 const question = { id: 'saved', question: 'Which author wrote this book?', answer: 'A writer' };
 const signal = () => new AbortController().signal;
+// The production client intentionally fails fast when no provider credential is
+// configured; provider behavior in this unit suite is supplied by the SDK mock.
+process.env.AI_INTEGRATIONS_OPENAI_API_KEY ||= 'unit-test-key';
 const cached = (): CachedEmbedding => ({
   questionId: question.id,
   contentHash: contentHash(question),
@@ -97,19 +101,36 @@ describe('embedding cache and scoring', () => {
   });
   it('rejects missing and invalid embedding responses', async () => {
     mocks.create.mockResolvedValue({ data: [] });
-    await expect(embedQuestions([question], { signal: signal(), cache: null })).rejects.toThrow(
-      'Incomplete'
+    await expect(embedQuestions([question], { signal: signal(), cache: null })).rejects.toMatchObject(
+      { category: 'invalid_response' }
     );
     mocks.create.mockResolvedValue({ data: [{ index: 0, embedding: [NaN] }] });
-    await expect(embedQuestions([question], { signal: signal(), cache: null })).rejects.toThrow(
-      'Invalid'
+    await expect(embedQuestions([question], { signal: signal(), cache: null })).rejects.toMatchObject(
+      { category: 'invalid_response' }
     );
+  });
+  it('classifies an unsupported embeddings endpoint without exposing provider text', async () => {
+    mocks.create.mockRejectedValue(
+      Object.assign(new Error('sensitive provider response'), {
+        status: 400,
+        code: 'INVALID_ENDPOINT',
+      })
+    );
+    const failure = await embedQuestions([question], { signal: signal(), cache: null }).catch(
+      (error: unknown) => error
+    );
+    expect(failure).toBeInstanceOf(SemanticPipelineError);
+    expect(failure).toMatchObject({ category: 'configuration' });
+    expect(failure.message).not.toContain('sensitive provider response');
   });
   it('fails rather than ignore a cache outage', async () => {
     const cache = { read: vi.fn().mockRejectedValue(new Error('offline')), write: vi.fn() };
-    await expect(embedQuestions([question], { signal: signal(), cache })).rejects.toThrow(
-      'offline'
+    await expect(embedQuestions([question], { signal: signal(), cache })).rejects.toBeInstanceOf(
+      SemanticPipelineError
     );
+    await expect(embedQuestions([question], { signal: signal(), cache })).rejects.toMatchObject({
+      category: 'cache',
+    });
     expect(mocks.create).not.toHaveBeenCalled();
   });
   it('rejects an expired stage before starting paid work', async () => {

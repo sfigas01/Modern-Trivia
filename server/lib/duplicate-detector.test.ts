@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Question } from '@shared/models/questions';
 import { duplicateFindingKey, duplicatePairKey } from '@shared/models/quality-sweep';
 import { detectDuplicates } from './duplicate-detector';
+import { SemanticPipelineError } from './embeddings';
 const mocks = vi.hoisted(() => ({ chat: vi.fn(), embed: vi.fn() }));
 vi.mock('./embeddings', async (original) => ({
   ...(await original<typeof import('./embeddings')>()),
@@ -104,10 +105,11 @@ describe('semantic duplicate detection', () => {
     expect(JSON.stringify(r)).not.toContain('private answer/provider secret');
   });
   it('reports every pair as failed when embedding/cache fails', async () => {
-    mocks.embed.mockRejectedValue(new Error('cache down'));
+    mocks.embed.mockRejectedValue(new SemanticPipelineError('cache'));
     const r = await detectDuplicates([...pair, q('c', 'Third question?', 'Other')]);
     expect(r.status).toBe('incomplete');
     expect(r.failedPairs).toBe(3);
+    expect(r.failureCategory).toBe('cache');
   });
   it('excludes existing-versus-existing comparisons and forwards persist IDs', async () => {
     const persistIds = new Set(['a', 'b']);

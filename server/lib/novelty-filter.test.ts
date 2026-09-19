@@ -104,9 +104,11 @@ describe('generation novelty decisions', () => {
     ]);
   });
   it('fails closed rather than stage unchecked candidates', async () => {
-    report([], { status: 'incomplete', failedPairs: 1 });
-    await expect(filterNovelQuestions([q('a')], [q('e')])).rejects.toBeInstanceOf(
-      SemanticCheckIncompleteError
-    );
+    report([], { status: 'incomplete', failedPairs: 1, failureCategory: 'configuration' });
+    await expect(filterNovelQuestions([q('a')], [q('e')])).rejects.toMatchObject({
+      name: 'SemanticCheckIncompleteError',
+      category: 'configuration',
+      failedPairs: 1,
+    });
   });
 });

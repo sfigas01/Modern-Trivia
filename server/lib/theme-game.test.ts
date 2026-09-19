@@ -43,7 +43,18 @@ vi.mock('../db', () => ({ db: h.dbMock }));
 const guardianMock = vi.hoisted(() => ({ generateQuestions: vi.fn() }));
 vi.mock('./guardian', () => guardianMock);
 
-const noveltyMock = vi.hoisted(() => ({ filterNovelQuestions: vi.fn() }));
+const noveltyMock = vi.hoisted(() => {
+  class SemanticCheckIncompleteError extends Error {
+    constructor(
+      public readonly category = 'unknown',
+      public readonly failedPairs = 0
+    ) {
+      super('Semantic checking could not finish. No questions were staged. Please retry.');
+      this.name = 'SemanticCheckIncompleteError';
+    }
+  }
+  return { filterNovelQuestions: vi.fn(), SemanticCheckIncompleteError };
+});
 vi.mock('./novelty-filter', () => noveltyMock);
 
 vi.mock('./topic-context', () => ({ selectTopicContext: vi.fn(() => []) }));
@@ -67,12 +78,13 @@ import {
   getThemeProgress,
   clearThemeProgress,
   prepareThemedQuestions,
+  runThemedGamePreparation,
   THEME_MAX_GENERATED_CANDIDATES,
   THEME_PROGRESS_TTL_MS,
 } from './theme-game';
 import { generateQuestions } from './guardian';
-import { filterNovelQuestions } from './novelty-filter';
-import type { RoomPlayer } from '@shared/schema';
+import { filterNovelQuestions, SemanticCheckIncompleteError } from './novelty-filter';
+import type { Room, RoomPlayer } from '@shared/schema';
 
 function player(overrides: Partial<RoomPlayer>): RoomPlayer {
   return {
@@ -299,5 +311,43 @@ describe('prepareThemedQuestions', () => {
       .mocked(generateQuestions)
       .mock.calls.reduce((sum, call) => sum + (call[1] as number), 0);
     expect(requested).toBeLessThanOrEqual(THEME_MAX_GENERATED_CANDIDATES);
+  });
+
+  it('aborts after one incomplete semantic batch without fallback or approval', async () => {
+    selectQueue.push([]); // reuse
+    selectQueue.push([]); // existing novelty pool
+    const generated = [generatedQuestion('unchecked')];
+    vi.mocked(generateQuestions).mockResolvedValue(generated as never);
+    vi.mocked(filterNovelQuestions).mockRejectedValue(
+      new SemanticCheckIncompleteError('configuration', 338)
+    );
+    initThemeProgress('ABCDE', 40);
+
+    await runThemedGamePreparation({
+      room: {
+        id: 'room1',
+        code: 'ABCDE',
+        numRounds: 5,
+        status: 'lobby',
+        phase: 'LOBBY',
+      } as Room,
+      players: [player({ id: 'p1', isHost: true }), player({ id: 'p2' })],
+      categories: ['Sports'],
+      theme: 'Baseball',
+      hostPlayerId: 'p1',
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(generateQuestions).toHaveBeenCalledTimes(1);
+    expect(filterNovelQuestions).toHaveBeenCalledTimes(1);
+    expect(h.dbMock.select).toHaveBeenCalledTimes(2);
+    expect(h.dbMock.insert).not.toHaveBeenCalled();
+    expect(h.dbMock.transaction).not.toHaveBeenCalled();
+    expect(getThemeProgress('ABCDE')).toMatchObject({
+      status: 'error',
+      ready: 0,
+      generated: 0,
+      error: expect.stringContaining('embeddings-capable provider'),
+    });
   });
 });

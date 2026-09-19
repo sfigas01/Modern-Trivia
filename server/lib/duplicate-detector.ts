@@ -9,8 +9,10 @@ import {
   embedQuestions,
   cosineSimilarity,
   semanticClient,
+  SemanticPipelineError,
   withinDeadline,
   type EmbeddingCache,
+  type SemanticFailureCategory,
 } from './embeddings';
 
 export type { DuplicateMatch, DuplicateDetectionReport };
@@ -159,10 +161,14 @@ export async function detectDuplicates(
   const deadline = Date.now() + deadlineMs;
   const timer = setTimeout(() => controller.abort(), deadlineMs);
   const { signal } = controller;
-  const fail = (count: number) => {
+  const fail = (count: number, category: SemanticFailureCategory = 'unknown') => {
     report.status = 'incomplete';
     report.failedPairs = (report.failedPairs ?? 0) + count;
     report.failureReason = 'Semantic checking was incomplete. Retry before accepting this result.';
+    report.failureCategory =
+      report.failureCategory && report.failureCategory !== category
+        ? 'mixed'
+        : category;
   };
   const results: { order: number; match: DuplicateMatch }[] = [];
   try {
@@ -187,7 +193,7 @@ export async function detectDuplicates(
           continue;
         const pairOrder = order++;
         if (Date.now() >= deadline) {
-          fail(1);
+          fail(1, 'deadline');
           continue;
         }
         const exact = normalize(a.question) === normalize(b.question);
@@ -207,7 +213,7 @@ export async function detectDuplicates(
           results.push({ order: pairOrder, match: finding(a, b, 'exact', 1) });
         } else if (exact || near || semanticScore >= SEMANTIC_THRESHOLD || similarAnswers) {
           if (candidates.length >= MAX_ADJUDICATIONS) {
-            fail(1);
+            fail(1, 'capacity');
             continue;
           }
           candidates.push({
@@ -231,7 +237,7 @@ export async function detectDuplicates(
         while (next < candidates.length) {
           const pair = candidates[next++];
           if (Date.now() >= deadline || signal.aborted) {
-            fail(1);
+            fail(1, 'deadline');
             continue;
           }
           try {
@@ -266,13 +272,25 @@ export async function detectDuplicates(
                     ? 'provider_rate_limit'
                     : 'provider_error',
             });
-            fail(1);
+            fail(
+              1,
+              signal.aborted
+                ? 'deadline'
+                : error instanceof z.ZodError || error instanceof SyntaxError
+                  ? 'invalid_response'
+                  : status === 429
+                    ? 'rate_limit'
+                    : 'provider'
+            );
           }
         }
       })
     );
-  } catch {
-    fail(totalPairsChecked);
+  } catch (error) {
+    fail(
+      totalPairsChecked,
+      error instanceof SemanticPipelineError ? error.category : 'unknown'
+    );
   } finally {
     controller.abort();
     clearTimeout(timer);
@@ -280,6 +298,9 @@ export async function detectDuplicates(
   report.duplicatesFound = results.sort((a, b) => a.order - b.order).map((r) => r.match);
   for (const match of report.duplicatesFound) report.duplicatesByType[match.matchType]++;
   if (report.status === 'incomplete')
-    console.error('[semantic] incomplete detection', { failedPairs: report.failedPairs });
+    console.error('[semantic] incomplete detection', {
+      failedPairs: report.failedPairs,
+      category: report.failureCategory,
+    });
   return report;
 }

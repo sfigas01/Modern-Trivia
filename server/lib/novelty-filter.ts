@@ -53,7 +53,9 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     scopeIds: batchIds,
     persistIds: new Set(existing.map((q) => q.id)),
   });
-  if (report.status === 'incomplete') throw new SemanticCheckIncompleteError();
+  if (report.status === 'incomplete') {
+    throw new SemanticCheckIncompleteError(report.failureCategory, report.failedPairs);
+  }
 
   // Conflicts/uncertainty take precedence over ordinary canonical selection.
   const withheld = new Map<string, DroppedNovelty<T>>();
@@ -209,7 +211,10 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
 }
 
 export class SemanticCheckIncompleteError extends Error {
-  constructor() {
+  constructor(
+    public readonly category = 'unknown',
+    public readonly failedPairs = 0
+  ) {
     super('Semantic checking could not finish. No questions were staged. Please retry.');
     this.name = 'SemanticCheckIncompleteError';
   }

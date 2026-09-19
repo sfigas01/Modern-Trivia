@@ -18,6 +18,29 @@ export interface EmbeddingCache {
   write(question: EmbeddableQuestion, value: CachedEmbedding): Promise<void>;
 }
 
+export type SemanticFailureCategory =
+  | 'configuration'
+  | 'authentication'
+  | 'rate_limit'
+  | 'provider'
+  | 'invalid_response'
+  | 'cache'
+  | 'deadline'
+  | 'capacity'
+  | 'mixed'
+  | 'unknown';
+
+/** Carries only a fixed safe category across the semantic pipeline. */
+export class SemanticPipelineError extends Error {
+  constructor(
+    public readonly category: SemanticFailureCategory,
+    options?: ErrorOptions
+  ) {
+    super(`Semantic pipeline failed (${category})`, options);
+    this.name = 'SemanticPipelineError';
+  }
+}
+
 export function contentHash(q: Pick<EmbeddableQuestion, 'question' | 'answer'>): string {
   return createHash('sha256')
     .update(JSON.stringify([q.question, q.answer]))
@@ -58,17 +81,59 @@ export function semanticClient(): OpenAI {
   }));
 }
 
+let embeddingsClient: OpenAI | undefined;
+export function semanticEmbeddingsClient(): OpenAI {
+  const dedicatedKey =
+    process.env.OPENAI_EMBEDDINGS_API_KEY ?? process.env.OPENAI_API_KEY;
+  const apiKey = dedicatedKey ?? process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  if (!apiKey) throw new SemanticPipelineError('configuration');
+  return (embeddingsClient ??= new OpenAI({
+    // The Replit chat integration currently does not necessarily expose /embeddings.
+    // A dedicated compatible provider can be configured without changing chat traffic.
+    apiKey,
+    baseURL: dedicatedKey
+      ? process.env.OPENAI_EMBEDDINGS_BASE_URL ?? process.env.OPENAI_BASE_URL
+      : process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    timeout: 30_000,
+    maxRetries: 2,
+  }));
+}
+
+function providerFailureCategory(error: unknown): SemanticFailureCategory {
+  const status =
+    typeof error === 'object' && error !== null && 'status' in error
+      ? (error as { status?: unknown }).status
+      : undefined;
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? (error as { code?: unknown }).code
+      : undefined;
+  if (status === 401 || status === 403) return 'authentication';
+  if (status === 429) return 'rate_limit';
+  if (
+    code === 'INVALID_ENDPOINT' ||
+    code === 'invalid_api_key' ||
+    (typeof status === 'number' && status >= 400 && status < 500)
+  )
+    return 'configuration';
+  return 'provider';
+}
+
 // An aborted stage must return promptly even if a database request is still finishing.
 // Provider calls also receive the signal, so cancellation stops their retries.
 export async function withinDeadline<T>(promise: PromiseLike<T>, signal: AbortSignal): Promise<T> {
-  signal.throwIfAborted();
+  if (signal.aborted) throw new SemanticPipelineError('deadline');
   return new Promise<T>((resolve, reject) => {
-    const abort = () => reject(new Error('Semantic check deadline exceeded'));
+    const abort = () => reject(new SemanticPipelineError('deadline'));
     signal.addEventListener('abort', abort, { once: true });
     Promise.resolve(promise)
       .then(resolve, reject)
       .finally(() => signal.removeEventListener('abort', abort));
   });
+}
+
+function throwIfSemanticAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new SemanticPipelineError('deadline');
 }
 
 export const databaseEmbeddingCache: EmbeddingCache = {
@@ -118,11 +183,18 @@ export async function embedQuestions(
     requests = 0;
   const start = Date.now();
   for (let offset = 0; offset < questions.length; offset += 64) {
-    signal.throwIfAborted();
+    throwIfSemanticAborted(signal);
     const chunk = questions.slice(offset, offset + 64);
     const saved = chunk.filter((q) => !persistIds || persistIds.has(q.id));
-    const cached =
-      cache && saved.length ? await withinDeadline(cache.read(saved.map((q) => q.id)), signal) : [];
+    let cached: CachedEmbedding[] = [];
+    if (cache && saved.length) {
+      try {
+        cached = await withinDeadline(cache.read(saved.map((q) => q.id)), signal);
+      } catch (error) {
+        if (error instanceof SemanticPipelineError) throw error;
+        throw new SemanticPipelineError('cache', { cause: error });
+      }
+    }
     const lookup = new Map(cached.map((entry) => [entry.questionId, entry]));
     for (const q of chunk) {
       const entry = lookup.get(q.id);
@@ -147,18 +219,24 @@ export async function embedQuestions(
       throw new Error('Question text cannot be embedded safely');
     }
     if (missing.length) {
-      const response = await withinDeadline(
-        semanticClient().embeddings.create(
-          {
-            model: EMBEDDING_MODEL,
-            dimensions: EMBEDDING_DIMENSIONS,
-            input: missing,
-            encoding_format: 'float',
-          },
-          { signal }
-        ),
-        signal
-      );
+      let response;
+      try {
+        response = await withinDeadline(
+          semanticEmbeddingsClient().embeddings.create(
+            {
+              model: EMBEDDING_MODEL,
+              dimensions: EMBEDDING_DIMENSIONS,
+              input: missing,
+              encoding_format: 'float',
+            },
+            { signal }
+          ),
+          signal
+        );
+      } catch (error) {
+        if (error instanceof SemanticPipelineError) throw error;
+        throw new SemanticPipelineError(providerFailureCategory(error), { cause: error });
+      }
       requests++;
       tokens += response.usage?.total_tokens ?? 0;
       const seen = new Set<number>();
@@ -170,30 +248,35 @@ export async function embedQuestions(
           seen.has(entry.index) ||
           !validVector(entry.embedding, EMBEDDING_DIMENSIONS)
         ) {
-          throw new Error('Invalid embedding response');
+          throw new SemanticPipelineError('invalid_response');
         }
         seen.add(entry.index);
         byContent.set(missing[entry.index], entry.embedding);
       }
-      if (seen.size !== missing.length) throw new Error('Incomplete embedding response');
+      if (seen.size !== missing.length) throw new SemanticPipelineError('invalid_response');
     }
     for (const q of chunk) {
       if (vectors.has(q.id)) continue;
       const vector = byContent.get(q.question)!;
       vectors.set(q.id, vector);
-      signal.throwIfAborted();
+      throwIfSemanticAborted(signal);
       if (cache && (!persistIds || persistIds.has(q.id))) {
-        await withinDeadline(
-          cache.write(q, {
-            questionId: q.id,
-            contentHash: contentHash(q),
-            model: EMBEDDING_MODEL,
-            dimensions: EMBEDDING_DIMENSIONS,
-            purpose: EMBEDDING_PURPOSE,
-            vector,
-          }),
-          signal
-        );
+        try {
+          await withinDeadline(
+            cache.write(q, {
+              questionId: q.id,
+              contentHash: contentHash(q),
+              model: EMBEDDING_MODEL,
+              dimensions: EMBEDDING_DIMENSIONS,
+              purpose: EMBEDDING_PURPOSE,
+              vector,
+            }),
+            signal
+          );
+        } catch (error) {
+          if (error instanceof SemanticPipelineError) throw error;
+          throw new SemanticPipelineError('cache', { cause: error });
+        }
       }
     }
   }

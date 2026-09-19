@@ -79,6 +79,18 @@ export interface DuplicateDetectionReport {
   status?: 'complete' | 'incomplete';
   failedPairs?: number;
   failureReason?: string;
+  /** Fixed, content-free category suitable for logs and retry diagnostics. */
+  failureCategory?:
+    | 'configuration'
+    | 'authentication'
+    | 'rate_limit'
+    | 'provider'
+    | 'invalid_response'
+    | 'cache'
+    | 'deadline'
+    | 'capacity'
+    | 'mixed'
+    | 'unknown';
 }
 
 // --- Fact-check types ---

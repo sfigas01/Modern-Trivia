@@ -2,7 +2,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { aiLimiter } from './rateLimiter';
+import { aiLimiter, generalLimiter, roomPresenceLimiter } from './rateLimiter';
 
 type TestRequest = Request & {
   user?: {
@@ -74,5 +74,61 @@ describe('aiLimiter', () => {
     await makeRequests(app, { 'X-Forwarded-For': '203.0.113.10' }, 20);
 
     await request(app).post('/ai').set({ 'X-Forwarded-For': '203.0.113.11' }).expect(200);
+  });
+});
+
+describe('roomPresenceLimiter', () => {
+  function buildApiApp(): Express {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use('/api', roomPresenceLimiter);
+    app.use('/api', generalLimiter);
+    app.get('/api/rooms/:code', (_req, res) => res.json({ ok: true }));
+    app.post('/api/write', (_req, res) => res.json({ ok: true }));
+    return app;
+  }
+
+  it('does not spend the general API budget on room snapshot and presence polling', async () => {
+    const app = buildApiApp();
+    const headers = { 'X-Forwarded-For': '203.0.113.20' };
+
+    for (let i = 0; i < 120; i++) {
+      await request(app)
+        .get('/api/rooms/LIVE1')
+        .query({ sinceVersion: i })
+        .set(headers)
+        .expect(200);
+    }
+
+    for (let i = 0; i < 100; i++) {
+      await request(app).post('/api/write').set(headers).expect(200);
+    }
+
+    await request(app).post('/api/write').set(headers).expect(429);
+  });
+
+  it('keeps non-polling room requests on the general API limiter', async () => {
+    const app = buildApiApp();
+    const headers = { 'X-Forwarded-For': '203.0.113.21' };
+
+    for (let i = 0; i < 100; i++) {
+      await request(app).post('/api/write').set(headers).expect(200);
+    }
+
+    await request(app).post('/api/rooms/LIVE2').set(headers).expect(429);
+  });
+
+  it('applies a separate ceiling to room snapshot and presence polling', async () => {
+    const app = buildApiApp();
+    const headers = { 'X-Forwarded-For': '203.0.113.22' };
+
+    for (let i = 0; i < 600; i++) {
+      await request(app).get('/api/rooms/LIVE3').set(headers).expect(200);
+    }
+
+    const response = await request(app).get('/api/rooms/LIVE3').set(headers).expect(429);
+    expect(response.body).toEqual({
+      message: 'Too many room updates, please try again later.',
+    });
   });
 });

@@ -1,5 +1,7 @@
 # Memory Index
 
+- [Semantic provider capabilities](semantic-provider-capabilities.md) — working chat credentials do not prove embeddings support; verify live capability before themed-game acceptance.
+
 - [Dependency upgrade constraints](dependency-upgrade-constraints.md) — transitive qs pinning and npm override resolution require care during security upgrades.
 
 - [Publish CHECK introspection](publish-check-constraint-introspection.md) — top-level CASE checks can generate invalid nested CHECK SQL; validate the actual publish diff.
