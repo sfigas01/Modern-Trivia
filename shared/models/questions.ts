@@ -116,7 +116,9 @@ export const questionEmbeddings = pgTable(
     check('question_embeddings_vector_array', sql`jsonb_typeof(${table.vector}) = 'array'`),
     check(
       'question_embeddings_vector_length',
-      sql`CASE WHEN jsonb_typeof(${table.vector}) = 'array' THEN jsonb_array_length(${table.vector}) = ${table.dimensions} ELSE false END`
+      // Keep CASE inside the function: publish introspection mishandles a
+      // top-level CASE check and generates invalid CHECK (CHECK (...)) SQL.
+      sql`jsonb_array_length(CASE WHEN jsonb_typeof(${table.vector}) = 'array' THEN ${table.vector} ELSE '[]'::jsonb END) = ${table.dimensions}`
     ),
   ]
 );

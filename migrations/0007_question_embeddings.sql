@@ -20,7 +20,7 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'question_embeddings'::regclass AND conname = 'question_embeddings_vector_length') THEN
     ALTER TABLE question_embeddings ADD CONSTRAINT question_embeddings_vector_length CHECK (
-      CASE WHEN jsonb_typeof(vector) = 'array' THEN jsonb_array_length(vector) = dimensions ELSE false END
+      jsonb_array_length(CASE WHEN jsonb_typeof(vector) = 'array' THEN vector ELSE '[]'::jsonb END) = dimensions
     );
   END IF;
 END $$;
