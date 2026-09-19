@@ -1,0 +1,1822 @@
+[
+  {
+    "id": "final-01-semantic_duplicate",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Which artist is known for creating the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-01-answer_conflict",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Which artist is known for creating the Mona Lisa?",
+      "answer": "Vincent van Gogh"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-01-distinct",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "What is the Mona Lisa primarily painted on?",
+      "answer": "Wood panel"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-02-semantic_duplicate",
+    "a": {
+      "question": "What is the capital city of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Australia?",
+      "answer": "Canberra"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-02-answer_conflict",
+    "a": {
+      "question": "What is the capital city of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Australia?",
+      "answer": "Sydney"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-02-distinct",
+    "a": {
+      "question": "What is the capital city of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "In which Australian city would you find the Sydney Opera House?",
+      "answer": "Sydney"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-03-semantic_duplicate",
+    "a": {
+      "question": "Which element has the chemical symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "What element is represented by 'O' on the periodic table?",
+      "answer": "Oxygen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-03-answer_conflict",
+    "a": {
+      "question": "Which element has the chemical symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "What element is represented by 'O' on the periodic table?",
+      "answer": "Gold"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-03-distinct",
+    "a": {
+      "question": "Which element has the chemical symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "What is the atomic number of oxygen?",
+      "answer": "8"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-04-semantic_duplicate",
+    "a": {
+      "question": "In a fictional survey, which bird species ranked first for mimicking human speech?",
+      "answer": "African Grey Parrot"
+    },
+    "b": {
+      "question": "Which species topped the fictional survey ranking for human-speech mimicry?",
+      "answer": "African Grey Parrot"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-04-answer_conflict",
+    "a": {
+      "question": "In a fictional survey, which bird species ranked first for mimicking human speech?",
+      "answer": "African Grey Parrot"
+    },
+    "b": {
+      "question": "Which species topped the fictional survey ranking for human-speech mimicry?",
+      "answer": "Penguin"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-04-distinct",
+    "a": {
+      "question": "In a fictional survey, which bird species ranked first for mimicking human speech?",
+      "answer": "African Grey Parrot"
+    },
+    "b": {
+      "question": "What is the average lifespan of an African Grey Parrot in captivity?",
+      "answer": "50 to 60 years"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-05-semantic_duplicate",
+    "a": {
+      "question": "In what year were the first modern Olympic Games held?",
+      "answer": "1896"
+    },
+    "b": {
+      "question": "When did the inaugural modern Olympics take place?",
+      "answer": "1896"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-05-answer_conflict",
+    "a": {
+      "question": "In what year were the first modern Olympic Games held?",
+      "answer": "1896"
+    },
+    "b": {
+      "question": "When did the inaugural modern Olympics take place?",
+      "answer": "1900"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-05-distinct",
+    "a": {
+      "question": "In what year were the first modern Olympic Games held?",
+      "answer": "1896"
+    },
+    "b": {
+      "question": "In which city were the first modern Olympic Games held?",
+      "answer": "Athens"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-06-semantic_duplicate",
+    "a": {
+      "question": "Which president of the United States was assassinated in 1963?",
+      "answer": "John F. Kennedy"
+    },
+    "b": {
+      "question": "Who was the U.S. president killed in 1963?",
+      "answer": "John F. Kennedy"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-06-answer_conflict",
+    "a": {
+      "question": "Which president of the United States was assassinated in 1963?",
+      "answer": "John F. Kennedy"
+    },
+    "b": {
+      "question": "Who was the U.S. president killed in 1963?",
+      "answer": "Abraham Lincoln"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-06-distinct",
+    "a": {
+      "question": "Which president of the United States was assassinated in 1963?",
+      "answer": "John F. Kennedy"
+    },
+    "b": {
+      "question": "What was John F. Kennedy's wife's name?",
+      "answer": "Jacqueline Kennedy"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-07-semantic_duplicate",
+    "a": {
+      "question": "What main ingredient gives Earl Grey tea its distinctive flavor?",
+      "answer": "Bergamot oil"
+    },
+    "b": {
+      "question": "What is the primary flavoring in Earl Grey tea?",
+      "answer": "Bergamot oil"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-07-answer_conflict",
+    "a": {
+      "question": "What main ingredient gives Earl Grey tea its distinctive flavor?",
+      "answer": "Bergamot oil"
+    },
+    "b": {
+      "question": "What is the primary flavoring in Earl Grey tea?",
+      "answer": "Peppermint"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-07-distinct",
+    "a": {
+      "question": "What main ingredient gives Earl Grey tea its distinctive flavor?",
+      "answer": "Bergamot oil"
+    },
+    "b": {
+      "question": "What type of tea is typically used as the base for Earl Grey?",
+      "answer": "Black tea"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-08-semantic_duplicate",
+    "a": {
+      "question": "What is the name of our galaxy?",
+      "answer": "Milky Way"
+    },
+    "b": {
+      "question": "What is the galaxy called that contains our solar system?",
+      "answer": "Milky Way"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-08-answer_conflict",
+    "a": {
+      "question": "What is the name of our galaxy?",
+      "answer": "Milky Way"
+    },
+    "b": {
+      "question": "What is the galaxy called that contains our solar system?",
+      "answer": "Andromeda"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-08-distinct",
+    "a": {
+      "question": "What is the name of our galaxy?",
+      "answer": "Milky Way"
+    },
+    "b": {
+      "question": "How many spiral arms does the Milky Way galaxy have?",
+      "answer": "Four"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-09-semantic_duplicate",
+    "a": {
+      "question": "What simple machine is a screw an example of?",
+      "answer": "Inclined plane"
+    },
+    "b": {
+      "question": "To which category of simple machines does a screw belong?",
+      "answer": "Inclined plane"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-09-answer_conflict",
+    "a": {
+      "question": "What simple machine is a screw an example of?",
+      "answer": "Inclined plane"
+    },
+    "b": {
+      "question": "To which category of simple machines does a screw belong?",
+      "answer": "Pulley"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-09-distinct",
+    "a": {
+      "question": "What simple machine is a screw an example of?",
+      "answer": "Inclined plane"
+    },
+    "b": {
+      "question": "What is the primary function of a screw in mechanics?",
+      "answer": "Convert rotational motion to linear motion"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-10-semantic_duplicate",
+    "a": {
+      "question": "Which Shakespeare play features the characters of Oberon and Titania?",
+      "answer": "A Midsummer Night's Dream"
+    },
+    "b": {
+      "question": "In which play by Shakespeare do Oberon and Titania appear?",
+      "answer": "A Midsummer Night's Dream"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-10-answer_conflict",
+    "a": {
+      "question": "Which Shakespeare play features the characters of Oberon and Titania?",
+      "answer": "A Midsummer Night's Dream"
+    },
+    "b": {
+      "question": "In which play by Shakespeare do Oberon and Titania appear?",
+      "answer": "Hamlet"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-10-distinct",
+    "a": {
+      "question": "Which Shakespeare play features the characters of Oberon and Titania?",
+      "answer": "A Midsummer Night's Dream"
+    },
+    "b": {
+      "question": "What genre is Shakespeare's 'A Midsummer Night's Dream'?",
+      "answer": "Comedy"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-11-semantic_duplicate",
+    "a": {
+      "question": "Which river is the longest in South America?",
+      "answer": "Amazon River"
+    },
+    "b": {
+      "question": "What river holds the title of the longest in South America?",
+      "answer": "Amazon River"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-11-answer_conflict",
+    "a": {
+      "question": "Which river is the longest in South America?",
+      "answer": "Amazon River"
+    },
+    "b": {
+      "question": "What river holds the title of the longest in South America?",
+      "answer": "Nile"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-11-distinct",
+    "a": {
+      "question": "Which river is the longest in South America?",
+      "answer": "Amazon River"
+    },
+    "b": {
+      "question": "In which country does the Amazon River primarily flow?",
+      "answer": "Brazil"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-12-semantic_duplicate",
+    "a": {
+      "question": "In the fictional 2016 AppSurvey, which language ranked first for Android app development?",
+      "answer": "Java"
+    },
+    "b": {
+      "question": "Which programming language topped the 2016 fictional AppSurvey for Android development?",
+      "answer": "Java"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-12-answer_conflict",
+    "a": {
+      "question": "In the fictional 2016 AppSurvey, which language ranked first for Android app development?",
+      "answer": "Java"
+    },
+    "b": {
+      "question": "Which programming language topped the 2016 fictional AppSurvey for Android development?",
+      "answer": "Swift"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-12-distinct",
+    "a": {
+      "question": "In the fictional 2016 AppSurvey, which language ranked first for Android app development?",
+      "answer": "Java"
+    },
+    "b": {
+      "question": "What is the official integrated development environment (IDE) for Android app development?",
+      "answer": "Android Studio"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-13-semantic_duplicate",
+    "a": {
+      "question": "Which animal is known as the largest land carnivore?",
+      "answer": "Polar bear"
+    },
+    "b": {
+      "question": "What is the largest carnivorous animal that lives on land?",
+      "answer": "Polar bear"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-13-answer_conflict",
+    "a": {
+      "question": "Which animal is known as the largest land carnivore?",
+      "answer": "Polar bear"
+    },
+    "b": {
+      "question": "What is the largest carnivorous animal that lives on land?",
+      "answer": "Lion"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-13-distinct",
+    "a": {
+      "question": "Which animal is known as the largest land carnivore?",
+      "answer": "Polar bear"
+    },
+    "b": {
+      "question": "What is the primary diet of a polar bear?",
+      "answer": "Seals"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-14-semantic_duplicate",
+    "a": {
+      "question": "Who won the FIFA World Cup in 2018?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "Which team was the champion of the 2018 FIFA World Cup?",
+      "answer": "France"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-14-answer_conflict",
+    "a": {
+      "question": "Who won the FIFA World Cup in 2018?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "Which team was the champion of the 2018 FIFA World Cup?",
+      "answer": "Germany"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-14-distinct",
+    "a": {
+      "question": "Who won the FIFA World Cup in 2018?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "In which country was the 2018 FIFA World Cup held?",
+      "answer": "Russia"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-15-semantic_duplicate",
+    "a": {
+      "question": "Which historical event concluded with the signing of the Treaty of Versailles?",
+      "answer": "World War I"
+    },
+    "b": {
+      "question": "What major event ended with the Treaty of Versailles being signed?",
+      "answer": "World War I"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-15-answer_conflict",
+    "a": {
+      "question": "Which historical event concluded with the signing of the Treaty of Versailles?",
+      "answer": "World War I"
+    },
+    "b": {
+      "question": "What major event ended with the Treaty of Versailles being signed?",
+      "answer": "World War II"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-15-distinct",
+    "a": {
+      "question": "Which historical event concluded with the signing of the Treaty of Versailles?",
+      "answer": "World War I"
+    },
+    "b": {
+      "question": "In what year was the Treaty of Versailles signed?",
+      "answer": "1919"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-16-semantic_duplicate",
+    "a": {
+      "question": "What fruit is guacamole primarily made from?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "What is the main ingredient in traditional guacamole?",
+      "answer": "Avocado"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-16-answer_conflict",
+    "a": {
+      "question": "What fruit is guacamole primarily made from?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "What is the main ingredient in traditional guacamole?",
+      "answer": "Tomato"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-16-distinct",
+    "a": {
+      "question": "What fruit is guacamole primarily made from?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "Which cuisine is guacamole traditionally part of?",
+      "answer": "Mexican"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-17-semantic_duplicate",
+    "a": {
+      "question": "Which planet is famous for having a prominent ring system?",
+      "answer": "Saturn"
+    },
+    "b": {
+      "question": "What planet is best known for its distinctive rings?",
+      "answer": "Saturn"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-17-answer_conflict",
+    "a": {
+      "question": "Which planet is famous for having a prominent ring system?",
+      "answer": "Saturn"
+    },
+    "b": {
+      "question": "What planet is best known for its distinctive rings?",
+      "answer": "Mars"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-17-distinct",
+    "a": {
+      "question": "Which planet is famous for having a prominent ring system?",
+      "answer": "Saturn"
+    },
+    "b": {
+      "question": "What is the largest moon of Saturn called?",
+      "answer": "Titan"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-18-semantic_duplicate",
+    "a": {
+      "question": "What tool is commonly used to measure atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "Which instrument is used to gauge the pressure of the atmosphere?",
+      "answer": "Barometer"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-18-answer_conflict",
+    "a": {
+      "question": "What tool is commonly used to measure atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "Which instrument is used to gauge the pressure of the atmosphere?",
+      "answer": "Thermometer"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-18-distinct",
+    "a": {
+      "question": "What tool is commonly used to measure atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "What unit is atmospheric pressure typically measured in?",
+      "answer": "Pascals"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-19-semantic_duplicate",
+    "a": {
+      "question": "Who is the author of the Harry Potter series?",
+      "answer": "J.K. Rowling"
+    },
+    "b": {
+      "question": "Who wrote the series of books about Harry Potter?",
+      "answer": "J.K. Rowling"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-19-answer_conflict",
+    "a": {
+      "question": "Who is the author of the Harry Potter series?",
+      "answer": "J.K. Rowling"
+    },
+    "b": {
+      "question": "Who wrote the series of books about Harry Potter?",
+      "answer": "J.R.R. Tolkien"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-19-distinct",
+    "a": {
+      "question": "Who is the author of the Harry Potter series?",
+      "answer": "J.K. Rowling"
+    },
+    "b": {
+      "question": "What is the name of the publishing house that first published the Harry Potter series in the UK?",
+      "answer": "Bloomsbury"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-20-semantic_duplicate",
+    "a": {
+      "question": "What is the official language of Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is officially spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-20-answer_conflict",
+    "a": {
+      "question": "What is the official language of Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is officially spoken in Brazil?",
+      "answer": "Spanish"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-20-distinct",
+    "a": {
+      "question": "What is the official language of Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "What is the currency used in Brazil?",
+      "answer": "Brazilian Real"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-21-semantic_duplicate",
+    "a": {
+      "question": "What year did the Apollo 11 mission land on the Moon?",
+      "answer": "1969"
+    },
+    "b": {
+      "question": "In which year did humans first set foot on the Moon during the Apollo 11 mission?",
+      "answer": "1969"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-21-answer_conflict",
+    "a": {
+      "question": "What year did the Apollo 11 mission land on the Moon?",
+      "answer": "1969"
+    },
+    "b": {
+      "question": "In which year did humans first set foot on the Moon during the Apollo 11 mission?",
+      "answer": "1967"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-21-distinct",
+    "a": {
+      "question": "What year did the Apollo 11 mission land on the Moon?",
+      "answer": "1969"
+    },
+    "b": {
+      "question": "How many astronauts were onboard the Apollo 11 mission?",
+      "answer": "Three"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-22-semantic_duplicate",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Japan?",
+      "answer": "Tokyo"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-22-answer_conflict",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Japan?",
+      "answer": "Kyoto"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-22-distinct",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "What is the population of Tokyo as of 2023?",
+      "answer": "Approximately 37 million"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-23-semantic_duplicate",
+    "a": {
+      "question": "Which element has the chemical symbol 'Au'?",
+      "answer": "Gold"
+    },
+    "b": {
+      "question": "What is the chemical element with the symbol 'Au'?",
+      "answer": "Gold"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-23-answer_conflict",
+    "a": {
+      "question": "Which element has the chemical symbol 'Au'?",
+      "answer": "Gold"
+    },
+    "b": {
+      "question": "What is the chemical element with the symbol 'Au'?",
+      "answer": "Silver"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-23-distinct",
+    "a": {
+      "question": "Which element has the chemical symbol 'Au'?",
+      "answer": "Gold"
+    },
+    "b": {
+      "question": "What is the atomic number of gold?",
+      "answer": "79"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-24-semantic_duplicate",
+    "a": {
+      "question": "Who painted The Scream?",
+      "answer": "Edvard Munch"
+    },
+    "b": {
+      "question": "Which artist created the painting The Scream?",
+      "answer": "Edvard Munch"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-24-answer_conflict",
+    "a": {
+      "question": "Who painted The Scream?",
+      "answer": "Edvard Munch"
+    },
+    "b": {
+      "question": "Which artist created the painting The Scream?",
+      "answer": "Pablo Picasso"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-24-distinct",
+    "a": {
+      "question": "Who painted The Scream?",
+      "answer": "Edvard Munch"
+    },
+    "b": {
+      "question": "In which year was the first version of The Scream painted?",
+      "answer": "1893"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-25-semantic_duplicate",
+    "a": {
+      "question": "What is the boiling point of water in Celsius at sea level?",
+      "answer": "100 degrees Celsius"
+    },
+    "b": {
+      "question": "At sea level, at what temperature in Celsius does water boil?",
+      "answer": "100 degrees Celsius"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-25-answer_conflict",
+    "a": {
+      "question": "What is the boiling point of water in Celsius at sea level?",
+      "answer": "100 degrees Celsius"
+    },
+    "b": {
+      "question": "At sea level, at what temperature in Celsius does water boil?",
+      "answer": "90 degrees Celsius"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-25-distinct",
+    "a": {
+      "question": "What is the boiling point of water in Celsius at sea level?",
+      "answer": "100 degrees Celsius"
+    },
+    "b": {
+      "question": "What is the freezing point of water in Celsius?",
+      "answer": "0 degrees Celsius"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-26-semantic_duplicate",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which planet has the nickname Red Planet?",
+      "answer": "Mars"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-26-answer_conflict",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which planet has the nickname Red Planet?",
+      "answer": "Jupiter"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-26-distinct",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "How many moons does Mars have?",
+      "answer": "Two"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-27-semantic_duplicate",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "Blue whale"
+    },
+    "b": {
+      "question": "Which mammal holds the record for being the largest on the planet?",
+      "answer": "Blue whale"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-27-answer_conflict",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "Blue whale"
+    },
+    "b": {
+      "question": "Which mammal holds the record for being the largest on the planet?",
+      "answer": "African elephant"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-27-distinct",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "Blue whale"
+    },
+    "b": {
+      "question": "What is the typical lifespan of a blue whale?",
+      "answer": "70 to 90 years"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-28-semantic_duplicate",
+    "a": {
+      "question": "What programming language is known for its use in web development, particularly for client-side scripting?",
+      "answer": "JavaScript"
+    },
+    "b": {
+      "question": "Which programming language is commonly used for building dynamic web pages on the client side?",
+      "answer": "JavaScript"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-28-answer_conflict",
+    "a": {
+      "question": "What programming language is known for its use in web development, particularly for client-side scripting?",
+      "answer": "JavaScript"
+    },
+    "b": {
+      "question": "Which programming language is commonly used for building dynamic web pages on the client side?",
+      "answer": "Python"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-28-distinct",
+    "a": {
+      "question": "What programming language is known for its use in web development, particularly for client-side scripting?",
+      "answer": "JavaScript"
+    },
+    "b": {
+      "question": "In what year was JavaScript first invented?",
+      "answer": "1995"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-29-semantic_duplicate",
+    "a": {
+      "question": "What is the main ingredient in traditional Japanese miso soup?",
+      "answer": "Miso paste"
+    },
+    "b": {
+      "question": "What is the primary component of classic Japanese miso soup?",
+      "answer": "Miso paste"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-29-answer_conflict",
+    "a": {
+      "question": "What is the main ingredient in traditional Japanese miso soup?",
+      "answer": "Miso paste"
+    },
+    "b": {
+      "question": "What is the primary component of classic Japanese miso soup?",
+      "answer": "Soy sauce"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-29-distinct",
+    "a": {
+      "question": "What is the main ingredient in traditional Japanese miso soup?",
+      "answer": "Miso paste"
+    },
+    "b": {
+      "question": "What type of seaweed is commonly used in miso soup?",
+      "answer": "Wakame"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-30-semantic_duplicate",
+    "a": {
+      "question": "Which city hosted the 1980 Summer Olympics?",
+      "answer": "Moscow"
+    },
+    "b": {
+      "question": "In which city were the 1980 Summer Olympic Games held?",
+      "answer": "Moscow"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-30-answer_conflict",
+    "a": {
+      "question": "Which city hosted the 1980 Summer Olympics?",
+      "answer": "Moscow"
+    },
+    "b": {
+      "question": "In which city were the 1980 Summer Olympic Games held?",
+      "answer": "Los Angeles"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-30-distinct",
+    "a": {
+      "question": "Which city hosted the 1980 Summer Olympics?",
+      "answer": "Moscow"
+    },
+    "b": {
+      "question": "How many countries participated in the 1980 Summer Olympics?",
+      "answer": "80"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-31-semantic_duplicate",
+    "a": {
+      "question": "In what year did the Titanic sink on its maiden voyage?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "During which year did the Titanic meet its tragic end on its first journey?",
+      "answer": "1912"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-31-answer_conflict",
+    "a": {
+      "question": "In what year did the Titanic sink on its maiden voyage?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "During which year did the Titanic meet its tragic end on its first journey?",
+      "answer": "1910"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-31-distinct",
+    "a": {
+      "question": "In what year did the Titanic sink on its maiden voyage?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "How many lifeboats were on the Titanic?",
+      "answer": "20"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-32-semantic_duplicate",
+    "a": {
+      "question": "What is the primary gas in Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "b": {
+      "question": "Which gas predominates in the composition of Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-32-answer_conflict",
+    "a": {
+      "question": "What is the primary gas in Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "b": {
+      "question": "Which gas predominates in the composition of Earth's atmosphere?",
+      "answer": "Oxygen"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-32-distinct",
+    "a": {
+      "question": "What is the primary gas in Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "b": {
+      "question": "What percentage of Earth's atmosphere is oxygen?",
+      "answer": "Approximately 21%"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-33-semantic_duplicate",
+    "a": {
+      "question": "What is the title of J.K. Rowling's first Harry Potter book?",
+      "answer": "Harry Potter and the Philosopher's Stone"
+    },
+    "b": {
+      "question": "What is the name of the first book in the Harry Potter series by J.K. Rowling?",
+      "answer": "Harry Potter and the Philosopher's Stone"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-33-answer_conflict",
+    "a": {
+      "question": "What is the title of J.K. Rowling's first Harry Potter book?",
+      "answer": "Harry Potter and the Philosopher's Stone"
+    },
+    "b": {
+      "question": "What is the name of the first book in the Harry Potter series by J.K. Rowling?",
+      "answer": "Harry Potter and the Chamber of Secrets"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-33-distinct",
+    "a": {
+      "question": "What is the title of J.K. Rowling's first Harry Potter book?",
+      "answer": "Harry Potter and the Philosopher's Stone"
+    },
+    "b": {
+      "question": "In what year was the first Harry Potter book published?",
+      "answer": "1997"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-34-semantic_duplicate",
+    "a": {
+      "question": "Which organ is primarily responsible for pumping blood throughout the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "What is the main organ responsible for circulating blood in humans?",
+      "answer": "Heart"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-34-answer_conflict",
+    "a": {
+      "question": "Which organ is primarily responsible for pumping blood throughout the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "What is the main organ responsible for circulating blood in humans?",
+      "answer": "Liver"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-34-distinct",
+    "a": {
+      "question": "Which organ is primarily responsible for pumping blood throughout the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "How many chambers does the human heart have?",
+      "answer": "Four"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-35-semantic_duplicate",
+    "a": {
+      "question": "What is the SI unit of force?",
+      "answer": "Newton"
+    },
+    "b": {
+      "question": "Which unit in the International System of Units measures force?",
+      "answer": "Newton"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-35-answer_conflict",
+    "a": {
+      "question": "What is the SI unit of force?",
+      "answer": "Newton"
+    },
+    "b": {
+      "question": "Which unit in the International System of Units measures force?",
+      "answer": "Joule"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-35-distinct",
+    "a": {
+      "question": "What is the SI unit of force?",
+      "answer": "Newton"
+    },
+    "b": {
+      "question": "What is the SI unit of energy?",
+      "answer": "Joule"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-36-semantic_duplicate",
+    "a": {
+      "question": "Which Shakespearean play features the characters of Romeo and Juliet?",
+      "answer": "Romeo and Juliet"
+    },
+    "b": {
+      "question": "In which Shakespeare play do the characters Romeo and Juliet appear?",
+      "answer": "Romeo and Juliet"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-36-answer_conflict",
+    "a": {
+      "question": "Which Shakespearean play features the characters of Romeo and Juliet?",
+      "answer": "Romeo and Juliet"
+    },
+    "b": {
+      "question": "In which Shakespeare play do the characters Romeo and Juliet appear?",
+      "answer": "Macbeth"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-36-distinct",
+    "a": {
+      "question": "Which Shakespearean play features the characters of Romeo and Juliet?",
+      "answer": "Romeo and Juliet"
+    },
+    "b": {
+      "question": "In what century was 'Romeo and Juliet' written?",
+      "answer": "16th century"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-37-semantic_duplicate",
+    "a": {
+      "question": "Which U.S. state is known as the 'Sunshine State'?",
+      "answer": "Florida"
+    },
+    "b": {
+      "question": "Name the US state with the nickname Sunshine State.",
+      "answer": "Florida"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-37-answer_conflict",
+    "a": {
+      "question": "Which U.S. state is known as the 'Sunshine State'?",
+      "answer": "Florida"
+    },
+    "b": {
+      "question": "Name the US state with the nickname Sunshine State.",
+      "answer": "California"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-37-distinct",
+    "a": {
+      "question": "Which U.S. state is known as the 'Sunshine State'?",
+      "answer": "Florida"
+    },
+    "b": {
+      "question": "What is the largest city by population in Florida?",
+      "answer": "Jacksonville"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-38-semantic_duplicate",
+    "a": {
+      "question": "What year was the World Wide Web invented?",
+      "answer": "1989"
+    },
+    "b": {
+      "question": "In which year was the World Wide Web originally created?",
+      "answer": "1989"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-38-answer_conflict",
+    "a": {
+      "question": "What year was the World Wide Web invented?",
+      "answer": "1989"
+    },
+    "b": {
+      "question": "In which year was the World Wide Web originally created?",
+      "answer": "1991"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-38-distinct",
+    "a": {
+      "question": "What year was the World Wide Web invented?",
+      "answer": "1989"
+    },
+    "b": {
+      "question": "Who is credited with inventing the World Wide Web?",
+      "answer": "Tim Berners-Lee"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-39-semantic_duplicate",
+    "a": {
+      "question": "In the fictional 2020 RiverAtlas ranking, which river is listed as the longest in the world?",
+      "answer": "Nile River"
+    },
+    "b": {
+      "question": "Which river tops the longest-river list in the fictional 2020 RiverAtlas ranking?",
+      "answer": "Nile River"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-39-answer_conflict",
+    "a": {
+      "question": "In the fictional 2020 RiverAtlas ranking, which river is listed as the longest in the world?",
+      "answer": "Nile River"
+    },
+    "b": {
+      "question": "Which river tops the longest-river list in the fictional 2020 RiverAtlas ranking?",
+      "answer": "Amazon River"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-39-distinct",
+    "a": {
+      "question": "In the fictional 2020 RiverAtlas ranking, which river is listed as the longest in the world?",
+      "answer": "Nile River"
+    },
+    "b": {
+      "question": "Through which continent does the Nile River primarily flow?",
+      "answer": "Africa"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-40-semantic_duplicate",
+    "a": {
+      "question": "Which chemical compound is commonly known as table salt?",
+      "answer": "Sodium chloride"
+    },
+    "b": {
+      "question": "What is the chemical name for the substance popularly called table salt?",
+      "answer": "Sodium chloride"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "final-40-answer_conflict",
+    "a": {
+      "question": "Which chemical compound is commonly known as table salt?",
+      "answer": "Sodium chloride"
+    },
+    "b": {
+      "question": "What is the chemical name for the substance popularly called table salt?",
+      "answer": "Potassium chloride"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "final-40-distinct",
+    "a": {
+      "question": "Which chemical compound is commonly known as table salt?",
+      "answer": "Sodium chloride"
+    },
+    "b": {
+      "question": "What is the primary use of sodium chloride?",
+      "answer": "Seasoning and preservation"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "final-alias-01",
+    "a": {
+      "question": "Which country has Berlin as its capital?",
+      "answer": "Deutschland"
+    },
+    "b": {
+      "question": "Which country has Berlin as its capital?",
+      "answer": "Germany"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-02",
+    "a": {
+      "question": "Which writer used the pen name George Eliot?",
+      "answer": "Mary Ann Evans"
+    },
+    "b": {
+      "question": "Which writer used the pen name George Eliot?",
+      "answer": "George Eliot"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-03",
+    "a": {
+      "question": "Who wrote The Cat in the Hat?",
+      "answer": "Dr. Seuss"
+    },
+    "b": {
+      "question": "Who wrote The Cat in the Hat?",
+      "answer": "Theodor Seuss Geisel"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-04",
+    "a": {
+      "question": "What is another term for a dozen?",
+      "answer": "12"
+    },
+    "b": {
+      "question": "What is another term for a dozen?",
+      "answer": "twelve"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-05",
+    "a": {
+      "question": "How long is a half-hour in minutes?",
+      "answer": "30 minutes"
+    },
+    "b": {
+      "question": "How long is a half-hour in minutes?",
+      "answer": "1800 seconds"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-06",
+    "a": {
+      "question": "What fraction equals fifty percent?",
+      "answer": "one half"
+    },
+    "b": {
+      "question": "What fraction equals fifty percent?",
+      "answer": "0.5"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-07",
+    "a": {
+      "question": "What is the colour between black and white?",
+      "answer": "grey"
+    },
+    "b": {
+      "question": "What is the colour between black and white?",
+      "answer": "gray"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-08",
+    "a": {
+      "question": "What is the length of one metre in centimetres?",
+      "answer": "100 centimetres"
+    },
+    "b": {
+      "question": "What is the length of one metre in centimetres?",
+      "answer": "1 metre"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-09",
+    "a": {
+      "question": "What is the chemical name of baking soda?",
+      "answer": "Sodium bicarbonate"
+    },
+    "b": {
+      "question": "What is the chemical name of baking soda?",
+      "answer": "Sodium hydrogen carbonate"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-alias-10",
+    "a": {
+      "question": "Which country is called Italia in Italian?",
+      "answer": "Italy"
+    },
+    "b": {
+      "question": "Which country is called Italia in Italian?",
+      "answer": "Italia"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "final-temporal-01",
+    "a": {
+      "question": "Who or what was the champion of the fictional Aster League in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the champion of the fictional Aster League in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-02",
+    "a": {
+      "question": "Who or what was the winner of the fictional Beacon Prize in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the winner of the fictional Beacon Prize in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-03",
+    "a": {
+      "question": "Who or what was the chair of the fictional Cobalt Club in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the chair of the fictional Cobalt Club in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-04",
+    "a": {
+      "question": "Who or what was the host city of the fictional Dune Festival in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the host city of the fictional Dune Festival in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-05",
+    "a": {
+      "question": "Who or what was the director of the fictional Ember Museum in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the director of the fictional Ember Museum in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-06",
+    "a": {
+      "question": "Who or what was the chief executive of the fictional Fern Company in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the chief executive of the fictional Fern Company in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-07",
+    "a": {
+      "question": "Who or what was the winner of the fictional Grove Marathon in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the winner of the fictional Grove Marathon in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-08",
+    "a": {
+      "question": "Who or what was the head librarian of the fictional Harbour Library in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the head librarian of the fictional Harbour Library in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-09",
+    "a": {
+      "question": "Who or what was the principal of the fictional Iris School in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the principal of the fictional Iris School in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "final-temporal-10",
+    "a": {
+      "question": "Who or what was the dean of the fictional Juniper Academy in 2010?",
+      "answer": "A"
+    },
+    "b": {
+      "question": "Who or what was the dean of the fictional Juniper Academy in 2020?",
+      "answer": "B"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  }
+]

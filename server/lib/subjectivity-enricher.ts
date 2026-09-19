@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import type { QuestionQualityFinding } from './question-quality-audit';
 import type { Question } from '@shared/models/questions';
 
@@ -48,13 +49,12 @@ ${JSON.stringify(payload, null, 2)}`;
 
   try {
     const resp = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3,
     });
 
     const raw = resp.choices[0]?.message?.content ?? '{}';

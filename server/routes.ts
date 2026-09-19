@@ -14,7 +14,8 @@ import {
   insertQuestionSchema,
   questionEdits,
   questionQualitySweepDismissals,
-  duplicatePairKey,
+  duplicateFindingKey,
+  emptyDuplicateCounts,
   isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
@@ -917,10 +918,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
         count: insertedQuestions.length,
-        droppedAsDuplicate: dropped.length,
+        droppedAsDuplicate: dropped.filter(
+          (d) => d.reason === 'duplicate_of_existing' || d.reason === 'duplicate_within_batch'
+        ).length,
+        droppedAsConflict: dropped.filter((d) => d.reason === 'answer_conflict').length,
+        droppedForReview: dropped.filter((d) => d.reason === 'review_required').length,
         questions: insertedQuestions,
       });
     } catch (error) {
+      if (error instanceof Error && error.name === 'SemanticCheckIncompleteError') {
+        console.error('Error generating questions: semantic check incomplete');
+        return res.status(500).json({ message: error.message });
+      }
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
     }
@@ -1081,13 +1090,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const duplicates = duplicatesRaw
         ? (() => {
             const filtered = duplicatesRaw.duplicatesFound.filter(
-              (m) => !dismissedDuplicates.has(duplicatePairKey(m.questionIdA, m.questionIdB))
+              (m) => !dismissedDuplicates.has(duplicateFindingKey(m))
             );
-            const byType: Record<'exact' | 'near_duplicate' | 'conceptual', number> = {
-              exact: 0,
-              near_duplicate: 0,
-              conceptual: 0,
-            };
+            const byType = emptyDuplicateCounts();
             for (const m of filtered) byType[m.matchType]++;
             return {
               ...duplicatesRaw,
@@ -1118,7 +1123,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       if (duplicates && duplicates.duplicatesFound.length > 0) {
         recommendations.push(
-          `${duplicates.duplicatesFound.length} duplicate pair(s) found — remove or merge the lower-quality version of each pair.`
+          `${duplicates.duplicatesFound.length} duplicate or conflicting pair(s) found — review the facts before changing either question.`
         );
       }
       if (factCheck) {
@@ -1132,6 +1137,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             `${flags} question(s) flagged by fact-check — verify before next release.`
           );
         }
+      }
+      if (duplicates?.status === 'incomplete') {
+        recommendations.push(
+          `Semantic check incomplete (${duplicates.failedPairs ?? 0} failed pairs). Retry; this is not a clean result.`
+        );
+      }
+      if (duplicates?.duplicatesByType.answer_conflict) {
+        recommendations.push(
+          `${duplicates.duplicatesByType.answer_conflict} high-severity answer conflict(s). Neither stored answer is established as correct.`
+        );
       }
       if (recommendations.length === 0) {
         recommendations.push('No critical issues found. All approved questions passed the sweep.');

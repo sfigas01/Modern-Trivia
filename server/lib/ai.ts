@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { DISPUTE_ANALYSIS_MODEL } from './ai-model-config';
 
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
@@ -57,7 +58,7 @@ export async function analyzeDispute(
     Only include suggestedFix if there's a problem with the question or answer.`;
 
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o',
+    model: DISPUTE_ANALYSIS_MODEL,
     messages: [
       {
         role: 'system',

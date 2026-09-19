@@ -237,3 +237,78 @@ test.describe('admin quality-sweep obviousness findings', () => {
     await expect(page.getByText('Easy → Medium')).toBeVisible();
   });
 });
+
+test('shows answer conflicts and incomplete semantic checks without revealing answers', async ({
+  page,
+}) => {
+  await page.route('**/api/auth/user', (route) =>
+    route.fulfill({ json: { id: 'admin-user', email: 'admin@example.com' } })
+  );
+  await page.route('**/api/admin/check', (route) => route.fulfill({ json: { isAdmin: true } }));
+  let dismissed: unknown;
+  await page.route('**/api/questions**', (route) =>
+    route.fulfill({ json: { categories: [], questions: [] } })
+  );
+  const findingKey = 'quality-q1::quality-q2::answer_conflict::revision';
+  await page.route('**/api/admin/quality-sweep/dismiss', async (route) => {
+    dismissed = route.request().postDataJSON();
+    await route.fulfill({ json: { id: 'dismissal' } });
+  });
+  await page.route('**/api/admin/quality-sweep', (route) =>
+    route.fulfill({
+      json: {
+        ...report,
+        audit: {
+          ...report.audit,
+          findings: [],
+          totalFindings: 0,
+          findingsBySeverity: { high: 0, medium: 0, low: 0 },
+        },
+        duplicates: {
+          status: 'incomplete',
+          failedPairs: 2,
+          totalPairsChecked: 3,
+          duplicatesByType: {
+            exact: 0,
+            near_duplicate: 0,
+            conceptual: 0,
+            semantic_duplicate: 0,
+            answer_conflict: 1,
+            review_required: 0,
+          },
+          duplicatesFound: [
+            {
+              questionIdA: question.id,
+              questionIdB: 'quality-q2',
+              matchType: 'answer_conflict',
+              similarityScore: 0.98,
+              questionTextA: question.question,
+              questionTextB: 'Name the city hosting that festival.',
+              answerA: 'Toronto',
+              answerB: 'Montreal',
+              findingKey,
+              aiReasoning:
+                'Same factual scope with incompatible answers; neither answer is established as correct.',
+            },
+          ],
+        },
+      },
+    })
+  );
+  await page.goto('/admin/quality-sweep');
+  await page.getByRole('button', { name: 'Run Quality Sweep' }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Semantic check incomplete' })
+  ).toBeVisible();
+  await expect(page.getByText('answer conflict · high severity', { exact: true })).toBeVisible();
+  await expect(page.getByText('High', { exact: true }).locator('..')).toContainText('1');
+  await expect(page.getByText('Open findings', { exact: true }).locator('..')).toContainText('1');
+  await expect(page.getByText('Toronto', { exact: true })).not.toBeVisible();
+  await expect(page.getByText('Montreal', { exact: true })).not.toBeVisible();
+  await page.getByRole('button', { name: 'Dismiss cluster' }).click();
+  await expect.poll(() => dismissed).toMatchObject({ findingType: 'duplicate', findingKey });
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Semantic check incomplete' })
+  ).toBeVisible();
+  await expect(page.getByText('No duplicates found.', { exact: true })).not.toBeVisible();
+});
