@@ -20,11 +20,30 @@ export interface QuestionAiAnalysis {
   qaFindings: QuestionQualityFinding[];
   factCheck: FactCheckVerdict;
   repaired?: boolean;
+  automaticApprovalPolicy?: string;
 }
 
 export interface ExistingExample {
   question: string;
   answer: string;
+}
+
+/**
+ * Guardian generation intentionally returns both clean and review-needed
+ * candidates as pending rows. Callers that bypass human review must use this
+ * stricter gate rather than treating every non-hard-failure as approved.
+ */
+export function isEligibleForAutomaticApproval(
+  question: { aiAnalysis: QuestionAiAnalysis }
+): boolean {
+  const { factCheck, qaFindings } = question.aiAnalysis;
+  return (
+    factCheck.verdict === 'pass' &&
+    factCheck.coherence === 'pass' &&
+    factCheck.obviousness === 'pass' &&
+    factCheck.confidence >= 80 &&
+    !qaFindings.some((finding) => finding.severity === 'high' || finding.severity === 'medium')
+  );
 }
 
 const MAX_EXISTING_EXAMPLES = 30;

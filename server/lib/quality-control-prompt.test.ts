@@ -37,6 +37,20 @@ describe('buildQualityControlPrompt', () => {
     expect(prompt).toContain('FreshPrints');
   });
 
+  it('forbids silently narrowing firsts and records to make an answer true', () => {
+    const prompt = buildQualityControlPrompt([
+      makeQuestion({
+        id: 'missing-scope',
+        question: 'When was the first baseball game played under lights?',
+        answer: '1935',
+      }),
+    ]);
+
+    expect(prompt).toContain('never silently add a');
+    expect(prompt).toContain('first MLB night game');
+    expect(prompt).toContain('FAILS coherence');
+  });
+
   it('clamps the FreshPrints cutoff to the target month instead of rolling over', () => {
     const mayPrompt = buildQualityControlPrompt(
       [makeQuestion({ id: 'may-end', question: 'What is the capital of France?' })],

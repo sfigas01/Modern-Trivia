@@ -40,7 +40,29 @@ const { selectQueue, insertReturningQueue, insertedValues } = h;
 
 vi.mock('../db', () => ({ db: h.dbMock }));
 
-const guardianMock = vi.hoisted(() => ({ generateQuestions: vi.fn() }));
+const guardianMock = vi.hoisted(() => ({
+  generateQuestions: vi.fn(),
+  isEligibleForAutomaticApproval: vi.fn(
+    (question: {
+      aiAnalysis: {
+        factCheck: {
+          verdict: string;
+          coherence?: string;
+          obviousness?: string;
+          confidence?: number;
+        };
+        qaFindings: Array<{ severity: string }>;
+      };
+    }) =>
+      question.aiAnalysis.factCheck.verdict === 'pass' &&
+      (question.aiAnalysis.factCheck.coherence ?? 'pass') === 'pass' &&
+      (question.aiAnalysis.factCheck.obviousness ?? 'pass') === 'pass' &&
+      (question.aiAnalysis.factCheck.confidence ?? 100) >= 80 &&
+      !question.aiAnalysis.qaFindings.some(
+        (finding) => finding.severity === 'high' || finding.severity === 'medium'
+      )
+  ),
+}));
 vi.mock('./guardian', () => guardianMock);
 
 const noveltyMock = vi.hoisted(() => {
@@ -279,12 +301,14 @@ describe('prepareThemedQuestions', () => {
       status: string;
       origin: string;
       tags: string[];
+      aiAnalysis: { automaticApprovalPolicy?: string };
     }>;
     expect(inserted).toHaveLength(4);
     for (const row of inserted) {
       expect(row.status).toBe('approved');
       expect(row.origin).toBe('player_ai');
       expect(row.tags).toContain('theme:baseball');
+      expect(row.aiAnalysis.automaticApprovalPolicy).toBe('themed-strict-v1');
     }
   });
 
@@ -311,6 +335,94 @@ describe('prepareThemedQuestions', () => {
       .mocked(generateQuestions)
       .mock.calls.reduce((sum, call) => sum + (call[1] as number), 0);
     expect(requested).toBeLessThanOrEqual(THEME_MAX_GENERATED_CANDIDATES);
+  });
+
+  it('does not approve flagged Guardian candidates or hide the shortfall with category fill', async () => {
+    selectQueue.push([]); // safe themed reuse
+    selectQueue.push([]); // existing novelty pool
+
+    const flagged = generatedQuestion('needs-review');
+    flagged.aiAnalysis.factCheck.verdict = 'flag';
+    vi.mocked(generateQuestions)
+      .mockResolvedValueOnce([flagged] as never)
+      .mockResolvedValue([] as never);
+    vi.mocked(filterNovelQuestions)
+      .mockResolvedValueOnce({ kept: [flagged] as never, dropped: [] })
+      .mockResolvedValue({ kept: [], dropped: [] });
+
+    const result = await prepareThemedQuestions({
+      theme: 'Baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(result).toEqual({ questionIds: [], reused: 0, generated: 0 });
+    expect(h.dbMock.insert).not.toHaveBeenCalled();
+    // Reuse + novelty pool only: generic category inventory is never queried
+    // as a misleading themed fallback.
+    expect(h.dbMock.select).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not auto-approve candidates with unresolved medium QA findings', async () => {
+    selectQueue.push([]); // safe themed reuse
+    selectQueue.push([]); // existing novelty pool
+
+    const unresolved = generatedQuestion('medium-finding');
+    unresolved.aiAnalysis.qaFindings = [
+      {
+        questionId: unresolved.id,
+        questionIndex: 0,
+        severity: 'medium',
+        rule: 'subjective_prompt',
+        message: 'Question may have multiple valid answers.',
+      },
+    ];
+    vi.mocked(generateQuestions)
+      .mockResolvedValueOnce([unresolved] as never)
+      .mockResolvedValue([] as never);
+    vi.mocked(filterNovelQuestions)
+      .mockResolvedValueOnce({ kept: [unresolved] as never, dropped: [] })
+      .mockResolvedValue({ kept: [], dropped: [] });
+
+    const result = await prepareThemedQuestions({
+      theme: 'Baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(result.generated).toBe(0);
+    expect(h.dbMock.insert).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-approve a generated question outside the selected categories', async () => {
+    selectQueue.push([]); // safe themed reuse
+    selectQueue.push([]); // existing novelty pool
+
+    const wrongCategory = {
+      ...generatedQuestion('wrong-category'),
+      category: 'Entertainment & Pop Culture',
+    };
+    vi.mocked(generateQuestions)
+      .mockResolvedValueOnce([wrongCategory] as never)
+      .mockResolvedValue([] as never);
+    vi.mocked(filterNovelQuestions)
+      .mockResolvedValueOnce({ kept: [wrongCategory] as never, dropped: [] })
+      .mockResolvedValue({ kept: [], dropped: [] });
+
+    const result = await prepareThemedQuestions({
+      theme: 'Baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(result.generated).toBe(0);
+    expect(h.dbMock.insert).not.toHaveBeenCalled();
   });
 
   it('aborts after one incomplete semantic batch without fallback or approval', async () => {

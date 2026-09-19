@@ -57,6 +57,12 @@ For each question return one of:
 
 Evaluate these Modern Trivia quality rules:
 - Factual correctness: question, answer, and explanation must agree and be verifiable.
+- Scope correctness: judge the words actually present in the question; never silently add a
+  league, country, era, competition, or other qualifier merely because it makes the supplied
+  answer true. A "first", record, or superlative answer that is only true under an unstated scope
+  FAILS coherence. For example, "When was the first baseball game played under lights?" → "1935"
+  fails because 1935 is the first MLB night game, not the first baseball game under lights; the
+  question would need to say "Major League Baseball game".
 - Question–answer coherence (premise + answer type): the question's premise must hold, and the answer must be a direct answer of the type the question asks for — asks for a band → the answer names a band; asks for a year → the answer is a year; asks for a person → the answer names a person. A negation or trick answer ("not a…", "none", "no such…", "it wasn't…") FAILS coherence unless the question is explicitly framed to invite it (e.g. "Which of these is NOT…"). Example failure: "Which Canadian band released 'Immigrant Song'?" → "Not a Canadian band (Led Zeppelin)" — the fact is right but the premise (that a Canadian band released it) is false, so the pair is unplayable. When coherence fails but the stated fact is defensible, the fix is to rewrite the QUESTION to fit the answer (keep the fact, drop the false premise), e.g. "Which band is known for 'Immigrant Song'?" → "Led Zeppelin".
 - Obviousness (could an average player with NO knowledge of this topic derive the answer from the question text alone?): FAIL "obviousness" when either is true —
   - Self-answering: the answer is embedded in or trivially implied by a famous compound name, title, or phrase used in the question. Example: "Which team is known as the Maple Leafs?" → "Toronto" — the nickname alone hands over the city; no hockey knowledge required.

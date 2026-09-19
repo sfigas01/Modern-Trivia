@@ -14,7 +14,7 @@
 // and keeps a best-effort in-memory progress store for the waiting UX.
 
 import OpenAI from 'openai';
-import { and, asc, eq, inArray, isNull, notInArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '../db';
 import {
@@ -32,7 +32,12 @@ import { QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
 import type { ThemeProgress } from '@shared/models/rooms';
 
 import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
-import { generateQuestions, type ExistingExample } from './guardian';
+import {
+  generateQuestions,
+  isEligibleForAutomaticApproval,
+  type ExistingExample,
+  type QuestionAiAnalysis,
+} from './guardian';
 import { filterNovelQuestions, SemanticCheckIncompleteError } from './novelty-filter';
 import { selectTopicContext } from './topic-context';
 import {
@@ -103,6 +108,7 @@ export const THEME_GENERATION_BATCH_SIZE = 10;
 export const THEME_MAX_BATCHES = 20;
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
+const THEMED_AUTO_APPROVAL_POLICY = 'themed-strict-v1';
 
 /** Questions a full themed game needs: numRounds × teams × 4 (same math as /start). */
 export function themedQuestionLimit(numRounds: number, playerCount: number): number {
@@ -384,8 +390,6 @@ interface ExistingRow {
  * 2. Generate the remainder via the existing Guardian pipeline, novelty-filter
  *    it, and persist accepted questions as approved `player_ai` rows (shared
  *    library). Bounded by the per-game candidate ceiling.
- * 3. If still short (generation attrition), top up from approved questions in
- *    the room's selected categories.
  *
  * `onStep` reports incremental progress for the waiting UX.
  */
@@ -406,7 +410,25 @@ export async function prepareThemedQuestions(params: {
   const catCond = categoryCondition(categories);
 
   // Step 1: reuse existing approved questions already tagged with this theme.
-  const reuseConditions = catCond ? [tagContains, catCond] : [tagContains];
+  // Legacy themed player_ai rows may have been approved before the unattended
+  // approval gate existed. Do not silently reuse review-needed rows. Curated
+  // rows remain eligible because their provenance implies human review.
+  const safeThemedRow = sql`(
+    ${questions.origin} <> 'player_ai'
+    OR (
+      ${questions.aiAnalysis}->'factCheck'->>'verdict' = 'pass'
+      AND ${questions.aiAnalysis}->'factCheck'->>'coherence' = 'pass'
+      AND ${questions.aiAnalysis}->'factCheck'->>'obviousness' = 'pass'
+      AND COALESCE((${questions.aiAnalysis}->'factCheck'->>'confidence')::numeric, 0) >= 80
+      AND ${questions.aiAnalysis}->>'automaticApprovalPolicy' = ${THEMED_AUTO_APPROVAL_POLICY}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(COALESCE(${questions.aiAnalysis}->'qaFindings', '[]'::jsonb)) AS finding
+        WHERE finding->>'severity' IN ('high', 'medium')
+      )
+    )
+  )`;
+  const reuseConditions = catCond ? [tagContains, catCond, safeThemedRow] : [tagContains, safeThemedRow];
   const reusedThemedIds = await selectApprovedQuestionIds(
     reuseConditions,
     seen,
@@ -486,14 +508,37 @@ export async function prepareThemedQuestions(params: {
 
     if (kept.length === 0) continue;
 
+    // Guardian's normal contract is "pending candidates": a flag is retained
+    // for human review and only hard failures are repaired/dropped. Themed
+    // generation has no human in the loop, so only explicitly clean, confident
+    // candidates can be auto-approved.
+    const autoApprovable = kept.filter(
+      (question) =>
+        isEligibleForAutomaticApproval(question) &&
+        (categories.includes('All') || categories.includes(question.category as RoomCategory))
+    );
+    if (autoApprovable.length !== kept.length) {
+      console.warn('[theme-game] Withholding generated candidates from automatic approval', {
+        theme,
+        pillar,
+        batchIndex,
+        kept: kept.length,
+        withheld: kept.length - autoApprovable.length,
+      });
+    }
+    if (autoApprovable.length === 0) continue;
+
     // Persist accepted questions as approved `player_ai` rows so they enrich the
     // shared library for everyone. Tag with the theme so future games reuse them.
-    const toInsert = kept.map((q) => ({
+    const toInsert = autoApprovable.map((q) => ({
       ...q,
       status: 'approved' as const,
       origin: 'player_ai' as const,
       tags: Array.from(new Set([...(q.tags ?? []), tag])),
-      aiAnalysis: q.aiAnalysis,
+      aiAnalysis: {
+        ...(q.aiAnalysis as QuestionAiAnalysis),
+        automaticApprovalPolicy: THEMED_AUTO_APPROVAL_POLICY,
+      },
     }));
 
     const inserted = await db.insert(questions).values(toInsert).returning({
@@ -514,35 +559,10 @@ export async function prepareThemedQuestions(params: {
     notify({ generated: generatedIds.length, ready: chosen.size });
   }
 
-  // Step 3: top up from category reuse if generation underperformed.
-  if (chosen.size < total) {
-    const fillLimit = total - chosen.size;
-    const excludeIds = Array.from(chosen);
-    const fillConditions: SQL[] = [];
-    if (catCond) fillConditions.push(catCond);
-    if (excludeIds.length > 0) {
-      fillConditions.push(notInArray(questions.id, excludeIds));
-    }
-    const fillIds = await selectApprovedQuestionIds(
-      fillConditions,
-      seen,
-      fillLimit,
-      'themed start fill'
-    );
-    for (const id of fillIds) {
-      if (chosen.has(id)) continue;
-      chosen.add(id);
-    }
-    notify({ ready: chosen.size });
-  }
-
-  // Theme-leaning play order: freshly generated (bespoke, never-seen) first,
-  // then reused theme questions, then category fill. Deduped, truncated to
-  // exactly the game length.
-  const fillIds = Array.from(chosen).filter(
-    (id) => !generatedIds.includes(id) && !reusedThemedIds.includes(id)
-  );
-  const ordered = [...generatedIds, ...reusedThemedIds, ...fillIds].slice(0, total);
+  // Do not disguise generic category inventory as themed content. If strict
+  // generation attrition leaves the set short, the orchestrator reports that
+  // honestly and leaves the room in the lobby.
+  const ordered = [...generatedIds, ...reusedThemedIds].slice(0, total);
 
   return {
     questionIds: ordered,

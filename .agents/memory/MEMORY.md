@@ -1,6 +1,7 @@
 # Memory Index
 
 - [Semantic provider capabilities](semantic-provider-capabilities.md) — working chat credentials do not prove embeddings support; verify live capability before themed-game acceptance.
+- [Unattended AI content approval](unattended-ai-content-approval.md) — pending/flagged Guardian output is not approved content; require strict versioned gates, preserve semantic checks, and report themed shortfalls honestly.
 
 - [Dependency upgrade constraints](dependency-upgrade-constraints.md) — transitive qs pinning and npm override resolution require care during security upgrades.
 
