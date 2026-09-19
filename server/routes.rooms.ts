@@ -13,6 +13,7 @@ import {
   ROOM_GUEST_SEEN_CAP,
 } from './lib/question-pool';
 import type { AuthenticatedRequest } from './types';
+import { aiLimiter } from './middleware/rateLimiter';
 import {
   isThemeRoundsEnabled,
   computeRoomSeenInputs,
@@ -762,7 +763,7 @@ export function registerRoomRoutes(app: Express): void {
   // Guardian generation) and returns immediately with initial progress. The
   // client polls /theme-progress for "generating… X of N", and the room flips
   // to active (via the ordinary snapshot poll) once preparation completes.
-  app.post('/api/rooms/:code/theme-start', async (req, res) => {
+  app.post('/api/rooms/:code/theme-start', aiLimiter, async (req, res) => {
     try {
       if (!isThemeRoundsEnabled()) {
         throw new RoomRouteError(404, 'Themed games are not enabled');

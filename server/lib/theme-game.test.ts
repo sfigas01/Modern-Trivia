@@ -68,6 +68,7 @@ import {
   clearThemeProgress,
   prepareThemedQuestions,
   THEME_MAX_GENERATED_CANDIDATES,
+  THEME_PROGRESS_TTL_MS,
 } from './theme-game';
 import { generateQuestions } from './guardian';
 import { filterNovelQuestions } from './novelty-filter';
@@ -130,6 +131,16 @@ describe('normalizeThemeSlug / themeTag', () => {
   it('prefixes the slug with theme:', () => {
     expect(themeTag('Baseball')).toBe('theme:baseball');
     expect(themeTag('Organic Chemistry')).toBe('theme:organic-chemistry');
+  });
+
+  it('gives distinct non-empty keys to themes with no ASCII characters', () => {
+    // Previously these both collapsed to the shared key `theme:`, cross-tagging
+    // unrelated themes in the shared library.
+    const a = normalizeThemeSlug('日本史');
+    const b = normalizeThemeSlug('中文');
+    expect(a).not.toBe('');
+    expect(a).not.toBe(b);
+    expect(themeTag('日本史')).not.toBe('theme:');
   });
 });
 
@@ -199,6 +210,19 @@ describe('theme progress store', () => {
     expect(getThemeProgress('ABCDE')).toMatchObject({ ready: 10, reused: 4, total: 40 });
     clearThemeProgress('ABCDE');
     expect(getThemeProgress('ABCDE')).toBeUndefined();
+  });
+
+  it('expires entries after the retention window so the map cannot grow unbounded', async () => {
+    vi.useFakeTimers();
+    try {
+      initThemeProgress('ABCDE', 40);
+      expect(getThemeProgress('ABCDE')).toBeDefined();
+      vi.advanceTimersByTime(THEME_PROGRESS_TTL_MS + 1000);
+      // A read past the TTL prunes and reports the entry as gone.
+      expect(getThemeProgress('ABCDE')).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

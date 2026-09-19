@@ -14,13 +14,14 @@
 // and keeps a best-effort in-memory progress store for the waiting UX.
 
 import OpenAI from 'openai';
-import { and, eq, inArray, notInArray, sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, notInArray, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '../db';
 import {
   questions,
   seenQuestions,
   rooms,
+  roomPlayers,
   type Room,
   type RoomPlayer,
   type RoomCategories,
@@ -62,17 +63,25 @@ const MAX_SLUG_LENGTH = 80;
  * generation share one key.
  */
 export function normalizeThemeSlug(theme: string): string {
-  return (
-    theme
-      .normalize('NFKD')
-      // Strip combining marks so accented letters fold to their base form, then
-      // collapse any run of non-alphanumeric characters into a single dash.
-      .replace(/[̀-ͯ]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, MAX_SLUG_LENGTH)
-  );
+  const base = theme
+    .normalize('NFKD')
+    // Strip combining marks so accented letters fold to their base form.
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+  const ascii = base
+    // Collapse any run of non-alphanumeric characters into a single dash.
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, MAX_SLUG_LENGTH);
+  if (ascii) return ascii;
+  // A theme with no ASCII letters/digits (e.g. "日本史") would otherwise collapse
+  // to an empty slug, so every such theme would share the tag `theme:` and
+  // mis-reuse each other's questions. Derive a stable, distinct key from the
+  // code points instead.
+  const hex = Array.from(base.replace(/\s+/g, ''))
+    .map((ch) => (ch.codePointAt(0) ?? 0).toString(16))
+    .join('-');
+  return `u-${hex}`.slice(0, MAX_SLUG_LENGTH);
 }
 
 /** Tag applied to every question that belongs to a theme (reused or generated). */
@@ -296,9 +305,29 @@ async function selectApprovedQuestionIds(
 
 // --- In-memory progress store (best-effort) -------------------------------
 
-const progressByRoom = new Map<string, ThemeProgress>();
+// Retention for progress entries. Best-effort only (no durable jobs); entries
+// are pruned lazily so the process-global map can't grow without bound on a
+// long-running server even though nothing calls clearThemeProgress in the
+// terminal (ready/error) path.
+export const THEME_PROGRESS_TTL_MS = 30 * 60 * 1000;
+
+interface ProgressEntry {
+  progress: ThemeProgress;
+  touchedAt: number;
+}
+
+const progressByRoom = new Map<string, ProgressEntry>();
+
+function pruneExpiredProgress(now = Date.now()): void {
+  const expired: string[] = [];
+  progressByRoom.forEach((entry, code) => {
+    if (now - entry.touchedAt > THEME_PROGRESS_TTL_MS) expired.push(code);
+  });
+  for (const code of expired) progressByRoom.delete(code);
+}
 
 export function initThemeProgress(code: string, total: number): ThemeProgress {
+  pruneExpiredProgress();
   const progress: ThemeProgress = {
     status: 'preparing',
     ready: 0,
@@ -307,18 +336,26 @@ export function initThemeProgress(code: string, total: number): ThemeProgress {
     generated: 0,
     error: null,
   };
-  progressByRoom.set(code, progress);
+  progressByRoom.set(code, { progress, touchedAt: Date.now() });
   return progress;
 }
 
 export function updateThemeProgress(code: string, patch: Partial<ThemeProgress>): void {
-  const current = progressByRoom.get(code);
-  if (!current) return;
-  progressByRoom.set(code, { ...current, ...patch });
+  const entry = progressByRoom.get(code);
+  if (!entry) return;
+  entry.progress = { ...entry.progress, ...patch };
+  entry.touchedAt = Date.now();
+  pruneExpiredProgress();
 }
 
 export function getThemeProgress(code: string): ThemeProgress | undefined {
-  return progressByRoom.get(code);
+  const entry = progressByRoom.get(code);
+  if (!entry) return undefined;
+  if (Date.now() - entry.touchedAt > THEME_PROGRESS_TTL_MS) {
+    progressByRoom.delete(code);
+    return undefined;
+  }
+  return entry.progress;
 }
 
 export function clearThemeProgress(code: string): void {
@@ -541,41 +578,85 @@ export async function runThemedGamePreparation(params: {
       return;
     }
 
+    // Activate atomically, re-reading the CURRENT roster under a row lock:
+    // players may have joined or left during the (potentially long) generation,
+    // and the sizing/first-player were computed from the roster at start time.
+    // A stale snapshot could otherwise begin a one-player game or seat a
+    // departed player first. Recompute against the live roster; if it grew past
+    // what we sourced, fail so the host retries rather than starting short.
     const activeTtlMs = 24 * 60 * 60 * 1000;
-    const [startedRoom] = await db
-      .update(rooms)
-      .set({
-        status: 'active',
-        phase: 'QUESTION',
-        questionIds: result.questionIds,
-        currentQuestionIndex: 0,
-        activePlayerId: players[0].id,
-        currentAttempt: null,
-        expiresAt: new Date(Date.now() + activeTtlMs),
-        version: sql`${rooms.version} + 1`,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(rooms.id, room.id),
-          eq(rooms.status, 'lobby'),
-          eq(rooms.phase, 'LOBBY'),
-          eq(rooms.hostPlayerId, hostPlayerId)
-        )
-      )
-      .returning({ id: rooms.id });
+    const activation = await db.transaction(async (tx) => {
+      const [lockedRoom] = await tx
+        .select()
+        .from(rooms)
+        .where(eq(rooms.id, room.id))
+        .limit(1)
+        .for('update');
+      if (!lockedRoom || lockedRoom.status !== 'lobby' || lockedRoom.phase !== 'LOBBY') {
+        return {
+          ok: false as const,
+          reason: 'Room state changed before the themed game could start.',
+        };
+      }
 
-    if (!startedRoom) {
-      updateThemeProgress(room.code, {
-        status: 'error',
-        error: 'Room state changed before the themed game could start.',
-      });
+      const currentPlayers = await tx
+        .select()
+        .from(roomPlayers)
+        .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
+        .orderBy(asc(roomPlayers.joinOrder));
+
+      if (currentPlayers.length < 2) {
+        return { ok: false as const, reason: 'At least two players are required to start.' };
+      }
+
+      const required = themedQuestionLimit(lockedRoom.numRounds, currentPlayers.length);
+      if (result.questionIds.length < required) {
+        return {
+          ok: false as const,
+          reason: `Players joined while preparing "${theme}"; only ${result.questionIds.length} of ${required} questions are ready. Please start again.`,
+        };
+      }
+
+      const [startedRoom] = await tx
+        .update(rooms)
+        .set({
+          status: 'active',
+          phase: 'QUESTION',
+          questionIds: result.questionIds.slice(0, required),
+          currentQuestionIndex: 0,
+          activePlayerId: currentPlayers[0].id,
+          currentAttempt: null,
+          expiresAt: new Date(Date.now() + activeTtlMs),
+          version: sql`${rooms.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(rooms.id, room.id),
+            eq(rooms.status, 'lobby'),
+            eq(rooms.phase, 'LOBBY'),
+            eq(rooms.hostPlayerId, hostPlayerId)
+          )
+        )
+        .returning({ id: rooms.id });
+
+      if (!startedRoom) {
+        return {
+          ok: false as const,
+          reason: 'Room state changed before the themed game could start.',
+        };
+      }
+      return { ok: true as const, playerCount: currentPlayers.length };
+    });
+
+    if (!activation.ok) {
+      updateThemeProgress(room.code, { status: 'error', error: activation.reason });
       return;
     }
 
     updateThemeProgress(room.code, {
       status: 'ready',
-      ready: total,
+      ready: themedQuestionLimit(room.numRounds, activation.playerCount),
       reused: result.reused,
       generated: result.generated,
     });
