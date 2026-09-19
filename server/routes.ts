@@ -37,6 +37,8 @@ import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
 import { registerRoomRoutes } from './routes.rooms';
+import { themeSuggestRequestSchema, themeSuggestResponseSchema } from '@shared/schema';
+import { isThemeRoundsEnabled, suggestThemeCategories } from './lib/theme-game';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 
@@ -189,6 +191,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   await setupAuth(app);
   registerAuthRoutes(app);
   registerRoomRoutes(app);
+
+  // Themed games (STE-167 lean MVP): suggest related categories for a free-text
+  // theme. Public like the room routes (guests host games) and gated behind the
+  // VITE_THEME_ROUNDS flag so the feature is fully absent when off. aiLimiter
+  // guards the model call.
+  app.post('/api/theme/suggest', aiLimiter, async (req, res) => {
+    try {
+      if (!isThemeRoundsEnabled()) {
+        return res.status(404).json({ message: 'Themed games are not enabled' });
+      }
+      const parsed = themeSuggestRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(422).json({
+          message: 'Invalid theme',
+          errors: parsed.error.errors,
+        });
+      }
+      const categories = await suggestThemeCategories(parsed.data.theme);
+      return res.json(themeSuggestResponseSchema.parse({ theme: parsed.data.theme, categories }));
+    } catch (error) {
+      console.error('Error suggesting theme categories:', error);
+      return res.status(500).json({ message: 'Failed to suggest categories' });
+    }
+  });
 
   // Disputes API - admin review routes are protected; player submissions are public.
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
