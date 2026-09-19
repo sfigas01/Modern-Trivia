@@ -8,7 +8,9 @@ import {
   primaryKey,
   integer,
   boolean,
+  check,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { users } from './auth';
@@ -94,3 +96,27 @@ export const questionEdits = pgTable(
 );
 
 export type QuestionEdit = typeof questionEdits.$inferSelect;
+
+// Lazy cache: hash/model/dimensions/purpose are verified before every semantic comparison.
+export const questionEmbeddings = pgTable(
+  'question_embeddings',
+  {
+    questionId: varchar('question_id')
+      .primaryKey()
+      .references(() => questions.id, { onDelete: 'cascade' }),
+    contentHash: text('content_hash').notNull(),
+    model: text('model').notNull(),
+    dimensions: integer('dimensions').notNull(),
+    purpose: text('purpose').notNull(),
+    vector: jsonb('vector').$type<number[]>().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('question_embeddings_positive_dimensions', sql`${table.dimensions} > 0`),
+    check('question_embeddings_vector_array', sql`jsonb_typeof(${table.vector}) = 'array'`),
+    check(
+      'question_embeddings_vector_length',
+      sql`CASE WHEN jsonb_typeof(${table.vector}) = 'array' THEN jsonb_array_length(${table.vector}) = ${table.dimensions} ELSE false END`
+    ),
+  ]
+);

@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { insertQuestionSchema, type InsertQuestion, type Question } from '@shared/models/questions';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
 import { batchFactCheck, type FactCheckVerdict } from './verifier';
 import { VALID_CATEGORIES, CATEGORY_SET, LEGACY_CATEGORY_MAP } from '@shared/constants/categories';
@@ -402,7 +403,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
 
   try {
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         {
           role: 'system',
@@ -412,7 +413,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
         { role: 'user', content: repairPrompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
     });
 
     const content = response.choices[0]?.message?.content || '{}';
@@ -481,7 +482,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
 
   try {
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         {
           role: 'system',
@@ -491,7 +492,7 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
     });
 
     content = response.choices[0]?.message?.content || '{}';

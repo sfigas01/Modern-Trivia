@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 
 import type { Question } from '@shared/models/questions';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import { buildQualityControlPrompt } from './quality-control-prompt';
 
 let _openai: OpenAI | null = null;
@@ -69,7 +70,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
 
   try {
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         {
           role: 'system',
@@ -79,7 +80,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 4096,
+      max_completion_tokens: 4096,
     });
 
     const content = response.choices[0]?.message?.content || '{}';
@@ -159,7 +160,7 @@ export async function batchFactCheck(questions: Question[]): Promise<FactCheckRe
   console.info('[verifier] Running batch fact-check', { count: questions.length });
   const reviewDate = new Date();
 
-  // Split into chunks and process each with a single GPT-4o call
+  // Split into chunks and process each with a single model call
   const chunks: Question[][] = [];
   for (let i = 0; i < questions.length; i += BATCH_SIZE) {
     chunks.push(questions.slice(i, i + BATCH_SIZE));

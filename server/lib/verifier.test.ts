@@ -65,7 +65,10 @@ describe('batchFactCheck', () => {
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     const request = mockCreate.mock.calls[0][0];
-    expect(request.model).toBe('gpt-4o');
+    expect(request.model).toBe('gpt-5.4-mini');
+    expect(request.reasoning_effort).toBe('none');
+    expect(request.max_completion_tokens).toBe(4096);
+    expect(request).not.toHaveProperty('max_tokens');
     expect(request.response_format).toEqual({ type: 'json_object' });
     expect(request.messages[0].content).toContain('quality-control assistant');
     expect(request.messages[1].content).toContain('Modern Trivia Quality Control reviewer');

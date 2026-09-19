@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 
 let _openai: OpenAI | null = null;
 function getOpenAI(): OpenAI {
@@ -115,7 +116,7 @@ export async function getAiFieldFix(
   const prompt = PROMPTS[field](question);
 
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o',
+    ...TRIVIA_AI_REQUEST_CONFIG,
     messages: [
       {
         role: 'system',
@@ -124,8 +125,7 @@ export async function getAiFieldFix(
       },
       { role: 'user', content: prompt },
     ],
-    max_tokens: 512,
-    temperature: 0.2,
+    max_completion_tokens: 512,
   });
 
   const raw = response.choices[0]?.message?.content?.trim() ?? '';

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { Question } from '@shared/models/questions';
 
 import { auditQuestionQuality, type QuestionQualityRule } from './question-quality-audit';
@@ -34,6 +35,8 @@ export type BenchmarkLabel =
   | 'coherence'
   | 'obviousness'
   | 'factual_error'
+  | 'answer_conflict'
+  | 'review_required'
   | 'semantic_duplicate'
   | 'string_duplicate'
   | 'us_centric';
@@ -118,6 +121,16 @@ export const LABEL_REGISTRY: Record<BenchmarkLabel, LabelSpec> = {
     ownerTicket: 'STE-25',
     description:
       'Answer is factually incorrect. The current verifier also flags editorial issues (missing source, tagging, leakage), so a fact-specific detector is required before scoring this (STE-25).',
+  },
+  answer_conflict: {
+    tier: 'live',
+    detector: 'duplicate-detector',
+    description: 'Same fact with incompatible answers.',
+  },
+  review_required: {
+    tier: 'live',
+    detector: 'duplicate-detector',
+    description: 'Unresolved factual scope or answer equivalence.',
   },
   semantic_duplicate: {
     tier: 'live',
@@ -292,10 +305,18 @@ export async function runBenchmark(
     // scored: the verifier's pass/flag/fail verdict conflates editorial issues with factual
     // ones, so it stays a coverage gap until STE-25 lands a fact-specific detector.
     const { detectDuplicates } = await import('./duplicate-detector');
-    const dupReport = await detectDuplicates(questions);
+    const dupReport = await detectDuplicates(questions, { cache: null });
+    if (dupReport.status === 'incomplete')
+      throw new Error('Semantic benchmark incomplete; metrics are not valid.');
     for (const match of dupReport.duplicatesFound) {
       const label: BenchmarkLabel =
-        match.matchType === 'conceptual' ? 'semantic_duplicate' : 'string_duplicate';
+        match.matchType === 'answer_conflict'
+          ? 'answer_conflict'
+          : match.matchType === 'review_required'
+            ? 'review_required'
+            : match.matchType === 'conceptual' || match.matchType === 'semantic_duplicate'
+              ? 'semantic_duplicate'
+              : 'string_duplicate';
       detectedByCase.get(match.questionIdA)?.add(label);
       detectedByCase.get(match.questionIdB)?.add(label);
     }
@@ -414,4 +435,105 @@ export function validateCases(cases: BenchmarkCase[]): string[] {
     }
   }
   return problems;
+}
+
+// Pair-level evaluation prevents unrelated fixtures from contaminating each other's labels.
+export interface SemanticPairCase {
+  id: string;
+  a: { question: string; answer: string };
+  b: { question: string; answer: string };
+  expected: 'semantic_duplicate' | 'answer_conflict' | 'distinct';
+  control: 'alias' | 'temporal' | 'scope' | null;
+}
+export type SemanticPairOutcome = SemanticPairCase['expected'] | 'review_required' | 'incomplete';
+export function scoreSemanticPairs(cases: SemanticPairCase[], outcomes: SemanticPairOutcome[]) {
+  if (cases.length !== outcomes.length || !cases.length) throw new Error('Invalid pair evaluation');
+  const metrics = (['semantic_duplicate', 'answer_conflict'] as const).map((label) => {
+    let tp = 0,
+      fp = 0,
+      fn = 0;
+    cases.forEach((c, i) => {
+      if (c.expected === label && outcomes[i] === label) tp++;
+      if (c.expected !== label && outcomes[i] === label) fp++;
+      if (c.expected === label && outcomes[i] !== label) fn++;
+    });
+    return {
+      label,
+      tp,
+      fp,
+      fn,
+      support: tp + fn,
+      precision: tp + fp ? tp / (tp + fp) : 0,
+      recall: tp + fn ? tp / (tp + fn) : 0,
+    };
+  });
+  const accuracy = cases.filter((c, i) => c.expected === outcomes[i]).length / cases.length;
+  const falseControlConflicts = cases.filter(
+    (c, i) => c.control !== null && outcomes[i] === 'answer_conflict'
+  ).length;
+  const incomplete = outcomes.filter((o) => o === 'incomplete').length;
+  return {
+    total: cases.length,
+    metrics,
+    accuracy,
+    falseControlConflicts,
+    incomplete,
+    unresolved: outcomes.filter((o) => o === 'review_required').length,
+    passed:
+      incomplete === 0 &&
+      accuracy > 0.95 &&
+      falseControlConflicts === 0 &&
+      metrics.every((m) => m.precision >= 0.95 && m.recall >= 0.9),
+    // IDs and classifications only: no answers or source text in the report.
+    cases: cases.map((c, i) => ({ id: c.id, expected: c.expected, detected: outcomes[i] })),
+  };
+}
+
+export function validateSemanticPairs(input: unknown): SemanticPairCase[] {
+  const question = z.object({
+    question: z.string().trim().min(1),
+    answer: z.string().trim().min(1),
+  });
+  const cases = z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        a: question,
+        b: question,
+        expected: z.enum(['semantic_duplicate', 'answer_conflict', 'distinct']),
+        control: z.enum(['alias', 'temporal', 'scope']).nullable(),
+      })
+    )
+    .nonempty()
+    .parse(input);
+  if (new Set(cases.map((c) => c.id)).size !== cases.length)
+    throw new Error('Duplicate semantic fixture IDs');
+  return cases;
+}
+
+export async function runSemanticPairBenchmark(cases: SemanticPairCase[]) {
+  cases = validateSemanticPairs(cases);
+  if (!process.env.AI_INTEGRATIONS_OPENAI_API_KEY)
+    throw new Error('Live pair benchmark requires AI_INTEGRATIONS_OPENAI_API_KEY');
+  const { detectDuplicates } = await import('./duplicate-detector');
+  const outcomes: SemanticPairOutcome[] = [];
+  const start = Date.now();
+  for (const c of cases) {
+    const pair = [c.a, c.b].map((q, i) => ({ ...q, id: `${c.id}-${i}` }) as Question);
+    const report = await detectDuplicates(pair, { cache: null, deadlineMs: 30_000 });
+    const type = report.duplicatesFound[0]?.matchType;
+    outcomes.push(
+      report.status === 'incomplete'
+        ? 'incomplete'
+        : !type
+          ? 'distinct'
+          : type === 'answer_conflict' || type === 'review_required'
+            ? type
+            : 'semantic_duplicate'
+    );
+    // A missing model/key or provider outage must not spend through the rest of the fixture set.
+    if (report.status === 'incomplete') break;
+  }
+  while (outcomes.length < cases.length) outcomes.push('incomplete');
+  return { ...scoreSemanticPairs(cases, outcomes), elapsedMs: Date.now() - start };
 }
