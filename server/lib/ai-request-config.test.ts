@@ -123,8 +123,15 @@ describe('AI request configuration', () => {
     expectMiniRequest(mockCreate.mock.calls[0][0]);
   });
 
-  it('uses the configured mini request for generation and repair with existing caps', async () => {
+  it('uses the configured mini request for coverage planning, generation, and repair with existing caps', async () => {
     mockCreate
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: { content: JSON.stringify({ cells: [{ subtopic: 'France', angle: 'who' }] }) },
+          },
+        ],
+      })
       .mockResolvedValueOnce({
         choices: [{ message: { content: JSON.stringify({ questions: [generatedQuestion()] }) } }],
       })
@@ -157,9 +164,10 @@ describe('AI request configuration', () => {
 
     await generateQuestions('France', 1, 'GlobalEh');
 
-    expect(mockCreate).toHaveBeenCalledTimes(2);
-    expectMiniRequest(mockCreate.mock.calls[0][0], 4096);
-    expectMiniRequest(mockCreate.mock.calls[1][0], 1024);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    expectMiniRequest(mockCreate.mock.calls[0][0], 1024); // coverage plan (STE-249)
+    expectMiniRequest(mockCreate.mock.calls[1][0], 4096); // generation
+    expectMiniRequest(mockCreate.mock.calls[2][0], 1024); // repair
   });
 
   it('keeps dispute analysis on GPT-4o', async () => {

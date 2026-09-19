@@ -91,7 +91,7 @@ Return only valid JSON:
 
   try {
     const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+      ...TRIVIA_AI_REQUEST_CONFIG,
       messages: [
         {
           role: 'system',
@@ -101,7 +101,7 @@ Return only valid JSON:
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 1024,
+      max_completion_tokens: 1024,
     });
 
     const content = response.choices[0]?.message?.content || '{}';
