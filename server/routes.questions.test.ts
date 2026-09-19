@@ -178,7 +178,8 @@ describe('question routes', () => {
       .send(questionPayload)
       .expect(201);
 
-    expect(insertQuery.values).toHaveBeenCalledWith(questionPayload);
+    // insertQuestionSchema now defaults origin to 'curated' (STE-167).
+    expect(insertQuery.values).toHaveBeenCalledWith({ ...questionPayload, origin: 'curated' });
     expect(response.body).toMatchObject({ id: 'q-1', question: questionPayload.question });
   });
 

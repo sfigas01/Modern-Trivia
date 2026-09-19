@@ -28,6 +28,9 @@ export default defineConfig({
       NODE_ENV: 'production',
       PORT: port,
       VITE_MULTIPLAYER: 'true',
+      // Enable themed games for the theme-rounds E2E (STE-167). Additive: rooms
+      // created without a theme still take the unchanged flow.
+      VITE_THEME_ROUNDS: 'true',
     },
   },
 });
