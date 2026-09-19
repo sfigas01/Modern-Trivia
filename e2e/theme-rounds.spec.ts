@@ -104,7 +104,11 @@ async function installThemeFixtures(
     });
   });
 
-  await context.route('**/api/rooms', async (route) => {
+  // Anchored, query-tolerant regexes so each room endpoint matches exactly one
+  // route. The snapshot poll appends `?sinceVersion=N` after the first request,
+  // so a plain `**/api/rooms/ABCD2` glob would miss every later poll (including
+  // the one that flips the room to QUESTION) and let it hit the real server.
+  await context.route(/\/api\/rooms(?:\?.*)?$/, async (route) => {
     await route.fulfill({
       status: 201,
       contentType: 'application/json',
@@ -113,7 +117,7 @@ async function installThemeFixtures(
   });
 
   let progressPolls = 0;
-  await context.route(`**/api/rooms/${CODE}/theme-start`, async (route) => {
+  await context.route(new RegExp(`/api/rooms/${CODE}/theme-start(?:\\?.*)?$`), async (route) => {
     await route.fulfill({
       status: 202,
       contentType: 'application/json',
@@ -128,7 +132,7 @@ async function installThemeFixtures(
     });
   });
 
-  await context.route(`**/api/rooms/${CODE}/theme-progress`, async (route) => {
+  await context.route(new RegExp(`/api/rooms/${CODE}/theme-progress(?:\\?.*)?$`), async (route) => {
     progressPolls += 1;
     if (progressPolls >= 2) {
       // Preparation complete: flip the room snapshot to QUESTION so the room
@@ -162,8 +166,10 @@ async function installThemeFixtures(
     });
   });
 
-  // Room snapshot poll — serves LOBBY until preparation flips it to QUESTION.
-  await context.route(`**/api/rooms/${CODE}`, async (route) => {
+  // Room snapshot poll (with or without ?sinceVersion) — serves LOBBY until
+  // preparation flips it to QUESTION. Anchored so it does NOT swallow the
+  // /theme-start and /theme-progress subpaths.
+  await context.route(new RegExp(`/api/rooms/${CODE}(?:\\?.*)?$`), async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
