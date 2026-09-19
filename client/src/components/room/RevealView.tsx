@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowRight, ExternalLink, Flag } from 'lucide-react';
+import { ArrowRight, ExternalLink, Flag, Sparkles } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import type {
   AdvanceRoomResponse,
@@ -116,6 +116,25 @@ export function RevealView({
             >
               {snapshot.currentQuestion.difficulty}
             </Badge>
+            {snapshot.theme && (
+              <Badge
+                variant="outline"
+                className="border-primary/30 bg-primary/10 text-primary"
+                data-testid="badge-theme"
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                {snapshot.theme}
+              </Badge>
+            )}
+            {snapshot.currentQuestion.origin === 'player_ai' && (
+              <Badge
+                variant="outline"
+                className="border-purple-400/30 bg-purple-500/10 text-purple-200"
+                data-testid="badge-ai-generated"
+              >
+                AI-generated
+              </Badge>
+            )}
           </div>
           <h1 className="text-xl md:text-2xl font-bold leading-tight font-display">
             {snapshot.currentQuestion.question}

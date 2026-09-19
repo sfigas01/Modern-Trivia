@@ -16,6 +16,14 @@ import { z } from 'zod';
 import { users } from './auth';
 import { VALID_CATEGORIES } from '../constants/categories';
 
+// Provenance of a question row. Legacy rows and hand-curated/seeded content are
+// 'curated'; questions generated on demand for a player-chosen theme (STE-167
+// lean MVP) are persisted as 'player_ai' so their AI origin can be surfaced at
+// reveal. player_ai questions are ordinary approved library rows — they are NOT
+// excluded from normal category games.
+export const QUESTION_ORIGINS = ['curated', 'player_ai'] as const;
+export type QuestionOrigin = (typeof QUESTION_ORIGINS)[number];
+
 // Questions table — stores all trivia questions (migrated from client/src/lib/questions.json)
 export const questions = pgTable('questions', {
   id: varchar('id').primaryKey(),
@@ -32,6 +40,8 @@ export const questions = pgTable('questions', {
   sourceUrl: text('source_url'),
   sourceName: varchar('source_name'),
   status: varchar('status', { length: 20 }).notNull().default('approved'), // 'draft' | 'pending' | 'approved' | 'rejected'
+  // Provenance — see QUESTION_ORIGINS. Legacy rows default to 'curated'.
+  origin: varchar('origin', { length: 20 }).notNull().default('curated'),
   aiAnalysis: jsonb('ai_analysis'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at')
@@ -45,6 +55,7 @@ export const insertQuestionSchema = createInsertSchema(questions, {
   difficulty: z.enum(['Easy', 'Medium', 'Hard']),
   pillar: z.enum(['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors']),
   status: z.enum(['draft', 'pending', 'approved', 'rejected']).default('approved'),
+  origin: z.enum(QUESTION_ORIGINS).default('curated'),
   tags: z.array(z.string()).default([]),
   acceptableAnswers: z.array(z.string()).default([]),
 }).omit({ createdAt: true, updatedAt: true });

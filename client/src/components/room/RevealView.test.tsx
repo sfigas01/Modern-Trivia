@@ -334,3 +334,55 @@ describe('RevealView', () => {
     }
   );
 });
+
+describe('RevealView — theme / AI labeling (STE-167)', () => {
+  afterEach(() => cleanup());
+
+  function themedQuestion(origin: 'curated' | 'player_ai') {
+    return {
+      id: 'q1',
+      category: 'Sports',
+      difficulty: 'Medium' as const,
+      question: 'Who holds the record?',
+      pillar: 'GlobalEh',
+      tags: [],
+      sourceUrl: 'https://example.com',
+      sourceName: 'Example Source',
+      answer: 'Someone',
+      acceptableAnswers: ['Someone'],
+      explanation: 'Because.',
+      origin,
+    };
+  }
+
+  it('shows the theme and AI-generated labels for a player_ai themed question', () => {
+    const snapshot = makeSnapshot({
+      theme: 'baseball',
+      currentQuestion: themedQuestion('player_ai'),
+    });
+    render(
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p1"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('badge-theme')).toHaveTextContent('baseball');
+    expect(screen.getByTestId('badge-ai-generated')).toBeInTheDocument();
+  });
+
+  it('does not show the AI/theme labels for an ordinary curated question', () => {
+    const snapshot = makeSnapshot({ theme: null, currentQuestion: themedQuestion('curated') });
+    render(
+      <RevealView
+        snapshot={snapshot}
+        currentPlayerId="p1"
+        advance={makeMutation()}
+        refetch={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId('badge-theme')).toBeNull();
+    expect(screen.queryByTestId('badge-ai-generated')).toBeNull();
+  });
+});
