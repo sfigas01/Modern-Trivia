@@ -71,7 +71,7 @@
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.7.1",
     "embla-carousel-react": "^8.6.0",
-    "express": "^4.21.2",
+    "express": "^4.22.3",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.19.0",
     "framer-motion": "^12.34.3",
@@ -127,11 +127,11 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.11",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.28.1",
-    "eslint": "^9.39.3",
+    "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -145,13 +145,14 @@
     "tsx": "^4.22.4",
     "typescript": "5.9.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.11"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
   },
   "overrides": {
-    "esbuild": "$esbuild",
+    "esbuild": "^0.28.1",
+    "qs": "^6.16.0",
     "browserslist": "^4.28.7",
     "js-yaml": "^4.3.2"
   },
