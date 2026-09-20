@@ -12,6 +12,7 @@ import {
 import {
   THEME_GAME_LIMITS,
   internalThemeFailureSchema,
+  publicThemeJobSchema,
   publicThemeProgressSchema,
   themeGamePlanFor,
   themeGamePlanSchema,
@@ -145,6 +146,14 @@ describe('theme-reliability-v1 evidence contracts', () => {
     expect(
       evidenceReviewSchema.safeParse({
         ...review,
+        dimensionResults: dimensionResults.map((result, index) =>
+          index === 0 ? { ...result, reasons: ['missing_evidence'] } : result
+        ),
+      }).success
+    ).toBe(false);
+    expect(
+      evidenceReviewSchema.safeParse({
+        ...review,
         dimensionResults: [...dimensionResults.slice(0, -1), dimensionResults[0]],
       }).success
     ).toBe(false);
@@ -216,6 +225,25 @@ describe('theme-reliability-v1 game and public contracts', () => {
     expect(publicThemeProgressSchema.safeParse({ ...progress, candidatesUsed: 51 }).success).toBe(
       false
     );
+    expect(publicThemeProgressSchema.safeParse({ ...progress, themedReadyCount: 12 }).success).toBe(
+      false
+    );
+
+    const job = {
+      contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,
+      gameId: progress.gameId,
+      jobId: progress.jobId,
+      theme: 'event history',
+      relatedCategories: ['Sports'],
+      progress,
+    };
+    expect(publicThemeJobSchema.safeParse(job).success).toBe(true);
+    expect(
+      publicThemeJobSchema.safeParse({
+        ...job,
+        progress: { ...progress, jobId: id(13) },
+      }).success
+    ).toBe(false);
   });
 
   it('keeps detailed provider failures in the internal contract', () => {

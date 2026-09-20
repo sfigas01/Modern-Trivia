@@ -188,6 +188,7 @@ export const themeGameSessions = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex('uq_theme_game_sessions_id_ceiling').on(table.id, table.candidateCeiling),
     index('idx_theme_game_sessions_room').on(table.roomId),
     index('idx_theme_game_sessions_status_expiry').on(table.status, table.expiresAt),
     check('theme_game_sessions_mode', sql`${table.mode} IN ('multiplayer', 'shared_device')`),
@@ -327,6 +328,11 @@ export const themePreparationJobs = pgTable(
     uniqueIndex('uq_theme_preparation_jobs_game').on(table.gameId),
     uniqueIndex('uq_theme_preparation_jobs_id_game').on(table.id, table.gameId),
     index('idx_theme_preparation_jobs_status_lease').on(table.status, table.leaseExpiresAt),
+    foreignKey({
+      name: 'fk_theme_preparation_jobs_game_ceiling',
+      columns: [table.gameId, table.candidateCeiling],
+      foreignColumns: [themeGameSessions.id, themeGameSessions.candidateCeiling],
+    }).onDelete('cascade'),
     check(
       'theme_preparation_jobs_status',
       sql`${table.status} IN ('queued', 'researching', 'retrieving', 'extracting', 'writing', 'reviewing', 'qa', 'semantic_check', 'reserving', 'ready', 'shortfall', 'waiting', 'completed', 'failed', 'canceled', 'expired')`

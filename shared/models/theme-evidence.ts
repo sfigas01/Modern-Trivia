@@ -201,7 +201,24 @@ export const evidenceDimensionResultSchema = z
     reasons: z.array(evidenceReasonCodeSchema).min(1),
     passageIds: z.array(z.string().uuid()).min(1),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    const hasAdverseReason = result.reasons.some((reason) => reason !== 'supported');
+    if (result.verdict === 'pass' && hasAdverseReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reasons'],
+        message: 'passing evidence dimensions may only use the supported reason',
+      });
+    }
+    if (result.verdict !== 'pass' && !hasAdverseReason) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['reasons'],
+        message: 'flagged or failed evidence dimensions require an adverse reason',
+      });
+    }
+  });
 
 export const evidenceReviewSchema = z
   .object({

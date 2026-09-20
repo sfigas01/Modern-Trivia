@@ -16,6 +16,7 @@ describe('theme reliability migration contract', () => {
     const sql = await readFile(migrationUrl, 'utf8');
 
     expect(sql).toContain('fk_theme_question_reservations_question_revision');
+    expect(sql).toContain('fk_theme_preparation_jobs_game_ceiling');
     expect(sql).toContain('fk_theme_question_reservations_fact_revision');
     expect(sql).toContain('fk_theme_reservation_participants_reservation_fact');
     expect(sql).toContain('theme_fact_revisions_immutable');
@@ -302,6 +303,14 @@ describe.runIf(Boolean(databaseUrl))('theme reliability foundation migration on 
       await client.query(
         'INSERT INTO theme_daily_budgets (budget_date, limit_micros) VALUES (CURRENT_DATE, 1000000)'
       );
+      await expect(
+        client.query(
+          `INSERT INTO theme_preparation_jobs
+           (contract_version, game_id, stable_key, candidate_ceiling)
+           VALUES ('theme-reliability-v1', $1, 'job-key-invalid-ceiling', 100)`,
+          [gameOne]
+        )
+      ).rejects.toMatchObject({ code: '23503' });
       const job = await client.query<{ id: string }>(
         `INSERT INTO theme_preparation_jobs
          (contract_version, game_id, stable_key, candidate_ceiling)

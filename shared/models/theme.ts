@@ -313,6 +313,7 @@ export const publicThemeProgressSchema = z
     const invalidCounts =
       progress.readyCount > progress.requiredCount ||
       progress.openingReadyCount > progress.openingRequiredCount ||
+      progress.themedReadyCount + progress.relatedReadyCount !== progress.readyCount ||
       progress.candidatesUsed > progress.candidateCeiling;
     if (invalidCounts) {
       context.addIssue({
@@ -332,7 +333,23 @@ export const publicThemeJobSchema = z
     relatedCategories: z.array(categorySchema).min(1).max(6),
     progress: publicThemeProgressSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((job, context) => {
+    if (job.gameId !== job.progress.gameId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['progress', 'gameId'],
+        message: 'progress gameId must match the enclosing job',
+      });
+    }
+    if (job.jobId !== job.progress.jobId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['progress', 'jobId'],
+        message: 'progress jobId must match the enclosing job',
+      });
+    }
+  });
 
 export type ThemeGamePlan = z.infer<typeof themeGamePlanSchema>;
 export type CreateThemeGameRequest = z.infer<typeof createThemeGameRequestSchema>;

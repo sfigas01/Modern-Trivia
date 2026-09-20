@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS theme_game_sessions (
   expires_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT uq_theme_game_sessions_id_ceiling UNIQUE (id, candidate_ceiling),
   CONSTRAINT theme_game_sessions_mix_totals CHECK (themed_question_target + related_question_target = question_count AND opening_themed_target + opening_related_target = opening_question_target),
   CONSTRAINT theme_game_sessions_plan CHECK ((player_count = 2 AND question_count = 40 AND themed_question_target = 30 AND related_question_target = 10 AND candidate_ceiling = 50 AND opening_question_target = 16 AND opening_themed_target = 12 AND opening_related_target = 4) OR (player_count = 3 AND question_count = 60 AND themed_question_target = 45 AND related_question_target = 15 AND candidate_ceiling = 75 AND opening_question_target = 24 AND opening_themed_target = 18 AND opening_related_target = 6) OR (player_count = 4 AND question_count = 80 AND themed_question_target = 60 AND related_question_target = 20 AND candidate_ceiling = 100 AND opening_question_target = 32 AND opening_themed_target = 24 AND opening_related_target = 8)),
   CONSTRAINT theme_game_sessions_mix_consent CHECK ((mix_consent_status = 'accepted' AND accepted_themed_target IS NOT NULL AND accepted_related_target IS NOT NULL AND accepted_themed_target >= 0 AND accepted_related_target >= 0 AND accepted_themed_target + accepted_related_target = question_count AND mix_decision_by_hash IS NOT NULL AND mix_decision_by_hash ~ '^[a-f0-9]{64}$' AND mix_decided_at IS NOT NULL) OR (mix_consent_status <> 'accepted' AND accepted_themed_target IS NULL AND accepted_related_target IS NULL AND mix_decision_by_hash IS NULL AND mix_decided_at IS NULL)),
@@ -169,6 +170,7 @@ CREATE TABLE IF NOT EXISTS theme_preparation_jobs (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT uq_theme_preparation_jobs_game UNIQUE (game_id),
   CONSTRAINT uq_theme_preparation_jobs_id_game UNIQUE (id, game_id),
+  CONSTRAINT fk_theme_preparation_jobs_game_ceiling FOREIGN KEY (game_id, candidate_ceiling) REFERENCES theme_game_sessions(id, candidate_ceiling) ON DELETE CASCADE,
   CONSTRAINT theme_preparation_jobs_counts CHECK (candidates_used BETWEEN 0 AND candidate_ceiling AND ready_count >= 0 AND themed_ready_count >= 0 AND related_ready_count >= 0 AND themed_ready_count + related_ready_count = ready_count)
 );
 CREATE INDEX IF NOT EXISTS idx_theme_preparation_jobs_status_lease ON theme_preparation_jobs (status, lease_expires_at);
