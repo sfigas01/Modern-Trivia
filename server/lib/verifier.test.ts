@@ -112,8 +112,8 @@ describe('batchFactCheck', () => {
         {
           questionId: 'q1',
           verdict: 'fail',
-          coherence: 'pass',
-          obviousness: 'pass',
+          coherence: 'flag',
+          obviousness: 'flag',
           confidence: 88,
           reason: 'Answer leaks into the prompt.',
         },
@@ -157,7 +157,7 @@ describe('batchFactCheck', () => {
         // coherence fail overrides the model's softer 'flag' verdict
         verdict: 'fail',
         coherence: 'fail',
-        obviousness: 'pass',
+        obviousness: 'flag',
         confidence: 90,
         reason: 'Premise is false: Led Zeppelin is a British band.',
         suggestedQuestion: "Which band is known for 'Immigrant Song'?",
@@ -202,7 +202,7 @@ describe('batchFactCheck', () => {
         questionId: 'q1',
         // obviousness fail overrides the model's softer 'flag' verdict
         verdict: 'fail',
-        coherence: 'pass',
+        coherence: 'flag',
         obviousness: 'fail',
         confidence: 92,
         reason: 'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
@@ -246,7 +246,7 @@ describe('batchFactCheck', () => {
       {
         questionId: 'q1',
         verdict: 'fail',
-        coherence: 'pass',
+        coherence: 'flag',
         obviousness: 'fail',
         confidence: 85,
         reason: 'A universal giveaway fact labelled Hard; it should be Easy.',
@@ -285,7 +285,7 @@ describe('batchFactCheck', () => {
       {
         questionId: 'q1',
         verdict: 'fail',
-        coherence: 'pass',
+        coherence: 'flag',
         obviousness: 'fail',
         confidence: 80,
         reason: 'Difficulty mislabelled.',
@@ -293,7 +293,7 @@ describe('batchFactCheck', () => {
     ]);
   });
 
-  it('ignores an empty suggestedQuestion and defaults coherence to pass', async () => {
+  it('ignores an empty suggestedQuestion and flags missing coherence', async () => {
     mockCreate.mockResolvedValue({
       choices: [
         {
@@ -321,9 +321,9 @@ describe('batchFactCheck', () => {
     expect(report.results).toEqual([
       {
         questionId: 'q1',
-        verdict: 'pass',
-        coherence: 'pass',
-        obviousness: 'pass',
+        verdict: 'flag',
+        coherence: 'flag',
+        obviousness: 'flag',
         confidence: 97,
         reason: 'Looks good.',
       },
@@ -343,8 +343,8 @@ describe('batchFactCheck', () => {
       {
         questionId: 'q1',
         verdict: 'flag',
-        coherence: 'pass',
-        obviousness: 'pass',
+        coherence: 'flag',
+        obviousness: 'flag',
         confidence: 0,
         reason: 'No verdict returned by fact-checker.',
       },

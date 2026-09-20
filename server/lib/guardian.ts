@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { createSourceReview } from './source-review';
 import { insertQuestionSchema, type InsertQuestion, type Question } from '@shared/models/questions';
 import { TRIVIA_AI_REQUEST_CONFIG } from './ai-model-config';
 import { auditQuestionQuality, type QuestionQualityFinding } from './question-quality-audit';
@@ -20,6 +21,7 @@ export interface QuestionAiAnalysis {
   qaFindings: QuestionQualityFinding[];
   factCheck: FactCheckVerdict;
   repaired?: boolean;
+  sourceReview?: ReturnType<typeof createSourceReview>;
 }
 
 export interface ExistingExample {
@@ -202,7 +204,10 @@ export function computeStrategyQuotas(
   return items.filter((i) => i.floored > 0).map((i) => ({ pillar: i.pillar, count: i.floored }));
 }
 
-type PendingQuestion = InsertQuestion & { status: 'pending'; aiAnalysis: QuestionAiAnalysis };
+type PendingQuestion = Omit<InsertQuestion, 'aiAnalysis' | 'status'> & {
+  status: 'pending';
+  aiAnalysis: QuestionAiAnalysis;
+};
 
 const insertQuestionWithPendingStatusSchema = insertQuestionSchema.transform((question) => ({
   ...question,
@@ -351,8 +356,8 @@ async function runQaOnSingle(
   const factCheck: FactCheckVerdict = factCheckReport.results.find((r) => r.questionId === id) ?? {
     questionId: id,
     verdict: 'flag' as const,
-    coherence: 'pass' as const,
-    obviousness: 'pass' as const,
+    coherence: 'flag' as const,
+    obviousness: 'flag' as const,
     confidence: 0,
     reason: 'No verdict returned.',
   };
@@ -570,8 +575,8 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
     ) ?? {
       questionId: id,
       verdict: 'flag' as const,
-      coherence: 'pass' as const,
-      obviousness: 'pass' as const,
+      coherence: 'flag' as const,
+      obviousness: 'flag' as const,
       confidence: 0,
       reason: 'No verdict returned.',
     };

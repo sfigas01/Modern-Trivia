@@ -1,10 +1,9 @@
 # Themed games — lean MVP (STE-167)
 
-The minimum playable slice of on-demand, player-requested themed games. A host
+Themed games use source-reviewed inventory by default. Live generation is experimental and opt-in. A host
 enters a free-text theme (e.g. "baseball"), adjusts the suggested categories,
 and starts a normal-length multiplayer game whose questions lean toward that
-theme — reusing eligible approved questions first and generating the rest
-through the existing Guardian quality pipeline.
+theme. The server starts only when a complete reviewed set is available.
 
 This is deliberately lean. The full production plan (durable jobs, atomic
 reservations, the 30-day/last-5-games eligibility system, two-rounds-ahead
@@ -21,8 +20,8 @@ Everything is gated behind **`VITE_THEME_ROUNDS`** (documented by name in
 - the **server** (runtime) — `server/lib/theme-game.ts` → `isThemeRoundsEnabled()`.
 
 When off (the default), the theme UI is hidden, the theme endpoints return 404,
-a `theme` sent to room creation is ignored, and **ordinary category games are
-completely unchanged.**
+a `theme` sent to room creation is ignored. The source-evidence eligibility rule for
+automatically approved AI rows applies to ordinary category play regardless of this UI flag.
 
 ## Flow
 
@@ -45,34 +44,51 @@ completely unchanged.**
    game. At reveal, AI-generated (`player_ai`) questions show an **AI-generated**
    badge and the game shows a **theme** badge, alongside the existing source link.
 
+## Publishing the reviewed baseball set
+
+The included set contains **40 source-reviewed baseball terminology questions**. It supports a five-round, two-player game. It is a limited release set, not evidence that arbitrary live themes now generate reliably. Existing seen-question tiering still permits repeats when inventory is exhausted; one set is not enough for repeat-free games. Larger games require more reviewed content and will remain in the lobby if the set is short.
+
+1. Preserve Replit-local changes and reconcile them with this PR before pulling. Do not reset or overwrite them. After the PR is merged and CI passes, sync Replit with `git pull origin main`.
+2. Keep `THEME_LIVE_GENERATION=false`. Set `VITE_THEME_ROUNDS=true` in the intended Replit environment, at both build and runtime.
+3. Validate the pack without connecting to a database:
+
+   ```sh
+   npx tsx script/import-reviewed-baseball.ts
+   ```
+
+4. Import against the intended **development** database first:
+
+   ```sh
+   npx tsx script/import-reviewed-baseball.ts --apply
+   ```
+
+   This inserts missing stable IDs in a transaction, never overwrites existing rows, and prints counts without answers. A rerun preserves administrator edits and withdrawals. Require `40/40` reviewed/approved rows in its output. An edited or withdrawn existing row must be reviewed separately; import does not silently reapprove it.
+
+5. Test theme `baseball`, category Sports, two players, five rounds. The full game must finish with 40 questions. After owner approval, run the same import in the production environment and publish the tested build. Development and production databases may be separate in Replit; importing into development alone does not prepare production.
+
+No production import, paid generation or deployment was performed as part of preparing this change. The pack lives in `server/content/baseball-reviewed.ts`; every question includes an MLB source URL and a short reviewed excerpt. The content review was performed on 2026-09-19. Re-review when changing wording, aliases, difficulty, pillar, tags or sources; the previous review no longer matches after such edits. Current evidence is version/content based, not automatically refreshed from changing websites.
+
+## Approval and source evidence
+
+`server/lib/source-review.ts` is the shared approval boundary:
+
+- Themed reuse and category fallback require `approved` status plus a matching source-review version and exact reviewed content snapshot.
+- Previously auto-approved `player_ai` rows without evidence or complete quality checks cannot enter themed **or ordinary category** selection. Legacy curated category rows retain their existing policy; this is not a production content sweep.
+- Missing coherence/obviousness results are `flag`, not an assumed pass. A factual fail stays fail even when other checks are incomplete.
+- Experimental generation requires factual/coherence/obviousness passes for the same question ID, no high static-QA findings, retrieved evidence, and completed semantic filtering before approval.
+- Retrieval accepts a small exact-host HTTPS allowlist, refuses redirects/credentials/custom ports, and bounds time, response bytes and text size. Unreadable or unsupported sources withhold the question.
+- The evidence reviewer reads actual source text and checks the premise, precise scope, explanation and accepted answers. It must return literal supporting passages that include the primary answer. Invented quotations and missing results are rejected. This reduces unsupported approvals; it does not prove that an AI verdict is always correct.
+- Room activation rechecks selected rows under locks, so withdrawals or edits during preparation cause a lobby error rather than starting with invalidated content.
+
 ## Question sourcing (`server/lib/theme-game.ts`)
 
-`prepareThemedQuestions` sources exactly `numRounds × teams × 4` questions (the
-same math as the ordinary `/start`):
+`prepareThemedQuestions` needs exactly `numRounds × players × 4` questions.
 
-1. **Reuse first.** Select eligible approved questions already tagged
-   `theme:<slug>` (within the room's categories), ordered by the existing
-   room-wide seen-question tiering (STE-81 / STE-273) — reused **as-is**.
-2. **Generate the remainder.** For the shortfall, call the existing
-   `generateQuestions` (coverage planning, static QA, fact/coherence/obviousness,
-   bounded repair — STE-247/249/228) then `filterNovelQuestions` (semantic
-   novelty — STE-26). Only strict passes with no high QA findings survive.
-   Accepted questions are persisted immediately as **`approved`** rows with
-   **`origin = 'player_ai'`** and the `theme:<slug>` tag, so they enrich the
-   shared library for everyone (including ordinary category games).
-3. **Top up.** If generation underperforms, fill from approved questions in the
-   room's categories so a full-length game is always assembled; otherwise prep
-   reports an error and the host can retry, broaden the theme, or reduce rounds.
+**Default (`THEME_LIVE_GENERATION=false` or unset):** select source-reviewed, approved questions matching the theme and chosen categories. Return immediately without AI requests, paid retries or category fill. A short set leaves the room in the lobby with an explicit count. Theme category suggestions use the existing local heuristic.
 
-Play order is theme-leaning: freshly generated (bespoke, never-seen) first, then
-reused theme questions, then any category fill.
+**Experimental (`THEME_LIVE_GENERATION=true`):** reuse first, then generate missing candidates with strict quality and source review, followed by semantic filtering. Eligible survivors are persisted as approved `player_ai` rows. Category fallback also requires valid source evidence. The existing limit of 120 requested candidates and 20 batches remains; repairs and evidence-review requests are additional calls, so this is not a dollar cap. No reliable cold-theme yield or latency claim is made. Do not enable for production merely because mocked tests pass; benchmark authorized live runs and independently review their accepted content first.
 
-### Cost guard
-
-A simple per-game **candidate ceiling** (`THEME_MAX_GENERATED_CANDIDATES`)
-bounds how many candidates the pipeline is asked to produce, alongside the
-existing `aiLimiter` on the routes. There is no global daily budget system (full
-plan).
+The full STE-167 durable-job, reservation, strict-history and cost-budget plan remains deferred.
 
 ## Schema changes (migration `0008_theme_rounds.sql`)
 
@@ -108,3 +124,21 @@ themed game always goes through the async path.
 - E2E: `e2e/theme-rounds.spec.ts` drives the themed setup → lobby → progress →
   play flow with the theme/room endpoints intercepted (generation can't run in
   CI).
+
+## Validation added for the publishing fix
+
+- `server/lib/source-review.test.ts`: incomplete evidence, wrong-answer/confident-pass regression, source restrictions, invented quotations, content edits and strict quality checks.
+- `server/lib/source-review.database.test.ts`: actual PostgreSQL JSONB eligibility, all 40 rows, legacy AI, edited answers/aliases and withdrawn content. Opt in only with `THEME_REVIEW_TEST_DATABASE_URL` pointing at a disposable database.
+- `server/lib/theme-game.test.ts`: flagged/incomplete/unsupported candidates and 0/26/40 reviewed-inventory outcomes with no generation calls in default mode.
+- `e2e/theme-rounds.spec.ts`: an inventory shortfall keeps the host in the lobby.
+- `e2e/theme-reviewed.spec.ts`: real HTTP server, PostgreSQL, two players, canonical answers, synchronized scores and all 40 questions through game over; no AI calls or endpoint mocks. Requires the local disposable `trivia_test` database used by CI.
+
+Linear follow-up creation/update was blocked by this session's connector approval policy. STE-167 remains the reference for the merged feature; this fix is documented by its PR and this guide. No claim is made that the deferred full plan is complete.
+
+### Local validation evidence
+
+The complete Vitest run passed 701 tests across 66 files, including both optional PostgreSQL suites against a disposable database. TypeScript and ESLint passed (existing lint warnings remain). Dependency audit found no high/critical issues; moderate advisories remain unchanged. The production bundle built successfully.
+
+The real-server E2E passed with Linux Node 22, PostgreSQL 16, live generation disabled and an unreachable test AI endpoint. Two players answered all 40 questions correctly (including accepted aliases), completed five rounds and observed matching final scores. All 40 source excerpts were checked against retrieved MLB pages. Pack dry-run reported 40 questions and zero high QA findings.
+
+Local browser UI checks could not launch Chromium because the macOS sandbox denied its process permissions. These tests remain enabled in GitHub CI and must pass there before merge. The Mac server startup also uses an existing Linux-only socket option; the real-server check therefore ran the unchanged production bundle in Linux. No tests were disabled to bypass either environment limitation.

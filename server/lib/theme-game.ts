@@ -14,6 +14,12 @@
 // and keeps a best-effort in-memory progress store for the waiting UX.
 
 import OpenAI from 'openai';
+import {
+  approvedForPlaySql,
+  currentSourceReviewSql,
+  hasStrictQualityPass,
+  verifyQuestionSource,
+} from './source-review';
 import { and, asc, eq, inArray, isNull, notInArray, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '../db';
@@ -95,6 +101,11 @@ export function themeTag(theme: string): string {
 // produce more than this many candidates for a single themed game, regardless
 // of attrition. Paired with the existing aiLimiter on the routes.
 export const THEME_MAX_GENERATED_CANDIDATES = 120;
+
+// Reviewed inventory is the release default. Live AI remains experimental.
+export function isLiveThemeGenerationEnabled(): boolean {
+  return process.env.THEME_LIVE_GENERATION === 'true';
+}
 // Guardian caps a single generateQuestions call at 20; keep batches modest so
 // review overlaps generation and progress advances in visible steps.
 export const THEME_GENERATION_BATCH_SIZE = 10;
@@ -167,6 +178,7 @@ export function fallbackThemeCategories(theme: string): RoomCategory[] {
  * never blocks on the AI. Only canonical category values are ever returned.
  */
 export async function suggestThemeCategories(theme: string): Promise<RoomCategory[]> {
+  if (!isLiveThemeGenerationEnabled()) return fallbackThemeCategories(theme);
   try {
     const response = await getOpenAI().chat.completions.create({
       ...TRIVIA_AI_REQUEST_CONFIG,
@@ -291,7 +303,7 @@ async function selectApprovedQuestionIds(
     .select({ id: questions.id, tier: roomTierExpr })
     .from(questions)
     .leftJoin(seenQuestions, seenJoinCondition)
-    .where(and(eq(questions.status, 'approved'), ...extraConditions))
+    .where(and(approvedForPlaySql, currentSourceReviewSql, ...extraConditions))
     .groupBy(questions.id)
     .orderBy(...orderBy)
     .limit(limit);
@@ -416,6 +428,11 @@ export async function prepareThemedQuestions(params: {
   const chosen = new Set<string>(reusedThemedIds);
   notify({ reused: reusedThemedIds.length, ready: chosen.size });
 
+  // In reviewed-inventory mode there are no model calls or silent category fill.
+  if (chosen.size >= total || !isLiveThemeGenerationEnabled()) {
+    return { questionIds: Array.from(chosen), reused: chosen.size, generated: 0 };
+  }
+
   // Existing pool for negative examples + novelty filtering. Only the columns
   // the downstream consumers read (topic context + novelty filter).
   const existingPool = (await db
@@ -462,7 +479,16 @@ export async function prepareThemedQuestions(params: {
         question: q.question,
         answer: q.answer,
       }));
-      const result = await filterNovelQuestions(generated, noveltyExisting);
+      const strict = generated.filter((q) => hasStrictQualityPass(q));
+      const supported: typeof generated = [];
+      // Sequential and bounded: each candidate's cited source must actually support it.
+      for (const q of strict.slice(0, batchCount)) {
+        const tagged = { ...q, tags: Array.from(new Set([...(q.tags ?? []), tag])) };
+        const sourceReview = await verifyQuestionSource(tagged);
+        if (sourceReview)
+          supported.push({ ...tagged, aiAnalysis: { ...q.aiAnalysis, sourceReview } });
+      }
+      const result = await filterNovelQuestions(supported, noveltyExisting);
       kept = result.kept;
     } catch (error) {
       console.error('[theme-game] Generation batch failed — continuing', {
@@ -573,7 +599,7 @@ export async function runThemedGamePreparation(params: {
     if (result.questionIds.length < total) {
       updateThemeProgress(room.code, {
         status: 'error',
-        error: `Could only assemble ${result.questionIds.length} of ${total} questions for "${theme}". Try a broader theme, different categories, or fewer rounds.`,
+        error: `Could only assemble ${result.questionIds.length} of ${total} questions for "${theme}". Choose a theme with enough reviewed questions, or ask the administrator to prepare more. No unchecked questions were added.`,
       });
       return;
     }
@@ -614,6 +640,20 @@ export async function runThemedGamePreparation(params: {
         return {
           ok: false as const,
           reason: `Players joined while preparing "${theme}"; only ${result.questionIds.length} of ${required} questions are ready. Please start again.`,
+        };
+      }
+
+      // Recheck under row locks: a review may have been withdrawn during preparation.
+      const selectedIds = result.questionIds.slice(0, required);
+      const stillReviewed = await tx
+        .select({ id: questions.id })
+        .from(questions)
+        .where(and(inArray(questions.id, selectedIds), approvedForPlaySql, currentSourceReviewSql))
+        .for('share');
+      if (stillReviewed.length !== required) {
+        return {
+          ok: false as const,
+          reason: 'Reviewed inventory changed during preparation. Please start again.',
         };
       }
 

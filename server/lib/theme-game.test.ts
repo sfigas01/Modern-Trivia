@@ -46,6 +46,12 @@ vi.mock('./guardian', () => guardianMock);
 const noveltyMock = vi.hoisted(() => ({ filterNovelQuestions: vi.fn() }));
 vi.mock('./novelty-filter', () => noveltyMock);
 
+const sourceMock = vi.hoisted(() => ({ verifyQuestionSource: vi.fn() }));
+vi.mock('./source-review', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./source-review')>()),
+  ...sourceMock,
+}));
+
 vi.mock('./topic-context', () => ({ selectTopicContext: vi.fn(() => []) }));
 
 const openAiCreate = vi.hoisted(() => vi.fn());
@@ -106,7 +112,10 @@ function generatedQuestion(id: string) {
     sourceUrl: 'https://example.com',
     sourceName: 'Example',
     status: 'pending',
-    aiAnalysis: { qaFindings: [], factCheck: { verdict: 'pass' } },
+    aiAnalysis: {
+      qaFindings: [],
+      factCheck: { questionId: id, verdict: 'pass', coherence: 'pass', obviousness: 'pass' },
+    },
   };
 }
 
@@ -115,10 +124,16 @@ beforeEach(() => {
   insertReturningQueue.length = 0;
   insertedValues.length = 0;
   vi.clearAllMocks();
+  vi.stubEnv('THEME_LIVE_GENERATION', 'true');
+  sourceMock.verifyQuestionSource.mockResolvedValue({
+    version: 'source-review-v1',
+    verdict: 'pass',
+  });
 });
 
 afterEach(() => {
   clearThemeProgress('ABCDE');
+  vi.unstubAllEnvs();
 });
 
 describe('normalizeThemeSlug / themeTag', () => {
@@ -299,5 +314,68 @@ describe('prepareThemedQuestions', () => {
       .mocked(generateQuestions)
       .mock.calls.reduce((sum, call) => sum + (call[1] as number), 0);
     expect(requested).toBeLessThanOrEqual(THEME_MAX_GENERATED_CANDIDATES);
+  });
+});
+
+describe('themed approval regression', () => {
+  it.each(['flag', 'fail', 'missing'])('does not approve %s quality reviews', async (verdict) => {
+    selectQueue.push(
+      Array.from({ length: 39 }, (_, i) => ({ id: `reuse${i}`, tier: 0 })),
+      []
+    );
+    const q = generatedQuestion('bad');
+    if (verdict === 'missing')
+      delete (q.aiAnalysis.factCheck as Partial<typeof q.aiAnalysis.factCheck>).coherence;
+    else q.aiAnalysis.factCheck.verdict = verdict;
+    vi.mocked(generateQuestions).mockResolvedValue([q] as never);
+    vi.mocked(filterNovelQuestions).mockImplementation(async (batch) => ({
+      kept: batch,
+      dropped: [],
+    }));
+    const result = await prepareThemedQuestions({
+      theme: 'baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+    expect(sourceMock.verifyQuestionSource).not.toHaveBeenCalled();
+    expect(insertedValues).toHaveLength(0);
+    expect(result.questionIds).not.toContain('bad');
+  });
+
+  it('withholds a confident quality pass when the source does not support it', async () => {
+    selectQueue.push([], []);
+    sourceMock.verifyQuestionSource.mockResolvedValue(null);
+    vi.mocked(generateQuestions).mockResolvedValue([generatedQuestion('unsupported')] as never);
+    vi.mocked(filterNovelQuestions).mockImplementation(async (batch) => ({
+      kept: batch,
+      dropped: [],
+    }));
+    await prepareThemedQuestions({
+      theme: 'baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+    expect(sourceMock.verifyQuestionSource).toHaveBeenCalled();
+    expect(insertedValues).toHaveLength(0);
+  });
+
+  it.each([0, 26, 40])('uses reviewed inventory only by default: %i ready', async (count) => {
+    vi.stubEnv('THEME_LIVE_GENERATION', 'false');
+    selectQueue.push(Array.from({ length: count }, (_, i) => ({ id: `reviewed${i}`, tier: 0 })));
+    const result = await prepareThemedQuestions({
+      theme: 'baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+    expect(result.questionIds).toHaveLength(count);
+    expect(generateQuestions).not.toHaveBeenCalled();
+    expect(insertedValues).toHaveLength(0);
+    expect(h.dbMock.select).toHaveBeenCalledTimes(1);
   });
 });

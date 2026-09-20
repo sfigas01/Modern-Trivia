@@ -1,3 +1,4 @@
+import { approvedForPlaySql } from './lib/source-review';
 import type { Express, Request, Response, NextFunction } from 'express';
 import { enrichSubjectiveFindings } from './lib/subjectivity-enricher';
 import type { Server } from 'http';
@@ -454,7 +455,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       // Always default to only approved questions for gameplay
-      conditions.push(eq(questions.status, 'approved'));
+      conditions.push(approvedForPlaySql);
 
       // Exclude seen questions for authenticated users
       const userId = getUserId(req);
@@ -526,11 +527,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         db
           .selectDistinct({ category: questions.category })
           .from(questions)
-          .where(eq(questions.status, 'approved')),
-        db
-          .selectDistinct({ pillar: questions.pillar })
-          .from(questions)
-          .where(eq(questions.status, 'approved')),
+          .where(approvedForPlaySql),
+        db.selectDistinct({ pillar: questions.pillar }).from(questions).where(approvedForPlaySql),
       ]);
 
       res.json({

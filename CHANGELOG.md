@@ -5,6 +5,13 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Themed games use source-reviewed inventory by default and stay in the lobby when a full set is unavailable. Incomplete or flagged AI checks cannot approve a generated question. Optional live generation now requires retrieved supporting evidence; legacy automatically approved questions need matching review evidence before selection (STE-167 follow-up).
+- Added a 40-question, source-reviewed baseball set and an explicit, idempotent import command that preserves existing edits and withdrawals. See `docs/guides/theme_rounds.md` for staged publishing instructions and rollout limits.
+
 ## [v0.4.2] - 2026-03-22
 
 ### Fixed

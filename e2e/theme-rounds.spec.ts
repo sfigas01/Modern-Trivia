@@ -81,7 +81,7 @@ function player(id: string, nickname: string, isHost: boolean, joinOrder: number
 
 async function installThemeFixtures(
   context: BrowserContext,
-  state: { phase: 'LOBBY' | 'QUESTION' }
+  state: { phase: 'LOBBY' | 'QUESTION'; shortfall?: boolean }
 ) {
   // Deterministic question catalog for the host setup screen.
   await context.route('**/api/questions**', async (route) => {
@@ -134,6 +134,22 @@ async function installThemeFixtures(
 
   await context.route(new RegExp(`/api/rooms/${CODE}/theme-progress(?:\\?.*)?$`), async (route) => {
     progressPolls += 1;
+    if (state.shortfall) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'error',
+          ready: 26,
+          total: 40,
+          reused: 26,
+          generated: 0,
+          error:
+            'Could only assemble 26 of 40 reviewed questions. Ask the administrator to prepare more.',
+        }),
+      });
+      return;
+    }
     if (progressPolls >= 2) {
       // Preparation complete: flip the room snapshot to QUESTION so the room
       // poll transitions the client into the game.
@@ -183,7 +199,7 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     page,
     context,
   }) => {
-    const state: { phase: 'LOBBY' | 'QUESTION' } = { phase: 'LOBBY' };
+    const state: { phase: 'LOBBY' | 'QUESTION'; shortfall?: boolean } = { phase: 'LOBBY' };
     await installThemeFixtures(context, state);
 
     // ── Setup: enter theme, get suggested categories ────────────────────────
@@ -212,4 +228,19 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
       { timeout: 15000 }
     );
   });
+});
+
+test('insufficient reviewed inventory leaves the host in the lobby', async ({ page, context }) => {
+  const state = { phase: 'LOBBY' as const, shortfall: true };
+  await installThemeFixtures(context, state);
+  await page.goto('/host');
+  await page.getByTestId('input-theme').fill('baseball');
+  await page.getByTestId('input-nickname').fill('Host');
+  await page.getByTestId('button-create-room').click();
+  await page.waitForURL(`**/room/${CODE}`);
+  await page.getByTestId('button-start-themed-game').click();
+  await expect(page.getByTestId('text-theme-error')).toContainText('26 of 40 reviewed questions');
+  await expect(page.getByTestId('button-start-themed-game')).toBeEnabled();
+  await expect(page.getByTestId('input-answer')).toHaveCount(0);
+  expect(state.phase).toBe('LOBBY');
 });

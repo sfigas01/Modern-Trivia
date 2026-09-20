@@ -1,3 +1,4 @@
+import { approvedForPlaySql } from './lib/source-review';
 import { randomBytes, randomInt } from 'crypto';
 import type { Express, Request, Response } from 'express';
 import { and, asc, eq, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
@@ -632,7 +633,7 @@ export function registerRoomRoutes(app: Express): void {
         }
 
         const questionLimit = room.numRounds * players.length * QUESTIONS_PER_TEAM_ROTATION;
-        const questionConditions = [eq(questions.status, 'approved')];
+        const questionConditions = [approvedForPlaySql];
         const roomCategories = parseRoomCategories(room.category);
         if (!roomCategories.includes('All')) {
           if (roomCategories.length === 1) {
