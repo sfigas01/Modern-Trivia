@@ -23,14 +23,14 @@ export interface FactCheckVerdict {
    * answer is not the type the question asks for (including negation/trick answers). A coherence
    * failure always forces `verdict` to 'fail'.
    */
-  coherence: 'pass' | 'fail';
+  coherence: 'pass' | 'flag' | 'fail';
   /**
    * Obviousness (STE-247): 'fail' when the answer is derivable from the question text alone
    * (self-answering compound name/title, or a trivially binary/constrained framing) or when the
    * stated difficulty doesn't match how hard the question actually is. An obviousness failure
    * always forces `verdict` to 'fail'.
    */
-  obviousness: 'pass' | 'fail';
+  obviousness: 'pass' | 'flag' | 'fail';
   confidence: number;
   reason: string;
   /** Proposed rewritten question — fits the answer with the false premise removed (coherence), or
@@ -96,11 +96,16 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
       )
         ? (raw.verdict as 'pass' | 'flag' | 'fail')
         : 'flag';
-      const coherence: 'pass' | 'fail' = raw.coherence === 'fail' ? 'fail' : 'pass';
-      const obviousness: 'pass' | 'fail' = raw.obviousness === 'fail' ? 'fail' : 'pass';
+      const coherence =
+        raw.coherence === 'pass' || raw.coherence === 'fail' ? raw.coherence : 'flag';
+      const obviousness =
+        raw.obviousness === 'pass' || raw.obviousness === 'fail' ? raw.obviousness : 'flag';
       // A coherence or obviousness failure always forces an overall fail, even if the model left
       // verdict softer.
       if (coherence === 'fail' || obviousness === 'fail') verdict = 'fail';
+      else if (verdict !== 'fail' && (coherence === 'flag' || obviousness === 'flag')) {
+        verdict = 'flag';
+      }
       const suggestedQuestion =
         typeof raw.suggestedQuestion === 'string' && raw.suggestedQuestion.trim().length > 0
           ? raw.suggestedQuestion.trim()
@@ -108,7 +113,7 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
       const suggestedDifficulty = DIFFICULTY_LEVELS.has(raw.suggestedDifficulty ?? '')
         ? (raw.suggestedDifficulty as 'Easy' | 'Medium' | 'Hard')
         : undefined;
-      resultMap.set(id, {
+      const next: FactCheckVerdict = {
         questionId: id,
         verdict,
         coherence,
@@ -118,7 +123,30 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
         reason: typeof raw.reason === 'string' ? raw.reason : 'No reason provided.',
         ...(suggestedQuestion ? { suggestedQuestion } : {}),
         ...(suggestedDifficulty ? { suggestedDifficulty } : {}),
-      });
+      };
+      const previous = resultMap.get(id);
+      if (previous) {
+        const duplicateCoherence =
+          previous.coherence === 'fail' || next.coherence === 'fail' ? 'fail' : 'flag';
+        const duplicateObviousness =
+          previous.obviousness === 'fail' || next.obviousness === 'fail' ? 'fail' : 'flag';
+        resultMap.set(id, {
+          questionId: id,
+          verdict:
+            previous.verdict === 'fail' ||
+            next.verdict === 'fail' ||
+            duplicateCoherence === 'fail' ||
+            duplicateObviousness === 'fail'
+              ? 'fail'
+              : 'flag',
+          coherence: duplicateCoherence,
+          obviousness: duplicateObviousness,
+          confidence: 0,
+          reason: 'Duplicate verdicts returned by fact-checker.',
+        });
+      } else {
+        resultMap.set(id, next);
+      }
     }
 
     console.info('[verifier] Batch complete', {
@@ -133,8 +161,8 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
         resultMap.get(q.id) ?? {
           questionId: q.id,
           verdict: 'flag' as const,
-          coherence: 'pass' as const,
-          obviousness: 'pass' as const,
+          coherence: 'flag' as const,
+          obviousness: 'flag' as const,
           confidence: 0,
           reason: 'No verdict returned by fact-checker.',
         }
@@ -144,8 +172,8 @@ async function factCheckBatch(batch: Question[], reviewDate: Date): Promise<Fact
     return batch.map((q) => ({
       questionId: q.id,
       verdict: 'flag' as const,
-      coherence: 'pass' as const,
-      obviousness: 'pass' as const,
+      coherence: 'flag' as const,
+      obviousness: 'flag' as const,
       confidence: 0,
       reason: 'Fact-check could not be completed.',
     }));

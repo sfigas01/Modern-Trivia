@@ -81,7 +81,8 @@ function player(id: string, nickname: string, isHost: boolean, joinOrder: number
 
 async function installThemeFixtures(
   context: BrowserContext,
-  state: { phase: 'LOBBY' | 'QUESTION' }
+  state: { phase: 'LOBBY' | 'QUESTION' },
+  outcome: 'ready' | 'shortfall' = 'ready'
 ) {
   // Deterministic question catalog for the host setup screen.
   await context.route('**/api/questions**', async (route) => {
@@ -134,6 +135,21 @@ async function installThemeFixtures(
 
   await context.route(new RegExp(`/api/rooms/${CODE}/theme-progress(?:\\?.*)?$`), async (route) => {
     progressPolls += 1;
+    if (outcome === 'shortfall') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'error',
+          ready: 26,
+          total: 40,
+          reused: 26,
+          generated: 0,
+          error: 'Could only assemble 26 of 40 questions for "baseball".',
+        }),
+      });
+      return;
+    }
     if (progressPolls >= 2) {
       // Preparation complete: flip the room snapshot to QUESTION so the room
       // poll transitions the client into the game.
@@ -211,5 +227,30 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     await expect(page.getByText('Which team won the very first World Series in 1903?')).toBeVisible(
       { timeout: 15000 }
     );
+  });
+
+  test('an inventory shortfall stays in the lobby and gives the host a clear retry path', async ({
+    page,
+    context,
+  }) => {
+    const state: { phase: 'LOBBY' | 'QUESTION' } = { phase: 'LOBBY' };
+    await installThemeFixtures(context, state, 'shortfall');
+
+    await page.goto('/host');
+    await page.getByTestId('input-theme').fill('baseball');
+    await page.getByTestId('input-nickname').fill('Host');
+    await page.getByTestId('button-create-room').click();
+    await page.waitForURL(`**/room/${CODE}`);
+
+    await page.getByTestId('button-start-themed-game').click();
+
+    await expect(page.getByTestId('text-theme-error')).toContainText(
+      'Could only assemble 26 of 40 questions',
+      { timeout: 15000 }
+    );
+    await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+    await expect(page.getByTestId('button-start-themed-game')).toBeEnabled();
+    await expect(page).toHaveURL(new RegExp(`/room/${CODE}$`));
+    expect(state.phase).toBe('LOBBY');
   });
 });

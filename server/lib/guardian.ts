@@ -351,8 +351,8 @@ async function runQaOnSingle(
   const factCheck: FactCheckVerdict = factCheckReport.results.find((r) => r.questionId === id) ?? {
     questionId: id,
     verdict: 'flag' as const,
-    coherence: 'pass' as const,
-    obviousness: 'pass' as const,
+    coherence: 'flag' as const,
+    obviousness: 'flag' as const,
     confidence: 0,
     reason: 'No verdict returned.',
   };
@@ -570,8 +570,8 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
     ) ?? {
       questionId: id,
       verdict: 'flag' as const,
-      coherence: 'pass' as const,
-      obviousness: 'pass' as const,
+      coherence: 'flag' as const,
+      obviousness: 'flag' as const,
       confidence: 0,
       reason: 'No verdict returned.',
     };

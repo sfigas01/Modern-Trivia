@@ -88,11 +88,11 @@ export interface FactCheckVerdict {
   verdict: 'pass' | 'flag' | 'fail';
   // Question–answer coherence (STE-246): 'fail' when the premise is wrong or the answer is not
   // the type the question asks for. A coherence failure always forces verdict to 'fail'.
-  coherence: 'pass' | 'fail';
+  coherence: 'pass' | 'flag' | 'fail';
   // Obviousness (STE-247): 'fail' when the answer is derivable from the question text alone
   // (self-answering / trivially binary) or the stated difficulty is miscalibrated. An obviousness
   // failure always forces verdict to 'fail'.
-  obviousness: 'pass' | 'fail';
+  obviousness: 'pass' | 'flag' | 'fail';
   confidence: number;
   reason: string;
   // Proposed rewritten question — fits the answer with the false premise removed (coherence), or
