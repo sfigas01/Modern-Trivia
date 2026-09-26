@@ -24,6 +24,13 @@ When off (the default), the theme UI is hidden, the theme endpoints return 404,
 a `theme` sent to room creation is ignored, and **ordinary category games are
 completely unchanged.**
 
+The legacy lean generator also requires the server-only
+**`THEME_LIVE_GENERATION=true`** setting. It defaults to false while the
+source-first reliability pipeline in STE-25 is being built. With themed rooms
+enabled but live generation disabled, preparation makes no generation calls and
+performs no generated-question writes; it returns only existing theme-tagged
+inventory, and an undersupplied game fails safely in the lobby.
+
 ## Flow
 
 1. **Setup (HostGame).** With the flag on, the host sees an optional **Theme**
@@ -53,16 +60,19 @@ same math as the ordinary `/start`):
 1. **Reuse first.** Select eligible approved questions already tagged
    `theme:<slug>` (within the room's categories), ordered by the existing
    room-wide seen-question tiering (STE-81 / STE-273) — reused **as-is**.
-2. **Generate the remainder.** For the shortfall, call the existing
+2. **Generate the remainder when explicitly enabled.** For the shortfall, call the existing
    `generateQuestions` (coverage planning, static QA, fact/coherence/obviousness,
    bounded repair — STE-247/249/228) then `filterNovelQuestions` (semantic
-   novelty — STE-26). Only strict passes with no high QA findings survive.
+   novelty — STE-26). Only complete, explicit QA passes tied to the same
+   question ID, with no high or malformed findings, survive.
    Accepted questions are persisted immediately as **`approved`** rows with
    **`origin = 'player_ai'`** and the `theme:<slug>` tag, so they enrich the
    shared library for everyone (including ordinary category games).
-3. **Top up.** If generation underperforms, fill from approved questions in the
-   room's categories so a full-length game is always assembled; otherwise prep
-   reports an error and the host can retry, broaden the theme, or reduce rounds.
+3. **Top up when explicitly enabled.** If generation underperforms, fill from
+   approved questions in the room's categories so a full-length game is always
+   assembled; otherwise prep reports an error and the host can retry, broaden
+   the theme, or reduce rounds. With legacy live generation disabled, this
+   category top-up is skipped and only theme-tagged inventory is returned.
 
 Play order is theme-leaning: freshly generated (bespoke, never-seen) first, then
 reused theme questions, then any category fill.

@@ -13,7 +13,7 @@ const h = vi.hoisted(() => {
   function makeChain(getResult: () => unknown[]) {
     const chain: Record<string, unknown> = {};
     const passthrough = () => chain;
-    for (const m of ['from', 'leftJoin', 'where', 'groupBy', 'orderBy', 'limit']) {
+    for (const m of ['from', 'leftJoin', 'where', 'groupBy', 'orderBy', 'limit', 'for', 'set']) {
       chain[m] = vi.fn(passthrough);
     }
     chain.values = vi.fn((v: unknown) => {
@@ -67,12 +67,15 @@ import {
   getThemeProgress,
   clearThemeProgress,
   prepareThemedQuestions,
+  runThemedGamePreparation,
+  hasStrictThemeQualityPass,
+  isLiveThemeGenerationEnabled,
   THEME_MAX_GENERATED_CANDIDATES,
   THEME_PROGRESS_TTL_MS,
 } from './theme-game';
 import { generateQuestions } from './guardian';
 import { filterNovelQuestions } from './novelty-filter';
-import type { RoomPlayer } from '@shared/schema';
+import type { Room, RoomPlayer } from '@shared/schema';
 
 function player(overrides: Partial<RoomPlayer>): RoomPlayer {
   return {
@@ -106,7 +109,15 @@ function generatedQuestion(id: string) {
     sourceUrl: 'https://example.com',
     sourceName: 'Example',
     status: 'pending',
-    aiAnalysis: { qaFindings: [], factCheck: { verdict: 'pass' } },
+    aiAnalysis: {
+      qaFindings: [],
+      factCheck: {
+        questionId: id,
+        verdict: 'pass',
+        coherence: 'pass',
+        obviousness: 'pass',
+      },
+    },
   };
 }
 
@@ -115,10 +126,45 @@ beforeEach(() => {
   insertReturningQueue.length = 0;
   insertedValues.length = 0;
   vi.clearAllMocks();
+  vi.stubEnv('THEME_LIVE_GENERATION', 'true');
 });
 
 afterEach(() => {
   clearThemeProgress('ABCDE');
+  vi.unstubAllEnvs();
+});
+
+describe('theme generation safety gates', () => {
+  it('requires an explicit server opt-in for the legacy live generator', () => {
+    vi.unstubAllEnvs();
+    delete process.env.THEME_LIVE_GENERATION;
+    expect(isLiveThemeGenerationEnabled()).toBe(false);
+    vi.stubEnv('THEME_LIVE_GENERATION', 'false');
+    expect(isLiveThemeGenerationEnabled()).toBe(false);
+    vi.stubEnv('THEME_LIVE_GENERATION', 'true');
+    expect(isLiveThemeGenerationEnabled()).toBe(true);
+  });
+
+  it('accepts only complete QA passes tied to the same nonblank question id', () => {
+    const valid = generatedQuestion('q1');
+    expect(hasStrictThemeQualityPass(valid)).toBe(true);
+
+    const factCheck = valid.aiAnalysis.factCheck;
+    for (const candidate of [
+      { ...valid, id: ' ' },
+      { ...valid, aiAnalysis: null },
+      { ...valid, aiAnalysis: { factCheck, qaFindings: null } },
+      {
+        ...valid,
+        aiAnalysis: { factCheck: { ...factCheck, questionId: 'other' }, qaFindings: [] },
+      },
+      { ...valid, aiAnalysis: { factCheck: { ...factCheck, coherence: 'flag' }, qaFindings: [] } },
+      { ...valid, aiAnalysis: { factCheck, qaFindings: [{ severity: 'high' }] } },
+      { ...valid, aiAnalysis: { factCheck, qaFindings: [{ severity: 'unknown' }] } },
+    ]) {
+      expect(hasStrictThemeQualityPass(candidate)).toBe(false);
+    }
+  });
 });
 
 describe('normalizeThemeSlug / themeTag', () => {
@@ -227,6 +273,51 @@ describe('theme progress store', () => {
 });
 
 describe('prepareThemedQuestions', () => {
+  it.each([26, 40])(
+    'uses only %i existing themed questions when live generation is disabled',
+    async (count) => {
+      vi.stubEnv('THEME_LIVE_GENERATION', 'false');
+      selectQueue.push(Array.from({ length: count }, (_, i) => ({ id: `existing${i}`, tier: 0 })));
+
+      const result = await prepareThemedQuestions({
+        theme: 'Baseball',
+        categories: ['Sports'],
+        numRounds: 5,
+        playerCount: 2,
+        seen: { roomUserIds: [], guestSeenUnion: [] },
+      });
+
+      expect(result).toMatchObject({ reused: count, generated: 0 });
+      expect(result.questionIds).toHaveLength(count);
+      expect(generateQuestions).not.toHaveBeenCalled();
+      expect(filterNovelQuestions).not.toHaveBeenCalled();
+      expect(insertedValues).toHaveLength(0);
+      expect(h.dbMock.select).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it('does not approve generated candidates with incomplete QA', async () => {
+    selectQueue.push([], []);
+    const incomplete = generatedQuestion('flagged');
+    incomplete.aiAnalysis.factCheck.coherence = 'flag';
+    vi.mocked(generateQuestions).mockResolvedValue([incomplete] as never);
+    vi.mocked(filterNovelQuestions).mockImplementation(async (batch) => ({
+      kept: batch,
+      dropped: [],
+    }));
+
+    const result = await prepareThemedQuestions({
+      theme: 'Baseball',
+      categories: ['Sports'],
+      numRounds: 5,
+      playerCount: 2,
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(result.generated).toBe(0);
+    expect(insertedValues).toHaveLength(0);
+  });
+
   it('reuses themed questions first, then generates the remainder as approved player_ai rows', async () => {
     // total = 5 rounds × 2 players × 4 = 40. Reuse returns 36 → generate 4.
     const reusedIds = Array.from({ length: 36 }, (_, i) => ({ id: `reuse${i}`, tier: 0 }));
@@ -299,5 +390,49 @@ describe('prepareThemedQuestions', () => {
       .mocked(generateQuestions)
       .mock.calls.reduce((sum, call) => sum + (call[1] as number), 0);
     expect(requested).toBeLessThanOrEqual(THEME_MAX_GENERATED_CANDIDATES);
+  });
+});
+
+describe('runThemedGamePreparation', () => {
+  it('rechecks the live roster before deciding whether existing inventory is sufficient', async () => {
+    vi.stubEnv('THEME_LIVE_GENERATION', 'false');
+    const inventory = Array.from({ length: 40 }, (_, i) => ({ id: `existing${i}`, tier: 0 }));
+    const initialPlayers = [
+      player({ id: 'p1', isHost: true, joinOrder: 0 }),
+      player({ id: 'p2', joinOrder: 1 }),
+      player({ id: 'p3', joinOrder: 2 }),
+    ];
+    const currentPlayers = initialPlayers.slice(0, 2);
+    const room = {
+      id: 'room1',
+      code: 'ABCDE',
+      status: 'lobby',
+      phase: 'LOBBY',
+      numRounds: 5,
+      hostPlayerId: 'p1',
+      version: 1,
+    } as Room;
+
+    selectQueue.push(inventory, [room], currentPlayers);
+    insertReturningQueue.push([{ id: room.id }]);
+    h.dbMock.transaction.mockImplementation(async (callback) => callback(h.dbMock));
+    initThemeProgress(room.code, themedQuestionLimit(room.numRounds, initialPlayers.length));
+
+    await runThemedGamePreparation({
+      room,
+      players: initialPlayers,
+      categories: ['Sports'],
+      theme: 'Baseball',
+      hostPlayerId: 'p1',
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(getThemeProgress(room.code)).toMatchObject({
+      status: 'ready',
+      ready: 40,
+      total: 40,
+      reused: 40,
+      generated: 0,
+    });
   });
 });

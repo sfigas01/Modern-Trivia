@@ -95,6 +95,15 @@ export function themeTag(theme: string): string {
 // produce more than this many candidates for a single themed game, regardless
 // of attrition. Paired with the existing aiLimiter on the routes.
 export const THEME_MAX_GENERATED_CANDIDATES = 120;
+
+/**
+ * Temporary containment for the legacy lean generator. The source-first pipeline replaces this
+ * path; until then, an explicit server setting is required before any generated question can be
+ * promoted into playable inventory.
+ */
+export function isLiveThemeGenerationEnabled(): boolean {
+  return process.env.THEME_LIVE_GENERATION === 'true';
+}
 // Guardian caps a single generateQuestions call at 20; keep batches modest so
 // review overlaps generation and progress advances in visible steps.
 export const THEME_GENERATION_BATCH_SIZE = 10;
@@ -377,6 +386,37 @@ interface ExistingRow {
   pillar: string;
 }
 
+/** Require every existing QA dimension to pass before a generated candidate can be promoted. */
+export function hasStrictThemeQualityPass(question: {
+  id?: unknown;
+  aiAnalysis?: unknown;
+}): boolean {
+  if (typeof question.id !== 'string' || question.id.trim().length === 0) return false;
+  if (!question.aiAnalysis || typeof question.aiAnalysis !== 'object') return false;
+
+  const analysis = question.aiAnalysis as {
+    factCheck?: unknown;
+    qaFindings?: unknown;
+  };
+  if (!analysis.factCheck || typeof analysis.factCheck !== 'object') return false;
+  const factCheck = analysis.factCheck as Record<string, unknown>;
+  if (
+    factCheck.questionId !== question.id ||
+    factCheck.verdict !== 'pass' ||
+    factCheck.coherence !== 'pass' ||
+    factCheck.obviousness !== 'pass'
+  ) {
+    return false;
+  }
+  if (!Array.isArray(analysis.qaFindings)) return false;
+  return analysis.qaFindings.every(
+    (finding) =>
+      !!finding &&
+      typeof finding === 'object' &&
+      ['low', 'medium'].includes((finding as { severity?: unknown }).severity as string)
+  );
+}
+
 /**
  * Source a full-length, theme-leaning set of question ids for a themed game.
  *
@@ -415,6 +455,13 @@ export async function prepareThemedQuestions(params: {
   );
   const chosen = new Set<string>(reusedThemedIds);
   notify({ reused: reusedThemedIds.length, ready: chosen.size });
+
+  // The existing generator predates the source-first reliability contract. It is opt-in while
+  // that pipeline is implemented; without the explicit server flag, return only existing themed
+  // inventory and let the caller report a safe shortfall.
+  if (chosen.size >= total || !isLiveThemeGenerationEnabled()) {
+    return { questionIds: Array.from(chosen), reused: chosen.size, generated: 0 };
+  }
 
   // Existing pool for negative examples + novelty filtering. Only the columns
   // the downstream consumers read (topic context + novelty filter).
@@ -462,7 +509,8 @@ export async function prepareThemedQuestions(params: {
         question: q.question,
         answer: q.answer,
       }));
-      const result = await filterNovelQuestions(generated, noveltyExisting);
+      const strictlyPassing = generated.filter(hasStrictThemeQualityPass);
+      const result = await filterNovelQuestions(strictlyPassing, noveltyExisting);
       kept = result.kept;
     } catch (error) {
       console.error('[theme-game] Generation batch failed — continuing', {
@@ -558,7 +606,6 @@ export async function runThemedGamePreparation(params: {
   seen: RoomSeenInputs;
 }): Promise<void> {
   const { room, players, categories, theme, hostPlayerId, seen } = params;
-  const total = themedQuestionLimit(room.numRounds, players.length);
 
   try {
     const result = await prepareThemedQuestions({
@@ -569,14 +616,6 @@ export async function runThemedGamePreparation(params: {
       seen,
       onStep: (patch) => updateThemeProgress(room.code, patch),
     });
-
-    if (result.questionIds.length < total) {
-      updateThemeProgress(room.code, {
-        status: 'error',
-        error: `Could only assemble ${result.questionIds.length} of ${total} questions for "${theme}". Try a broader theme, different categories, or fewer rounds.`,
-      });
-      return;
-    }
 
     // Activate atomically, re-reading the CURRENT roster under a row lock:
     // players may have joined or left during the (potentially long) generation,
@@ -613,7 +652,7 @@ export async function runThemedGamePreparation(params: {
       if (result.questionIds.length < required) {
         return {
           ok: false as const,
-          reason: `Players joined while preparing "${theme}"; only ${result.questionIds.length} of ${required} questions are ready. Please start again.`,
+          reason: `Could only assemble ${result.questionIds.length} of ${required} questions for "${theme}". Try a broader theme, different categories, or fewer rounds.`,
         };
       }
 
@@ -657,6 +696,7 @@ export async function runThemedGamePreparation(params: {
     updateThemeProgress(room.code, {
       status: 'ready',
       ready: themedQuestionLimit(room.numRounds, activation.playerCount),
+      total: themedQuestionLimit(room.numRounds, activation.playerCount),
       reused: result.reused,
       generated: result.generated,
     });
