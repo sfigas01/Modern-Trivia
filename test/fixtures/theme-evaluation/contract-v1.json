@@ -1,0 +1,179 @@
+{
+  "schemaVersion": "theme-evaluation-v1",
+  "fixtureId": "theme-evaluation-contract-v1",
+  "policyCoverageGaps": [
+    { "id": "policy-freshness-unavailable", "reason": "freshness" },
+    { "id": "policy-hash-unavailable", "reason": "hash" },
+    { "id": "policy-source-independence-unavailable", "reason": "source_independence" }
+  ],
+  "cases": [
+    {
+      "id": "valid-control",
+      "theme": "Synthetic history",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-valid",
+        "prompt": "Which synthetic city hosted the event?",
+        "answer": "Northport",
+        "acceptableAnswers": ["North Port"],
+        "explanation": "The synthetic record names Northport."
+      },
+      "review": {
+        "contractVersion": "theme-reliability-v1",
+        "id": "00000000-0000-4000-8000-000000000001",
+        "questionRevisionId": "00000000-0000-4000-8000-000000000002",
+        "questionContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reviewPolicyVersion": "policy-v1",
+        "reviewerPromptVersion": "prompt-v1",
+        "verdict": "pass",
+        "dimensionResults": [
+          {
+            "dimension": "premise",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "answer",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "scope",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "aliases",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "explanation",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "freshness",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          },
+          {
+            "dimension": "source_independence",
+            "verdict": "pass",
+            "reasons": ["supported"],
+            "passageIds": ["00000000-0000-4000-8000-000000000003"]
+          }
+        ],
+        "factRevisionIds": ["00000000-0000-4000-8000-000000000004"],
+        "passageIds": ["00000000-0000-4000-8000-000000000003"],
+        "reviewerKind": "human",
+        "reviewerModel": null,
+        "reviewedAt": "2026-09-20T00:00:00.000Z",
+        "validUntil": null
+      },
+      "expected": { "contract": "valid", "outcome": "pass", "reasonCodes": [] }
+    },
+    {
+      "id": "invalid-review-shape-1",
+      "theme": "Synthetic science",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-incomplete",
+        "prompt": "What is the synthetic result?",
+        "answer": "A result",
+        "acceptableAnswers": [],
+        "explanation": "A synthetic explanation."
+      },
+      "review": {},
+      "expected": {
+        "contract": "invalid",
+        "outcome": "withhold",
+        "reasonCodes": ["review_incomplete"]
+      }
+    },
+    {
+      "id": "invalid-review-shape-2",
+      "theme": "Synthetic science",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-conflict",
+        "prompt": "Which synthetic value is recorded?",
+        "answer": "Seven",
+        "acceptableAnswers": [],
+        "explanation": "The records conflict."
+      },
+      "review": {},
+      "expected": {
+        "contract": "invalid",
+        "outcome": "withhold",
+        "reasonCodes": ["review_incomplete"]
+      }
+    },
+    {
+      "id": "invalid-review-shape-3",
+      "theme": "Synthetic geography",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-stale",
+        "prompt": "Which synthetic boundary was current?",
+        "answer": "West line",
+        "acceptableAnswers": [],
+        "explanation": "The policy version is stale."
+      },
+      "review": {},
+      "expected": {
+        "contract": "invalid",
+        "outcome": "withhold",
+        "reasonCodes": ["review_incomplete"]
+      }
+    },
+    {
+      "id": "invalid-review-shape-4",
+      "theme": "Synthetic geography",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-hash",
+        "prompt": "Which synthetic revision is bound?",
+        "answer": "Revision two",
+        "acceptableAnswers": [],
+        "explanation": "The content hash changed."
+      },
+      "review": {},
+      "expected": {
+        "contract": "invalid",
+        "outcome": "withhold",
+        "reasonCodes": ["review_incomplete"]
+      }
+    },
+    {
+      "id": "invalid-review-shape-5",
+      "theme": "Synthetic entertainment",
+      "partition": "holdout",
+      "provenance": "synthetic_contract",
+      "question": {
+        "id": "q-alias",
+        "prompt": "What is the synthetic title?",
+        "answer": "The Long Play",
+        "acceptableAnswers": ["TLP"],
+        "explanation": "The explanation claims an unsupported alias."
+      },
+      "review": {},
+      "expected": {
+        "contract": "invalid",
+        "outcome": "withhold",
+        "reasonCodes": ["review_incomplete"]
+      }
+    }
+  ]
+}
