@@ -228,6 +228,17 @@ describe('theme-reliability-v1 game and public contracts', () => {
     expect(publicThemeProgressSchema.safeParse({ ...progress, themedReadyCount: 12 }).success).toBe(
       false
     );
+    expect(
+      publicThemeProgressSchema.safeParse({
+        ...progress,
+        readyCount: 60,
+        requiredCount: 60,
+        openingReadyCount: 24,
+        openingRequiredCount: 24,
+        themedReadyCount: 35,
+        relatedReadyCount: 25,
+      }).success
+    ).toBe(true);
 
     const job = {
       contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,

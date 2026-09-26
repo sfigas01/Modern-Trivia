@@ -145,6 +145,7 @@ export interface ThemeLifecycleRepository {
   createGameWithRosterAndJob(input: PreparedThemeLifecycleCreate): Promise<ThemeLifecycleBundle>;
   getGame(gameId: string): Promise<ThemeGameRecord | null>;
   getJob(jobId: string): Promise<ThemeJobRecord | null>;
+  isGameAvailable(gameId: string, now: Date): Promise<boolean>;
   acquireLease(input: {
     jobId: string;
     claimToken: string;
@@ -497,6 +498,9 @@ export function createThemeLifecycleService(options: {
         throw new ThemeLifecycleError('job_not_found', 'Theme preparation job not found');
       if (isTerminalThemeJobStatus(current.status)) {
         throw new ThemeLifecycleError('terminal_job', 'Terminal jobs cannot be leased');
+      }
+      if (!(await options.repository.isGameAvailable(current.gameId, claimedAt))) {
+        throw new ThemeLifecycleError('game_unavailable', 'Parent game is terminal or expired');
       }
       throw new ThemeLifecycleError(
         'lease_unavailable',
@@ -861,6 +865,25 @@ export function createPostgresThemeLifecycleRepository(
       const client = await pool.connect();
       try {
         return await selectJob(client, jobId);
+      } finally {
+        client.release();
+      }
+    },
+
+    async isGameAvailable(gameId) {
+      const client = await pool.connect();
+      try {
+        const result = await client.query<{ available: boolean }>(
+          `SELECT EXISTS (
+             SELECT 1
+               FROM theme_game_sessions
+              WHERE id = $1
+                AND status <> ALL($2::varchar[])
+                AND expires_at > clock_timestamp()
+           ) AS available`,
+          [gameId, THEME_TERMINAL_GAME_STATUSES]
+        );
+        return result.rows[0]?.available ?? false;
       } finally {
         client.release();
       }

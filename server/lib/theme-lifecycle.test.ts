@@ -134,6 +134,14 @@ class MemoryRepository implements ThemeLifecycleRepository {
     return this.job?.id === jobId ? this.job : null;
   }
 
+  async isGameAvailable(gameId: string, now: Date) {
+    return Boolean(
+      this.game?.id === gameId &&
+      !['completed', 'failed', 'abandoned', 'expired'].includes(this.game.status) &&
+      this.game.expiresAt > now
+    );
+  }
+
   async acquireLease(input: Parameters<ThemeLifecycleRepository['acquireLease']>[0]) {
     if (!this.job || this.job.id !== input.jobId) return null;
     if (['completed', 'failed', 'canceled', 'expired'].includes(this.job.status)) return null;
@@ -389,6 +397,9 @@ describe('theme job leases', () => {
     await service.acquireLease(JOB_ID, 10_000);
     repository.game = { ...repository.game!, status: 'expired' };
 
+    await expect(service.acquireLease(JOB_ID, 1_000)).rejects.toMatchObject({
+      code: 'game_unavailable',
+    });
     await expect(service.renewLease(JOB_ID, 'claim-a', 1_000)).rejects.toMatchObject({
       code: 'stale_lease',
     });
@@ -462,6 +473,29 @@ describe('theme job state policy and public projection', () => {
 
     const readyJob = { ...shortJob, themedReadyCount: 12, relatedReadyCount: 4 };
     expect(projectPublicThemeJob(readyGame, readyJob, NOW).progress.canStart).toBe(true);
+  });
+
+  it('projects a valid accepted fallback mix above the standard related target', async () => {
+    const repository = new MemoryRepository();
+    const service = createThemeLifecycleService({ repository, now: () => NOW, hash: sha256 });
+    const { game, job } = await service.createGame(createInput(3));
+    const acceptedGame = {
+      ...game,
+      status: 'ready' as const,
+      mixConsentStatus: 'accepted' as const,
+      acceptedThemedTarget: 35,
+      acceptedRelatedTarget: 25,
+    };
+    const acceptedJob = {
+      ...job,
+      status: 'ready' as const,
+      publicStage: 'ready' as const,
+      readyCount: 60,
+      themedReadyCount: 35,
+      relatedReadyCount: 25,
+    };
+
+    expect(projectPublicThemeJob(acceptedGame, acceptedJob, NOW).progress.canStart).toBe(true);
   });
 
   it('keeps canStart false without a locked roster or after game expiry', async () => {
