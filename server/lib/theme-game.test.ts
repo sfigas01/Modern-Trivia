@@ -13,7 +13,7 @@ const h = vi.hoisted(() => {
   function makeChain(getResult: () => unknown[]) {
     const chain: Record<string, unknown> = {};
     const passthrough = () => chain;
-    for (const m of ['from', 'leftJoin', 'where', 'groupBy', 'orderBy', 'limit']) {
+    for (const m of ['from', 'leftJoin', 'where', 'groupBy', 'orderBy', 'limit', 'for', 'set']) {
       chain[m] = vi.fn(passthrough);
     }
     chain.values = vi.fn((v: unknown) => {
@@ -67,6 +67,7 @@ import {
   getThemeProgress,
   clearThemeProgress,
   prepareThemedQuestions,
+  runThemedGamePreparation,
   hasStrictThemeQualityPass,
   isLiveThemeGenerationEnabled,
   THEME_MAX_GENERATED_CANDIDATES,
@@ -74,7 +75,7 @@ import {
 } from './theme-game';
 import { generateQuestions } from './guardian';
 import { filterNovelQuestions } from './novelty-filter';
-import type { RoomPlayer } from '@shared/schema';
+import type { Room, RoomPlayer } from '@shared/schema';
 
 function player(overrides: Partial<RoomPlayer>): RoomPlayer {
   return {
@@ -389,5 +390,49 @@ describe('prepareThemedQuestions', () => {
       .mocked(generateQuestions)
       .mock.calls.reduce((sum, call) => sum + (call[1] as number), 0);
     expect(requested).toBeLessThanOrEqual(THEME_MAX_GENERATED_CANDIDATES);
+  });
+});
+
+describe('runThemedGamePreparation', () => {
+  it('rechecks the live roster before deciding whether existing inventory is sufficient', async () => {
+    vi.stubEnv('THEME_LIVE_GENERATION', 'false');
+    const inventory = Array.from({ length: 40 }, (_, i) => ({ id: `existing${i}`, tier: 0 }));
+    const initialPlayers = [
+      player({ id: 'p1', isHost: true, joinOrder: 0 }),
+      player({ id: 'p2', joinOrder: 1 }),
+      player({ id: 'p3', joinOrder: 2 }),
+    ];
+    const currentPlayers = initialPlayers.slice(0, 2);
+    const room = {
+      id: 'room1',
+      code: 'ABCDE',
+      status: 'lobby',
+      phase: 'LOBBY',
+      numRounds: 5,
+      hostPlayerId: 'p1',
+      version: 1,
+    } as Room;
+
+    selectQueue.push(inventory, [room], currentPlayers);
+    insertReturningQueue.push([{ id: room.id }]);
+    h.dbMock.transaction.mockImplementation(async (callback) => callback(h.dbMock));
+    initThemeProgress(room.code, themedQuestionLimit(room.numRounds, initialPlayers.length));
+
+    await runThemedGamePreparation({
+      room,
+      players: initialPlayers,
+      categories: ['Sports'],
+      theme: 'Baseball',
+      hostPlayerId: 'p1',
+      seen: { roomUserIds: [], guestSeenUnion: [] },
+    });
+
+    expect(getThemeProgress(room.code)).toMatchObject({
+      status: 'ready',
+      ready: 40,
+      total: 40,
+      reused: 40,
+      generated: 0,
+    });
   });
 });

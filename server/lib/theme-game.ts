@@ -606,7 +606,6 @@ export async function runThemedGamePreparation(params: {
   seen: RoomSeenInputs;
 }): Promise<void> {
   const { room, players, categories, theme, hostPlayerId, seen } = params;
-  const total = themedQuestionLimit(room.numRounds, players.length);
 
   try {
     const result = await prepareThemedQuestions({
@@ -617,14 +616,6 @@ export async function runThemedGamePreparation(params: {
       seen,
       onStep: (patch) => updateThemeProgress(room.code, patch),
     });
-
-    if (result.questionIds.length < total) {
-      updateThemeProgress(room.code, {
-        status: 'error',
-        error: `Could only assemble ${result.questionIds.length} of ${total} questions for "${theme}". Try a broader theme, different categories, or fewer rounds.`,
-      });
-      return;
-    }
 
     // Activate atomically, re-reading the CURRENT roster under a row lock:
     // players may have joined or left during the (potentially long) generation,
@@ -661,7 +652,7 @@ export async function runThemedGamePreparation(params: {
       if (result.questionIds.length < required) {
         return {
           ok: false as const,
-          reason: `Players joined while preparing "${theme}"; only ${result.questionIds.length} of ${required} questions are ready. Please start again.`,
+          reason: `Could only assemble ${result.questionIds.length} of ${required} questions for "${theme}". Try a broader theme, different categories, or fewer rounds.`,
         };
       }
 
@@ -705,6 +696,7 @@ export async function runThemedGamePreparation(params: {
     updateThemeProgress(room.code, {
       status: 'ready',
       ready: themedQuestionLimit(room.numRounds, activation.playerCount),
+      total: themedQuestionLimit(room.numRounds, activation.playerCount),
       reused: result.reused,
       generated: result.generated,
     });
