@@ -25,7 +25,11 @@ describe('source address validation', () => {
     ['::ffff:8.8.8.8', 6, false],
     ['2001:db8::1', 6, false],
     ['2001:2::1', 6, false],
+    ['2001:20::1', 6, false],
+    ['2001:30::1', 6, false],
     ['2002::1', 6, false],
+    ['2620:4f:8000::1', 6, false],
+    ['3fff::1', 6, false],
   ] as const)('%s public=%s', (address, family, expected) => {
     expect(isPublicSourceAddress({ address, family })).toBe(expected);
   });

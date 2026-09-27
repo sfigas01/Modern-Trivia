@@ -19,8 +19,16 @@ export class SourceAddressError extends Error {
 
 const ipv4Benchmark = ipaddr.IPv4.parseCIDR('198.18.0.0/15');
 const ipv6Global = ipaddr.IPv6.parseCIDR('2000::/3');
-const ipv6Benchmark = ipaddr.IPv6.parseCIDR('2001:2::/48');
-const ipv6Orchid = ipaddr.IPv6.parseCIDR('2001:10::/28');
+// Fail closed on IANA special-purpose allocations, including entries marked globally reachable.
+// Review this list against https://www.iana.org/assignments/iana-ipv6-special-registry
+// whenever the retrieval policy version changes.
+const ipv6SpecialPurpose = [
+  '2001::/23',
+  '2001:db8::/32',
+  '2002::/16',
+  '2620:4f:8000::/48',
+  '3fff::/20',
+].map((cidr) => ipaddr.IPv6.parseCIDR(cidr));
 
 export function isPublicSourceAddress(value: SourceAddress): boolean {
   if (isIP(value.address) !== value.family) return false;
@@ -33,8 +41,7 @@ export function isPublicSourceAddress(value: SourceAddress): boolean {
     !parsed.zoneId &&
     parsed.range() === 'unicast' &&
     parsed.match(ipv6Global) &&
-    !parsed.match(ipv6Benchmark) &&
-    !parsed.match(ipv6Orchid)
+    !ipv6SpecialPurpose.some((range) => parsed.match(range))
   );
 }
 
