@@ -75,6 +75,59 @@ export const sourceRegistryEntrySchema = z
   })
   .strict();
 
+type RegistryPattern = {
+  entryId: string;
+  origin: string;
+  kind: 'exact' | 'subtree';
+  path: string;
+};
+
+type PathNode = {
+  children: Map<string, PathNode>;
+  exactOwners: Set<string>;
+  subtreeOwners: Set<string>;
+  descendantOwners: Set<string>;
+};
+
+function pathNode(): PathNode {
+  return {
+    children: new Map(),
+    exactOwners: new Set(),
+    subtreeOwners: new Set(),
+    descendantOwners: new Set(),
+  };
+}
+
+function hasOtherOwner(owners: Set<string>, entryId: string): boolean {
+  return owners.size > (owners.has(entryId) ? 1 : 0);
+}
+
+function hasAmbiguousPatterns(patterns: RegistryPattern[]): boolean {
+  const roots = new Map<string, PathNode>();
+  for (const pattern of patterns) {
+    const root = roots.get(pattern.origin) ?? pathNode();
+    roots.set(pattern.origin, root);
+    const visited = [root];
+    let node = root;
+    for (const character of pattern.path) {
+      const child = node.children.get(character) ?? pathNode();
+      node.children.set(character, child);
+      node = child;
+      visited.push(node);
+      if (hasOtherOwner(node.subtreeOwners, pattern.entryId)) return true;
+    }
+    if (
+      hasOtherOwner(node.exactOwners, pattern.entryId) ||
+      hasOtherOwner(node.subtreeOwners, pattern.entryId) ||
+      (pattern.kind === 'subtree' && hasOtherOwner(node.descendantOwners, pattern.entryId))
+    )
+      return true;
+    for (const visitedNode of visited) visitedNode.descendantOwners.add(pattern.entryId);
+    (pattern.kind === 'exact' ? node.exactOwners : node.subtreeOwners).add(pattern.entryId);
+  }
+  return false;
+}
+
 export const themeSourceRegistrySchema = z
   .object({
     contractVersion: z.literal(THEME_SOURCE_REGISTRY_CONTRACT_VERSION),
@@ -85,12 +138,7 @@ export const themeSourceRegistrySchema = z
   .superRefine((manifest, context) => {
     const ids = new Set<string>();
     const publishers = new Map<string, string>();
-    const patterns: Array<{
-      entryId: string;
-      origin: string;
-      kind: 'exact' | 'subtree';
-      path: string;
-    }> = [];
+    const patterns: RegistryPattern[] = [];
     for (let index = 0; index < manifest.entries.length; index++) {
       const entry = manifest.entries[index];
       if (ids.has(entry.id))
@@ -156,22 +204,12 @@ export const themeSourceRegistrySchema = z
         }
       }
     }
-    for (let i = 0; i < patterns.length; i++)
-      for (let j = i + 1; j < patterns.length; j++) {
-        const a = patterns[i],
-          b = patterns[j];
-        if (a.entryId === b.entryId || a.origin !== b.origin) continue;
-        if (
-          a.path === b.path ||
-          (a.kind === 'subtree' && b.path.startsWith(a.path)) ||
-          (b.kind === 'subtree' && a.path.startsWith(b.path))
-        )
-          context.addIssue({
-            code: 'custom',
-            path: ['entries'],
-            message: `ambiguous URL match between ${a.entryId} and ${b.entryId}`,
-          });
-      }
+    if (hasAmbiguousPatterns(patterns))
+      context.addIssue({
+        code: 'custom',
+        path: ['entries'],
+        message: 'ambiguous URL match between registry entries',
+      });
   });
 
 export type ThemeSourceRegistry = z.infer<typeof themeSourceRegistrySchema>;
