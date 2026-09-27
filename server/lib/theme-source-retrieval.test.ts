@@ -77,6 +77,7 @@ describe('theme source retrieval', () => {
         retrievedAt: new Date(1_000).toISOString(),
         httpStatus: 200,
         mediaType: 'text/html',
+        charset: 'utf-8',
         contentHash: createHash('sha256').update(body).digest('hex'),
         body,
       },
@@ -172,5 +173,29 @@ describe('theme source retrieval', () => {
         httpStatus: null,
       },
     });
+  });
+
+  it.each(['text/html', 'text/html; charset=UTF8', 'text/plain; charset="unicode-1-1-utf-8"'])(
+    'accepts an absent or UTF-8 alias charset: %s',
+    async (contentType) => {
+      const result = await harness([
+        { ...success, headers: { 'content-type': [contentType] } },
+      ]).run();
+      expect(result).toMatchObject({
+        ok: true,
+        value: { charset: contentType === 'text/html' ? null : 'utf-8' },
+      });
+    }
+  );
+
+  it.each([
+    'text/html; charset=iso-8859-1',
+    'text/html; charset=utf-8; charset=latin1',
+    'text/html; charset="utf-8',
+    'text/html; charset=utf-8"',
+  ])('rejects unsupported or conflicting charset: %s', async (contentType) => {
+    expect(
+      await harness([{ ...success, headers: { 'content-type': [contentType] } }]).run()
+    ).toMatchObject({ ok: false, failure: { code: 'unsupported_content_type' } });
   });
 });

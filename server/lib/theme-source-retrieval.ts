@@ -48,6 +48,7 @@ export interface RetrievedThemeSource {
   retrievedAt: string;
   httpStatus: 200;
   mediaType: 'text/html' | 'text/plain';
+  charset: 'utf-8' | null;
   contentHash: string;
   body: Buffer;
 }
@@ -79,12 +80,21 @@ function oneHeader(response: SourceHopResponse, name: string): string | null {
   return values.length === 1 ? values[0] : null;
 }
 
-function validMediaType(value: string | null): 'text/html' | 'text/plain' | null {
+function validContentType(
+  value: string | null
+): { mediaType: 'text/html' | 'text/plain'; charset: 'utf-8' | null } | null {
   if (!value || value.length > 255) return null;
-  const match = /^\s*(text\/(?:html|plain))(?:\s*;\s*charset=[a-zA-Z0-9._-]{1,40})?\s*$/i.exec(
-    value
-  );
-  return (match?.[1].toLowerCase() as 'text/html' | 'text/plain') ?? null;
+  const match =
+    /^\s*(text\/(?:html|plain))(?:\s*;\s*charset\s*=\s*(?:([a-zA-Z0-9._-]{1,40})|"([a-zA-Z0-9._-]{1,40})"))?\s*$/i.exec(
+      value
+    );
+  if (!match) return null;
+  const label = (match[2] ?? match[3])?.toLowerCase() ?? null;
+  if (label && !['utf-8', 'utf8', 'unicode-1-1-utf-8'].includes(label)) return null;
+  return {
+    mediaType: match[1].toLowerCase() as 'text/html' | 'text/plain',
+    charset: label ? 'utf-8' : null,
+  };
 }
 
 function noIpLiteral(hostname: string): boolean {
@@ -169,8 +179,8 @@ export async function retrieveThemeSource(
         (encodings.length === 1 && encodings[0].toLowerCase() !== 'identity')
       )
         return failure('unreadable_content', provider);
-      const mediaType = validMediaType(oneHeader(response, 'content-type'));
-      if (!mediaType) return failure('unsupported_content_type', provider);
+      const contentType = validContentType(oneHeader(response, 'content-type'));
+      if (!contentType) return failure('unsupported_content_type', provider);
       if (!Buffer.isBuffer(response.body) || response.body.length === 0)
         return failure('unreadable_content', provider);
       if (response.body.length > MAX_SOURCE_BYTES) return failure('response_too_large', provider);
@@ -190,7 +200,7 @@ export async function retrieveThemeSource(
           retrievalPolicyVersion: THEME_SOURCE_RETRIEVAL_POLICY_VERSION,
           retrievedAt: new Date(now()).toISOString(),
           httpStatus: 200,
-          mediaType,
+          ...contentType,
           contentHash: createHash('sha256').update(response.body).digest('hex'),
           body: response.body,
         },
