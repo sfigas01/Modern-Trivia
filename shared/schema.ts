@@ -37,6 +37,7 @@ export * from './models/rooms';
 
 // Versioned contracts and additive persistence for reliable themed games.
 export * from './models/theme-evidence';
+export * from './models/theme-source-registry';
 export * from './models/theme';
 export * from './models/theme-storage';
 
