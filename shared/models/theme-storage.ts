@@ -19,6 +19,7 @@ import {
 
 import { users } from './auth';
 import type { EvidenceDimensionResult, FactScope, QuestionContentSnapshot } from './theme-evidence';
+import type { ThemeSourceRegistry } from './theme-source-registry';
 import { questions } from './questions';
 import type { InternalThemeFailure } from './theme';
 
@@ -61,6 +62,64 @@ export const themeEvidenceDocuments = pgTable(
       sql`${table.sourceClass} IN ('primary_official', 'primary_record', 'secondary_authoritative', 'secondary_reputable')`
     ),
     check('theme_evidence_documents_http_status', sql`${table.httpStatus} BETWEEN 100 AND 599`),
+  ]
+);
+
+export const themeSourceRegistryVersions = pgTable(
+  'theme_source_registry_versions',
+  {
+    sourcePolicyVersion: varchar('source_policy_version', { length: 255 }).primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    manifest: jsonb('manifest').$type<ThemeSourceRegistry>().notNull(),
+    manifestHash: varchar('manifest_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_source_registry_version_hash').on(
+      table.sourcePolicyVersion,
+      table.manifestHash
+    ),
+    check(
+      'theme_source_registry_contract',
+      sql`${table.contractVersion} = 'theme-source-registry-v1'`
+    ),
+    check(
+      'theme_source_registry_manifest_shape',
+      sql`(jsonb_typeof(${table.manifest}) = 'object' AND jsonb_typeof(${table.manifest}->'entries') = 'array') IS TRUE`
+    ),
+    check(
+      'theme_source_registry_manifest_version',
+      sql`(${table.manifest}->>'sourcePolicyVersion' = ${table.sourcePolicyVersion}) IS TRUE`
+    ),
+    check(
+      'theme_source_registry_manifest_contract',
+      sql`(${table.manifest}->>'contractVersion' = ${table.contractVersion}) IS TRUE`
+    ),
+    check('theme_source_registry_hash_format', sql`${table.manifestHash} ~ '^[a-f0-9]{64}$'`),
+  ]
+);
+
+export const themeEvidenceDocumentSources = pgTable(
+  'theme_evidence_document_sources',
+  {
+    documentId: uuid('document_id')
+      .primaryKey()
+      .references(() => themeEvidenceDocuments.id, { onDelete: 'restrict' }),
+    sourcePolicyVersion: varchar('source_policy_version', { length: 255 }).notNull(),
+    registryHash: varchar('registry_hash', { length: 64 }).notNull(),
+    entryId: varchar('entry_id', { length: 255 }).notNull(),
+    boundAt: timestamp('bound_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.sourcePolicyVersion, table.registryHash],
+      foreignColumns: [
+        themeSourceRegistryVersions.sourcePolicyVersion,
+        themeSourceRegistryVersions.manifestHash,
+      ],
+      name: 'fk_theme_evidence_document_sources_registry',
+    }).onDelete('restrict'),
+    index('idx_theme_evidence_document_sources_entry').on(table.sourcePolicyVersion, table.entryId),
   ]
 );
 
