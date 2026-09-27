@@ -135,11 +135,18 @@ const BLOCK_TAGS = new Set([
 ]);
 const CORRUPT_PARSE_ERRORS = new Set([
   'control-character-in-input-stream',
+  'noncharacter-in-input-stream',
   'surrogate-in-input-stream',
   'unexpected-null-character',
   'null-character-reference',
+  'surrogate-character-reference',
+  'character-reference-outside-unicode-range',
+  'control-character-reference',
+  'noncharacter-character-reference',
+  'absence-of-digits-in-numeric-character-reference',
   'eof-before-tag-name',
   'eof-in-tag',
+  'eof-in-comment',
   'eof-in-cdata',
   'eof-in-script-html-comment-like-text',
   'eof-in-element-that-can-contain-only-text',
@@ -391,6 +398,7 @@ export function extractThemeSource(source: RetrievedThemeSource): ThemeSourceExt
   } catch {
     return failed('unreadable_content');
   }
+  if (decoded.includes('\0')) return failed('unreadable_content');
   if (source.mediaType === 'text/plain') {
     const parts = decoded.replace(/\r\n?/g, '\n').split(/\n\s*\n/);
     if (parts.length > MAX_EXTRACTION_CANDIDATES) return failed('resource_limit');

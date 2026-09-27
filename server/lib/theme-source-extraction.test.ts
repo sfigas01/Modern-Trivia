@@ -210,6 +210,16 @@ describe('deterministic theme source extraction', () => {
       ok: false,
       failure: { code: 'unreadable_content' },
     });
+    for (const html of [
+      '<main><p>Invalid &#xD800; scalar.</p></main>',
+      '<main><p>Invalid &#x110000; scalar.</p></main>',
+      '<main><p>Valid prose.</p><!-- unclosed',
+    ]) {
+      expect(extractThemeSource(source(html))).toMatchObject({
+        ok: false,
+        failure: { code: 'unreadable_content' },
+      });
+    }
     expect(texts(extractThemeSource(source('<main><p>First<p>Second</main>')))).toEqual([
       'First',
       'Second',
@@ -269,6 +279,10 @@ describe('deterministic theme source extraction', () => {
       failure: { code: 'body_hash_mismatch' },
     });
     expect(extractThemeSource(source(Buffer.from([0xff, 0xfe]), 'text/plain'))).toMatchObject({
+      ok: false,
+      failure: { code: 'unreadable_content' },
+    });
+    expect(extractThemeSource(source('A\0B', 'text/plain'))).toMatchObject({
       ok: false,
       failure: { code: 'unreadable_content' },
     });
