@@ -70,9 +70,82 @@ const EXCLUDED_TAGS = new Set([
   'textarea',
   'dialog',
 ]);
-const CHROME_TOKENS =
-  /(?:^|[\s_-])(?:toc|table-of-contents|navbox|infobox|sidebar|reflist|references|reference|footnotes|metadata|hatnote|shortdescription|mw-editsection|mw-jump-link|site-header|site-footer|page-header|page-footer|breadcrumbs?|pagination|toolbar|advert(?:isement)?|cookie|share|social|hidden|visually-hidden|sr-only|d-none)(?:$|[\s_-])/i;
+const CHROME_TOKENS = new Set([
+  'toc',
+  'table-of-contents',
+  'navbox',
+  'infobox',
+  'sidebar',
+  'reflist',
+  'references',
+  'reference',
+  'footnotes',
+  'metadata',
+  'hatnote',
+  'shortdescription',
+  'mw-editsection',
+  'mw-jump-link',
+  'mw-ref',
+  'site-header',
+  'site-footer',
+  'page-header',
+  'page-footer',
+  'breadcrumb',
+  'breadcrumbs',
+  'pagination',
+  'toolbar',
+  'advert',
+  'advertisement',
+  'cookie',
+  'share',
+  'social',
+  'hidden',
+  'visually-hidden',
+  'sr-only',
+  'd-none',
+]);
+const CHROME_PREFIXES = [
+  'toc-',
+  'mw-toc-',
+  'vector-toc-',
+  'navbox-',
+  'infobox-',
+  'sidebar-',
+  'reflist-',
+  'reference-',
+  'mw-editsection-',
+  'mw-jump-link-',
+  'mw-ref-',
+];
 const PROSE_TAGS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li']);
+const BLOCK_TAGS = new Set([
+  'article',
+  'blockquote',
+  'div',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'li',
+  'main',
+  'p',
+  'section',
+]);
+const CORRUPT_PARSE_ERRORS = new Set([
+  'control-character-in-input-stream',
+  'surrogate-in-input-stream',
+  'unexpected-null-character',
+  'null-character-reference',
+  'eof-before-tag-name',
+  'eof-in-tag',
+  'eof-in-cdata',
+  'eof-in-script-html-comment-like-text',
+  'eof-in-element-that-can-contain-only-text',
+  'duplicate-attribute',
+  'missing-attribute-value',
+]);
 
 type FailureCode = Extract<ThemeSourceExtractionResult, { ok: false }>['failure']['code'];
 
@@ -92,9 +165,12 @@ function attribute(node: Element, name: string): string | undefined {
   return node.attrs.find((attr) => attr.name === name)?.value;
 }
 
-function excluded(node: Element): boolean {
-  if (EXCLUDED_TAGS.has(node.tagName) || node.namespaceURI !== 'http://www.w3.org/1999/xhtml')
-    return true;
+function isChromeToken(value: string): boolean {
+  const token = value.toLowerCase();
+  return CHROME_TOKENS.has(token) || CHROME_PREFIXES.some((prefix) => token.startsWith(prefix));
+}
+
+function hiddenOrChrome(node: Element): boolean {
   if (node.attrs.some((attr) => attr.name === 'hidden' || attr.name === 'inert')) return true;
   if (attribute(node, 'aria-hidden')?.toLowerCase() === 'true') return true;
   if (
@@ -104,8 +180,8 @@ function excluded(node: Element): boolean {
   )
     return true;
   if (
-    CHROME_TOKENS.test(
-      `${attribute(node, 'id') ?? ''} ${attribute(node, 'class') ?? ''} ${attribute(node, 'aria-label') ?? ''}`
+    [attribute(node, 'id') ?? '', ...(attribute(node, 'class') ?? '').split(/\s+/)].some(
+      isChromeToken
     )
   )
     return true;
@@ -117,31 +193,75 @@ function excluded(node: Element): boolean {
   );
 }
 
+function excluded(node: Element): boolean {
+  return (
+    EXCLUDED_TAGS.has(node.tagName) ||
+    node.namespaceURI !== 'http://www.w3.org/1999/xhtml' ||
+    hiddenOrChrome(node)
+  );
+}
+
 function normalize(text: string): string {
   return text.normalize('NFC').replace(/\s+/g, ' ').trim();
 }
 
-function textOf(root: Node): string {
+function textOf(root: Node): { text: string; unsupportedNotation: boolean } {
   const chunks: string[] = [];
-  const stack: Node[] = [root];
+  const stack: (Node | 'boundary')[] = [root];
   while (stack.length) {
     const node = stack.pop()!;
+    if (node === 'boundary') {
+      chunks.push(' ');
+      continue;
+    }
     if ('value' in node && node.nodeName === '#text') {
       chunks.push(node.value);
     } else if (isElement(node)) {
+      if (node !== root && hiddenOrChrome(node)) continue;
+      if (
+        node.tagName === 'math' ||
+        node.namespaceURI === 'http://www.w3.org/1998/Math/MathML' ||
+        node.tagName === 'sup' ||
+        node.tagName === 'sub'
+      )
+        return { text: '', unsupportedNotation: true };
       if (node !== root && (excluded(node) || node.tagName === 'ul' || node.tagName === 'ol'))
         continue;
-      if (node.tagName === 'br') chunks.push(' ');
+      if (node.tagName === 'br') {
+        chunks.push(' ');
+        continue;
+      }
+      if (node !== root && BLOCK_TAGS.has(node.tagName)) chunks.push(' ');
+      if (node !== root && BLOCK_TAGS.has(node.tagName)) stack.push('boundary');
       for (const child of children(node).slice().reverse()) stack.push(child);
     } else {
       for (const child of children(node).slice().reverse()) stack.push(child);
     }
   }
-  return normalize(chunks.join(''));
+  return { text: normalize(chunks.join('')), unsupportedNotation: false };
 }
 
 function hash(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
+}
+
+function isUtf8Label(label: string): boolean {
+  return ['utf-8', 'utf8', 'unicode-1-1-utf-8'].includes(label.trim().toLowerCase());
+}
+
+function validMetaEncoding(node: Element): boolean {
+  if (node.tagName !== 'meta') return true;
+  const charset = attribute(node, 'charset');
+  if (charset !== undefined && !isUtf8Label(charset)) return false;
+  if (attribute(node, 'http-equiv')?.trim().toLowerCase() === 'content-type') {
+    const content = attribute(node, 'content') ?? '';
+    const declaration =
+      /^\s*text\/html\s*;\s*charset\s*=\s*(?:"([a-zA-Z0-9._-]+)"|([a-zA-Z0-9._-]+))\s*$/i.exec(
+        content
+      );
+    if (!declaration || !isUtf8Label(declaration[1] ?? declaration[2])) return false;
+  }
+  return true;
 }
 
 function makePassages(
@@ -173,7 +293,13 @@ function makePassages(
 }
 
 function extractHtml(html: string): ThemeSourceExtractionResult {
-  const document = parse(html);
+  let corrupt = false;
+  const document = parse(html, {
+    onParseError: (error) => {
+      if (CORRUPT_PARSE_ERRORS.has(error.code)) corrupt = true;
+    },
+  });
+  if (corrupt) return failed('unreadable_content');
   type Frame = { node: Node; path: string; depth: number; hidden: boolean };
   const frames: Frame[] = [{ node: document, path: '', depth: 0, hidden: false }];
   const visible: Frame[] = [];
@@ -185,6 +311,8 @@ function extractHtml(html: string): ThemeSourceExtractionResult {
     const frame = frames.pop()!;
     if (++visited > MAX_EXTRACTION_NODES || frame.depth > MAX_EXTRACTION_DEPTH)
       return failed('resource_limit');
+    if (isElement(frame.node) && !validMetaEncoding(frame.node))
+      return failed('unsupported_charset');
     const hidden = frame.hidden || (isElement(frame.node) && excluded(frame.node));
     if (!hidden) visible.push(frame);
     if (!hidden && isElement(frame.node)) {
@@ -234,10 +362,12 @@ function extractHtml(html: string): ThemeSourceExtractionResult {
     if (nested) continue;
     if (++candidateCount > MAX_EXTRACTION_CANDIDATES) return failed('resource_limit');
     const path = `html:${frame.path}`;
-    candidates.push({
-      locator: path.length <= 500 ? path : `html:sha256:${hash(path)}`,
-      text: textOf(frame.node),
-    });
+    const content = textOf(frame.node);
+    if (!content.unsupportedNotation)
+      candidates.push({
+        locator: path.length <= 500 ? path : `html:sha256:${hash(path)}`,
+        text: content.text,
+      });
   }
   return makePassages(candidates);
 }

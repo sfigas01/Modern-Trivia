@@ -138,6 +138,116 @@ describe('deterministic theme source extraction', () => {
     ).toEqual(['Outer', 'Inner', 'Next']);
   });
 
+  it('keeps nested block boundaries while joining inline content', () => {
+    expect(
+      texts(
+        extractThemeSource(
+          source(
+            '<main><ul><li><p>First <span>place</span>: 1</p><p>2nd place: 3</p></li></ul></main>'
+          )
+        )
+      )
+    ).toEqual(['First place: 1 2nd place: 3']);
+    expect(
+      texts(
+        extractThemeSource(
+          source('<main><ul><li><div>First fact.</div><div>Second fact.</div></li></ul></main>')
+        )
+      )
+    ).toEqual(['First fact. Second fact.']);
+  });
+
+  it('retains legitimate social-history prose while removing exact chrome classes', () => {
+    expect(
+      texts(
+        extractThemeSource(
+          source(
+            '<main><section class="social-history"><p>Social history matters.</p></section><div class="navbox-items"><p>Navigation only.</p></div></main>'
+          )
+        )
+      )
+    ).toEqual(['Social history matters.']);
+  });
+
+  it('honors UTF-8 HTML meta declarations and rejects unsupported or malformed ones', () => {
+    const utf8 = source('<meta charset="UTF8"><main><p>Québec is a province.</p></main>');
+    utf8.charset = null;
+    expect(texts(extractThemeSource(utf8))).toEqual(['Québec is a province.']);
+    expect(
+      texts(
+        extractThemeSource(
+          source(
+            '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><main><p>Valid.</p></main>'
+          )
+        )
+      )
+    ).toEqual(['Valid.']);
+    for (const html of [
+      '<meta charset="windows-1252"><main><p>Wrong encoding.</p></main>',
+      '<meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><main><p>Conflicting.</p></main>',
+      '<meta http-equiv="Content-Type" content="text/html; charset=utf-8; extra=1"><main><p>Malformed.</p></main>',
+    ]) {
+      const input = source(html);
+      input.charset = null;
+      expect(extractThemeSource(input)).toMatchObject({
+        ok: false,
+        failure: { code: 'unsupported_charset' },
+      });
+    }
+    expect(
+      extractThemeSource(
+        source('<meta charset="windows-1252"><main><p>Conflicts with HTTP UTF-8.</p></main>')
+      )
+    ).toMatchObject({ ok: false, failure: { code: 'unsupported_charset' } });
+  });
+
+  it('rejects material parse corruption but accepts ordinary HTML recovery', () => {
+    expect(extractThemeSource(source('<main><p>Fact\u0000word</p></main>'))).toMatchObject({
+      ok: false,
+      failure: { code: 'unreadable_content' },
+    });
+    expect(extractThemeSource(source('<main><p>Fact</p><di'))).toMatchObject({
+      ok: false,
+      failure: { code: 'unreadable_content' },
+    });
+    expect(texts(extractThemeSource(source('<main><p>First<p>Second</main>')))).toEqual([
+      'First',
+      'Second',
+    ]);
+  });
+
+  it('withholds mathematical notation but retains normal citation superscripts', () => {
+    expect(
+      texts(
+        extractThemeSource(
+          source('<main><p>2<sup>3</sup> equals eight.</p><p>Ordinary fact.</p></main>')
+        )
+      )
+    ).toEqual(['Ordinary fact.']);
+    expect(
+      texts(
+        extractThemeSource(
+          source('<main><p>Area <math><mn>2</mn></math> square.</p><p>Another fact.</p></main>')
+        )
+      )
+    ).toEqual(['Another fact.']);
+    expect(
+      extractThemeSource(source('<main><p>H<sub>2</sub>O is water.</p></main>'))
+    ).toMatchObject({
+      ok: false,
+      failure: { code: 'no_passages' },
+    });
+    expect(
+      texts(
+        extractThemeSource(
+          source(
+            '<main><p>Montréal hosted Expo 67.<sup class="reference"><a href="#cite_note-1">[1]</a></sup> It drew visitors.</p></main>'
+          )
+        )
+      )
+    ).toEqual(['Montréal hosted Expo 67. It drew visitors.']);
+  });
+
   it('excludes hidden, landmarks, forms, embedded content and table-only pages', () => {
     const html = `<main><p hidden>Hidden</p><p class="visually-hidden">Class hidden</p><div aria-hidden="true"><p>ARIA</p></div>
       <div style="display: none"><p>Style</p></div><div role="navigation"><p>Landmark</p></div>
