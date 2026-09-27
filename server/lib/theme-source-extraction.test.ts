@@ -282,10 +282,13 @@ describe('deterministic theme source extraction', () => {
       ok: false,
       failure: { code: 'unreadable_content' },
     });
-    expect(extractThemeSource(source('A\0B', 'text/plain'))).toMatchObject({
-      ok: false,
-      failure: { code: 'unreadable_content' },
-    });
+    for (const text of ['A\0B', 'A\u0001B', 'A\u007fB', 'A\ufdd0B', 'A\u{1ffff}B']) {
+      expect(extractThemeSource(source(text, 'text/plain'))).toMatchObject({
+        ok: false,
+        failure: { code: 'unreadable_content' },
+      });
+    }
+    expect(texts(extractThemeSource(source('A\tB\r\nC', 'text/plain')))).toEqual(['A B C']);
     const charset = source('Text', 'text/plain');
     charset.charset = 'iso-8859-1' as 'utf-8';
     expect(extractThemeSource(charset)).toMatchObject({

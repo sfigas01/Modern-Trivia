@@ -252,6 +252,21 @@ function hash(text: string): string {
   return createHash('sha256').update(text, 'utf8').digest('hex');
 }
 
+function containsForbiddenScalar(text: string): boolean {
+  for (const character of text) {
+    const codePoint = character.codePointAt(0)!;
+    if (
+      (codePoint <= 0x1f && codePoint !== 0x09 && codePoint !== 0x0a && codePoint !== 0x0d) ||
+      (codePoint >= 0x7f && codePoint <= 0x9f) ||
+      (codePoint >= 0xfdd0 && codePoint <= 0xfdef) ||
+      (codePoint & 0xffff) === 0xfffe ||
+      (codePoint & 0xffff) === 0xffff
+    )
+      return true;
+  }
+  return false;
+}
+
 function isUtf8Label(label: string): boolean {
   return ['utf-8', 'utf8', 'unicode-1-1-utf-8'].includes(label.trim().toLowerCase());
 }
@@ -398,7 +413,7 @@ export function extractThemeSource(source: RetrievedThemeSource): ThemeSourceExt
   } catch {
     return failed('unreadable_content');
   }
-  if (decoded.includes('\0')) return failed('unreadable_content');
+  if (containsForbiddenScalar(decoded)) return failed('unreadable_content');
   if (source.mediaType === 'text/plain') {
     const parts = decoded.replace(/\r\n?/g, '\n').split(/\n\s*\n/);
     if (parts.length > MAX_EXTRACTION_CANDIDATES) return failed('resource_limit');
