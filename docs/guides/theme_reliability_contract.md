@@ -56,6 +56,8 @@ The application schemas provide useful validation and public-contract checks. Po
 
 The migration has an opt-in PostgreSQL integration test path. It is intended to validate the real constraints and append-only behavior against a disposable database; it does not run against production as part of this foundation. Concurrency races, worker restart recovery, complete five-game history reconstruction, source retrieval safety, provider reliability, factual truth, and end-to-end 40-question readiness remain deferred to the later source, lifecycle, evaluation, and rollout lanes.
 
+The additive S6a migration adds immutable fact-derivation attempt headers and terminal outcomes. A new fact revision written through the derivation repository is atomically bound to its attempt outcome by exact revision ID and content hash. The stored header identifies the policy, prompt hash/version, producer, execution, and bounded evidence manifest; it does not retain raw prompt or passage text. Legacy fact revisions remain valid without a provenance link. These records do not establish factual truth, independent review, or eligibility for a game.
+
 ## Later integration boundaries
 
 - STE-25 source lane: safe URL resolution, bounded retrieval, immutable source registry, extraction, fact revisions, independent review, freshness, and exact-content activation checks.
