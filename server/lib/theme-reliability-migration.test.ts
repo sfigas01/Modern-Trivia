@@ -27,6 +27,27 @@ describe('theme reliability migration contract', () => {
   });
 });
 
+describe('fact derivation provenance migration contract', () => {
+  it('adds exact revision hash binding and append-only attempt and outcome rows', async () => {
+    const sql = await readFile(
+      new URL('../../migrations/0011_theme_fact_derivation_provenance.sql', import.meta.url),
+      'utf8'
+    );
+    expect(sql).toContain('uq_theme_fact_revisions_id_hash UNIQUE (id, content_hash)');
+    expect(sql).toContain('REFERENCES theme_fact_revisions(id, content_hash)');
+    expect(sql).toContain(
+      'uq_theme_fact_derivation_attempt_revision UNIQUE (id, requested_revision_id)'
+    );
+    expect(sql).toContain('FOREIGN KEY (attempt_id, fact_revision_id)');
+    expect(sql).toContain('REFERENCES theme_fact_derivation_attempts(id, requested_revision_id)');
+    expect(sql).toContain('uq_theme_fact_derivation_outcome_revision UNIQUE (fact_revision_id)');
+    expect(sql).toContain('theme_fact_derivation_attempts_immutable');
+    expect(sql).toContain('theme_fact_derivation_outcomes_immutable');
+    expect(sql).toContain("outcome = 'persisted'");
+    expect(sql).toContain("outcome IN ('invalid_output', 'failed')");
+  });
+});
+
 describe.runIf(Boolean(databaseUrl))('theme reliability foundation migration on PostgreSQL', () => {
   it('reruns safely and enforces exact-review, history, reservation, and budget invariants', async () => {
     const client = new pg.Client({ connectionString: databaseUrl });

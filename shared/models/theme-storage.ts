@@ -173,6 +173,7 @@ export const themeFactRevisions = pgTable(
     uniqueIndex('uq_theme_fact_revisions_fact_revision').on(table.factId, table.revision),
     uniqueIndex('uq_theme_fact_revisions_fact_hash').on(table.factId, table.contentHash),
     uniqueIndex('uq_theme_fact_revisions_id_fact').on(table.id, table.factId),
+    uniqueIndex('uq_theme_fact_revisions_id_hash').on(table.id, table.contentHash),
     index('idx_theme_fact_revisions_freshness').on(table.timeSensitive, table.validUntil),
     check('theme_fact_revisions_revision', sql`${table.revision} > 0`),
     check('theme_fact_revisions_hash_format', sql`${table.contentHash} ~ '^[a-f0-9]{64}$'`),
@@ -183,6 +184,139 @@ export const themeFactRevisions = pgTable(
     check(
       'theme_fact_revisions_alias_array',
       sql`jsonb_typeof(${table.supportedAliases}) = 'array'`
+    ),
+  ]
+);
+
+export const themeFactDerivationAttempts = pgTable(
+  'theme_fact_derivation_attempts',
+  {
+    id: uuid('id').primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    canonicalKey: varchar('canonical_key', { length: 255 }).notNull(),
+    requestedRevisionId: uuid('requested_revision_id').notNull(),
+    expectedLatestRevision: integer('expected_latest_revision').notNull(),
+    derivationPolicyVersion: varchar('derivation_policy_version', { length: 255 }).notNull(),
+    policySnapshot: jsonb('policy_snapshot').$type<Record<string, unknown>>().notNull(),
+    policyHash: varchar('policy_hash', { length: 64 }).notNull(),
+    promptVersion: varchar('prompt_version', { length: 255 }).notNull(),
+    promptHash: varchar('prompt_hash', { length: 64 }).notNull(),
+    inputManifest: jsonb('input_manifest').$type<Record<string, unknown>>().notNull(),
+    inputFingerprint: varchar('input_fingerprint', { length: 64 }).notNull(),
+    producerKind: varchar('producer_kind', { length: 16 }).$type<'model' | 'human'>().notNull(),
+    producerId: varchar('producer_id', { length: 255 }).notNull(),
+    provider: varchar('provider', { length: 255 }),
+    model: varchar('model', { length: 255 }),
+    executionId: uuid('execution_id').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_fact_derivation_attempt_revision').on(
+      table.id,
+      table.requestedRevisionId
+    ),
+    index('idx_theme_fact_derivation_attempts_fact').on(table.canonicalKey, table.createdAt),
+    check(
+      'theme_fact_derivation_attempts_contract',
+      sql`${table.contractVersion} = 'theme-fact-derivation-provenance-v1'`
+    ),
+    check(
+      'theme_fact_derivation_attempts_expected_revision',
+      sql`${table.expectedLatestRevision} >= 0`
+    ),
+    check(
+      'theme_fact_derivation_attempts_policy_object',
+      sql`jsonb_typeof(${table.policySnapshot}) = 'object'`
+    ),
+    check(
+      'theme_fact_derivation_attempts_manifest_object',
+      sql`jsonb_typeof(${table.inputManifest}) = 'object'`
+    ),
+    check(
+      'theme_fact_derivation_attempts_producer_kind',
+      sql`${table.producerKind} IN ('model', 'human')`
+    ),
+    check(
+      'theme_fact_derivation_attempts_producer_fields',
+      sql`(${table.producerKind} = 'model' AND ${table.provider} IS NOT NULL AND ${table.model} IS NOT NULL) OR (${table.producerKind} = 'human' AND ${table.provider} IS NULL AND ${table.model} IS NULL)`
+    ),
+    check(
+      'theme_fact_derivation_attempts_policy_hash',
+      sql`${table.policyHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_derivation_attempts_prompt_hash',
+      sql`${table.promptHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_derivation_attempts_input_hash',
+      sql`${table.inputFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+  ]
+);
+
+export const themeFactDerivationOutcomes = pgTable(
+  'theme_fact_derivation_outcomes',
+  {
+    attemptId: uuid('attempt_id')
+      .primaryKey()
+      .references(() => themeFactDerivationAttempts.id, { onDelete: 'restrict' }),
+    outcome: varchar('outcome', { length: 32 }).notNull(),
+    proposalSnapshot: jsonb('proposal_snapshot').$type<Record<string, unknown>>(),
+    outputHash: varchar('output_hash', { length: 64 }),
+    factRevisionId: uuid('fact_revision_id'),
+    factContentHash: varchar('fact_content_hash', { length: 64 }),
+    bindingsFingerprint: varchar('bindings_fingerprint', { length: 64 }),
+    failureCode: varchar('failure_code', { length: 64 }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_fact_derivation_outcome_revision').on(table.factRevisionId),
+    foreignKey({
+      name: 'fk_theme_fact_derivation_outcome_attempt_revision',
+      columns: [table.attemptId, table.factRevisionId],
+      foreignColumns: [
+        themeFactDerivationAttempts.id,
+        themeFactDerivationAttempts.requestedRevisionId,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_fact_derivation_outcome_revision',
+      columns: [table.factRevisionId, table.factContentHash],
+      foreignColumns: [themeFactRevisions.id, themeFactRevisions.contentHash],
+    }).onDelete('restrict'),
+    index('idx_theme_fact_derivation_outcomes_revision').on(
+      table.factRevisionId,
+      table.factContentHash
+    ),
+    check(
+      'theme_fact_derivation_outcomes_kind',
+      sql`${table.outcome} IN ('persisted', 'insufficient_evidence', 'conflicted', 'policy_unsatisfied', 'invalid_output', 'failed')`
+    ),
+    check(
+      'theme_fact_derivation_outcomes_snapshot_object',
+      sql`${table.proposalSnapshot} IS NULL OR jsonb_typeof(${table.proposalSnapshot}) = 'object'`
+    ),
+    check(
+      'theme_fact_derivation_outcomes_output_hash',
+      sql`${table.outputHash} IS NULL OR ${table.outputHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_derivation_outcomes_fact_hash',
+      sql`${table.factContentHash} IS NULL OR ${table.factContentHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_derivation_outcomes_bindings_hash',
+      sql`${table.bindingsFingerprint} IS NULL OR ${table.bindingsFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_derivation_outcomes_fields',
+      sql`
+      (${table.outcome} = 'persisted' AND ${table.proposalSnapshot} IS NOT NULL AND ${table.outputHash} IS NOT NULL AND ${table.factRevisionId} IS NOT NULL AND ${table.factContentHash} IS NOT NULL AND ${table.bindingsFingerprint} IS NOT NULL AND ${table.failureCode} IS NULL)
+      OR (${table.outcome} IN ('insufficient_evidence', 'conflicted') AND ${table.proposalSnapshot} IS NULL AND ${table.outputHash} IS NOT NULL AND ${table.factRevisionId} IS NULL AND ${table.factContentHash} IS NULL AND ${table.bindingsFingerprint} IS NULL AND ${table.failureCode} IS NULL)
+      OR (${table.outcome} = 'policy_unsatisfied' AND ${table.proposalSnapshot} IS NOT NULL AND ${table.outputHash} IS NOT NULL AND ${table.factRevisionId} IS NULL AND ${table.factContentHash} IS NULL AND ${table.bindingsFingerprint} IS NULL AND ${table.failureCode} IS NULL)
+      OR (${table.outcome} IN ('invalid_output', 'failed') AND ${table.proposalSnapshot} IS NULL AND ${table.outputHash} IS NULL AND ${table.factRevisionId} IS NULL AND ${table.factContentHash} IS NULL AND ${table.bindingsFingerprint} IS NULL AND ${table.failureCode} IS NOT NULL)
+    `
     ),
   ]
 );
@@ -779,6 +913,8 @@ export type ThemeEvidenceDocument = typeof themeEvidenceDocuments.$inferSelect;
 export type ThemeEvidencePassage = typeof themeEvidencePassages.$inferSelect;
 export type ThemeFact = typeof themeFacts.$inferSelect;
 export type ThemeFactRevision = typeof themeFactRevisions.$inferSelect;
+export type ThemeFactDerivationAttempt = typeof themeFactDerivationAttempts.$inferSelect;
+export type ThemeFactDerivationOutcome = typeof themeFactDerivationOutcomes.$inferSelect;
 export type ThemeGameSession = typeof themeGameSessions.$inferSelect;
 export type ThemeParticipantIdentity = typeof themeParticipantIdentities.$inferSelect;
 export type ThemeGameParticipant = typeof themeGameParticipants.$inferSelect;

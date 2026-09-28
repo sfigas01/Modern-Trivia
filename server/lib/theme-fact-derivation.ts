@@ -23,6 +23,7 @@ import { hashThemeSourceRegistry } from './theme-source-registry';
 const sha256 = /^[a-f0-9]{64}$/;
 const MAX_PASSAGES = 12;
 const MAX_PASSAGE_CHARACTERS = 32_000;
+const PROVENANCE_CONTRACT_VERSION = 'theme-fact-derivation-provenance-v1';
 const uuidSchema = z
   .string()
   .uuid()
@@ -41,7 +42,9 @@ export type ThemeFactDerivationCode =
   | 'evidence_change_conflict'
   | 'storage_failure'
   | 'storage_unknown_outcome'
-  | 'proposer_failure';
+  | 'proposer_failure'
+  | 'attempt_conflict'
+  | 'attempt_unresolved';
 
 export class ThemeFactDerivationError extends Error {
   constructor(public readonly code: ThemeFactDerivationCode) {
@@ -69,6 +72,21 @@ const policySchema = z
   })
   .strict();
 
+const versionField = z.string().trim().min(1).max(255);
+const provenanceSchema = z
+  .object({
+    attemptId: uuidSchema,
+    derivationPolicyVersion: versionField,
+    promptVersion: versionField,
+    promptText: z.string().min(1).max(32_000),
+    producerKind: z.enum(['model', 'human']),
+    producerId: versionField,
+    provider: versionField.nullable(),
+    model: versionField.nullable(),
+    executionId: uuidSchema,
+  })
+  .strict();
+
 const requestSchema = z
   .object({
     canonicalKey: z.string().trim().min(1).max(255),
@@ -76,6 +94,7 @@ const requestSchema = z
     expectedLatestRevision: z.number().int().min(0).max(2_147_483_646),
     passageIds: z.array(uuidSchema).min(1).max(MAX_PASSAGES),
     policy: policySchema,
+    provenance: provenanceSchema,
   })
   .strict();
 
@@ -122,7 +141,11 @@ type ValidatedEvidence = {
   contentHash: string;
   document: SourceDocument;
 };
-type EvidenceSet = { passages: ValidatedEvidence[]; fingerprint: string };
+type EvidenceSet = {
+  passages: ValidatedEvidence[];
+  manifest: Record<string, unknown>;
+  fingerprint: string;
+};
 type FactSnapshot = {
   statement: string;
   scope: FactScope;
@@ -227,7 +250,8 @@ async function loadEvidence(
   db: Pool | PoolClient,
   ids: readonly string[],
   policy: z.infer<typeof policySchema>,
-  nowMs: number
+  nowMs: number,
+  allowStale = false
 ): Promise<EvidenceSet> {
   const result = await db.query<EvidenceRow>(EVIDENCE_SQL, [ids]);
   if (result.rows.length !== ids.length) throw new ThemeFactDerivationError('missing_evidence');
@@ -248,6 +272,7 @@ async function loadEvidence(
   const byId = new Map(normalizedRows.map((row) => [row.passage.id as string, row]));
   if (byId.size !== ids.length) throw new ThemeFactDerivationError('invalid_evidence');
   const passages: ValidatedEvidence[] = [];
+  const manifestPassages: Record<string, unknown>[] = [];
   let characters = 0;
   for (const id of ids) {
     const row = byId.get(id);
@@ -338,19 +363,21 @@ async function loadEvidence(
         throw new ThemeFactDerivationError('provenance_mismatch');
     }
     if (
-      document.data.status !== 'retrieved' ||
-      document.data.httpStatus !== 200 ||
-      !policy.allowedSourceClasses.includes(document.data.sourceClass)
+      !allowStale &&
+      (document.data.status !== 'retrieved' ||
+        document.data.httpStatus !== 200 ||
+        !policy.allowedSourceClasses.includes(document.data.sourceClass))
     )
       throw new ThemeFactDerivationError('stale_evidence');
     const retrievedAt = Date.parse(document.data.retrievedAt);
     if (
-      retrievedAt > nowMs ||
-      nowMs - retrievedAt > policy.maxSourceAgeMs ||
-      (document.data.publishedAt !== null && Date.parse(document.data.publishedAt) > nowMs) ||
-      (document.data.sourceUpdatedAt !== null &&
-        Date.parse(document.data.sourceUpdatedAt) > nowMs) ||
-      (document.data.validUntil !== null && Date.parse(document.data.validUntil) <= nowMs)
+      !allowStale &&
+      (retrievedAt > nowMs ||
+        nowMs - retrievedAt > policy.maxSourceAgeMs ||
+        (document.data.publishedAt !== null && Date.parse(document.data.publishedAt) > nowMs) ||
+        (document.data.sourceUpdatedAt !== null &&
+          Date.parse(document.data.sourceUpdatedAt) > nowMs) ||
+        (document.data.validUntil !== null && Date.parse(document.data.validUntil) <= nowMs))
     )
       throw new ThemeFactDerivationError('stale_evidence');
     passages.push({
@@ -359,8 +386,26 @@ async function loadEvidence(
       contentHash: passage.data.contentHash,
       document: document.data,
     });
+    manifestPassages.push({
+      passageId: passage.data.id,
+      passageContentHash: passage.data.contentHash,
+      ordinal: passage.data.ordinal,
+      locator: passage.data.locator,
+      document: document.data,
+      registryBinding: {
+        sourcePolicyVersion: s.source_policy_version,
+        registryHash: s.registry_hash,
+        entryId: s.entry_id,
+      },
+      registry: {
+        contractVersion: r.contract_version,
+        sourcePolicyVersion: r.source_policy_version,
+        manifestHash: r.manifest_hash,
+      },
+    });
   }
-  return { passages, fingerprint: hash(ids.map((id) => byId.get(id))) };
+  const manifest = { passages: manifestPassages };
+  return { passages, manifest, fingerprint: hash(manifest) };
 }
 
 function prepareProposal(
@@ -506,6 +551,307 @@ async function sameBindings(
   );
 }
 
+type Request = z.infer<typeof requestSchema>;
+type AttemptHeader = {
+  id: string;
+  contract_version: string;
+  canonical_key: string;
+  requested_revision_id: string;
+  expected_latest_revision: number;
+  derivation_policy_version: string;
+  policy_snapshot: unknown;
+  policy_hash: string;
+  prompt_version: string;
+  prompt_hash: string;
+  input_manifest: unknown;
+  input_fingerprint: string;
+  producer_kind: 'model' | 'human';
+  producer_id: string;
+  provider: string | null;
+  model: string | null;
+  execution_id: string;
+};
+type AttemptOutcome = {
+  outcome:
+    | 'persisted'
+    | 'insufficient_evidence'
+    | 'conflicted'
+    | 'policy_unsatisfied'
+    | 'invalid_output'
+    | 'failed';
+  proposal_snapshot: unknown;
+  output_hash: string | null;
+  fact_revision_id: string | null;
+  fact_content_hash: string | null;
+  bindings_fingerprint: string | null;
+  failure_code: string | null;
+};
+
+function attemptHeader(request: Request, evidence: EvidenceSet): AttemptHeader {
+  const provenance = request.provenance;
+  const inputManifest = {
+    canonicalKey: request.canonicalKey,
+    requestedRevisionId: request.revisionId,
+    expectedLatestRevision: request.expectedLatestRevision,
+    passageIds: request.passageIds,
+    policy: request.policy,
+    evidence: evidence.manifest,
+  };
+  return {
+    id: provenance.attemptId,
+    contract_version: PROVENANCE_CONTRACT_VERSION,
+    canonical_key: request.canonicalKey,
+    requested_revision_id: request.revisionId,
+    expected_latest_revision: request.expectedLatestRevision,
+    derivation_policy_version: provenance.derivationPolicyVersion,
+    policy_snapshot: request.policy,
+    policy_hash: hash(request.policy),
+    prompt_version: provenance.promptVersion,
+    prompt_hash: createHash('sha256').update(provenance.promptText, 'utf8').digest('hex'),
+    input_manifest: inputManifest,
+    input_fingerprint: hash(inputManifest),
+    producer_kind: provenance.producerKind,
+    producer_id: provenance.producerId,
+    provider: provenance.provider,
+    model: provenance.model,
+    execution_id: provenance.executionId,
+  };
+}
+
+function sameAttempt(actual: AttemptHeader, expected: AttemptHeader): boolean {
+  return (
+    databaseUuid(actual.id) === expected.id &&
+    actual.contract_version === expected.contract_version &&
+    actual.canonical_key === expected.canonical_key &&
+    databaseUuid(actual.requested_revision_id) === expected.requested_revision_id &&
+    actual.expected_latest_revision === expected.expected_latest_revision &&
+    actual.derivation_policy_version === expected.derivation_policy_version &&
+    canonical(actual.policy_snapshot) === canonical(expected.policy_snapshot) &&
+    actual.policy_hash === expected.policy_hash &&
+    actual.prompt_version === expected.prompt_version &&
+    actual.prompt_hash === expected.prompt_hash &&
+    canonical(actual.input_manifest) === canonical(expected.input_manifest) &&
+    actual.input_fingerprint === expected.input_fingerprint &&
+    actual.producer_kind === expected.producer_kind &&
+    actual.producer_id === expected.producer_id &&
+    actual.provider === expected.provider &&
+    actual.model === expected.model &&
+    databaseUuid(actual.execution_id) === expected.execution_id
+  );
+}
+
+async function transaction<T>(pool: Pool, work: (client: PoolClient) => Promise<T>): Promise<T> {
+  let client: PoolClient;
+  try {
+    client = await pool.connect();
+  } catch {
+    throw new ThemeFactDerivationError('storage_failure');
+  }
+  let committing = false;
+  let discard = false;
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    committing = true;
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    if (committing) {
+      discard = true;
+      throw new ThemeFactDerivationError('storage_unknown_outcome');
+    }
+    try {
+      await client.query('ROLLBACK');
+    } catch {
+      discard = true;
+    }
+    if (error instanceof ThemeFactDerivationError) throw error;
+    throw new ThemeFactDerivationError('storage_failure');
+  } finally {
+    client.release(discard);
+  }
+}
+
+async function readOutcome(client: PoolClient, attemptId: string): Promise<AttemptOutcome | null> {
+  const result = await client.query<AttemptOutcome>(
+    'SELECT * FROM theme_fact_derivation_outcomes WHERE attempt_id = $1',
+    [attemptId]
+  );
+  return result.rows[0] ?? null;
+}
+
+async function registerAttempt(pool: Pool, header: AttemptHeader): Promise<AttemptOutcome | null> {
+  return transaction(pool, async (client) => {
+    const inserted = await client.query(
+      `INSERT INTO theme_fact_derivation_attempts
+       (id, contract_version, canonical_key, requested_revision_id, expected_latest_revision,
+        derivation_policy_version, policy_snapshot, policy_hash, prompt_version, prompt_hash,
+        input_manifest, input_fingerprint, producer_kind, producer_id, provider, model, execution_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11::jsonb,$12,$13,$14,$15,$16,$17)
+       ON CONFLICT DO NOTHING`,
+      [
+        header.id,
+        header.contract_version,
+        header.canonical_key,
+        header.requested_revision_id,
+        header.expected_latest_revision,
+        header.derivation_policy_version,
+        JSON.stringify(header.policy_snapshot),
+        header.policy_hash,
+        header.prompt_version,
+        header.prompt_hash,
+        JSON.stringify(header.input_manifest),
+        header.input_fingerprint,
+        header.producer_kind,
+        header.producer_id,
+        header.provider,
+        header.model,
+        header.execution_id,
+      ]
+    );
+    const locked = await client.query<AttemptHeader>(
+      'SELECT * FROM theme_fact_derivation_attempts WHERE id = $1 FOR UPDATE',
+      [header.id]
+    );
+    if (!locked.rows[0] || !sameAttempt(locked.rows[0], header))
+      throw new ThemeFactDerivationError('attempt_conflict');
+    const outcome = await readOutcome(client, header.id);
+    if (inserted.rowCount === 0 && !outcome)
+      throw new ThemeFactDerivationError('attempt_unresolved');
+    return outcome;
+  });
+}
+
+async function writeTerminalOutcome(
+  pool: Pool,
+  attemptId: string,
+  outcome: AttemptOutcome
+): Promise<void> {
+  await transaction(pool, async (client) => {
+    const locked = await client.query(
+      'SELECT id FROM theme_fact_derivation_attempts WHERE id = $1 FOR UPDATE',
+      [attemptId]
+    );
+    if (!locked.rows[0]) throw new ThemeFactDerivationError('storage_failure');
+    await insertOutcome(client, attemptId, outcome);
+  });
+}
+
+async function insertOutcome(client: PoolClient, attemptId: string, outcome: AttemptOutcome) {
+  await client.query(
+    `INSERT INTO theme_fact_derivation_outcomes
+     (attempt_id, outcome, proposal_snapshot, output_hash, fact_revision_id,
+      fact_content_hash, bindings_fingerprint, failure_code)
+     VALUES ($1,$2,$3::jsonb,$4,$5,$6,$7,$8)`,
+    [
+      attemptId,
+      outcome.outcome,
+      outcome.proposal_snapshot === null ? null : JSON.stringify(outcome.proposal_snapshot),
+      outcome.output_hash,
+      outcome.fact_revision_id,
+      outcome.fact_content_hash,
+      outcome.bindings_fingerprint,
+      outcome.failure_code,
+    ]
+  );
+}
+
+function proposalOutcome(prepared: ThemeFactDerivationResult): AttemptOutcome {
+  if (prepared.status !== 'proposed')
+    return {
+      outcome: prepared.status,
+      proposal_snapshot: null,
+      output_hash: hash(prepared),
+      fact_revision_id: null,
+      fact_content_hash: null,
+      bindings_fingerprint: null,
+      failure_code: null,
+    };
+  const snapshot = { ...prepared, persistence: null };
+  return {
+    outcome: prepared.policySatisfied ? 'persisted' : 'policy_unsatisfied',
+    proposal_snapshot: snapshot,
+    output_hash: hash(snapshot),
+    fact_revision_id: null,
+    fact_content_hash: null,
+    bindings_fingerprint: null,
+    failure_code: null,
+  };
+}
+
+async function replayOutcome(
+  pool: Pool,
+  header: AttemptHeader,
+  outcome: AttemptOutcome
+): Promise<ThemeFactDerivationResult> {
+  if (outcome.outcome === 'invalid_output') {
+    const code = outcome.failure_code;
+    if (code === 'invalid_proposal' || code === 'unknown_citation' || code === 'citation_mismatch')
+      throw new ThemeFactDerivationError(code);
+    throw new ThemeFactDerivationError('storage_failure');
+  }
+  if (outcome.outcome === 'failed') throw new ThemeFactDerivationError('proposer_failure');
+  if (outcome.outcome === 'insufficient_evidence' || outcome.outcome === 'conflicted') {
+    if (outcome.output_hash !== hash({ status: outcome.outcome }))
+      throw new ThemeFactDerivationError('storage_failure');
+    return { status: outcome.outcome };
+  }
+  if (!outcome.proposal_snapshot || outcome.output_hash !== hash(outcome.proposal_snapshot))
+    throw new ThemeFactDerivationError('storage_failure');
+  const prepared = outcome.proposal_snapshot as Extract<
+    ThemeFactDerivationResult,
+    { status: 'proposed' }
+  >;
+  if (prepared.status !== 'proposed') throw new ThemeFactDerivationError('storage_failure');
+  if (outcome.outcome === 'policy_unsatisfied') return prepared;
+  if (
+    !outcome.fact_revision_id ||
+    !outcome.fact_content_hash ||
+    !outcome.bindings_fingerprint ||
+    databaseUuid(outcome.fact_revision_id) !== header.requested_revision_id
+  )
+    throw new ThemeFactDerivationError('storage_failure');
+  const revision = await pool.query<RevisionRow>(
+    'SELECT * FROM theme_fact_revisions WHERE id = $1',
+    [outcome.fact_revision_id]
+  );
+  const row = revision.rows[0];
+  if (
+    !row ||
+    row.content_hash !== outcome.fact_content_hash ||
+    !sameRevision(row, prepared, databaseUuid(row.fact_id), databaseUuid(row.id), row.revision)
+  )
+    throw new ThemeFactDerivationError('storage_failure');
+  const bindings = await pool.query<{ passage_id: string; support_kind: string }>(
+    'SELECT passage_id, support_kind FROM theme_fact_evidence_passages WHERE fact_revision_id = $1 ORDER BY passage_id',
+    [outcome.fact_revision_id]
+  );
+  const bound = bindings.rows.map((item) => ({
+    passageId: databaseUuid(item.passage_id),
+    supportKind: item.support_kind,
+  }));
+  if (
+    hash(prepared.citations) !== outcome.bindings_fingerprint ||
+    canonical(bound) !==
+      canonical(
+        prepared.citations.map((item) => ({
+          passageId: item.passageId,
+          supportKind: item.supportKind,
+        }))
+      )
+  )
+    throw new ThemeFactDerivationError('storage_failure');
+  return {
+    ...prepared,
+    persistence: {
+      factId: databaseUuid(row.fact_id),
+      revisionId: databaseUuid(row.id),
+      revision: row.revision,
+      created: false,
+    },
+  };
+}
+
 /** Model-agnostic proposal and atomic fact revision writer. No model call occurs in the transaction. */
 export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () => Date) {
   return {
@@ -517,9 +863,15 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
       if (
         !parsedRequest.success ||
         !allTextSafe(parsedRequest.data) ||
+        parsedRequest.data.provenance.promptText.trim().length === 0 ||
         new Set(parsedRequest.data.passageIds).size !== parsedRequest.data.passageIds.length ||
         new Set(parsedRequest.data.policy.allowedSourceClasses).size !==
           parsedRequest.data.policy.allowedSourceClasses.length ||
+        (parsedRequest.data.provenance.producerKind === 'model' &&
+          (!parsedRequest.data.provenance.provider || !parsedRequest.data.provenance.model)) ||
+        (parsedRequest.data.provenance.producerKind === 'human' &&
+          (parsedRequest.data.provenance.provider !== null ||
+            parsedRequest.data.provenance.model !== null)) ||
         typeof proposer !== 'function'
       )
         throw new ThemeFactDerivationError('invalid_request');
@@ -527,10 +879,36 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
       const firstNow = instant(now);
       let evidence: EvidenceSet;
       try {
-        evidence = await loadEvidence(pool, request.passageIds, request.policy, firstNow);
+        const prior = await pool.query<{ id: string }>(
+          'SELECT id FROM theme_fact_derivation_attempts WHERE id = $1',
+          [request.provenance.attemptId]
+        );
+        try {
+          evidence = await loadEvidence(
+            pool,
+            request.passageIds,
+            request.policy,
+            firstNow,
+            Boolean(prior.rows[0])
+          );
+        } catch (error) {
+          if (prior.rows[0] && error instanceof ThemeFactDerivationError)
+            throw new ThemeFactDerivationError('attempt_conflict');
+          throw error;
+        }
       } catch (error) {
         if (error instanceof ThemeFactDerivationError) throw error;
         throw new ThemeFactDerivationError('storage_failure');
+      }
+      const header = attemptHeader(request, evidence);
+      const completed = await registerAttempt(pool, header);
+      if (completed) {
+        try {
+          return await replayOutcome(pool, header, completed);
+        } catch (error) {
+          if (error instanceof ThemeFactDerivationError) throw error;
+          throw new ThemeFactDerivationError('storage_failure');
+        }
       }
       let raw: ThemeFactProposerOutput;
       try {
@@ -542,17 +920,45 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
           }))
         );
       } catch {
+        await writeTerminalOutcome(pool, header.id, {
+          outcome: 'failed',
+          proposal_snapshot: null,
+          output_hash: null,
+          fact_revision_id: null,
+          fact_content_hash: null,
+          bindings_fingerprint: null,
+          failure_code: 'proposer_failure',
+        });
         throw new ThemeFactDerivationError('proposer_failure');
       }
-      const prepared = prepareProposal(
-        raw,
-        evidence,
-        request.policy,
-        firstNow,
-        request.revisionId,
-        request.expectedLatestRevision
-      );
-      if (prepared.status !== 'proposed' || !prepared.policySatisfied) return prepared;
+      let prepared: ThemeFactDerivationResult;
+      try {
+        prepared = prepareProposal(
+          raw,
+          evidence,
+          request.policy,
+          firstNow,
+          request.revisionId,
+          request.expectedLatestRevision
+        );
+      } catch (error) {
+        if (!(error instanceof ThemeFactDerivationError)) throw error;
+        await writeTerminalOutcome(pool, header.id, {
+          outcome: 'invalid_output',
+          proposal_snapshot: null,
+          output_hash: null,
+          fact_revision_id: null,
+          fact_content_hash: null,
+          bindings_fingerprint: null,
+          failure_code: error.code,
+        });
+        throw error;
+      }
+      const terminal = proposalOutcome(prepared);
+      if (prepared.status !== 'proposed' || !prepared.policySatisfied) {
+        await writeTerminalOutcome(pool, header.id, terminal);
+        return prepared;
+      }
       let client: PoolClient;
       try {
         client = await pool.connect();
@@ -603,17 +1009,8 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
         );
         const revision = request.expectedLatestRevision + 1;
         if (existing.rows[0]) {
-          if (
-            !sameRevision(existing.rows[0], prepared, factId, request.revisionId, revision) ||
-            !(await sameBindings(client, request.revisionId, prepared.citations))
-          )
-            throw new ThemeFactDerivationError('fact_conflict');
-          committing = true;
-          await client.query('COMMIT');
-          return {
-            ...prepared,
-            persistence: { factId, revisionId: request.revisionId, revision, created: false },
-          };
+          // A completed attempt replays above. Never attach a new attempt to an old revision.
+          throw new ThemeFactDerivationError('fact_conflict');
         }
         const latest = await client.query<{ revision: number }>(
           'SELECT revision FROM theme_fact_revisions WHERE fact_id = $1 ORDER BY revision DESC LIMIT 1',
@@ -663,6 +1060,12 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
             [request.revisionId, citation.passageId, citation.supportKind]
           );
         }
+        await insertOutcome(client, header.id, {
+          ...terminal,
+          fact_revision_id: request.revisionId,
+          fact_content_hash: prepared.contentHash,
+          bindings_fingerprint: hash(prepared.citations),
+        });
         committing = true;
         await client.query('COMMIT');
         return {
