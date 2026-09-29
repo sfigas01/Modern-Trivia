@@ -38,6 +38,20 @@ export interface StoredThemeSourceRegistry {
   createdAt: Date;
 }
 
+export interface ThemeSourceDocumentBinding {
+  documentId: string;
+  sourcePolicyVersion: string;
+  registryHash: string;
+  entryId: string;
+  created: boolean;
+}
+
+export interface ThemeSourceBindingOptions {
+  registryHash?: string;
+  hops?: readonly string[];
+  requireExisting?: boolean;
+}
+
 interface RegistryRow {
   source_policy_version: string;
   contract_version: string;
@@ -82,6 +96,107 @@ async function selectRegistry(
   return result.rows[0] ? parseStored(result.rows[0]) : null;
 }
 
+/** Validate and bind against the caller's transaction; the caller owns commit and rollback. */
+export async function bindThemeSourceDocumentInTransaction(
+  client: PoolClient,
+  documentId: string,
+  version: string,
+  entryId: string,
+  options: ThemeSourceBindingOptions = {}
+): Promise<ThemeSourceDocumentBinding> {
+  const stored = await selectRegistry(client, version);
+  if (!stored)
+    throw new ThemeSourceRegistryError('missing_registry', 'source policy version does not exist');
+  if (options.registryHash !== undefined && stored.hash !== options.registryHash)
+    throw new ThemeSourceRegistryError(
+      'provenance_mismatch',
+      'registry hash does not match retrieval'
+    );
+  const entry = stored.manifest.entries.find((candidate) => candidate.id === entryId);
+  if (!entry)
+    throw new ThemeSourceRegistryError(
+      'provenance_mismatch',
+      'entry does not belong to source policy version'
+    );
+  const result = await client.query<{
+    source_policy_version: string;
+    publisher_id: string;
+    publisher: string;
+    origin_group: string;
+    source_class: string;
+    requested_url: string;
+    final_url: string;
+    canonical_url: string;
+  }>(
+    `SELECT source_policy_version, publisher_id, publisher, origin_group, source_class,
+            requested_url, final_url, canonical_url
+       FROM theme_evidence_documents WHERE id = $1 FOR UPDATE`,
+    [documentId]
+  );
+  const document = result.rows[0];
+  if (!document)
+    throw new ThemeSourceRegistryError('missing_document', 'evidence document does not exist');
+  if (
+    document.source_policy_version !== version ||
+    document.publisher_id !== entry.publisherId ||
+    document.publisher !== entry.publisherName ||
+    document.origin_group !== entry.originGroup ||
+    document.source_class !== entry.sourceClass
+  )
+    throw new ThemeSourceRegistryError(
+      'provenance_mismatch',
+      'document metadata does not match registry entry'
+    );
+  for (const url of [
+    document.requested_url,
+    document.final_url,
+    document.canonical_url,
+    ...(options.hops ?? []),
+  ]) {
+    const resolution = resolveThemeSourceUrl(stored.manifest, url);
+    if (resolution.status !== 'matched' || resolution.entry.id !== entryId)
+      throw new ThemeSourceRegistryError(
+        'provenance_mismatch',
+        'document URL does not match registry entry'
+      );
+  }
+  const inserted = options.requireExisting
+    ? null
+    : await client.query(
+        `INSERT INTO theme_evidence_document_sources (document_id, source_policy_version, registry_hash, entry_id)
+         VALUES ($1, $2, $3, $4) ON CONFLICT (document_id) DO NOTHING RETURNING document_id`,
+        [documentId, version, stored.hash, entryId]
+      );
+  if (!inserted?.rowCount) {
+    const existing = await client.query<{
+      source_policy_version: string;
+      registry_hash: string;
+      entry_id: string;
+    }>(
+      `SELECT source_policy_version, registry_hash, entry_id FROM theme_evidence_document_sources WHERE document_id = $1`,
+      [documentId]
+    );
+    const binding = existing.rows[0];
+    if (
+      !binding ||
+      binding.source_policy_version !== version ||
+      binding.registry_hash !== stored.hash ||
+      binding.entry_id !== entryId
+    )
+      throw new ThemeSourceRegistryError(
+        'binding_collision',
+        'document already has another source binding'
+      );
+  }
+  return {
+    documentId,
+    sourcePolicyVersion: version,
+    registryHash: stored.hash,
+    entryId,
+    created: Boolean(inserted?.rowCount),
+  };
+}
+
 export function createPostgresThemeSourceRegistryRepository(pool: Pool) {
   return {
     async append(
@@ -124,102 +239,18 @@ export function createPostgresThemeSourceRegistryRepository(pool: Pool) {
       documentId: string,
       version: string,
       entryId: string
-    ): Promise<{
-      documentId: string;
-      sourcePolicyVersion: string;
-      registryHash: string;
-      entryId: string;
-      created: boolean;
-    }> {
+    ): Promise<ThemeSourceDocumentBinding> {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        const stored = await selectRegistry(client, version);
-        if (!stored)
-          throw new ThemeSourceRegistryError(
-            'missing_registry',
-            'source policy version does not exist'
-          );
-        const entry = stored.manifest.entries.find((candidate) => candidate.id === entryId);
-        if (!entry)
-          throw new ThemeSourceRegistryError(
-            'provenance_mismatch',
-            'entry does not belong to source policy version'
-          );
-        const result = await client.query<{
-          source_policy_version: string;
-          publisher_id: string;
-          publisher: string;
-          origin_group: string;
-          source_class: string;
-          requested_url: string;
-          final_url: string;
-          canonical_url: string;
-        }>(
-          `SELECT source_policy_version, publisher_id, publisher, origin_group, source_class,
-                  requested_url, final_url, canonical_url
-             FROM theme_evidence_documents WHERE id = $1 FOR UPDATE`,
-          [documentId]
-        );
-        const document = result.rows[0];
-        if (!document)
-          throw new ThemeSourceRegistryError(
-            'missing_document',
-            'evidence document does not exist'
-          );
-        if (
-          document.source_policy_version !== version ||
-          document.publisher_id !== entry.publisherId ||
-          document.publisher !== entry.publisherName ||
-          document.origin_group !== entry.originGroup ||
-          document.source_class !== entry.sourceClass
-        )
-          throw new ThemeSourceRegistryError(
-            'provenance_mismatch',
-            'document metadata does not match registry entry'
-          );
-        for (const url of [document.requested_url, document.final_url, document.canonical_url]) {
-          const resolution = resolveThemeSourceUrl(stored.manifest, url);
-          if (resolution.status !== 'matched' || resolution.entry.id !== entryId)
-            throw new ThemeSourceRegistryError(
-              'provenance_mismatch',
-              'document URL does not match registry entry'
-            );
-        }
-        const inserted = await client.query(
-          `INSERT INTO theme_evidence_document_sources (document_id, source_policy_version, registry_hash, entry_id)
-           VALUES ($1, $2, $3, $4) ON CONFLICT (document_id) DO NOTHING RETURNING document_id`,
-          [documentId, version, stored.hash, entryId]
-        );
-        if (!inserted.rowCount) {
-          const existing = await client.query<{
-            source_policy_version: string;
-            registry_hash: string;
-            entry_id: string;
-          }>(
-            `SELECT source_policy_version, registry_hash, entry_id FROM theme_evidence_document_sources WHERE document_id = $1`,
-            [documentId]
-          );
-          const binding = existing.rows[0];
-          if (
-            !binding ||
-            binding.source_policy_version !== version ||
-            binding.registry_hash !== stored.hash ||
-            binding.entry_id !== entryId
-          )
-            throw new ThemeSourceRegistryError(
-              'binding_collision',
-              'document already has another source binding'
-            );
-        }
-        await client.query('COMMIT');
-        return {
+        const binding = await bindThemeSourceDocumentInTransaction(
+          client,
           documentId,
-          sourcePolicyVersion: version,
-          registryHash: stored.hash,
-          entryId,
-          created: Boolean(inserted.rowCount),
-        };
+          version,
+          entryId
+        );
+        await client.query('COMMIT');
+        return binding;
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;

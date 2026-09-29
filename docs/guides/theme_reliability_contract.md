@@ -1,6 +1,6 @@
 # Theme reliability foundation contract
 
-This guide describes the additive `theme-reliability-v1` foundation for STE-25 and STE-167. It defines durable contracts and database invariants; it does not enable source retrieval, model calls, themed-game orchestration, client behavior, or reliable generation by itself.
+This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7 candidate boundary. It defines durable contracts and database invariants; it does not enable source retrieval, live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
 
 ## Reliability boundary
 
@@ -11,6 +11,8 @@ The intended pipeline is:
 Evidence support, exact-question approval, and roster eligibility are separate decisions. A pass in one layer never implies a pass in another. Missing, malformed, stale, incomplete, conflicting, or flagged evidence withholds the question. An answer appearing in a passage does not prove that the question is entailed or that it has only one valid answer.
 
 The existing static QA, coherence, obviousness, and semantic novelty checks remain required before atomic approval. They are outside this foundation slice. The foundation is therefore an enforcement surface for a later reliability pipeline, not proof that generation is currently reliable.
+
+S7 can persist one pending candidate from one currently eligible, independently reviewed fact revision. It does not mark that candidate accepted or eligible for gameplay; the existing QA, question evidence review, semantic novelty, and approval stages remain separate gates.
 
 ## Immutable evidence and revisions
 
@@ -55,6 +57,12 @@ Reservations bind the exact composite identities: `(questionRevisionId, question
 The application schemas provide useful validation and public-contract checks. PostgreSQL adds the durable guarantees that application-only validation cannot provide: composite foreign-key identity bindings, uniqueness under concurrent writes, append-only triggers for evidence/fact/review records, and partial uniqueness for active participant/fact reservations. Application code still owns policy evaluation, latest-review selection, roster/history rechecks, lease recovery, and transaction ordering.
 
 The migration has an opt-in PostgreSQL integration test path. It is intended to validate the real constraints and append-only behavior against a disposable database; it does not run against production as part of this foundation. Concurrency races, worker restart recovery, complete five-game history reconstruction, source retrieval safety, provider reliability, factual truth, and end-to-end 40-question readiness remain deferred to the later source, lifecycle, evaluation, and rollout lanes.
+
+The additive S6a migration adds immutable fact-derivation attempt headers and terminal outcomes. A new fact revision written through the derivation repository is atomically bound to its attempt outcome by exact revision ID and content hash. The stored header identifies the policy, prompt hash/version, producer, execution, and bounded evidence manifest; it does not retain raw prompt or passage text. Legacy fact revisions remain valid without a provenance link. These records do not establish factual truth, independent review, or eligibility for a game.
+
+The additive S6b migration adds immutable review attempt headers and outcomes. Each review binds by composite foreign key to one persisted S6a derivation outcome and exact fact revision/hash. The attempt records trusted reviewer identity/execution, sequence, policy/prompt/input hashes, and evaluation time; the outcome stores either six strict dimension results plus an application-computed aggregate verdict and bounded validity, or an allowlisted safe failure code. The reviewer receives every passage in the original derivation manifest, including uncited evidence, after exact provenance and freshness checks. Reviewer identity and execution must differ from the producer; model reviewers must also use a different provider/model pair. Replays return a completed result without redispatch, while unresolved attempts are never retried automatically.
+
+The pure S6b eligibility selector considers the newest sequence before its outcome, so a newer pending or adverse review blocks older approval. It requires the exact current revision, complete unchanged evidence, minimum supporting-origin count, no conflict edge, six passing dimensions, and unexpired fact and review validity. This is fact candidacy only and does not authorize question writing or gameplay. The review result and migration are documented in `docs/guides/theme_source_pipeline.md` and `migrations/0012_theme_fact_reviews.sql`.
 
 ## Later integration boundaries
 
