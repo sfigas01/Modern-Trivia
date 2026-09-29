@@ -1,6 +1,6 @@
 # Theme reliability foundation contract
 
-This guide describes the additive `theme-reliability-v1` foundation for STE-25 and STE-167. It defines durable contracts and database invariants; it does not enable source retrieval, model calls, themed-game orchestration, client behavior, or reliable generation by itself.
+This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7 candidate boundary. It defines durable contracts and database invariants; it does not enable source retrieval, live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
 
 ## Reliability boundary
 
@@ -11,6 +11,8 @@ The intended pipeline is:
 Evidence support, exact-question approval, and roster eligibility are separate decisions. A pass in one layer never implies a pass in another. Missing, malformed, stale, incomplete, conflicting, or flagged evidence withholds the question. An answer appearing in a passage does not prove that the question is entailed or that it has only one valid answer.
 
 The existing static QA, coherence, obviousness, and semantic novelty checks remain required before atomic approval. They are outside this foundation slice. The foundation is therefore an enforcement surface for a later reliability pipeline, not proof that generation is currently reliable.
+
+S7 can persist one pending candidate from one currently eligible, independently reviewed fact revision. It does not mark that candidate accepted or eligible for gameplay; the existing QA, question evidence review, semantic novelty, and approval stages remain separate gates.
 
 ## Immutable evidence and revisions
 
