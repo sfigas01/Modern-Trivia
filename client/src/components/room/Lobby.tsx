@@ -15,6 +15,7 @@ import {
 import { LeaveConfirmModal } from './LeaveConfirmModal';
 
 import { PlayerRoster } from './PlayerRoster';
+import { ThemedStartButton } from './ThemedStartButton';
 import { clearRoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -124,6 +125,7 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Settings</CardTitle>
           <CardDescription>
+            {snapshot.theme ? <>Theme: {snapshot.theme} &middot; </> : null}
             {snapshot.categories.includes('All')
               ? 'All categories'
               : snapshot.categories.join(', ')}{' '}
@@ -145,22 +147,28 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
 
       {isHost ? (
         <div className="space-y-3">
-          <Button
-            className="w-full h-14 text-lg font-bold"
-            disabled={!canStart || start.isPending}
-            onClick={handleStart}
-            data-testid="button-start-game"
-          >
-            <Play className="w-5 h-5 mr-2" />
-            {start.isPending ? 'Starting...' : 'Start Game'}
-          </Button>
-          {!canStart && (
-            <p
-              className="text-center text-sm text-muted-foreground"
-              data-testid="text-need-players"
-            >
-              Need at least 2 players
-            </p>
+          {snapshot.theme ? (
+            <ThemedStartButton code={snapshot.code} theme={snapshot.theme} canStart={canStart} />
+          ) : (
+            <>
+              <Button
+                className="w-full h-14 text-lg font-bold"
+                disabled={!canStart || start.isPending}
+                onClick={handleStart}
+                data-testid="button-start-game"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                {start.isPending ? 'Starting...' : 'Start Game'}
+              </Button>
+              {!canStart && (
+                <p
+                  className="text-center text-sm text-muted-foreground"
+                  data-testid="text-need-players"
+                >
+                  Need at least 2 players
+                </p>
+              )}
+            </>
           )}
           <Button
             variant="outline"

@@ -1,0 +1,1692 @@
+[
+  {
+    "id": "holdout-semantic_duplicate-01",
+    "a": {
+      "question": "How many wheels does a standard bicycle have?",
+      "answer": "2"
+    },
+    "b": {
+      "question": "Give the wheel count of an ordinary bicycle.",
+      "answer": "2"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-01",
+    "a": {
+      "question": "How many wheels does a standard bicycle have?",
+      "answer": "2"
+    },
+    "b": {
+      "question": "Give the wheel count of an ordinary bicycle.",
+      "answer": "3"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-02",
+    "a": {
+      "question": "Which instrument measures atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "What device is used to measure air pressure?",
+      "answer": "Barometer"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-02",
+    "a": {
+      "question": "Which instrument measures atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "What device is used to measure air pressure?",
+      "answer": "Thermometer"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-03",
+    "a": {
+      "question": "What is the SI unit of electric current?",
+      "answer": "Ampere"
+    },
+    "b": {
+      "question": "Electric current is measured in which SI unit?",
+      "answer": "Ampere"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-03",
+    "a": {
+      "question": "What is the SI unit of electric current?",
+      "answer": "Ampere"
+    },
+    "b": {
+      "question": "Electric current is measured in which SI unit?",
+      "answer": "Volt"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-04",
+    "a": {
+      "question": "What colour results from mixing blue and yellow paint?",
+      "answer": "Green"
+    },
+    "b": {
+      "question": "Mix yellow paint with blue paint: which colour results?",
+      "answer": "Green"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-04",
+    "a": {
+      "question": "What colour results from mixing blue and yellow paint?",
+      "answer": "Green"
+    },
+    "b": {
+      "question": "Mix yellow paint with blue paint: which colour results?",
+      "answer": "Orange"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-05",
+    "a": {
+      "question": "How many sides does a pentagon have?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "Give the number of edges on a pentagon.",
+      "answer": "5"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-05",
+    "a": {
+      "question": "How many sides does a pentagon have?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "Give the number of edges on a pentagon.",
+      "answer": "6"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-06",
+    "a": {
+      "question": "Which planet is closest to the Sun?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "Name the innermost planet of our solar system.",
+      "answer": "Mercury"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-06",
+    "a": {
+      "question": "Which planet is closest to the Sun?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "Name the innermost planet of our solar system.",
+      "answer": "Venus"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-07",
+    "a": {
+      "question": "What gas do plants absorb during photosynthesis?",
+      "answer": "Carbon dioxide"
+    },
+    "b": {
+      "question": "During photosynthesis, plants take in which gas?",
+      "answer": "Carbon dioxide"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-07",
+    "a": {
+      "question": "What gas do plants absorb during photosynthesis?",
+      "answer": "Carbon dioxide"
+    },
+    "b": {
+      "question": "During photosynthesis, plants take in which gas?",
+      "answer": "Helium"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-08",
+    "a": {
+      "question": "What is the freezing point of pure water at standard pressure in Celsius?",
+      "answer": "0"
+    },
+    "b": {
+      "question": "At standard atmospheric pressure, at what Celsius temperature does pure water freeze?",
+      "answer": "0"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-08",
+    "a": {
+      "question": "What is the freezing point of pure water at standard pressure in Celsius?",
+      "answer": "0"
+    },
+    "b": {
+      "question": "At standard atmospheric pressure, at what Celsius temperature does pure water freeze?",
+      "answer": "10"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-09",
+    "a": {
+      "question": "Which organ pumps blood around the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "Name the organ responsible for circulating blood in humans.",
+      "answer": "Heart"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-09",
+    "a": {
+      "question": "Which organ pumps blood around the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "Name the organ responsible for circulating blood in humans.",
+      "answer": "Liver"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-10",
+    "a": {
+      "question": "What is the chemical symbol for silver?",
+      "answer": "Ag"
+    },
+    "b": {
+      "question": "Silver is represented by which chemical symbol?",
+      "answer": "Ag"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-10",
+    "a": {
+      "question": "What is the chemical symbol for silver?",
+      "answer": "Ag"
+    },
+    "b": {
+      "question": "Silver is represented by which chemical symbol?",
+      "answer": "Au"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-11",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which city serves as the Japanese capital?",
+      "answer": "Tokyo"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-11",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which city serves as the Japanese capital?",
+      "answer": "Kyoto"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-12",
+    "a": {
+      "question": "Who painted The Starry Night?",
+      "answer": "Vincent van Gogh"
+    },
+    "b": {
+      "question": "Name the artist behind The Starry Night.",
+      "answer": "Vincent van Gogh"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-12",
+    "a": {
+      "question": "Who painted The Starry Night?",
+      "answer": "Vincent van Gogh"
+    },
+    "b": {
+      "question": "Name the artist behind The Starry Night.",
+      "answer": "Claude Monet"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-13",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "Which ocean covers the greatest area on our planet?",
+      "answer": "Pacific Ocean"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-13",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "Which ocean covers the greatest area on our planet?",
+      "answer": "Atlantic Ocean"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-14",
+    "a": {
+      "question": "What is the square root of 81?",
+      "answer": "9"
+    },
+    "b": {
+      "question": "Give the positive number whose square is 81.",
+      "answer": "9"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-14",
+    "a": {
+      "question": "What is the square root of 81?",
+      "answer": "9"
+    },
+    "b": {
+      "question": "Give the positive number whose square is 81.",
+      "answer": "8"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-15",
+    "a": {
+      "question": "What is the official currency of Switzerland?",
+      "answer": "Swiss franc"
+    },
+    "b": {
+      "question": "Which currency is used officially in Switzerland?",
+      "answer": "Swiss franc"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-15",
+    "a": {
+      "question": "What is the official currency of Switzerland?",
+      "answer": "Swiss franc"
+    },
+    "b": {
+      "question": "Which currency is used officially in Switzerland?",
+      "answer": "Euro"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-16",
+    "a": {
+      "question": "Which sport uses a shuttlecock?",
+      "answer": "Badminton"
+    },
+    "b": {
+      "question": "A shuttlecock is the projectile in which sport?",
+      "answer": "Badminton"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-16",
+    "a": {
+      "question": "Which sport uses a shuttlecock?",
+      "answer": "Badminton"
+    },
+    "b": {
+      "question": "A shuttlecock is the projectile in which sport?",
+      "answer": "Tennis"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-17",
+    "a": {
+      "question": "How many players per team are on court in standard basketball?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "In basketball, how many players from each team play on court at once?",
+      "answer": "5"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-17",
+    "a": {
+      "question": "How many players per team are on court in standard basketball?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "In basketball, how many players from each team play on court at once?",
+      "answer": "6"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-18",
+    "a": {
+      "question": "Which continent contains the Sahara Desert?",
+      "answer": "Africa"
+    },
+    "b": {
+      "question": "On what continent is the Sahara located?",
+      "answer": "Africa"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-18",
+    "a": {
+      "question": "Which continent contains the Sahara Desert?",
+      "answer": "Africa"
+    },
+    "b": {
+      "question": "On what continent is the Sahara located?",
+      "answer": "Asia"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-19",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is predominant in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-19",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is predominant in Brazil?",
+      "answer": "Spanish"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-20",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "Express water using its chemical formula.",
+      "answer": "H2O"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-20",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "Express water using its chemical formula.",
+      "answer": "CO2"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-21",
+    "a": {
+      "question": "Which animal is the tallest living land mammal?",
+      "answer": "Giraffe"
+    },
+    "b": {
+      "question": "Name the tallest extant terrestrial mammal.",
+      "answer": "Giraffe"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-21",
+    "a": {
+      "question": "Which animal is the tallest living land mammal?",
+      "answer": "Giraffe"
+    },
+    "b": {
+      "question": "Name the tallest extant terrestrial mammal.",
+      "answer": "Elephant"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-22",
+    "a": {
+      "question": "How many strings does a standard violin have?",
+      "answer": "4"
+    },
+    "b": {
+      "question": "Give the usual string count of a violin.",
+      "answer": "4"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-22",
+    "a": {
+      "question": "How many strings does a standard violin have?",
+      "answer": "4"
+    },
+    "b": {
+      "question": "Give the usual string count of a violin.",
+      "answer": "6"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-23",
+    "a": {
+      "question": "What is the main ingredient in traditional hummus?",
+      "answer": "Chickpeas"
+    },
+    "b": {
+      "question": "Traditional hummus is primarily made from which legume?",
+      "answer": "Chickpeas"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-23",
+    "a": {
+      "question": "What is the main ingredient in traditional hummus?",
+      "answer": "Chickpeas"
+    },
+    "b": {
+      "question": "Traditional hummus is primarily made from which legume?",
+      "answer": "Lentils"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-24",
+    "a": {
+      "question": "What is the Roman numeral for fifty?",
+      "answer": "L"
+    },
+    "b": {
+      "question": "How is fifty written in Roman numerals?",
+      "answer": "L"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-24",
+    "a": {
+      "question": "What is the Roman numeral for fifty?",
+      "answer": "L"
+    },
+    "b": {
+      "question": "How is fifty written in Roman numerals?",
+      "answer": "C"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-25",
+    "a": {
+      "question": "In chess, which piece moves in an L shape?",
+      "answer": "Knight"
+    },
+    "b": {
+      "question": "Name the chess piece with an L-shaped move.",
+      "answer": "Knight"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-25",
+    "a": {
+      "question": "In chess, which piece moves in an L shape?",
+      "answer": "Knight"
+    },
+    "b": {
+      "question": "Name the chess piece with an L-shaped move.",
+      "answer": "Bishop"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-26",
+    "a": {
+      "question": "What is the term for a word that reads the same backward and forward?",
+      "answer": "Palindrome"
+    },
+    "b": {
+      "question": "What do we call a word unchanged when its letters are reversed?",
+      "answer": "Palindrome"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-26",
+    "a": {
+      "question": "What is the term for a word that reads the same backward and forward?",
+      "answer": "Palindrome"
+    },
+    "b": {
+      "question": "What do we call a word unchanged when its letters are reversed?",
+      "answer": "Anagram"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-27",
+    "a": {
+      "question": "What is the longest bone in the human body?",
+      "answer": "Femur"
+    },
+    "b": {
+      "question": "Name the human skeleton's longest bone.",
+      "answer": "Femur"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-27",
+    "a": {
+      "question": "What is the longest bone in the human body?",
+      "answer": "Femur"
+    },
+    "b": {
+      "question": "Name the human skeleton's longest bone.",
+      "answer": "Humerus"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-28",
+    "a": {
+      "question": "How many degrees are in a right angle?",
+      "answer": "90"
+    },
+    "b": {
+      "question": "Give the degree measure of a right angle.",
+      "answer": "90"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-28",
+    "a": {
+      "question": "How many degrees are in a right angle?",
+      "answer": "90"
+    },
+    "b": {
+      "question": "Give the degree measure of a right angle.",
+      "answer": "180"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-29",
+    "a": {
+      "question": "Which country gave the Statue of Liberty to the United States?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "From which nation did the United States receive the Statue of Liberty?",
+      "answer": "France"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-29",
+    "a": {
+      "question": "Which country gave the Statue of Liberty to the United States?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "From which nation did the United States receive the Statue of Liberty?",
+      "answer": "Spain"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-30",
+    "a": {
+      "question": "What is the name of the process by which liquid becomes gas at its surface?",
+      "answer": "Evaporation"
+    },
+    "b": {
+      "question": "Name the surface process that turns a liquid into vapour.",
+      "answer": "Evaporation"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-30",
+    "a": {
+      "question": "What is the name of the process by which liquid becomes gas at its surface?",
+      "answer": "Evaporation"
+    },
+    "b": {
+      "question": "Name the surface process that turns a liquid into vapour.",
+      "answer": "Condensation"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-31",
+    "a": {
+      "question": "What is the first element on the periodic table?",
+      "answer": "Hydrogen"
+    },
+    "b": {
+      "question": "Which element occupies position one in the periodic table?",
+      "answer": "Hydrogen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-31",
+    "a": {
+      "question": "What is the first element on the periodic table?",
+      "answer": "Hydrogen"
+    },
+    "b": {
+      "question": "Which element occupies position one in the periodic table?",
+      "answer": "Helium"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-32",
+    "a": {
+      "question": "Which musical clef is also called the G clef?",
+      "answer": "Treble clef"
+    },
+    "b": {
+      "question": "The G clef is another name for which clef?",
+      "answer": "Treble clef"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-32",
+    "a": {
+      "question": "Which musical clef is also called the G clef?",
+      "answer": "Treble clef"
+    },
+    "b": {
+      "question": "The G clef is another name for which clef?",
+      "answer": "Bass clef"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-33",
+    "a": {
+      "question": "How many minutes are in three hours?",
+      "answer": "180"
+    },
+    "b": {
+      "question": "Express a duration of three hours in minutes.",
+      "answer": "180"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-33",
+    "a": {
+      "question": "How many minutes are in three hours?",
+      "answer": "180"
+    },
+    "b": {
+      "question": "Express a duration of three hours in minutes.",
+      "answer": "120"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-34",
+    "a": {
+      "question": "Which bird is traditionally associated with delivering babies in European folklore?",
+      "answer": "Stork"
+    },
+    "b": {
+      "question": "In European folklore, what bird brings babies?",
+      "answer": "Stork"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-34",
+    "a": {
+      "question": "Which bird is traditionally associated with delivering babies in European folklore?",
+      "answer": "Stork"
+    },
+    "b": {
+      "question": "In European folklore, what bird brings babies?",
+      "answer": "Swan"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-35",
+    "a": {
+      "question": "Who composed The Four Seasons violin concertos?",
+      "answer": "Antonio Vivaldi"
+    },
+    "b": {
+      "question": "Name the composer of the violin concertos The Four Seasons.",
+      "answer": "Antonio Vivaldi"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-35",
+    "a": {
+      "question": "Who composed The Four Seasons violin concertos?",
+      "answer": "Antonio Vivaldi"
+    },
+    "b": {
+      "question": "Name the composer of the violin concertos The Four Seasons.",
+      "answer": "Johann Sebastian Bach"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-36",
+    "a": {
+      "question": "Which sea separates Europe and North Africa?",
+      "answer": "Mediterranean Sea"
+    },
+    "b": {
+      "question": "Name the sea between northern Africa and Europe.",
+      "answer": "Mediterranean Sea"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-36",
+    "a": {
+      "question": "Which sea separates Europe and North Africa?",
+      "answer": "Mediterranean Sea"
+    },
+    "b": {
+      "question": "Name the sea between northern Africa and Europe.",
+      "answer": "Baltic Sea"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-37",
+    "a": {
+      "question": "What does a seismograph record?",
+      "answer": "Ground motion"
+    },
+    "b": {
+      "question": "What phenomenon is recorded by a seismograph?",
+      "answer": "Ground motion"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-37",
+    "a": {
+      "question": "What does a seismograph record?",
+      "answer": "Ground motion"
+    },
+    "b": {
+      "question": "What phenomenon is recorded by a seismograph?",
+      "answer": "Air temperature"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-38",
+    "a": {
+      "question": "How many faces does a cube have?",
+      "answer": "6"
+    },
+    "b": {
+      "question": "Give the number of flat faces on a cube.",
+      "answer": "6"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-38",
+    "a": {
+      "question": "How many faces does a cube have?",
+      "answer": "6"
+    },
+    "b": {
+      "question": "Give the number of flat faces on a cube.",
+      "answer": "8"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-39",
+    "a": {
+      "question": "Which part of a plant usually absorbs water from the soil?",
+      "answer": "Roots"
+    },
+    "b": {
+      "question": "What plant structure typically takes up soil water?",
+      "answer": "Roots"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-39",
+    "a": {
+      "question": "Which part of a plant usually absorbs water from the soil?",
+      "answer": "Roots"
+    },
+    "b": {
+      "question": "What plant structure typically takes up soil water?",
+      "answer": "Flowers"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-semantic_duplicate-40",
+    "a": {
+      "question": "What is the name for animals that eat both plants and animals?",
+      "answer": "Omnivores"
+    },
+    "b": {
+      "question": "Animals consuming both plant and animal matter are called what?",
+      "answer": "Omnivores"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "holdout-answer_conflict-40",
+    "a": {
+      "question": "What is the name for animals that eat both plants and animals?",
+      "answer": "Omnivores"
+    },
+    "b": {
+      "question": "Animals consuming both plant and animal matter are called what?",
+      "answer": "Herbivores"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "holdout-scope-01",
+    "a": {
+      "question": "How many wheels does a standard bicycle have?",
+      "answer": "2"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: How many wheels does a standard bicycle have?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-02",
+    "a": {
+      "question": "Which instrument measures atmospheric pressure?",
+      "answer": "Barometer"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Which instrument measures atmospheric pressure?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-03",
+    "a": {
+      "question": "What is the SI unit of electric current?",
+      "answer": "Ampere"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the SI unit of electric current?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-04",
+    "a": {
+      "question": "What colour results from mixing blue and yellow paint?",
+      "answer": "Green"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What colour results from mixing blue and yellow paint?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-05",
+    "a": {
+      "question": "How many sides does a pentagon have?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: How many sides does a pentagon have?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-06",
+    "a": {
+      "question": "Which planet is closest to the Sun?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Which planet is closest to the Sun?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-07",
+    "a": {
+      "question": "What gas do plants absorb during photosynthesis?",
+      "answer": "Carbon dioxide"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What gas do plants absorb during photosynthesis?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-08",
+    "a": {
+      "question": "What is the freezing point of pure water at standard pressure in Celsius?",
+      "answer": "0"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the freezing point of pure water at standard pressure in Celsius?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-09",
+    "a": {
+      "question": "Which organ pumps blood around the human body?",
+      "answer": "Heart"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Which organ pumps blood around the human body?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-10",
+    "a": {
+      "question": "What is the chemical symbol for silver?",
+      "answer": "Ag"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the chemical symbol for silver?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-11",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the capital city of Japan?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-12",
+    "a": {
+      "question": "Who painted The Starry Night?",
+      "answer": "Vincent van Gogh"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Who painted The Starry Night?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-13",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the largest ocean on Earth?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-14",
+    "a": {
+      "question": "What is the square root of 81?",
+      "answer": "9"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the square root of 81?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-15",
+    "a": {
+      "question": "What is the official currency of Switzerland?",
+      "answer": "Swiss franc"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the official currency of Switzerland?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-16",
+    "a": {
+      "question": "Which sport uses a shuttlecock?",
+      "answer": "Badminton"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Which sport uses a shuttlecock?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-17",
+    "a": {
+      "question": "How many players per team are on court in standard basketball?",
+      "answer": "5"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: How many players per team are on court in standard basketball?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-18",
+    "a": {
+      "question": "Which continent contains the Sahara Desert?",
+      "answer": "Africa"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: Which continent contains the Sahara Desert?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-19",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the primary language spoken in Brazil?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-scope-20",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "How many letters are in the English name of the answer to this question: What is the chemical formula for water?",
+      "answer": "7"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "holdout-temporal-01",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 1 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 1 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-02",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 2 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 2 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-03",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 3 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 3 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-04",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 4 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 4 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-05",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 5 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 5 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-06",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 6 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 6 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-07",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 7 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 7 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-08",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 8 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 8 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-09",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 9 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 9 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-10",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 10 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 10 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-11",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 11 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 11 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-12",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 12 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 12 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-13",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 13 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 13 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-14",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 14 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 14 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-15",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 15 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 15 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-16",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 16 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 16 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-17",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 17 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 17 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-18",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 18 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 18 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-19",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 19 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 19 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-temporal-20",
+    "a": {
+      "question": "Who chaired the fictional Mariner Club chapter 20 in 2012?",
+      "answer": "Dana Holt"
+    },
+    "b": {
+      "question": "Who chaired the fictional Mariner Club chapter 20 in 2024?",
+      "answer": "Lee Rowan"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "holdout-alias-01",
+    "a": {
+      "question": "Which author wrote Alice in Wonderland?",
+      "answer": "Lewis Carroll"
+    },
+    "b": {
+      "question": "Which author wrote Alice in Wonderland?",
+      "answer": "Charles Lutwidge Dodgson"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-02",
+    "a": {
+      "question": "Which singer was born Reginald Kenneth Dwight?",
+      "answer": "Elton John"
+    },
+    "b": {
+      "question": "Which singer was born Reginald Kenneth Dwight?",
+      "answer": "Reginald Kenneth Dwight"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-03",
+    "a": {
+      "question": "What country has the ISO alpha-2 code DE?",
+      "answer": "Germany"
+    },
+    "b": {
+      "question": "What country has the ISO alpha-2 code DE?",
+      "answer": "Federal Republic of Germany"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-04",
+    "a": {
+      "question": "What is the SI unit of frequency?",
+      "answer": "Hertz"
+    },
+    "b": {
+      "question": "What is the SI unit of frequency?",
+      "answer": "Hz"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-05",
+    "a": {
+      "question": "What is one quarter expressed as a percentage?",
+      "answer": "25%"
+    },
+    "b": {
+      "question": "What is one quarter expressed as a percentage?",
+      "answer": "twenty-five percent"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-06",
+    "a": {
+      "question": "How long is a standard marathon in kilometres?",
+      "answer": "42.195 km"
+    },
+    "b": {
+      "question": "How long is a standard marathon in kilometres?",
+      "answer": "42195 metres"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-07",
+    "a": {
+      "question": "Who wrote Nineteen Eighty-Four?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Who wrote Nineteen Eighty-Four?",
+      "answer": "Eric Arthur Blair"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-08",
+    "a": {
+      "question": "Which element has atomic number 11?",
+      "answer": "Sodium"
+    },
+    "b": {
+      "question": "Which element has atomic number 11?",
+      "answer": "Na"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-09",
+    "a": {
+      "question": "What country has Canberra as its capital?",
+      "answer": "Australia"
+    },
+    "b": {
+      "question": "What country has Canberra as its capital?",
+      "answer": "Commonwealth of Australia"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "holdout-alias-10",
+    "a": {
+      "question": "How many seconds are in two minutes?",
+      "answer": "120"
+    },
+    "b": {
+      "question": "How many seconds are in two minutes?",
+      "answer": "one hundred twenty"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  }
+]

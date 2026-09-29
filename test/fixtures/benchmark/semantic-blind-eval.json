@@ -1,0 +1,2212 @@
+[
+  {
+    "id": "blind-semantic_duplicate-1",
+    "a": {
+      "question": "What planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which celestial body is referred to as the Red Planet?",
+      "answer": "Mars"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-2",
+    "a": {
+      "question": "Who composed the music for the opera 'The Marriage of Figaro'?",
+      "answer": "Wolfgang Amadeus Mozart"
+    },
+    "b": {
+      "question": "Who is the composer of the opera 'The Marriage of Figaro'?",
+      "answer": "Mozart"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-3",
+    "a": {
+      "question": "What is the tallest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "Which mountain holds the record for the highest elevation above sea level?",
+      "answer": "Everest"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-4",
+    "a": {
+      "question": "In what year did the Titanic sink?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "When did the RMS Titanic meet its unfortunate end at sea?",
+      "answer": "The year 1912"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-5",
+    "a": {
+      "question": "Which element has the chemical symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "What is the chemical element with the symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-6",
+    "a": {
+      "question": "Who painted the 'Mona Lisa'?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Who is credited with creating the famous painting known as the 'Mona Lisa'?",
+      "answer": "Leonardo da Vinci"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-7",
+    "a": {
+      "question": "What is the capital city of France?",
+      "answer": "Paris"
+    },
+    "b": {
+      "question": "Which city is the capital of France?",
+      "answer": "Paris"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-8",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is predominantly spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-9",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "Blue whale"
+    },
+    "b": {
+      "question": "Which mammal is the largest on our planet?",
+      "answer": "The blue whale"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-10",
+    "a": {
+      "question": "Which U.S. state is known as the Sunshine State?",
+      "answer": "Florida"
+    },
+    "b": {
+      "question": "What state is often referred to as the Sunshine State in the U.S.?",
+      "answer": "Florida"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-11",
+    "a": {
+      "question": "Who wrote the play 'Romeo and Juliet'?",
+      "answer": "William Shakespeare"
+    },
+    "b": {
+      "question": "Which playwright is responsible for 'Romeo and Juliet'?",
+      "answer": "Shakespeare"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-12",
+    "a": {
+      "question": "What is the most abundant gas in Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "b": {
+      "question": "Which gas makes up the largest portion of Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-13",
+    "a": {
+      "question": "What is the smallest prime number?",
+      "answer": "2"
+    },
+    "b": {
+      "question": "Which number is recognized as the smallest prime?",
+      "answer": "Two"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-14",
+    "a": {
+      "question": "Which city is known as the Big Apple?",
+      "answer": "New York City"
+    },
+    "b": {
+      "question": "What city is famously nicknamed the Big Apple?",
+      "answer": "New York"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-15",
+    "a": {
+      "question": "In which ocean is the Mariana Trench located?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "The Mariana Trench can be found in which ocean?",
+      "answer": "The Pacific"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-16",
+    "a": {
+      "question": "Who was the first President of the United States?",
+      "answer": "George Washington"
+    },
+    "b": {
+      "question": "Who served as the inaugural President of the United States?",
+      "answer": "George Washington"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-17",
+    "a": {
+      "question": "What is the main ingredient in traditional Japanese miso soup?",
+      "answer": "Miso paste"
+    },
+    "b": {
+      "question": "Which ingredient is primarily used in making miso soup?",
+      "answer": "Miso"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-18",
+    "a": {
+      "question": "Which planet in our solar system is closest to the sun?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "What is the name of the planet nearest to the sun in our solar system?",
+      "answer": "Mercury"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-19",
+    "a": {
+      "question": "What currency is used in Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "Which currency do they use in Japan?",
+      "answer": "Japanese yen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-20",
+    "a": {
+      "question": "Which author wrote the novel '1984'?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Who penned the book titled '1984'?",
+      "answer": "Orwell"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-21",
+    "a": {
+      "question": "What is the capital city of South Korea?",
+      "answer": "Seoul"
+    },
+    "b": {
+      "question": "Name the capital of South Korea.",
+      "answer": "Seoul"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-22",
+    "a": {
+      "question": "Which planet is closest to the Sun?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "What is the nearest planet to the Sun?",
+      "answer": "Mercury"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-23",
+    "a": {
+      "question": "Who wrote the novel '1984'?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Identify the author of the book '1984'.",
+      "answer": "George Orwell"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-24",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "The blue whale"
+    },
+    "b": {
+      "question": "Name the largest mammal that exists on our planet.",
+      "answer": "The blue whale"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-25",
+    "a": {
+      "question": "In which year did the Titanic sink?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "What year did the Titanic meet its fate and sink?",
+      "answer": "1912"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-26",
+    "a": {
+      "question": "What gas do plants primarily absorb during photosynthesis?",
+      "answer": "Carbon dioxide"
+    },
+    "b": {
+      "question": "Which gas is mainly absorbed by plants for the process of photosynthesis?",
+      "answer": "Carbon dioxide"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-27",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Identify the artist of the world-famous painting, Mona Lisa.",
+      "answer": "Leonardo da Vinci"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-28",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is predominantly spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-29",
+    "a": {
+      "question": "What chemical element has the symbol 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "Identify the element represented by the symbol 'O'.",
+      "answer": "Oxygen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-30",
+    "a": {
+      "question": "Who is the author of 'To Kill a Mockingbird'?",
+      "answer": "Harper Lee"
+    },
+    "b": {
+      "question": "Name the writer of the novel 'To Kill a Mockingbird'.",
+      "answer": "Harper Lee"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-31",
+    "a": {
+      "question": "Which ocean is the largest by surface area?",
+      "answer": "The Pacific Ocean"
+    },
+    "b": {
+      "question": "Name the ocean that covers the largest area on Earth.",
+      "answer": "The Pacific Ocean"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-32",
+    "a": {
+      "question": "What is the process by which plants make their own food using sunlight?",
+      "answer": "Photosynthesis"
+    },
+    "b": {
+      "question": "Identify the process where plants create food utilizing light from the sun.",
+      "answer": "Photosynthesis"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-33",
+    "a": {
+      "question": "Which country gifted the Statue of Liberty to the United States?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "Which nation presented the Statue of Liberty to America?",
+      "answer": "France"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-34",
+    "a": {
+      "question": "What is the smallest planet in our solar system?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "Identify the planet that is the smallest in our solar system.",
+      "answer": "Mercury"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-35",
+    "a": {
+      "question": "How many continents are on Earth?",
+      "answer": "Seven"
+    },
+    "b": {
+      "question": "What is the total number of continents on our planet?",
+      "answer": "Seven"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-36",
+    "a": {
+      "question": "Who is known as the 'Father of Computers'?",
+      "answer": "Charles Babbage"
+    },
+    "b": {
+      "question": "Identify the individual referred to as the 'Father of Computers'.",
+      "answer": "Charles Babbage"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-37",
+    "a": {
+      "question": "What currency is used in Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "Name the currency utilized in Japan.",
+      "answer": "Yen"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-38",
+    "a": {
+      "question": "What is the freezing point of water in degrees Celsius?",
+      "answer": "0 degrees Celsius"
+    },
+    "b": {
+      "question": "At what temperature does water freeze, measured in Celsius?",
+      "answer": "0 degrees Celsius"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-39",
+    "a": {
+      "question": "What is the largest organ in the human body?",
+      "answer": "The skin"
+    },
+    "b": {
+      "question": "Identify the largest organ of the human body.",
+      "answer": "The skin"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-semantic_duplicate-40",
+    "a": {
+      "question": "Which famous scientist developed the theory of relativity?",
+      "answer": "Albert Einstein"
+    },
+    "b": {
+      "question": "Who formulated the theory of relativity?",
+      "answer": "Albert Einstein"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-1",
+    "a": {
+      "question": "What is the capital of France?",
+      "answer": "Paris"
+    },
+    "b": {
+      "question": "Which city is the capital of France?",
+      "answer": "Lyon"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-2",
+    "a": {
+      "question": "Who discovered penicillin?",
+      "answer": "Alexander Fleming"
+    },
+    "b": {
+      "question": "Who was the scientist that discovered penicillin?",
+      "answer": "Louis Pasteur"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-3",
+    "a": {
+      "question": "What is the largest planet in our solar system?",
+      "answer": "Jupiter"
+    },
+    "b": {
+      "question": "Which planet holds the title of the largest in our solar system?",
+      "answer": "Saturn"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-4",
+    "a": {
+      "question": "In which year did the Titanic sink?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "What year marks the sinking of the Titanic?",
+      "answer": "1915"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-5",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Which artist is credited with painting the Mona Lisa?",
+      "answer": "Michelangelo"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-6",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "How is water represented in chemical notation?",
+      "answer": "HO2"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-7",
+    "a": {
+      "question": "Which country hosted the 2016 Summer Olympics?",
+      "answer": "Brazil"
+    },
+    "b": {
+      "question": "Where were the 2016 Summer Olympic Games held?",
+      "answer": "Japan"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-8",
+    "a": {
+      "question": "Who wrote the novel '1984'?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Who is the author of the book '1984'?",
+      "answer": "Aldous Huxley"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-9",
+    "a": {
+      "question": "What is the square root of 64?",
+      "answer": "8"
+    },
+    "b": {
+      "question": "Calculate the square root of 64.",
+      "answer": "9"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-10",
+    "a": {
+      "question": "What is the official language of Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "Which language is officially spoken in Brazil?",
+      "answer": "Spanish"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-11",
+    "a": {
+      "question": "What is the highest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "Name the tallest mountain on Earth.",
+      "answer": "K2"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-12",
+    "a": {
+      "question": "Who was the first President of the United States?",
+      "answer": "George Washington"
+    },
+    "b": {
+      "question": "Name the inaugural President of the United States of America.",
+      "answer": "Thomas Jefferson"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-13",
+    "a": {
+      "question": "What is the primary ingredient in guacamole?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "Identify the main component of guacamole dip.",
+      "answer": "Tomato"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-14",
+    "a": {
+      "question": "What is the currency used in Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "Which currency is used in Japan?",
+      "answer": "Won"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-15",
+    "a": {
+      "question": "What is the largest mammal on Earth?",
+      "answer": "Blue whale"
+    },
+    "b": {
+      "question": "Which mammal is known as the largest on the planet?",
+      "answer": "Elephant"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-16",
+    "a": {
+      "question": "Who composed the Four Seasons?",
+      "answer": "Antonio Vivaldi"
+    },
+    "b": {
+      "question": "Which composer created the Four Seasons?",
+      "answer": "Johann Sebastian Bach"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-17",
+    "a": {
+      "question": "What is the smallest prime number?",
+      "answer": "2"
+    },
+    "b": {
+      "question": "Identify the smallest prime number.",
+      "answer": "1"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-18",
+    "a": {
+      "question": "Which element has the highest melting point?",
+      "answer": "Tungsten"
+    },
+    "b": {
+      "question": "Name the element with the highest melting temperature.",
+      "answer": "Carbon"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-19",
+    "a": {
+      "question": "Who is the founder of Microsoft?",
+      "answer": "Bill Gates"
+    },
+    "b": {
+      "question": "Identify the founder of Microsoft Corporation.",
+      "answer": "Steve Jobs"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-20",
+    "a": {
+      "question": "What is the capital city of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Australia?",
+      "answer": "Sydney"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-21",
+    "a": {
+      "question": "What is the capital city of the fictional country of Loria?",
+      "answer": "Valoria"
+    },
+    "b": {
+      "question": "Name the capital of Loria, the fictional nation.",
+      "answer": "Eldoria"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-22",
+    "a": {
+      "question": "In the fantasy series 'Dragons of Myth', who is the first dragon rider?",
+      "answer": "Sir Elric"
+    },
+    "b": {
+      "question": "Who becomes the initial dragon rider in 'Dragons of Myth'?",
+      "answer": "Lady Aria"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-23",
+    "a": {
+      "question": "According to 'The Mysteries of Zendor', who is the ruler of the realm?",
+      "answer": "Queen Isolde"
+    },
+    "b": {
+      "question": "Who governs the realm in 'The Mysteries of Zendor'?",
+      "answer": "King Thorne"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-24",
+    "a": {
+      "question": "In the 'Galactic Odyssey' series, what is the flagship of the rebel fleet named?",
+      "answer": "Star Voyager"
+    },
+    "b": {
+      "question": "What is the name of the flagship used by rebels in 'Galactic Odyssey'?",
+      "answer": "Cosmic Dawn"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-25",
+    "a": {
+      "question": "What is the main ingredient in the fictional beverage 'Fizzpop'?",
+      "answer": "Blueberries"
+    },
+    "b": {
+      "question": "Identify the primary component of the drink 'Fizzpop'.",
+      "answer": "Strawberries"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-26",
+    "a": {
+      "question": "Who is the protagonist in the novel 'Shadow's Chase'?",
+      "answer": "Alex Night"
+    },
+    "b": {
+      "question": "Name the lead character in 'Shadow's Chase'.",
+      "answer": "Jordan Light"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-27",
+    "a": {
+      "question": "In the video game 'Quest for Glory', which kingdom does the player start in?",
+      "answer": "Lunaria"
+    },
+    "b": {
+      "question": "What is the starting kingdom in 'Quest for Glory'?",
+      "answer": "Solara"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-28",
+    "a": {
+      "question": "In 'The Chronicles of Eldoria', what is the magical artifact that grants wishes?",
+      "answer": "Crystal of Hopes"
+    },
+    "b": {
+      "question": "What is the name of the wish-granting artifact in 'The Chronicles of Eldoria'?",
+      "answer": "Emerald of Dreams"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-29",
+    "a": {
+      "question": "In the fictional universe 'Terra Nova', what is the largest continent called?",
+      "answer": "Arcturus"
+    },
+    "b": {
+      "question": "Name the largest continent in 'Terra Nova'.",
+      "answer": "Zenith"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-30",
+    "a": {
+      "question": "In the book 'The Enigma Code', who is the genius inventor of the decoding machine?",
+      "answer": "Dr. Fiona Gray"
+    },
+    "b": {
+      "question": "Who invented the decoding machine in 'The Enigma Code'?",
+      "answer": "Professor Liam Black"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-31",
+    "a": {
+      "question": "What is the main currency used in the fantasy land of Avoria?",
+      "answer": "Gold Crowns"
+    },
+    "b": {
+      "question": "Identify the primary currency in Avoria.",
+      "answer": "Silver Talons"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-32",
+    "a": {
+      "question": "In 'Saga of the Seven Seas', who is the captain of the ship 'Eternal Wave'?",
+      "answer": "Captain Morgan"
+    },
+    "b": {
+      "question": "Who commands the vessel 'Eternal Wave' in 'Saga of the Seven Seas'?",
+      "answer": "Captain Reid"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-33",
+    "a": {
+      "question": "Which planet is home to the alien species known as the Zynthians in 'Galactic Frontiers'?",
+      "answer": "Planet Zorath"
+    },
+    "b": {
+      "question": "Name the native planet of the Zynthians in 'Galactic Frontiers'.",
+      "answer": "Planet Xylon"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-34",
+    "a": {
+      "question": "In 'The Legend of Falnor', what is the ancient weapon used to defeat the dark sorcerer?",
+      "answer": "Blade of Eternity"
+    },
+    "b": {
+      "question": "What weapon is used to vanquish the dark sorcerer in 'The Legend of Falnor'?",
+      "answer": "Sword of Destiny"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-35",
+    "a": {
+      "question": "What is the sacred animal in the mythical land of Nymeria?",
+      "answer": "Phoenix"
+    },
+    "b": {
+      "question": "Which animal is considered sacred in Nymeria?",
+      "answer": "Dragon"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-36",
+    "a": {
+      "question": "In the story 'Empire of Shadows', who betrays the emperor?",
+      "answer": "General Kiro"
+    },
+    "b": {
+      "question": "Who is the traitor in 'Empire of Shadows'?",
+      "answer": "Advisor Leto"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-37",
+    "a": {
+      "question": "What is the name of the hidden valley in 'Tales of the Lost World'?",
+      "answer": "Shadow Glen"
+    },
+    "b": {
+      "question": "Identify the concealed valley in 'Tales of the Lost World'.",
+      "answer": "Whispering Hollow"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-38",
+    "a": {
+      "question": "In 'The Quest for Eternity', who is the sage guiding the heroes?",
+      "answer": "Elder Marik"
+    },
+    "b": {
+      "question": "Name the wise figure who aids the heroes in 'The Quest for Eternity'.",
+      "answer": "Sage Lyria"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-39",
+    "a": {
+      "question": "What is the powerful gemstone featured in 'The Crystal Kingdom'?",
+      "answer": "Ruby of Power"
+    },
+    "b": {
+      "question": "Identify the gemstone of great power in 'The Crystal Kingdom'.",
+      "answer": "Sapphire of Strength"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-answer_conflict-40",
+    "a": {
+      "question": "In 'Journey to the Unknown', what is the portal to other worlds called?",
+      "answer": "Gateway of Realms"
+    },
+    "b": {
+      "question": "What is the name of the portal in 'Journey to the Unknown'?",
+      "answer": "Portal of Dimensions"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "blind-distinct-1",
+    "a": {
+      "question": "What is the capital of France?",
+      "answer": "Paris"
+    },
+    "b": {
+      "question": "Which city is the capital of France?",
+      "answer": "Paris"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-2",
+    "a": {
+      "question": "Who is the author of '1984'?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Who wrote the novel '1984'?",
+      "answer": "George Orwell"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-3",
+    "a": {
+      "question": "What is the tallest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "What is the highest peak globally?",
+      "answer": "Mount Everest"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-4",
+    "a": {
+      "question": "What element has the atomic number 6?",
+      "answer": "Carbon"
+    },
+    "b": {
+      "question": "Which element is represented by the symbol 'C'?",
+      "answer": "Carbon"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-5",
+    "a": {
+      "question": "What is the currency used in Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "What currency do people use in Japan?",
+      "answer": "Yen"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-6",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "What language is primarily spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-7",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Who is the artist behind the painting 'Mona Lisa'?",
+      "answer": "Leonardo da Vinci"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-8",
+    "a": {
+      "question": "What is the distance from Earth to the Moon?",
+      "answer": "384,400 km"
+    },
+    "b": {
+      "question": "How far is the Moon from Earth?",
+      "answer": "384,400 kilometers"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-9",
+    "a": {
+      "question": "When did the Titanic sink?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "In what year did the Titanic disaster occur?",
+      "answer": "1912"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-10",
+    "a": {
+      "question": "Who was the first person to walk on the Moon?",
+      "answer": "Neil Armstrong"
+    },
+    "b": {
+      "question": "Name the first human to set foot on the Moon.",
+      "answer": "Neil Armstrong"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-11",
+    "a": {
+      "question": "What is the main ingredient in guacamole?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "What is guacamole primarily made of?",
+      "answer": "Avocado"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-12",
+    "a": {
+      "question": "What is the official language of Egypt?",
+      "answer": "Arabic"
+    },
+    "b": {
+      "question": "Which language is officially recognized in Egypt?",
+      "answer": "Arabic"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-13",
+    "a": {
+      "question": "What planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which planet is referred to as the Red Planet?",
+      "answer": "Mars"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-14",
+    "a": {
+      "question": "What is the capital city of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "Which city serves as the capital of Australia?",
+      "answer": "Canberra"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-15",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "Which ocean is the largest by area?",
+      "answer": "Pacific Ocean"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-16",
+    "a": {
+      "question": "What is the smallest continent by land area?",
+      "answer": "Australia"
+    },
+    "b": {
+      "question": "Which continent has the smallest land area?",
+      "answer": "Australia"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-17",
+    "a": {
+      "question": "What is the boiling point of water in Celsius?",
+      "answer": "100\u00b0C"
+    },
+    "b": {
+      "question": "At what temperature does water boil in Celsius?",
+      "answer": "100 degrees Celsius"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-18",
+    "a": {
+      "question": "Who discovered penicillin?",
+      "answer": "Alexander Fleming"
+    },
+    "b": {
+      "question": "Who is credited with the discovery of penicillin?",
+      "answer": "Alexander Fleming"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-19",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "What compound is represented by the formula H2O?",
+      "answer": "Water"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-20",
+    "a": {
+      "question": "What year did the Berlin Wall fall?",
+      "answer": "1989"
+    },
+    "b": {
+      "question": "In which year was the Berlin Wall demolished?",
+      "answer": "1989"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-21",
+    "a": {
+      "question": "Who wrote the novel '1984'?",
+      "answer": "George Orwell"
+    },
+    "b": {
+      "question": "Who is the author of '1984'?",
+      "answer": "George Orwell"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-22",
+    "a": {
+      "question": "Who won the Best Picture Oscar in 2020?",
+      "answer": "Parasite"
+    },
+    "b": {
+      "question": "What film received the Best Picture award at the Oscars in 2021?",
+      "answer": "Nomadland"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-distinct-23",
+    "a": {
+      "question": "What is the capital of Australia?",
+      "answer": "Canberra"
+    },
+    "b": {
+      "question": "Which city is the largest in Australia?",
+      "answer": "Sydney"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-24",
+    "a": {
+      "question": "In which year did the Berlin Wall fall?",
+      "answer": "1989"
+    },
+    "b": {
+      "question": "When did the Berlin Wall collapse?",
+      "answer": "1989"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-25",
+    "a": {
+      "question": "What is the boiling point of water in Celsius?",
+      "answer": "100 degrees"
+    },
+    "b": {
+      "question": "At what temperature does water boil in Fahrenheit?",
+      "answer": "212 degrees"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-26",
+    "a": {
+      "question": "Who was the first person to walk on the moon?",
+      "answer": "Neil Armstrong"
+    },
+    "b": {
+      "question": "Who was the first American astronaut to orbit the Earth?",
+      "answer": "John Glenn"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-27",
+    "a": {
+      "question": "What is the chemical formula for table salt?",
+      "answer": "NaCl"
+    },
+    "b": {
+      "question": "What is the main component of table salt?",
+      "answer": "Sodium chloride"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-28",
+    "a": {
+      "question": "Who discovered penicillin?",
+      "answer": "Alexander Fleming"
+    },
+    "b": {
+      "question": "Who discovered insulin?",
+      "answer": "Frederick Banting and Charles Best"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-29",
+    "a": {
+      "question": "Where was the 2012 Summer Olympics held?",
+      "answer": "London"
+    },
+    "b": {
+      "question": "In which city were the 2016 Summer Olympics held?",
+      "answer": "Rio de Janeiro"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-distinct-30",
+    "a": {
+      "question": "What is the tallest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "Which mountain is the highest above sea level?",
+      "answer": "Mount Everest"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-31",
+    "a": {
+      "question": "Who painted the Mona Lisa?",
+      "answer": "Leonardo da Vinci"
+    },
+    "b": {
+      "question": "Who sculpted David?",
+      "answer": "Michelangelo"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-32",
+    "a": {
+      "question": "What is the most populous country in the world?",
+      "answer": "China"
+    },
+    "b": {
+      "question": "Which country has the largest population in 2023?",
+      "answer": "India"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-distinct-33",
+    "a": {
+      "question": "What is the currency of Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "What currency is used in Japan?",
+      "answer": "Yen"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-34",
+    "a": {
+      "question": "Who was the first president of the United States?",
+      "answer": "George Washington"
+    },
+    "b": {
+      "question": "Who was the third president of the United States?",
+      "answer": "Thomas Jefferson"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-35",
+    "a": {
+      "question": "What is the primary language spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "b": {
+      "question": "What language is officially spoken in Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-36",
+    "a": {
+      "question": "What is the smallest planet in our solar system?",
+      "answer": "Mercury"
+    },
+    "b": {
+      "question": "Which planet is closest to the Sun?",
+      "answer": "Mercury"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-37",
+    "a": {
+      "question": "Who is known as the Father of Geometry?",
+      "answer": "Euclid"
+    },
+    "b": {
+      "question": "Who is known as the Father of Calculus?",
+      "answer": "Isaac Newton"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-38",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "Which ocean is the deepest?",
+      "answer": "Pacific Ocean"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-distinct-39",
+    "a": {
+      "question": "In which year did the Titanic sink?",
+      "answer": "1912"
+    },
+    "b": {
+      "question": "When did the Titanic disaster occur?",
+      "answer": "1912"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-distinct-40",
+    "a": {
+      "question": "What is the national flower of Japan?",
+      "answer": "Cherry Blossom"
+    },
+    "b": {
+      "question": "What is the national bird of Japan?",
+      "answer": "Green Pheasant"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-alias-1",
+    "a": {
+      "question": "What is the official language of France?",
+      "answer": "French"
+    },
+    "b": {
+      "question": "Which language is primarily spoken in France?",
+      "answer": "the French language"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-2",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which city is the administrative center of Japan?",
+      "answer": "the city of Tokyo"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-3",
+    "a": {
+      "question": "Who is the current president of the United States as of 2023?",
+      "answer": "Joe Biden"
+    },
+    "b": {
+      "question": "Who holds the office of the U.S. president in 2023?",
+      "answer": "Joseph Biden"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-4",
+    "a": {
+      "question": "What is the chemical formula for water?",
+      "answer": "H2O"
+    },
+    "b": {
+      "question": "How is dihydrogen monoxide represented in chemical terms?",
+      "answer": "H2O"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-5",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "What is the common name for the fourth planet from the Sun?",
+      "answer": "the planet Mars"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-6",
+    "a": {
+      "question": "Who wrote the play 'Romeo and Juliet'?",
+      "answer": "William Shakespeare"
+    },
+    "b": {
+      "question": "Who is the author of the tragic play 'Romeo and Juliet'?",
+      "answer": "Shakespeare"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-7",
+    "a": {
+      "question": "What is the tallest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "Which peak is the highest above sea level on Earth?",
+      "answer": "Everest"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-8",
+    "a": {
+      "question": "What is the currency of the United Kingdom?",
+      "answer": "British Pound"
+    },
+    "b": {
+      "question": "Which currency is used in the UK?",
+      "answer": "Pound Sterling"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-9",
+    "a": {
+      "question": "What is the largest ocean on Earth?",
+      "answer": "Pacific Ocean"
+    },
+    "b": {
+      "question": "Which ocean is the biggest by surface area?",
+      "answer": "the Pacific"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-alias-10",
+    "a": {
+      "question": "Who was the first President of the United States?",
+      "answer": "George Washington"
+    },
+    "b": {
+      "question": "Who served as the inaugural president of the USA?",
+      "answer": "Washington"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "blind-extra-negative-1",
+    "a": {
+      "question": "In which year did the signing of the Magna Carta take place?",
+      "answer": "1215"
+    },
+    "b": {
+      "question": "Where was the Magna Carta signed?",
+      "answer": "Runnymede, England"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-2",
+    "a": {
+      "question": "Who is the artist behind the painting 'The Starry Night'?",
+      "answer": "Vincent van Gogh"
+    },
+    "b": {
+      "question": "In what year was 'The Starry Night' painted?",
+      "answer": "1889"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-3",
+    "a": {
+      "question": "What is the primary chemical element in diamonds?",
+      "answer": "Carbon"
+    },
+    "b": {
+      "question": "At what depth are natural diamonds typically formed within the Earth?",
+      "answer": "150-200 kilometers"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-4",
+    "a": {
+      "question": "Which country won the FIFA World Cup in 2014?",
+      "answer": "Germany"
+    },
+    "b": {
+      "question": "In what city was the final match of the 2014 FIFA World Cup held?",
+      "answer": "Rio de Janeiro"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-5",
+    "a": {
+      "question": "What language has the most native speakers in the world?",
+      "answer": "Mandarin Chinese"
+    },
+    "b": {
+      "question": "Which language is the official language of Brazil?",
+      "answer": "Portuguese"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-6",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which planet has the largest volcano in the solar system?",
+      "answer": "Mars"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-7",
+    "a": {
+      "question": "What is the capital city of Japan?",
+      "answer": "Tokyo"
+    },
+    "b": {
+      "question": "Which Japanese city was the first to be targeted by an atomic bomb?",
+      "answer": "Hiroshima"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-8",
+    "a": {
+      "question": "Who discovered the theory of relativity?",
+      "answer": "Albert Einstein"
+    },
+    "b": {
+      "question": "Who was awarded the Nobel Prize in Physics in 1921?",
+      "answer": "Albert Einstein"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-9",
+    "a": {
+      "question": "Which natural wonder is known as the world's largest coral reef system?",
+      "answer": "The Great Barrier Reef"
+    },
+    "b": {
+      "question": "In which ocean is the Great Barrier Reef located?",
+      "answer": "Pacific Ocean"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-10",
+    "a": {
+      "question": "What is the main ingredient in traditional Japanese sake?",
+      "answer": "Rice"
+    },
+    "b": {
+      "question": "What type of alcohol is sake considered?",
+      "answer": "Rice wine"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-11",
+    "a": {
+      "question": "In what year did the first human land on the moon?",
+      "answer": "1969"
+    },
+    "b": {
+      "question": "Who was the first person to set foot on the moon?",
+      "answer": "Neil Armstrong"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-12",
+    "a": {
+      "question": "What is the tallest mountain in the world?",
+      "answer": "Mount Everest"
+    },
+    "b": {
+      "question": "In which mountain range is Mount Everest located?",
+      "answer": "The Himalayas"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-13",
+    "a": {
+      "question": "What is known as the smallest unit of life?",
+      "answer": "Cell"
+    },
+    "b": {
+      "question": "Which part of the cell is responsible for generating energy?",
+      "answer": "Mitochondria"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-14",
+    "a": {
+      "question": "In which event does the world's largest tomato fight, La Tomatina, take place?",
+      "answer": "Bu\u00f1ol, Spain"
+    },
+    "b": {
+      "question": "During which month does La Tomatina occur annually?",
+      "answer": "August"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-15",
+    "a": {
+      "question": "Which river is the longest in the world?",
+      "answer": "Nile"
+    },
+    "b": {
+      "question": "Which river is the longest in South America?",
+      "answer": "Amazon"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-16",
+    "a": {
+      "question": "What is the main currency used in Japan?",
+      "answer": "Yen"
+    },
+    "b": {
+      "question": "Which country uses the Baht as its currency?",
+      "answer": "Thailand"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-17",
+    "a": {
+      "question": "Who wrote the play 'Hamlet'?",
+      "answer": "William Shakespeare"
+    },
+    "b": {
+      "question": "What is the genre of 'Hamlet'?",
+      "answer": "Tragedy"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-18",
+    "a": {
+      "question": "Which element's chemical symbol is 'O'?",
+      "answer": "Oxygen"
+    },
+    "b": {
+      "question": "Which element is the most abundant in the Earth's atmosphere?",
+      "answer": "Nitrogen"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-19",
+    "a": {
+      "question": "What is the national sport of Canada?",
+      "answer": "Lacrosse"
+    },
+    "b": {
+      "question": "Which sport does 'Wayne Gretzky' famously play?",
+      "answer": "Ice hockey"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-20",
+    "a": {
+      "question": "What is the most commonly used programming language for developing Android apps?",
+      "answer": "Java"
+    },
+    "b": {
+      "question": "Which language is predominantly used for developing iOS apps?",
+      "answer": "Swift"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-21",
+    "a": {
+      "question": "What year did the Great Fire of London occur?",
+      "answer": "1666"
+    },
+    "b": {
+      "question": "In which century did the Great Fire of London take place?",
+      "answer": "17th century"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-22",
+    "a": {
+      "question": "In which country is the city of Kyoto located?",
+      "answer": "Japan"
+    },
+    "b": {
+      "question": "On which main island of Japan is Kyoto situated?",
+      "answer": "Honshu"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-23",
+    "a": {
+      "question": "What is the atomic number of oxygen?",
+      "answer": "8"
+    },
+    "b": {
+      "question": "Which element is known for having an atomic number of 8?",
+      "answer": "Oxygen"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-24",
+    "a": {
+      "question": "Who wrote the play \"Hamlet\"?",
+      "answer": "William Shakespeare"
+    },
+    "b": {
+      "question": "In what year was William Shakespeare born?",
+      "answer": "1564"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-25",
+    "a": {
+      "question": "What sport uses a shuttlecock in its play?",
+      "answer": "Badminton"
+    },
+    "b": {
+      "question": "Which sport is played on a rectangular court with a net, often using rackets to hit a shuttlecock?",
+      "answer": "Badminton"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-26",
+    "a": {
+      "question": "Which planet is known as the Red Planet?",
+      "answer": "Mars"
+    },
+    "b": {
+      "question": "Which planet is the fourth from the sun in our solar system?",
+      "answer": "Mars"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-27",
+    "a": {
+      "question": "What is the capital city of France?",
+      "answer": "Paris"
+    },
+    "b": {
+      "question": "In which country would you find the Eiffel Tower as a notable landmark?",
+      "answer": "France"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-28",
+    "a": {
+      "question": "Which artist painted 'Starry Night'?",
+      "answer": "Vincent van Gogh"
+    },
+    "b": {
+      "question": "In what year did Vincent van Gogh paint 'Starry Night'?",
+      "answer": "1889"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-29",
+    "a": {
+      "question": "What is the main ingredient in traditional guacamole?",
+      "answer": "Avocado"
+    },
+    "b": {
+      "question": "In which cuisine is guacamole a common dish?",
+      "answer": "Mexican"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-30",
+    "a": {
+      "question": "Who was the first President of the United States?",
+      "answer": "George Washington"
+    },
+    "b": {
+      "question": "In what year did George Washington take office as President of the United States?",
+      "answer": "1789"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-31",
+    "a": {
+      "question": "Which car manufacturer produces the Corolla model?",
+      "answer": "Toyota"
+    },
+    "b": {
+      "question": "In what country is Toyota headquartered?",
+      "answer": "Japan"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-32",
+    "a": {
+      "question": "In what year was the first iPhone released?",
+      "answer": "2007"
+    },
+    "b": {
+      "question": "Which company is known for creating the iPhone?",
+      "answer": "Apple Inc."
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-33",
+    "a": {
+      "question": "What is the largest continent by land area?",
+      "answer": "Asia"
+    },
+    "b": {
+      "question": "Which continent has the largest population?",
+      "answer": "Asia"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-34",
+    "a": {
+      "question": "Which country hosts the annual film festival in Cannes?",
+      "answer": "France"
+    },
+    "b": {
+      "question": "In which French region is the city of Cannes located?",
+      "answer": "Provence-Alpes-C\u00f4te d'Azur"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-35",
+    "a": {
+      "question": "Who developed the theory of relativity?",
+      "answer": "Albert Einstein"
+    },
+    "b": {
+      "question": "Where was Albert Einstein born?",
+      "answer": "Ulm, in the Kingdom of W\u00fcrttemberg in the German Empire"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-36",
+    "a": {
+      "question": "What famous wall can be found in China?",
+      "answer": "The Great Wall of China"
+    },
+    "b": {
+      "question": "Which structure is one of the New Seven Wonders of the World and is located in China?",
+      "answer": "The Great Wall of China"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-37",
+    "a": {
+      "question": "Who was the first human to travel into space?",
+      "answer": "Yuri Gagarin"
+    },
+    "b": {
+      "question": "In what year did Yuri Gagarin orbit the Earth?",
+      "answer": "1961"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "blind-extra-negative-38",
+    "a": {
+      "question": "What is the traditional clothing worn in Japan, often seen during festivals?",
+      "answer": "Kimono"
+    },
+    "b": {
+      "question": "What Japanese garment is typically characterized by long sleeves and worn with an obi?",
+      "answer": "Kimono"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-39",
+    "a": {
+      "question": "Who composed the symphony 'Beethoven's Fifth'?",
+      "answer": "Ludwig van Beethoven"
+    },
+    "b": {
+      "question": "In which city was Ludwig van Beethoven born?",
+      "answer": "Bonn, Germany"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "blind-extra-negative-40",
+    "a": {
+      "question": "Which gas is commonly used in balloons to make them float?",
+      "answer": "Helium"
+    },
+    "b": {
+      "question": "What is the chemical symbol for the element helium?",
+      "answer": "He"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  }
+]

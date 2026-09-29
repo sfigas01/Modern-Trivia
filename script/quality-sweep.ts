@@ -1,3 +1,4 @@
+import { redactSweepDetails } from '../server/lib/quality-sweep-redaction';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 
@@ -127,14 +128,26 @@ function buildRecommendations(
     );
   }
 
+  if (duplicateReport?.status === 'incomplete') {
+    recs.push(
+      `Semantic check incomplete (${duplicateReport.failedPairs ?? 0} failed pairs); retry before accepting the report.`
+    );
+  }
   if (duplicateReport) {
+    if (duplicateReport.duplicatesByType.answer_conflict)
+      recs.push(
+        `${duplicateReport.duplicatesByType.answer_conflict} high-severity answer conflicts require review.`
+      );
     const total = duplicateReport.duplicatesFound.length;
     if (total > 0) {
       recs.push(
-        `${total} duplicate pair(s) found (${duplicateReport.duplicatesByType.exact} exact, ` +
+        `${total} duplicate/conflict/review pair(s) found (${duplicateReport.duplicatesByType.exact} exact, ` +
           `${duplicateReport.duplicatesByType.near_duplicate} near-duplicate, ` +
-          `${duplicateReport.duplicatesByType.conceptual} conceptual) — ` +
-          `recommend removing the lower-quality version of each pair.`
+          `${duplicateReport.duplicatesByType.conceptual} conceptual, ` +
+          `${duplicateReport.duplicatesByType.semantic_duplicate} semantic, ` +
+          `${duplicateReport.duplicatesByType.answer_conflict} answer conflicts, ` +
+          `${duplicateReport.duplicatesByType.review_required} review required) — ` +
+          `review each pair; no automatic correction or deletion.`
       );
     }
   }
@@ -145,6 +158,13 @@ function buildRecommendations(
     if (failures > 0) recs.push(`${failures} question(s) failed fact-check — review immediately.`);
     if (flags > 0)
       recs.push(`${flags} question(s) flagged by fact-check — verify before next release.`);
+
+    const obvious = factCheckReport.results.filter((r) => r.obviousness === 'fail').length;
+    if (obvious > 0)
+      recs.push(
+        `${obvious} question(s) flagged as obvious (self-answering, trivially constrained, or ` +
+          `difficulty-mislabelled) — rephrase or replace before next release.`
+      );
   }
 
   if (recs.length === 0) {
@@ -183,8 +203,10 @@ function buildMarkdownReport(
   if (factCheckReport) {
     const failed = factCheckReport.results.filter((r) => r.verdict === 'fail').length;
     const flagged = factCheckReport.results.filter((r) => r.verdict === 'flag').length;
+    const obvious = factCheckReport.results.filter((r) => r.obviousness === 'fail').length;
     lines.push(`- Fact-check failures: ${failed}`);
     lines.push(`- Fact-check flags: ${flagged}`);
+    lines.push(`- Obviousness failures: ${obvious}`);
   } else {
     lines.push('- Fact-check: skipped');
   }
@@ -206,7 +228,11 @@ function buildMarkdownReport(
     lines.push('_Duplicate detection was skipped._');
     lines.push('');
   } else if (duplicateReport.duplicatesFound.length === 0) {
-    lines.push('No duplicates found.');
+    lines.push(
+      duplicateReport.status === 'incomplete'
+        ? 'Incomplete semantic check; no clean result is available.'
+        : 'No duplicates found.'
+    );
     lines.push('');
   } else {
     lines.push(
@@ -268,15 +294,18 @@ function buildMarkdownReport(
     } else {
       lines.push(`${actionable.length} question(s) require attention:`);
       lines.push('');
-      lines.push('| Question ID | Verdict | Coherence | Confidence | Reason | Suggested rewrite |');
-      lines.push('| --- | --- | --- | ---: | --- | --- |');
+      lines.push(
+        '| Question ID | Verdict | Coherence | Obviousness | Confidence | Reason | Suggested rewrite | Suggested difficulty |'
+      );
+      lines.push('| --- | --- | --- | --- | ---: | --- | --- | --- |');
 
       for (const result of actionable) {
         const suggested = result.suggestedQuestion
           ? escapeCell(truncate(result.suggestedQuestion))
           : '';
+        const suggestedDifficulty = result.suggestedDifficulty ?? '';
         lines.push(
-          `| ${result.questionId} | ${result.verdict} | ${result.coherence} | ${result.confidence} | ${escapeCell(truncate(result.reason))} | ${suggested} |`
+          `| ${result.questionId} | ${result.verdict} | ${result.coherence} | ${result.obviousness} | ${result.confidence} | ${escapeCell(truncate(result.reason))} | ${suggested} | ${suggestedDifficulty} |`
         );
       }
       lines.push('');
@@ -303,6 +332,7 @@ interface SweepReport {
     duplicatePairs: number;
     factCheckFailed: number;
     factCheckFlagged: number;
+    obviousnessFailed: number;
   };
 }
 
@@ -373,14 +403,25 @@ async function main() {
       duplicatePairs: duplicateReport?.duplicatesFound.length ?? 0,
       factCheckFailed: factCheckReport?.results.filter((r) => r.verdict === 'fail').length ?? 0,
       factCheckFlagged: factCheckReport?.results.filter((r) => r.verdict === 'flag').length ?? 0,
+      obviousnessFailed:
+        factCheckReport?.results.filter((r) => r.obviousness === 'fail').length ?? 0,
     },
   };
+
+  // Reports may be read by players; use the answer-redacted representation for both formats.
+  Object.assign(sweepReport, redactSweepDetails(auditReport, duplicateReport, factCheckReport));
 
   // 6. Write reports
   await writeOutput(options.jsonOutputPath, `${JSON.stringify(sweepReport, null, 2)}\n`);
   await writeOutput(
     options.markdownOutputPath,
-    buildMarkdownReport(generatedAt, rows, auditReport, duplicateReport, factCheckReport)
+    buildMarkdownReport(
+      generatedAt,
+      rows,
+      sweepReport.staticAudit,
+      sweepReport.duplicates,
+      sweepReport.factCheck
+    )
   );
 
   console.log(`JSON report:     ${absolutePathFromCwd(options.jsonOutputPath)}`);
@@ -388,10 +429,17 @@ async function main() {
 
   await pool.end();
 
+  if (duplicateReport?.status === 'incomplete')
+    throw new Error('Semantic check incomplete; report is partial.');
+
   // 7. Fail-on-high exit code
-  if (options.failOnHigh && auditReport.findingsBySeverity.high > 0) {
+  if (
+    options.failOnHigh &&
+    (auditReport.findingsBySeverity.high > 0 ||
+      (duplicateReport?.duplicatesByType.answer_conflict ?? 0) > 0)
+  ) {
     throw new Error(
-      `Quality sweep exceeded fail threshold: ${auditReport.findingsBySeverity.high} high-severity finding(s).`
+      `Quality sweep exceeded fail threshold: ${auditReport.findingsBySeverity.high + (duplicateReport?.duplicatesByType.answer_conflict ?? 0)} high-severity finding(s).`
     );
   }
 }

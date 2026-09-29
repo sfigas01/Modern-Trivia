@@ -126,3 +126,189 @@ test.describe('admin quality-sweep editing', () => {
     await expect(page.getByText('The fix has been saved.', { exact: true })).toBeVisible();
   });
 });
+
+const obviousQuestion = {
+  id: 'quality-q2',
+  category: 'Sports',
+  difficulty: 'Easy',
+  question: 'Which NHL team is known as the Maple Leafs?',
+  answer: 'Toronto',
+  acceptableAnswers: [],
+  explanation: "The Maple Leafs are Toronto's National Hockey League franchise.",
+  pillar: 'TimeCapsule',
+  tags: ['CA', 'TimeCapsule', 'Sports'],
+  sourceUrl: 'https://example.com/maple-leafs',
+  sourceName: 'Leafs source',
+  status: 'approved',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-02T00:00:00.000Z',
+  aiAnalysis: { verdict: 'pass' },
+};
+
+const obviousnessResult = {
+  questionId: obviousQuestion.id,
+  verdict: 'fail',
+  coherence: 'pass',
+  obviousness: 'fail',
+  confidence: 92,
+  reason: 'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+  suggestedQuestion: 'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+  suggestedDifficulty: 'Medium',
+};
+
+const obviousnessReport = {
+  generatedAt: '2026-07-16T12:00:00.000Z',
+  totalQuestions: 1,
+  audit: {
+    generatedAt: '2026-07-16T12:00:00.000Z',
+    totalQuestions: 1,
+    totalFindings: 0,
+    flaggedQuestionCount: 0,
+    findingsBySeverity: { high: 0, medium: 0, low: 0 },
+    findingsByRule: {},
+    findings: [],
+  },
+  duplicates: null,
+  factCheck: {
+    totalChecked: 1,
+    results: [obviousnessResult],
+  },
+  recommendations: [],
+  questionsById: {
+    [obviousQuestion.id]: {
+      question: obviousQuestion.question,
+      answer: obviousQuestion.answer,
+      tags: obviousQuestion.tags,
+      category: obviousQuestion.category,
+      pillar: obviousQuestion.pillar,
+      hasSource: true,
+      difficulty: obviousQuestion.difficulty,
+      sourceDomain: 'example.com',
+    },
+  },
+};
+
+test.describe('admin quality-sweep obviousness findings', () => {
+  test('surfaces an obviousness failure with its suggested rewrite and difficulty', async ({
+    page,
+  }) => {
+    await page.route('**/api/auth/user', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'admin-user', email: 'admin@example.com' }),
+      })
+    );
+    await page.route('**/api/admin/check', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ isAdmin: true }),
+      })
+    );
+    await page.route('**/api/admin/quality-sweep', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(obviousnessReport),
+      })
+    );
+    await page.route('**/api/questions**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          questions: [obviousQuestion],
+          categories: [obviousQuestion.category],
+        }),
+      })
+    );
+
+    await page.goto('/admin/quality-sweep');
+    await page.getByRole('button', { name: 'Run Quality Sweep' }).click();
+
+    await expect(page.getByText('obvious', { exact: true })).toBeVisible();
+    await expect(page.getByText(obviousnessResult.reason)).toBeVisible();
+    await expect(
+      page.getByText('Suggested rewrite (tests real knowledge instead of the giveaway)')
+    ).toBeVisible();
+    await expect(page.getByText(obviousnessResult.suggestedQuestion)).toBeVisible();
+    await expect(page.getByText('Suggested difficulty')).toBeVisible();
+    await expect(page.getByText('Easy → Medium')).toBeVisible();
+  });
+});
+
+test('shows answer conflicts and incomplete semantic checks without revealing answers', async ({
+  page,
+}) => {
+  await page.route('**/api/auth/user', (route) =>
+    route.fulfill({ json: { id: 'admin-user', email: 'admin@example.com' } })
+  );
+  await page.route('**/api/admin/check', (route) => route.fulfill({ json: { isAdmin: true } }));
+  let dismissed: unknown;
+  await page.route('**/api/questions**', (route) =>
+    route.fulfill({ json: { categories: [], questions: [] } })
+  );
+  const findingKey = 'quality-q1::quality-q2::answer_conflict::revision';
+  await page.route('**/api/admin/quality-sweep/dismiss', async (route) => {
+    dismissed = route.request().postDataJSON();
+    await route.fulfill({ json: { id: 'dismissal' } });
+  });
+  await page.route('**/api/admin/quality-sweep', (route) =>
+    route.fulfill({
+      json: {
+        ...report,
+        audit: {
+          ...report.audit,
+          findings: [],
+          totalFindings: 0,
+          findingsBySeverity: { high: 0, medium: 0, low: 0 },
+        },
+        duplicates: {
+          status: 'incomplete',
+          failedPairs: 2,
+          totalPairsChecked: 3,
+          duplicatesByType: {
+            exact: 0,
+            near_duplicate: 0,
+            conceptual: 0,
+            semantic_duplicate: 0,
+            answer_conflict: 1,
+            review_required: 0,
+          },
+          duplicatesFound: [
+            {
+              questionIdA: question.id,
+              questionIdB: 'quality-q2',
+              matchType: 'answer_conflict',
+              similarityScore: 0.98,
+              questionTextA: question.question,
+              questionTextB: 'Name the city hosting that festival.',
+              answerA: 'Toronto',
+              answerB: 'Montreal',
+              findingKey,
+              aiReasoning:
+                'Same factual scope with incompatible answers; neither answer is established as correct.',
+            },
+          ],
+        },
+      },
+    })
+  );
+  await page.goto('/admin/quality-sweep');
+  await page.getByRole('button', { name: 'Run Quality Sweep' }).click();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Semantic check incomplete' })
+  ).toBeVisible();
+  await expect(page.getByText('answer conflict · high severity', { exact: true })).toBeVisible();
+  await expect(page.getByText('High', { exact: true }).locator('..')).toContainText('1');
+  await expect(page.getByText('Open findings', { exact: true }).locator('..')).toContainText('1');
+  await expect(page.getByText('Toronto', { exact: true })).not.toBeVisible();
+  await expect(page.getByText('Montreal', { exact: true })).not.toBeVisible();
+  await page.getByRole('button', { name: 'Dismiss cluster' }).click();
+  await expect.poll(() => dismissed).toMatchObject({ findingType: 'duplicate', findingKey });
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Semantic check incomplete' })
+  ).toBeVisible();
+  await expect(page.getByText('No duplicates found.', { exact: true })).not.toBeVisible();
+});

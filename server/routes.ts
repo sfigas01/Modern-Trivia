@@ -14,13 +14,14 @@ import {
   insertQuestionSchema,
   questionEdits,
   questionQualitySweepDismissals,
-  duplicatePairKey,
+  duplicateFindingKey,
+  emptyDuplicateCounts,
   isStaticFindingDismissed,
   type QuestionSnapshot,
 } from '@shared/schema';
 import { eq, and, sql, inArray, ne } from 'drizzle-orm';
 import { analyzeDispute } from './lib/ai';
-import { generateQuestions } from './lib/guardian';
+import { generateQuestions, computeStrategyQuotas, type StrategyPillar } from './lib/guardian';
 import { getAiFieldFix, type FixableField } from './lib/field-fix';
 import { auditQuestionQuality } from './lib/question-quality-audit';
 import { detectDuplicates } from './lib/duplicate-detector';
@@ -36,28 +37,10 @@ import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
 import { registerRoomRoutes } from './routes.rooms';
+import { themeSuggestRequestSchema, themeSuggestResponseSchema } from '@shared/schema';
+import { isThemeRoundsEnabled, suggestThemeCategories } from './lib/theme-game';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
-type SinglePillar = (typeof VALID_PILLARS)[number];
-const PILLAR_MIX: { pillar: SinglePillar; pct: number }[] = [
-  { pillar: 'TimeCapsule', pct: 0.3 },
-  { pillar: 'GlobalEh', pct: 0.3 },
-  { pillar: 'FreshPrints', pct: 0.25 },
-  { pillar: 'GreatOutdoors', pct: 0.15 },
-];
-
-function allocateMixed(count: number): { pillar: SinglePillar; count: number }[] {
-  const items = PILLAR_MIX.map((t) => ({
-    pillar: t.pillar,
-    floored: Math.floor(t.pct * count),
-    remainder: (t.pct * count) % 1,
-    pct: t.pct,
-  }));
-  let remaining = count - items.reduce((s, t) => s + t.floored, 0);
-  items.sort((a, b) => b.remainder - a.remainder || b.pct - a.pct);
-  for (let i = 0; i < remaining; i++) items[i].floored++;
-  return items.filter((t) => t.floored > 0).map((t) => ({ pillar: t.pillar, count: t.floored }));
-}
 
 const stagingGenerateSchema = z.object({
   topic: z.string().trim().min(1, 'Topic is required'),
@@ -208,6 +191,30 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   await setupAuth(app);
   registerAuthRoutes(app);
   registerRoomRoutes(app);
+
+  // Themed games (STE-167 lean MVP): suggest related categories for a free-text
+  // theme. Public like the room routes (guests host games) and gated behind the
+  // VITE_THEME_ROUNDS flag so the feature is fully absent when off. aiLimiter
+  // guards the model call.
+  app.post('/api/theme/suggest', aiLimiter, async (req, res) => {
+    try {
+      if (!isThemeRoundsEnabled()) {
+        return res.status(404).json({ message: 'Themed games are not enabled' });
+      }
+      const parsed = themeSuggestRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(422).json({
+          message: 'Invalid theme',
+          errors: parsed.error.errors,
+        });
+      }
+      const categories = await suggestThemeCategories(parsed.data.theme);
+      return res.json(themeSuggestResponseSchema.parse({ theme: parsed.data.theme, categories }));
+    } catch (error) {
+      console.error('Error suggesting theme categories:', error);
+      return res.status(500).json({ message: 'Failed to suggest categories' });
+    }
+  });
 
   // Disputes API - admin review routes are protected; player submissions are public.
   app.get('/api/disputes', isAuthenticated, isAdmin, async (req, res) => {
@@ -867,8 +874,24 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       let allGenerated: Awaited<ReturnType<typeof generateQuestions>>;
 
       if (pillar === 'Mixed') {
-        const batches = allocateMixed(count);
-        console.info('[staging] Mixed generation', { topic, count, batches });
+        // Live inventory counts (STE-249): bias the pillar split toward whatever the pool is
+        // currently short of relative to CONTENT_STRATEGY.md, instead of a fixed 30/30/25/15
+        // split that just reproduces existing skew.
+        const existingCountsByPillar = existing.reduce<Partial<Record<StrategyPillar, number>>>(
+          (acc, q) => {
+            const p = q.pillar as StrategyPillar;
+            acc[p] = (acc[p] ?? 0) + 1;
+            return acc;
+          },
+          {}
+        );
+        const batches = computeStrategyQuotas(existingCountsByPillar, count);
+        console.info('[staging] Mixed generation', {
+          topic,
+          count,
+          batches,
+          existingCountsByPillar,
+        });
         const results = await Promise.all(
           batches.map(({ pillar: p, count: c }) => {
             const ctx = selectTopicContext({ topic, pillar: p, existing });
@@ -917,10 +940,18 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       res.status(201).json({
         message: 'Questions generated and added to staging successfully',
         count: insertedQuestions.length,
-        droppedAsDuplicate: dropped.length,
+        droppedAsDuplicate: dropped.filter(
+          (d) => d.reason === 'duplicate_of_existing' || d.reason === 'duplicate_within_batch'
+        ).length,
+        droppedAsConflict: dropped.filter((d) => d.reason === 'answer_conflict').length,
+        droppedForReview: dropped.filter((d) => d.reason === 'review_required').length,
         questions: insertedQuestions,
       });
     } catch (error) {
+      if (error instanceof Error && error.name === 'SemanticCheckIncompleteError') {
+        console.error('Error generating questions: semantic check incomplete');
+        return res.status(500).json({ message: error.message });
+      }
       console.error('Error generating questions:', error);
       res.status(500).json({ message: 'Failed to generate questions' });
     }
@@ -1081,13 +1112,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const duplicates = duplicatesRaw
         ? (() => {
             const filtered = duplicatesRaw.duplicatesFound.filter(
-              (m) => !dismissedDuplicates.has(duplicatePairKey(m.questionIdA, m.questionIdB))
+              (m) => !dismissedDuplicates.has(duplicateFindingKey(m))
             );
-            const byType: Record<'exact' | 'near_duplicate' | 'conceptual', number> = {
-              exact: 0,
-              near_duplicate: 0,
-              conceptual: 0,
-            };
+            const byType = emptyDuplicateCounts();
             for (const m of filtered) byType[m.matchType]++;
             return {
               ...duplicatesRaw,
@@ -1118,7 +1145,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
       if (duplicates && duplicates.duplicatesFound.length > 0) {
         recommendations.push(
-          `${duplicates.duplicatesFound.length} duplicate pair(s) found — remove or merge the lower-quality version of each pair.`
+          `${duplicates.duplicatesFound.length} duplicate or conflicting pair(s) found — review the facts before changing either question.`
         );
       }
       if (factCheck) {
@@ -1132,6 +1159,16 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
             `${flags} question(s) flagged by fact-check — verify before next release.`
           );
         }
+      }
+      if (duplicates?.status === 'incomplete') {
+        recommendations.push(
+          `Semantic check incomplete (${duplicates.failedPairs ?? 0} failed pairs). Retry; this is not a clean result.`
+        );
+      }
+      if (duplicates?.duplicatesByType.answer_conflict) {
+        recommendations.push(
+          `${duplicates.duplicatesByType.answer_conflict} high-severity answer conflict(s). Neither stored answer is established as correct.`
+        );
       }
       if (recommendations.length === 0) {
         recommendations.push('No critical issues found. All approved questions passed the sweep.');

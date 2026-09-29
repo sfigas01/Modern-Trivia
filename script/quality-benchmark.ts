@@ -3,6 +3,8 @@ import path from 'path';
 
 import {
   LABEL_REGISTRY,
+  runSemanticPairBenchmark,
+  type SemanticPairCase,
   runBenchmark,
   validateCases,
   type BenchmarkCase,
@@ -169,6 +171,42 @@ async function writeOutput(filePath: string, content: string): Promise<void> {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  if (process.argv.includes('--semantic-pairs')) {
+    const pairs = JSON.parse(
+      await readFile(
+        process.argv.includes('--input')
+          ? options.inputPath
+          : 'test/fixtures/benchmark/semantic-pairs.json',
+        'utf8'
+      )
+    ) as SemanticPairCase[];
+    if (!options.runLive)
+      throw new Error('Pair evaluation makes paid API calls; add --live to opt in.');
+    const report = await runSemanticPairBenchmark(pairs);
+    await writeOutput(
+      process.argv.includes('--json')
+        ? options.jsonOutputPath
+        : 'reports/semantic-pair-benchmark.json',
+      JSON.stringify(report, null, 2)
+    );
+    console.log(
+      JSON.stringify(
+        {
+          total: report.total,
+          metrics: report.metrics,
+          accuracy: report.accuracy,
+          incomplete: report.incomplete,
+          unresolved: report.unresolved,
+          passed: report.passed,
+          elapsedMs: report.elapsedMs,
+        },
+        null,
+        2
+      )
+    );
+    if (!report.passed) throw new Error('Semantic pair benchmark did not meet acceptance gates.');
+    return;
+  }
   const raw = await readFile(absolutePathFromCwd(options.inputPath), 'utf8');
   const cases = JSON.parse(raw) as BenchmarkCase[];
 

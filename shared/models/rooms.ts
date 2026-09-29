@@ -46,6 +46,12 @@ export const roomStatusEnum = pgEnum('room_status', ROOM_STATUSES);
 export const roomPhaseEnum = pgEnum('room_phase', ROOM_PHASES);
 
 export const roomNicknameSchema = z.string().trim().min(1).max(20);
+
+// Free-text theme for player-requested themed games (STE-167 lean MVP): the
+// host's display text. 2–60 trimmed characters. Deliberately permissive; the
+// server normalizes it into a slug/tag for sourcing.
+export const MAX_THEME_LENGTH = 60;
+export const themeInputSchema = z.string().trim().min(2).max(MAX_THEME_LENGTH);
 export const disputeIdSchema = z.string().trim().min(1).max(255);
 export const disputeExplanationSchema = z
   .string()
@@ -171,6 +177,10 @@ export const rooms = pgTable('rooms', {
   }),
   // Stores comma-separated categories or 'All' (extended to 255 by migration 0004)
   category: varchar('category', { length: 255 }).notNull(),
+  // Free-text theme for player-requested themed games (STE-167 lean MVP). NULL for
+  // ordinary category games, which are completely unchanged. When set, the host's
+  // display text drives themed question sourcing at start.
+  theme: varchar('theme', { length: 60 }),
   numRounds: integer('num_rounds').notNull(),
   questionIds: jsonb('question_ids').$type<string[]>().notNull().default([]),
   currentQuestionIndex: integer('current_question_index').notNull().default(0),
@@ -306,6 +316,9 @@ export const revealedRoomQuestionSchema = redactedRoomQuestionSchema.extend({
   answer: z.string().min(1),
   acceptableAnswers: z.array(z.string()),
   explanation: z.string().min(1),
+  // Provenance surfaced at reveal so AI-generated themed questions can be
+  // labeled (STE-167). Defaults to 'curated' for legacy/unknown rows.
+  origin: z.enum(['curated', 'player_ai']).default('curated'),
 });
 
 export const roomQuestionSnapshotSchema = z.union([
@@ -320,6 +333,8 @@ const roomSnapshotBaseSchema = z.object({
   version: z.number().int().positive(),
   hostPlayerId: z.string().uuid().nullable(),
   categories: roomCategoriesSchema,
+  // Themed game display text, or null for ordinary category games (STE-167).
+  theme: z.string().nullable().default(null),
   numRounds: roomRoundsSchema,
   currentQuestionIndex: z.number().int().nonnegative(),
   activePlayerId: z.string().uuid().nullable(),
@@ -378,6 +393,9 @@ export const createRoomRequestSchema = z.object({
   categories: roomCategoriesSchema,
   numRounds: roomRoundsSchema,
   opponentDisputeVotingEnabled: z.boolean().default(false),
+  // Optional themed game (STE-167 lean MVP). Only honored when the server-side
+  // theme feature flag is on; ignored otherwise so ordinary flows are unchanged.
+  theme: themeInputSchema.optional(),
 });
 export const excludeQuestionIdsSchema = z
   .array(z.string().trim().min(1))
@@ -398,6 +416,39 @@ export const startRoomRequestSchema = z
     excludeQuestionIds: excludeQuestionIdsSchema.optional(),
   })
   .strict();
+
+// --- Themed games (STE-167 lean MVP) ---
+
+// Ask the server to suggest related canonical categories for a free-text theme.
+export const themeSuggestRequestSchema = z.object({ theme: themeInputSchema }).strict();
+export const themeSuggestResponseSchema = z.object({
+  theme: z.string().min(1),
+  categories: z.array(roomCategorySchema).min(1),
+});
+
+// Kick off themed question preparation for a lobby room. Same guest-history
+// payload as the ordinary start (STE-273); generation runs best-effort in the
+// background and the room transitions to active when enough questions are ready.
+export const themeStartRequestSchema = z
+  .object({
+    excludeQuestionIds: excludeQuestionIdsSchema.optional(),
+  })
+  .strict();
+
+export const THEME_PREP_STATUSES = ['preparing', 'ready', 'error'] as const;
+export const themePrepStatusSchema = z.enum(THEME_PREP_STATUSES);
+
+// Server-authoritative progress for the "generating… X of N ready" indicator.
+export const themeProgressSchema = z.object({
+  status: themePrepStatusSchema,
+  ready: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  reused: z.number().int().nonnegative(),
+  generated: z.number().int().nonnegative(),
+  error: z.string().nullable().default(null),
+});
+export const themeStartResponseSchema = themeProgressSchema;
+export const themeProgressResponseSchema = themeProgressSchema;
 export const answerRoomRequestSchema = z.object({ answer: z.string().trim().min(1).nullable() });
 export const advanceRoomRequestSchema = z.object({}).strict();
 export const continueRoomRequestSchema = z.object({}).strict();
@@ -452,6 +503,13 @@ export type CastDisputeVoteRequest = z.infer<typeof castDisputeVoteRequestSchema
 export type CancelDisputeVoteRequest = z.infer<typeof cancelDisputeVoteRequestSchema>;
 export type JoinRoomRequest = z.infer<typeof joinRoomRequestSchema>;
 export type StartRoomRequest = z.infer<typeof startRoomRequestSchema>;
+export type ThemeSuggestRequest = z.infer<typeof themeSuggestRequestSchema>;
+export type ThemeSuggestResponse = z.infer<typeof themeSuggestResponseSchema>;
+export type ThemeStartRequest = z.infer<typeof themeStartRequestSchema>;
+export type ThemePrepStatus = z.infer<typeof themePrepStatusSchema>;
+export type ThemeProgress = z.infer<typeof themeProgressSchema>;
+export type ThemeStartResponse = z.infer<typeof themeStartResponseSchema>;
+export type ThemeProgressResponse = z.infer<typeof themeProgressResponseSchema>;
 export type AnswerRoomRequest = z.infer<typeof answerRoomRequestSchema>;
 export type AdvanceRoomRequest = z.infer<typeof advanceRoomRequestSchema>;
 export type ContinueRoomRequest = z.infer<typeof continueRoomRequestSchema>;

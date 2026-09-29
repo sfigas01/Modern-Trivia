@@ -1,230 +1,168 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
-
-import { detectDuplicates } from './duplicate-detector';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Question } from '@shared/models/questions';
-
-// vi.hoisted ensures mockCreate is available both inside the vi.mock factory
-// and in the test body (vi.mock is hoisted to the top of the file).
-const mockCreate = vi.hoisted(() => vi.fn());
-
-vi.mock('openai', () => ({
-  default: class MockOpenAI {
-    chat = { completions: { create: mockCreate } };
-  },
+import { duplicateFindingKey, duplicatePairKey } from '@shared/models/quality-sweep';
+import { detectDuplicates } from './duplicate-detector';
+const mocks = vi.hoisted(() => ({ chat: vi.fn(), embed: vi.fn() }));
+vi.mock('./embeddings', async (original) => ({
+  ...(await original<typeof import('./embeddings')>()),
+  embedQuestions: mocks.embed,
+  semanticClient: () => ({ chat: { completions: { create: mocks.chat } } }),
 }));
-
-// Helper to build minimal valid Question objects
-function makeQuestion(
-  overrides: Partial<Question> & { id: string; question: string; answer: string }
-): Question {
+const q = (id: string, question: string, answer: string) => ({ id, question, answer }) as Question;
+const pair = [
+  q('a', 'Who wrote Hamlet?', 'Shakespeare'),
+  q('b', 'Name the author of Hamlet.', 'William Shakespeare'),
+];
+function verdict(value: string) {
   return {
-    category: 'General Knowledge',
-    difficulty: 'Easy',
-    explanation: 'Test explanation.',
-    pillar: 'GlobalEh',
-    tags: ['Global', 'GlobalEh'],
-    acceptableAnswers: [],
-    sourceUrl: null,
-    sourceName: null,
-    status: 'approved',
-    aiAnalysis: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            assessment: 'Scoped facts and answer referents compared.',
+            verdict: value,
+          }),
+        },
+      },
+    ],
   };
 }
-
 beforeEach(() => {
-  mockCreate.mockReset();
-  // Default: GPT-4o says not a duplicate (prevents conceptual matches from
-  // interfering with tests that don't expect them)
-  mockCreate.mockResolvedValue({
-    choices: [
-      { message: { content: JSON.stringify({ isDuplicate: false, reasoning: 'Different.' }) } },
-    ],
-  });
+  vi.resetAllMocks();
+  mocks.embed.mockImplementation(async (qs: Question[]) => new Map(qs.map((q) => [q.id, [1, 0]])));
+  mocks.chat.mockResolvedValue(verdict('equivalent'));
 });
-
-describe('detectDuplicates — exact duplicates', () => {
-  it('detects exact duplicate question text (case-insensitive)', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
-      makeQuestion({ id: 'q2', question: 'What is the capital of France?', answer: 'Paris' }),
-      makeQuestion({ id: 'q3', question: 'What is the capital of Germany?', answer: 'Berlin' }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    const exact = report.duplicatesFound.filter((m) => m.matchType === 'exact');
-    expect(exact).toHaveLength(1);
-    expect(exact[0].questionIdA).toBe('q1');
-    expect(exact[0].questionIdB).toBe('q2');
-    expect(exact[0].similarityScore).toBe(1);
-    expect(report.duplicatesByType.exact).toBe(1);
-    expect(report.duplicatesByType.near_duplicate).toBe(0);
-  });
-
-  it('detects exact duplicates with different casing and extra whitespace', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'Who wrote Hamlet?', answer: 'Shakespeare' }),
-      makeQuestion({ id: 'q2', question: '  who wrote hamlet?  ', answer: 'Shakespeare' }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    const exact = report.duplicatesFound.filter((m) => m.matchType === 'exact');
-    expect(exact).toHaveLength(1);
-    expect(exact[0].matchType).toBe('exact');
-  });
-
-  it('counts total pairs checked correctly for 3 questions', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'Unique question one?', answer: 'Answer one' }),
-      makeQuestion({ id: 'q2', question: 'Unique question two?', answer: 'Answer two' }),
-      makeQuestion({ id: 'q3', question: 'Unique question three?', answer: 'Answer three' }),
-    ];
-
-    const report = await detectDuplicates(questions);
-    // 3 questions → 3 pairs: (q1,q2), (q1,q3), (q2,q3)
-    expect(report.totalPairsChecked).toBe(3);
-  });
-});
-
-describe('detectDuplicates — near-duplicates', () => {
-  it('detects near-duplicate question text at or above the 0.8 threshold', async () => {
-    const questions: Question[] = [
-      makeQuestion({
-        id: 'q1',
-        question: 'Which city is the capital of France?',
-        answer: 'Paris',
-      }),
-      makeQuestion({
-        id: 'q2',
-        // Very similar wording — should score >= 0.8
-        question: 'Which city is the capital of France, the country?',
-        answer: 'Paris',
-      }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    const nearDups = report.duplicatesFound.filter(
-      (m) => m.matchType === 'near_duplicate' || m.matchType === 'exact'
+describe('semantic duplicate detection', () => {
+  it('uses the merged mini config while retaining strict structured adjudication', async () => {
+    await detectDuplicates(pair);
+    const [request, options] = mocks.chat.mock.calls[0];
+    expect(request).toEqual(
+      expect.objectContaining({
+        model: 'gpt-5.4-mini',
+        reasoning_effort: 'none',
+        max_completion_tokens: 512,
+        response_format: expect.objectContaining({
+          type: 'json_schema',
+          json_schema: expect.objectContaining({ strict: true }),
+        }),
+      })
     );
-    expect(nearDups.length).toBeGreaterThanOrEqual(1);
-    expect(nearDups[0].similarityScore).toBeGreaterThanOrEqual(0.8);
+    expect(request).not.toHaveProperty('max_tokens');
+    expect(request).not.toHaveProperty('temperature');
+    expect(options.signal).toBeInstanceOf(AbortSignal);
   });
-
-  it('does not flag clearly different question pairs as duplicates', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
-      makeQuestion({
-        id: 'q2',
-        question: 'Name the longest river in South America.',
-        answer: 'Amazon',
-      }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    const textDups = report.duplicatesFound.filter(
-      (m) => m.matchType === 'near_duplicate' || m.matchType === 'exact'
+  it('detects paraphrases even when answer spelling differs', async () => {
+    const r = await detectDuplicates(pair);
+    expect(r.status).toBe('complete');
+    expect(r.duplicatesByType.semantic_duplicate).toBe(1);
+  });
+  it('does not normalize away meaningful answer punctuation such as a negative sign', async () => {
+    mocks.chat.mockResolvedValue(verdict('conflict'));
+    const r = await detectDuplicates([
+      q('a', 'What is the signed result?', '-2'),
+      q('b', 'What is the signed result?', '2'),
+    ]);
+    expect(r.duplicatesByType.answer_conflict).toBe(1);
+  });
+  it('recognizes exact same-answer pairs without adjudication', async () => {
+    const r = await detectDuplicates([pair[0], { ...pair[0], id: 'b' }]);
+    expect(r.duplicatesByType.exact).toBe(1);
+    expect(mocks.chat).not.toHaveBeenCalled();
+  });
+  it.each(['Who wrote Hamlet?', 'Who was the writer of Hamlet?'])(
+    'checks conflicts through exact/fuzzy paths: %s',
+    async (question) => {
+      mocks.chat.mockResolvedValue(verdict('conflict'));
+      const r = await detectDuplicates([pair[0], q('b', question, 'Another writer')]);
+      expect(r.duplicatesByType.answer_conflict).toBe(1);
+      expect(r.duplicatesByType.exact).toBe(0);
+    }
+  );
+  it('does not merge same-topic distinct facts or time periods', async () => {
+    mocks.chat.mockResolvedValue(verdict('distinct'));
+    const r = await detectDuplicates([
+      q('a', 'Who won the 2020 tournament?', 'A'),
+      q('b', 'Who won the 2021 tournament?', 'B'),
+    ]);
+    expect(r.duplicatesFound).toEqual([]);
+    expect(r.status).toBe('complete');
+  });
+  it('reports ambiguity separately from confirmed conflicts', async () => {
+    mocks.chat.mockResolvedValue(verdict('uncertain'));
+    expect((await detectDuplicates(pair)).duplicatesByType.review_required).toBe(1);
+  });
+  it('does not trust malformed structured verdicts', async () => {
+    mocks.chat.mockResolvedValue({ choices: [{ message: { content: '{"isDuplicate":true}' } }] });
+    const r = await detectDuplicates(pair);
+    expect(r.status).toBe('incomplete');
+    expect(r.failedPairs).toBe(1);
+  });
+  it('reports provider failure without exposing its response', async () => {
+    mocks.chat.mockRejectedValue(new Error('private answer/provider secret'));
+    const r = await detectDuplicates(pair);
+    expect(r.status).toBe('incomplete');
+    expect(JSON.stringify(r)).not.toContain('private answer/provider secret');
+  });
+  it('reports every pair as failed when embedding/cache fails', async () => {
+    mocks.embed.mockRejectedValue(new Error('cache down'));
+    const r = await detectDuplicates([...pair, q('c', 'Third question?', 'Other')]);
+    expect(r.status).toBe('incomplete');
+    expect(r.failedPairs).toBe(3);
+  });
+  it('excludes existing-versus-existing comparisons and forwards persist IDs', async () => {
+    const persistIds = new Set(['a', 'b']);
+    const r = await detectDuplicates([...pair, q('c', 'Third question?', 'Other')], {
+      scopeIds: new Set(['c']),
+      persistIds,
+    });
+    expect(r.totalPairsChecked).toBe(2);
+    expect(mocks.chat).toHaveBeenCalledTimes(2);
+    expect(mocks.embed.mock.calls[0][1].persistIds).toBe(persistIds);
+  });
+  it('keeps output in input-pair order despite parallel completions', async () => {
+    mocks.chat.mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(() => resolve(verdict('equivalent')), 10))
     );
-    expect(textDups).toHaveLength(0);
+    const r = await detectDuplicates([...pair, q('c', 'Third question?', 'Other')]);
+    expect(r.duplicatesFound.map((m) => m.questionIdA + m.questionIdB)).toEqual(['ab', 'ac', 'bc']);
   });
-});
-
-describe('detectDuplicates — conceptual duplicates', () => {
-  it('returns a conceptual match when GPT-4o says isDuplicate: true', async () => {
-    mockCreate.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({ isDuplicate: true, reasoning: 'Same underlying question.' }),
-          },
-        },
-      ],
-    });
-
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
-      makeQuestion({
-        id: 'q2',
-        question: "Which city serves as France's capital?",
-        answer: 'Paris',
-      }),
-    ];
-
+  it('versions dismissal keys by content and finding type and preserves pair orientation', async () => {
+    const original = (await detectDuplicates(pair)).duplicatesFound[0];
+    const reversed = (await detectDuplicates([...pair].reverse())).duplicatesFound[0];
+    expect(duplicateFindingKey(original)).toBe(duplicateFindingKey(reversed));
+    const edited = (await detectDuplicates([pair[0], { ...pair[1], answer: 'W. Shakespeare' }]))
+      .duplicatesFound[0];
+    expect(edited.findingKey).not.toBe(original.findingKey);
+    mocks.chat.mockResolvedValue(verdict('conflict'));
+    expect((await detectDuplicates(pair)).duplicatesFound[0].findingKey).not.toBe(
+      original.findingKey
+    );
+    expect(original.findingKey).not.toBe(duplicatePairKey('a', 'b'));
+  });
+  it('returns promptly and aborts outstanding paid work at the stage deadline', async () => {
+    mocks.chat.mockImplementation(
+      (_body, { signal }) =>
+        new Promise((_resolve, reject) =>
+          signal.addEventListener('abort', () => reject(new Error('aborted')))
+        )
+    );
+    const r = await detectDuplicates(pair, { deadlineMs: 10 });
+    expect(r.status).toBe('incomplete');
+    expect(mocks.chat.mock.calls[0][1].signal.aborted).toBe(true);
+  });
+  it('bounds adjudication cost and reports omitted candidate pairs as incomplete', async () => {
+    mocks.chat.mockResolvedValue(verdict('distinct'));
+    const questions = Array.from({ length: 33 }, (_, i) =>
+      q(String(i), `Question ${i}?`, `Answer ${i}`)
+    );
     const report = await detectDuplicates(questions);
-
-    const conceptual = report.duplicatesFound.filter((m) => m.matchType === 'conceptual');
-    expect(conceptual.length).toBeGreaterThanOrEqual(1);
-    expect(conceptual[0].aiReasoning).toBe('Same underlying question.');
-    expect(report.duplicatesByType.conceptual).toBeGreaterThanOrEqual(1);
+    expect(mocks.chat).toHaveBeenCalledTimes(500);
+    expect(report.totalPairsChecked).toBe(528);
+    expect(report.failedPairs).toBe(28);
+    expect(report.status).toBe('incomplete');
   });
-
-  it('does not flag a pair as conceptual when GPT-4o returns isDuplicate: false', async () => {
-    mockCreate.mockResolvedValue({
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({ isDuplicate: false, reasoning: 'Different questions.' }),
-          },
-        },
-      ],
-    });
-
-    const questions: Question[] = [
-      makeQuestion({
-        id: 'q1',
-        question: 'Who invented the telephone?',
-        answer: 'Alexander Graham Bell',
-      }),
-      makeQuestion({
-        id: 'q2',
-        question: 'Who invented the light bulb?',
-        answer: 'Alexander Graham Bell',
-      }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    const conceptual = report.duplicatesFound.filter((m) => m.matchType === 'conceptual');
-    expect(conceptual).toHaveLength(0);
-  });
-
-  it('does not call GPT-4o for pairs with dissimilar answers', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
-      makeQuestion({ id: 'q2', question: 'What is the tallest mountain?', answer: 'Everest' }),
-    ];
-
-    await detectDuplicates(questions);
-
-    // "Paris" vs "Everest" answer similarity is well below 0.7 — GPT should not be called
-    expect(mockCreate).not.toHaveBeenCalled();
-  });
-});
-
-describe('detectDuplicates — report structure', () => {
-  it('returns empty report for a single question', async () => {
-    const questions: Question[] = [
-      makeQuestion({ id: 'q1', question: 'What is 2 + 2?', answer: '4' }),
-    ];
-
-    const report = await detectDuplicates(questions);
-
-    expect(report.totalPairsChecked).toBe(0);
-    expect(report.duplicatesFound).toHaveLength(0);
-    expect(report.duplicatesByType.exact).toBe(0);
-    expect(report.duplicatesByType.near_duplicate).toBe(0);
-    expect(report.duplicatesByType.conceptual).toBe(0);
-  });
-
-  it('returns empty report for an empty array', async () => {
-    const report = await detectDuplicates([]);
-
-    expect(report.totalPairsChecked).toBe(0);
-    expect(report.duplicatesFound).toHaveLength(0);
+  it('does no paid work when no pairs are in scope', async () => {
+    expect((await detectDuplicates(pair, { scopeIds: new Set() })).totalPairsChecked).toBe(0);
+    expect(mocks.embed).not.toHaveBeenCalled();
   });
 });

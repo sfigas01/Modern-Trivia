@@ -55,7 +55,15 @@ export interface QuestionQualityAuditReport {
 export interface DuplicateMatch {
   questionIdA: string;
   questionIdB: string;
-  matchType: 'exact' | 'near_duplicate' | 'conceptual';
+  matchType:
+    | 'exact'
+    | 'near_duplicate'
+    | 'conceptual'
+    | 'semantic_duplicate'
+    | 'answer_conflict'
+    | 'review_required';
+  /** Content-versioned dismissal identity; never expose the content itself in the key. */
+  findingKey?: string;
   similarityScore: number;
   questionTextA: string;
   questionTextB: string;
@@ -68,6 +76,9 @@ export interface DuplicateDetectionReport {
   totalPairsChecked: number;
   duplicatesFound: DuplicateMatch[];
   duplicatesByType: Record<DuplicateMatch['matchType'], number>;
+  status?: 'complete' | 'incomplete';
+  failedPairs?: number;
+  failureReason?: string;
 }
 
 // --- Fact-check types ---
@@ -77,11 +88,18 @@ export interface FactCheckVerdict {
   verdict: 'pass' | 'flag' | 'fail';
   // Question–answer coherence (STE-246): 'fail' when the premise is wrong or the answer is not
   // the type the question asks for. A coherence failure always forces verdict to 'fail'.
-  coherence: 'pass' | 'fail';
+  coherence: 'pass' | 'flag' | 'fail';
+  // Obviousness (STE-247): 'fail' when the answer is derivable from the question text alone
+  // (self-answering / trivially binary) or the stated difficulty is miscalibrated. An obviousness
+  // failure always forces verdict to 'fail'.
+  obviousness: 'pass' | 'flag' | 'fail';
   confidence: number;
   reason: string;
-  // Proposed rewritten question that fits the answer with the false premise removed.
+  // Proposed rewritten question — fits the answer with the false premise removed (coherence), or
+  // a harder rephrasing/replacement that tests real knowledge (obviousness).
   suggestedQuestion?: string;
+  // Recalibrated difficulty when obviousness fails due to a difficulty mislabel.
+  suggestedDifficulty?: 'Easy' | 'Medium' | 'Hard';
 }
 
 export interface FactCheckReport {
@@ -147,3 +165,18 @@ export function duplicatePairKey(idA: string, idB: string): string {
 }
 
 export const FACT_CHECK_FINDING_KEY = 'fact_check';
+
+export function emptyDuplicateCounts(): DuplicateDetectionReport['duplicatesByType'] {
+  return {
+    exact: 0,
+    near_duplicate: 0,
+    conceptual: 0,
+    semantic_duplicate: 0,
+    answer_conflict: 0,
+    review_required: 0,
+  };
+}
+
+export function duplicateFindingKey(match: DuplicateMatch): string {
+  return match.findingKey ?? duplicatePairKey(match.questionIdA, match.questionIdB);
+}

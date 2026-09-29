@@ -65,7 +65,10 @@ describe('batchFactCheck', () => {
 
     expect(mockCreate).toHaveBeenCalledTimes(1);
     const request = mockCreate.mock.calls[0][0];
-    expect(request.model).toBe('gpt-4o');
+    expect(request.model).toBe('gpt-5.4-mini');
+    expect(request.reasoning_effort).toBe('none');
+    expect(request.max_completion_tokens).toBe(4096);
+    expect(request).not.toHaveProperty('max_tokens');
     expect(request.response_format).toEqual({ type: 'json_object' });
     expect(request.messages[0].content).toContain('quality-control assistant');
     expect(request.messages[1].content).toContain('Modern Trivia Quality Control reviewer');
@@ -109,7 +112,8 @@ describe('batchFactCheck', () => {
         {
           questionId: 'q1',
           verdict: 'fail',
-          coherence: 'pass',
+          coherence: 'flag',
+          obviousness: 'flag',
           confidence: 88,
           reason: 'Answer leaks into the prompt.',
         },
@@ -153,6 +157,7 @@ describe('batchFactCheck', () => {
         // coherence fail overrides the model's softer 'flag' verdict
         verdict: 'fail',
         coherence: 'fail',
+        obviousness: 'flag',
         confidence: 90,
         reason: 'Premise is false: Led Zeppelin is a British band.',
         suggestedQuestion: "Which band is known for 'Immigrant Song'?",
@@ -160,7 +165,135 @@ describe('batchFactCheck', () => {
     ]);
   });
 
-  it('ignores an empty suggestedQuestion and defaults coherence to pass', async () => {
+  it('parses an obviousness failure (self-answering) and forces the overall verdict to fail', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 92,
+                  reason:
+                    'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+                  suggestedQuestion:
+                    'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({
+        id: 'q1',
+        question: 'Which NHL team is known as the Maple Leafs?',
+        answer: 'Toronto',
+      }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        // obviousness fail overrides the model's softer 'flag' verdict
+        verdict: 'fail',
+        coherence: 'flag',
+        obviousness: 'fail',
+        confidence: 92,
+        reason: 'The nickname "Maple Leafs" hands over the city without any hockey knowledge.',
+        suggestedQuestion: 'In what year did the Toronto Maple Leafs win their first Stanley Cup?',
+      },
+    ]);
+  });
+
+  it('parses an obviousness failure (difficulty mislabel) with a suggested difficulty', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 85,
+                  reason: 'A universal giveaway fact labelled Hard; it should be Easy.',
+                  suggestedDifficulty: 'Easy',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({
+        id: 'q1',
+        difficulty: 'Hard',
+        question: 'Which planet do humans live on?',
+        answer: 'Earth',
+      }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'fail',
+        coherence: 'flag',
+        obviousness: 'fail',
+        confidence: 85,
+        reason: 'A universal giveaway fact labelled Hard; it should be Easy.',
+        suggestedDifficulty: 'Easy',
+      },
+    ]);
+  });
+
+  it('ignores an invalid suggestedDifficulty value', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'flag',
+                  obviousness: 'fail',
+                  confidence: 80,
+                  reason: 'Difficulty mislabelled.',
+                  suggestedDifficulty: 'Nightmare',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'fail',
+        coherence: 'flag',
+        obviousness: 'fail',
+        confidence: 80,
+        reason: 'Difficulty mislabelled.',
+      },
+    ]);
+  });
+
+  it('ignores an empty suggestedQuestion and flags missing coherence', async () => {
     mockCreate.mockResolvedValue({
       choices: [
         {
@@ -188,8 +321,9 @@ describe('batchFactCheck', () => {
     expect(report.results).toEqual([
       {
         questionId: 'q1',
-        verdict: 'pass',
-        coherence: 'pass',
+        verdict: 'flag',
+        coherence: 'flag',
+        obviousness: 'flag',
         confidence: 97,
         reason: 'Looks good.',
       },
@@ -209,9 +343,108 @@ describe('batchFactCheck', () => {
       {
         questionId: 'q1',
         verdict: 'flag',
-        coherence: 'pass',
+        coherence: 'flag',
+        obviousness: 'flag',
         confidence: 0,
         reason: 'No verdict returned by fact-checker.',
+      },
+    ]);
+  });
+
+  it('flags malformed quality dimensions even when the model claims an overall pass', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'pass',
+                  coherence: 'unknown',
+                  obviousness: null,
+                  confidence: 99,
+                  reason: 'Looks good.',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ]);
+
+    expect(report.results[0]).toMatchObject({
+      verdict: 'flag',
+      coherence: 'flag',
+      obviousness: 'flag',
+    });
+  });
+
+  it('flags every dimension when the fact-check call fails', async () => {
+    mockCreate.mockRejectedValue(new Error('provider unavailable'));
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'What is the capital of France?', answer: 'Paris' }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'flag',
+        coherence: 'flag',
+        obviousness: 'flag',
+        confidence: 0,
+        reason: 'Fact-check could not be completed.',
+      },
+    ]);
+  });
+
+  it('withholds duplicate verdicts instead of letting a later pass erase an adverse result', async () => {
+    mockCreate.mockResolvedValue({
+      choices: [
+        {
+          message: {
+            content: JSON.stringify({
+              results: [
+                {
+                  id: 'q1',
+                  verdict: 'fail',
+                  coherence: 'fail',
+                  obviousness: 'pass',
+                  confidence: 90,
+                  reason: 'The premise is false.',
+                },
+                {
+                  id: 'q1',
+                  verdict: 'pass',
+                  coherence: 'pass',
+                  obviousness: 'pass',
+                  confidence: 99,
+                  reason: 'Looks good.',
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    });
+
+    const report = await batchFactCheck([
+      makeQuestion({ id: 'q1', question: 'Which claim is correct?', answer: 'Test answer' }),
+    ]);
+
+    expect(report.results).toEqual([
+      {
+        questionId: 'q1',
+        verdict: 'fail',
+        coherence: 'fail',
+        obviousness: 'flag',
+        confidence: 0,
+        reason: 'Duplicate verdicts returned by fact-checker.',
       },
     ]);
   });

@@ -3,7 +3,11 @@ import { detectDuplicates, type DuplicateMatch } from './duplicate-detector';
 
 export interface DroppedNovelty<T> {
   question: T;
-  reason: 'duplicate_within_batch' | 'duplicate_of_existing';
+  reason:
+    | 'duplicate_within_batch'
+    | 'duplicate_of_existing'
+    | 'answer_conflict'
+    | 'review_required';
   matchType: DuplicateMatch['matchType'];
   similarityScore: number;
   matchedExistingId?: string;
@@ -45,13 +49,43 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   // Constrain pair iteration to "at least one batch id" — we don't care about
   // existing-vs-existing collisions here (owned by STE-143 / offline cleanup),
   // and skipping them is O((E+B)^2) → O(B*(E+B)) work.
-  const report = await detectDuplicates(combined, { scopeIds: batchIds });
+  const report = await detectDuplicates(combined, {
+    scopeIds: batchIds,
+    persistIds: new Set(existing.map((q) => q.id)),
+  });
+  if (report.status === 'incomplete') throw new SemanticCheckIncompleteError();
+
+  // Conflicts/uncertainty take precedence over ordinary canonical selection.
+  const withheld = new Map<string, DroppedNovelty<T>>();
+  for (const match of report.duplicatesFound) {
+    if (match.matchType !== 'answer_conflict' && match.matchType !== 'review_required') continue;
+    for (const [id, other] of [
+      [match.questionIdA, match.questionIdB],
+      [match.questionIdB, match.questionIdA],
+    ]) {
+      const question = batchById.get(id);
+      if (!question || withheld.get(id)?.matchType === 'answer_conflict') continue;
+      withheld.set(id, {
+        question,
+        reason: match.matchType,
+        matchType: match.matchType,
+        similarityScore: match.similarityScore,
+        ...(batchIds.has(other) ? { matchedBatchId: other } : { matchedExistingId: other }),
+      });
+    }
+  }
+  const ordinaryMatches = report.duplicatesFound.filter(
+    (m) => m.matchType !== 'answer_conflict' && m.matchType !== 'review_required'
+  );
 
   function isStrongerMatch(
     a: DuplicateMatch['matchType'],
     b: DuplicateMatch['matchType']
   ): boolean {
     const rank: Record<DuplicateMatch['matchType'], number> = {
+      answer_conflict: 6,
+      review_required: 5,
+      semantic_duplicate: 4,
       exact: 3,
       near_duplicate: 2,
       conceptual: 1,
@@ -70,7 +104,7 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   // Pass 1: identify batch items that are duplicates of an existing DB row.
   // These are unconditionally dropped — the existing row is the canonical version.
   const droppedByExisting = new Map<string, DroppedNovelty<T>>();
-  for (const match of report.duplicatesFound) {
+  for (const match of ordinaryMatches) {
     const aInBatch = batchIds.has(match.questionIdA);
     const bInBatch = batchIds.has(match.questionIdB);
     if (aInBatch === bInBatch) continue; // skip both-batch and both-existing
@@ -101,13 +135,13 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   // and should pass through.
   //
   // Iteration order matters here. duplicatesFound is in i,j order over the
-  // combined `[...existing, ...batch]` array (Phase 1/2 push during the index
-  // walk; Phase 3 candidates are batchProcess-ed via Promise.all which
-  // preserves input order). For any within-batch chain X→Y→Z (where X<Y<Z in
+  // combined `[...existing, ...batch]` array; the detector sorts asynchronous
+  // adjudication results back into that order. For any within-batch chain
+  // X→Y→Z (where X<Y<Z in
   // batchOrder), the (X,Y) pair is always processed before (Y,Z), so by the
   // time we evaluate (Y,Z) the kill of Y is already in droppedByBatch.
   const droppedByBatch = new Map<string, DroppedNovelty<T>>();
-  for (const match of report.duplicatesFound) {
+  for (const match of ordinaryMatches) {
     const aInBatch = batchIds.has(match.questionIdA);
     const bInBatch = batchIds.has(match.questionIdB);
     if (!aInBatch || !bInBatch) continue;
@@ -118,6 +152,7 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     const loserId = winnerId === match.questionIdA ? match.questionIdB : match.questionIdA;
 
     // Winner is dead — this within-batch match has no force.
+    if (withheld.has(winnerId) || withheld.has(loserId)) continue;
     if (droppedByExisting.has(winnerId)) continue;
     if (droppedByBatch.has(winnerId)) continue;
 
@@ -149,6 +184,8 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
     if (!dropDecisions.has(id)) dropDecisions.set(id, decision);
   });
 
+  withheld.forEach((decision, id) => dropDecisions.set(id, decision));
+
   const kept: T[] = [];
   const dropped: DroppedNovelty<T>[] = [];
   for (const q of batch) {
@@ -169,4 +206,11 @@ export async function filterNovelQuestions<T extends DetectableQuestion>(
   });
 
   return { kept, dropped };
+}
+
+export class SemanticCheckIncompleteError extends Error {
+  constructor() {
+    super('Semantic checking could not finish. No questions were staged. Please retry.');
+    this.name = 'SemanticCheckIncompleteError';
+  }
 }

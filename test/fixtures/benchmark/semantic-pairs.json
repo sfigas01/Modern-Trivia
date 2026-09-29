@@ -1,0 +1,1692 @@
+[
+  {
+    "id": "paraphrase-01",
+    "a": {
+      "question": "Who founded the fictional town of Alderbay?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Name the founder of the fictional town Alderbay.",
+      "answer": "Mira Vale"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-01",
+    "a": {
+      "question": "Who founded the fictional town of Alderbay?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Name the founder of the fictional town Alderbay.",
+      "answer": "Oren Moss"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-02",
+    "a": {
+      "question": "What is the capital of the fictional republic Bellora?",
+      "answer": "Ivory Port"
+    },
+    "b": {
+      "question": "Which city serves as Bellora's capital in the fictional republic?",
+      "answer": "Ivory Port"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-02",
+    "a": {
+      "question": "What is the capital of the fictional republic Bellora?",
+      "answer": "Ivory Port"
+    },
+    "b": {
+      "question": "What is the capital of the fictional republic Bellora?",
+      "answer": "Cedar Point"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-03",
+    "a": {
+      "question": "Who wrote the fictional novel The Glass Orchard?",
+      "answer": "Nora Reed"
+    },
+    "b": {
+      "question": "Name the author of the fictional book The Glass Orchard.",
+      "answer": "Nora Reed"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-03",
+    "a": {
+      "question": "Who wrote the fictional novel The Glass Orchard?",
+      "answer": "Nora Reed"
+    },
+    "b": {
+      "question": "Name the author of the fictional book The Glass Orchard.",
+      "answer": "Evan Lake"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-04",
+    "a": {
+      "question": "In which year did the fictional Arlen Observatory open?",
+      "answer": "1984"
+    },
+    "b": {
+      "question": "When was the fictional Arlen Observatory first opened?",
+      "answer": "1984"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-04",
+    "a": {
+      "question": "In which year did the fictional Arlen Observatory open?",
+      "answer": "1984"
+    },
+    "b": {
+      "question": "In which year did the fictional Arlen Observatory open?",
+      "answer": "1991"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-05",
+    "a": {
+      "question": "Which river crosses the fictional city Dunhaven?",
+      "answer": "The Silver River"
+    },
+    "b": {
+      "question": "What river runs through Dunhaven, the fictional city?",
+      "answer": "The Silver River"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-05",
+    "a": {
+      "question": "Which river crosses the fictional city Dunhaven?",
+      "answer": "The Silver River"
+    },
+    "b": {
+      "question": "What river runs through Dunhaven, the fictional city?",
+      "answer": "The Amber River"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-06",
+    "a": {
+      "question": "How many towers does the fictional Castle Ember have?",
+      "answer": "Seven"
+    },
+    "b": {
+      "question": "What is the number of towers at the fictional Castle Ember?",
+      "answer": "Seven"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-06",
+    "a": {
+      "question": "How many towers does the fictional Castle Ember have?",
+      "answer": "Seven"
+    },
+    "b": {
+      "question": "How many towers does the fictional Castle Ember have?",
+      "answer": "Nine"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-07",
+    "a": {
+      "question": "What colour is the flag of the fictional state Farona?",
+      "answer": "Blue"
+    },
+    "b": {
+      "question": "Name the colour of Farona's state flag in the fictional setting.",
+      "answer": "Blue"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-07",
+    "a": {
+      "question": "What colour is the flag of the fictional state Farona?",
+      "answer": "Blue"
+    },
+    "b": {
+      "question": "Name the colour of Farona's state flag in the fictional setting.",
+      "answer": "Red"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-08",
+    "a": {
+      "question": "Who directed the fictional film The Last Lantern?",
+      "answer": "Ada Birch"
+    },
+    "b": {
+      "question": "Name the director of the fictional movie The Last Lantern.",
+      "answer": "Ada Birch"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-08",
+    "a": {
+      "question": "Who directed the fictional film The Last Lantern?",
+      "answer": "Ada Birch"
+    },
+    "b": {
+      "question": "Who directed the fictional film The Last Lantern?",
+      "answer": "Theo Pine"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-09",
+    "a": {
+      "question": "What metal is the fictional Gilden Crown made of?",
+      "answer": "Silver"
+    },
+    "b": {
+      "question": "Which metal forms the fictional Gilden Crown?",
+      "answer": "Silver"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-09",
+    "a": {
+      "question": "What metal is the fictional Gilden Crown made of?",
+      "answer": "Silver"
+    },
+    "b": {
+      "question": "Which metal forms the fictional Gilden Crown?",
+      "answer": "Gold"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-10",
+    "a": {
+      "question": "Which island contains the fictional city Harrowport?",
+      "answer": "Isle of Mist"
+    },
+    "b": {
+      "question": "On what island is Harrowport, the fictional city, located?",
+      "answer": "Isle of Mist"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-10",
+    "a": {
+      "question": "Which island contains the fictional city Harrowport?",
+      "answer": "Isle of Mist"
+    },
+    "b": {
+      "question": "Which island contains the fictional city Harrowport?",
+      "answer": "Isle of Rain"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-11",
+    "a": {
+      "question": "Who captained the fictional ship Iris on its first voyage?",
+      "answer": "Lena Frost"
+    },
+    "b": {
+      "question": "Name the captain on the fictional Iris ship's maiden voyage.",
+      "answer": "Lena Frost"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-11",
+    "a": {
+      "question": "Who captained the fictional ship Iris on its first voyage?",
+      "answer": "Lena Frost"
+    },
+    "b": {
+      "question": "Name the captain on the fictional Iris ship's maiden voyage.",
+      "answer": "Milo Fern"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-12",
+    "a": {
+      "question": "Which instrument does the fictional musician Jalen play?",
+      "answer": "Cello"
+    },
+    "b": {
+      "question": "What musical instrument is played by the fictional Jalen?",
+      "answer": "Cello"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-12",
+    "a": {
+      "question": "Which instrument does the fictional musician Jalen play?",
+      "answer": "Cello"
+    },
+    "b": {
+      "question": "Which instrument does the fictional musician Jalen play?",
+      "answer": "Trumpet"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-13",
+    "a": {
+      "question": "What is the currency of the fictional kingdom Kelmar?",
+      "answer": "The shell"
+    },
+    "b": {
+      "question": "Name the monetary unit used in the fictional Kelmar kingdom.",
+      "answer": "The shell"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-13",
+    "a": {
+      "question": "What is the currency of the fictional kingdom Kelmar?",
+      "answer": "The shell"
+    },
+    "b": {
+      "question": "Name the monetary unit used in the fictional Kelmar kingdom.",
+      "answer": "The crown"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-14",
+    "a": {
+      "question": "Which animal appears on the fictional Lorian coat of arms?",
+      "answer": "A fox"
+    },
+    "b": {
+      "question": "What creature is depicted on the coat of arms of fictional Lorian?",
+      "answer": "A fox"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-14",
+    "a": {
+      "question": "Which animal appears on the fictional Lorian coat of arms?",
+      "answer": "A fox"
+    },
+    "b": {
+      "question": "Which animal appears on the fictional Lorian coat of arms?",
+      "answer": "An owl"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-15",
+    "a": {
+      "question": "Who painted the fictional artwork Midnight Garden?",
+      "answer": "Ivo Marsh"
+    },
+    "b": {
+      "question": "Name the painter responsible for the fictional Midnight Garden.",
+      "answer": "Ivo Marsh"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-15",
+    "a": {
+      "question": "Who painted the fictional artwork Midnight Garden?",
+      "answer": "Ivo Marsh"
+    },
+    "b": {
+      "question": "Name the painter responsible for the fictional Midnight Garden.",
+      "answer": "Nia Stone"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-16",
+    "a": {
+      "question": "How long is the fictional bridge Northspan in metres?",
+      "answer": "120"
+    },
+    "b": {
+      "question": "What is the fictional Northspan bridge's length, measured in metres?",
+      "answer": "120"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-16",
+    "a": {
+      "question": "How long is the fictional bridge Northspan in metres?",
+      "answer": "120"
+    },
+    "b": {
+      "question": "How long is the fictional bridge Northspan in metres?",
+      "answer": "180"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-17",
+    "a": {
+      "question": "Which mountain is the highest in the fictional country Orvale?",
+      "answer": "Mount Dawn"
+    },
+    "b": {
+      "question": "Name the tallest mountain in fictional Orvale.",
+      "answer": "Mount Dawn"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-17",
+    "a": {
+      "question": "Which mountain is the highest in the fictional country Orvale?",
+      "answer": "Mount Dawn"
+    },
+    "b": {
+      "question": "Name the tallest mountain in fictional Orvale.",
+      "answer": "Mount Dusk"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-18",
+    "a": {
+      "question": "What language is official in the fictional country Pelora?",
+      "answer": "Peloran"
+    },
+    "b": {
+      "question": "Name the official language of the fictional nation Pelora.",
+      "answer": "Peloran"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-18",
+    "a": {
+      "question": "What language is official in the fictional country Pelora?",
+      "answer": "Peloran"
+    },
+    "b": {
+      "question": "What language is official in the fictional country Pelora?",
+      "answer": "Thessic"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-19",
+    "a": {
+      "question": "Who won the fictional Quill Prize in 2004?",
+      "answer": "Rina West"
+    },
+    "b": {
+      "question": "Name the 2004 recipient of the fictional Quill Prize.",
+      "answer": "Rina West"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-19",
+    "a": {
+      "question": "Who won the fictional Quill Prize in 2004?",
+      "answer": "Rina West"
+    },
+    "b": {
+      "question": "Name the 2004 recipient of the fictional Quill Prize.",
+      "answer": "Leon East"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-20",
+    "a": {
+      "question": "What is the population of fictional Redmere in its 2010 census?",
+      "answer": "12000"
+    },
+    "b": {
+      "question": "How many people lived in fictional Redmere according to the 2010 census?",
+      "answer": "12000"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-20",
+    "a": {
+      "question": "What is the population of fictional Redmere in its 2010 census?",
+      "answer": "12000"
+    },
+    "b": {
+      "question": "What is the population of fictional Redmere in its 2010 census?",
+      "answer": "18000"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-21",
+    "a": {
+      "question": "Where was the fictional scientist Sela Venn born?",
+      "answer": "Oakport"
+    },
+    "b": {
+      "question": "Name the birthplace of the fictional scientist Sela Venn.",
+      "answer": "Oakport"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-21",
+    "a": {
+      "question": "Where was the fictional scientist Sela Venn born?",
+      "answer": "Oakport"
+    },
+    "b": {
+      "question": "Name the birthplace of the fictional scientist Sela Venn.",
+      "answer": "Ashport"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-22",
+    "a": {
+      "question": "Which company built the fictional airship Tern?",
+      "answer": "Lumen Works"
+    },
+    "b": {
+      "question": "Name the builder company of the fictional Tern airship.",
+      "answer": "Lumen Works"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-22",
+    "a": {
+      "question": "Which company built the fictional airship Tern?",
+      "answer": "Lumen Works"
+    },
+    "b": {
+      "question": "Which company built the fictional airship Tern?",
+      "answer": "Aurora Works"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-23",
+    "a": {
+      "question": "What is the title of the fictional Ulan Quartet's debut album?",
+      "answer": "Quiet Stars"
+    },
+    "b": {
+      "question": "Name the first album released by the fictional Ulan Quartet.",
+      "answer": "Quiet Stars"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-23",
+    "a": {
+      "question": "What is the title of the fictional Ulan Quartet's debut album?",
+      "answer": "Quiet Stars"
+    },
+    "b": {
+      "question": "Name the first album released by the fictional Ulan Quartet.",
+      "answer": "Rising Tide"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-24",
+    "a": {
+      "question": "In which month is the fictional Vesper Festival held annually?",
+      "answer": "June"
+    },
+    "b": {
+      "question": "Name the annual month of the fictional Vesper Festival.",
+      "answer": "June"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-24",
+    "a": {
+      "question": "In which month is the fictional Vesper Festival held annually?",
+      "answer": "June"
+    },
+    "b": {
+      "question": "In which month is the fictional Vesper Festival held annually?",
+      "answer": "October"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-25",
+    "a": {
+      "question": "Who designed the fictional Wren Library building?",
+      "answer": "Alma Clay"
+    },
+    "b": {
+      "question": "Name the architect of the fictional Wren Library.",
+      "answer": "Alma Clay"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-25",
+    "a": {
+      "question": "Who designed the fictional Wren Library building?",
+      "answer": "Alma Clay"
+    },
+    "b": {
+      "question": "Name the architect of the fictional Wren Library.",
+      "answer": "Dara Snow"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-26",
+    "a": {
+      "question": "Which ocean borders the fictional continent Xandria to the west?",
+      "answer": "The Sapphire Ocean"
+    },
+    "b": {
+      "question": "Name the ocean on the western coast of fictional Xandria.",
+      "answer": "The Sapphire Ocean"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-26",
+    "a": {
+      "question": "Which ocean borders the fictional continent Xandria to the west?",
+      "answer": "The Sapphire Ocean"
+    },
+    "b": {
+      "question": "Which ocean borders the fictional continent Xandria to the west?",
+      "answer": "The Onyx Ocean"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-27",
+    "a": {
+      "question": "How many seats are in the fictional Yarrow Theatre?",
+      "answer": "250"
+    },
+    "b": {
+      "question": "What is the seating capacity of the fictional Yarrow Theatre?",
+      "answer": "250"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-27",
+    "a": {
+      "question": "How many seats are in the fictional Yarrow Theatre?",
+      "answer": "250"
+    },
+    "b": {
+      "question": "What is the seating capacity of the fictional Yarrow Theatre?",
+      "answer": "400"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-28",
+    "a": {
+      "question": "What is the national flower of the fictional nation Zarela?",
+      "answer": "The iris"
+    },
+    "b": {
+      "question": "Name the flower that is a national symbol of fictional Zarela.",
+      "answer": "The iris"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-28",
+    "a": {
+      "question": "What is the national flower of the fictional nation Zarela?",
+      "answer": "The iris"
+    },
+    "b": {
+      "question": "What is the national flower of the fictional nation Zarela?",
+      "answer": "The lily"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-29",
+    "a": {
+      "question": "Who was the first mayor of the fictional town Brindle?",
+      "answer": "Kira Gale"
+    },
+    "b": {
+      "question": "Name the inaugural mayor of fictional Brindle.",
+      "answer": "Kira Gale"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-29",
+    "a": {
+      "question": "Who was the first mayor of the fictional town Brindle?",
+      "answer": "Kira Gale"
+    },
+    "b": {
+      "question": "Name the inaugural mayor of fictional Brindle.",
+      "answer": "Rafi Bell"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-30",
+    "a": {
+      "question": "Which sport is played by the fictional Copper Hawks team?",
+      "answer": "Hockey"
+    },
+    "b": {
+      "question": "Name the sport in which the fictional Copper Hawks compete.",
+      "answer": "Hockey"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-30",
+    "a": {
+      "question": "Which sport is played by the fictional Copper Hawks team?",
+      "answer": "Hockey"
+    },
+    "b": {
+      "question": "Which sport is played by the fictional Copper Hawks team?",
+      "answer": "Rugby"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-31",
+    "a": {
+      "question": "What is the height of the fictional Dawngate Tower in metres?",
+      "answer": "85"
+    },
+    "b": {
+      "question": "How tall is the fictional Dawngate Tower, in metres?",
+      "answer": "85"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-31",
+    "a": {
+      "question": "What is the height of the fictional Dawngate Tower in metres?",
+      "answer": "85"
+    },
+    "b": {
+      "question": "How tall is the fictional Dawngate Tower, in metres?",
+      "answer": "95"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-32",
+    "a": {
+      "question": "Who composed the fictional opera Echoes of Winter?",
+      "answer": "Talia Brook"
+    },
+    "b": {
+      "question": "Name the composer of the fictional Echoes of Winter opera.",
+      "answer": "Talia Brook"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-32",
+    "a": {
+      "question": "Who composed the fictional opera Echoes of Winter?",
+      "answer": "Talia Brook"
+    },
+    "b": {
+      "question": "Who composed the fictional opera Echoes of Winter?",
+      "answer": "Jonah Flint"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-33",
+    "a": {
+      "question": "What gemstone is set in the fictional Fenwick Ring?",
+      "answer": "Ruby"
+    },
+    "b": {
+      "question": "Name the precious stone mounted in the fictional Fenwick Ring.",
+      "answer": "Ruby"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-33",
+    "a": {
+      "question": "What gemstone is set in the fictional Fenwick Ring?",
+      "answer": "Ruby"
+    },
+    "b": {
+      "question": "Name the precious stone mounted in the fictional Fenwick Ring.",
+      "answer": "Emerald"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-34",
+    "a": {
+      "question": "Which city hosted the fictional Garden Games in 2012?",
+      "answer": "Irisport"
+    },
+    "b": {
+      "question": "Name the host city of the 2012 fictional Garden Games.",
+      "answer": "Irisport"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-34",
+    "a": {
+      "question": "Which city hosted the fictional Garden Games in 2012?",
+      "answer": "Irisport"
+    },
+    "b": {
+      "question": "Which city hosted the fictional Garden Games in 2012?",
+      "answer": "Rosebay"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-35",
+    "a": {
+      "question": "What is the main ingredient of the fictional dish Halora stew?",
+      "answer": "Lentils"
+    },
+    "b": {
+      "question": "Name the principal ingredient in the fictional Halora stew.",
+      "answer": "Lentils"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-35",
+    "a": {
+      "question": "What is the main ingredient of the fictional dish Halora stew?",
+      "answer": "Lentils"
+    },
+    "b": {
+      "question": "Name the principal ingredient in the fictional Halora stew.",
+      "answer": "Chickpeas"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-36",
+    "a": {
+      "question": "Who discovered the fictional comet Iskra?",
+      "answer": "Vera Finch"
+    },
+    "b": {
+      "question": "Name the discoverer of the fictional Iskra comet.",
+      "answer": "Vera Finch"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-36",
+    "a": {
+      "question": "Who discovered the fictional comet Iskra?",
+      "answer": "Vera Finch"
+    },
+    "b": {
+      "question": "Who discovered the fictional comet Iskra?",
+      "answer": "Otto Crane"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-37",
+    "a": {
+      "question": "Which lake feeds the fictional Jasper Canal?",
+      "answer": "Lake Willow"
+    },
+    "b": {
+      "question": "Name the lake supplying water to the fictional Jasper Canal.",
+      "answer": "Lake Willow"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-37",
+    "a": {
+      "question": "Which lake feeds the fictional Jasper Canal?",
+      "answer": "Lake Willow"
+    },
+    "b": {
+      "question": "Name the lake supplying water to the fictional Jasper Canal.",
+      "answer": "Lake Hazel"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-38",
+    "a": {
+      "question": "What is the motto of the fictional academy Kingsfen?",
+      "answer": "Learn and serve"
+    },
+    "b": {
+      "question": "Name the official motto of fictional Kingsfen Academy.",
+      "answer": "Learn and serve"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-38",
+    "a": {
+      "question": "What is the motto of the fictional academy Kingsfen?",
+      "answer": "Learn and serve"
+    },
+    "b": {
+      "question": "What is the motto of the fictional academy Kingsfen?",
+      "answer": "Dare and build"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-39",
+    "a": {
+      "question": "Who invented the fictional device called the Lark Engine?",
+      "answer": "Iris Quinn"
+    },
+    "b": {
+      "question": "Name the inventor of the fictional Lark Engine.",
+      "answer": "Iris Quinn"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-39",
+    "a": {
+      "question": "Who invented the fictional device called the Lark Engine?",
+      "answer": "Iris Quinn"
+    },
+    "b": {
+      "question": "Name the inventor of the fictional Lark Engine.",
+      "answer": "Eli Ross"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "paraphrase-40",
+    "a": {
+      "question": "Which planet is home to the fictional city Moonspire?",
+      "answer": "Aster"
+    },
+    "b": {
+      "question": "On what planet is the fictional city Moonspire situated?",
+      "answer": "Aster"
+    },
+    "expected": "semantic_duplicate",
+    "control": null
+  },
+  {
+    "id": "conflict-40",
+    "a": {
+      "question": "Which planet is home to the fictional city Moonspire?",
+      "answer": "Aster"
+    },
+    "b": {
+      "question": "Which planet is home to the fictional city Moonspire?",
+      "answer": "Vela"
+    },
+    "expected": "answer_conflict",
+    "control": null
+  },
+  {
+    "id": "temporal-01",
+    "a": {
+      "question": "Who won the fictional Alder Cup in 1990?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Alder Cup in 1991?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-02",
+    "a": {
+      "question": "Who won the fictional Bellora Prize in 1991?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Bellora Prize in 1992?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-03",
+    "a": {
+      "question": "Who won the fictional Cedar Race in 1992?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Cedar Race in 1993?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-04",
+    "a": {
+      "question": "Who won the fictional Dunhaven Award in 1993?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Dunhaven Award in 1994?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-05",
+    "a": {
+      "question": "Who won the fictional Ember Games in 1994?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Ember Games in 1995?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-06",
+    "a": {
+      "question": "Who won the fictional Alder Cup in 1995?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Alder Cup in 1996?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-07",
+    "a": {
+      "question": "Who won the fictional Bellora Prize in 1996?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Bellora Prize in 1997?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-08",
+    "a": {
+      "question": "Who won the fictional Cedar Race in 1997?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Cedar Race in 1998?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-09",
+    "a": {
+      "question": "Who won the fictional Dunhaven Award in 1998?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Dunhaven Award in 1999?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-10",
+    "a": {
+      "question": "Who won the fictional Ember Games in 1999?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Ember Games in 2000?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-11",
+    "a": {
+      "question": "Who won the fictional Alder Cup in 2000?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Alder Cup in 2001?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-12",
+    "a": {
+      "question": "Who won the fictional Bellora Prize in 2001?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Bellora Prize in 2002?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-13",
+    "a": {
+      "question": "Who won the fictional Cedar Race in 2002?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Cedar Race in 2003?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-14",
+    "a": {
+      "question": "Who won the fictional Dunhaven Award in 2003?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Dunhaven Award in 2004?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-15",
+    "a": {
+      "question": "Who won the fictional Ember Games in 2004?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Ember Games in 2005?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-16",
+    "a": {
+      "question": "Who won the fictional Alder Cup in 2005?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Alder Cup in 2006?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-17",
+    "a": {
+      "question": "Who won the fictional Bellora Prize in 2006?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Bellora Prize in 2007?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-18",
+    "a": {
+      "question": "Who won the fictional Cedar Race in 2007?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Cedar Race in 2008?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-19",
+    "a": {
+      "question": "Who won the fictional Dunhaven Award in 2008?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Dunhaven Award in 2009?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "temporal-20",
+    "a": {
+      "question": "Who won the fictional Ember Games in 2009?",
+      "answer": "Mira Vale"
+    },
+    "b": {
+      "question": "Who won the fictional Ember Games in 2010?",
+      "answer": "Oren Moss"
+    },
+    "expected": "distinct",
+    "control": "temporal"
+  },
+  {
+    "id": "distinct-01",
+    "a": {
+      "question": "What is the founder of the fictional city Alderbay?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the first mayor of the fictional city Alderbay?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-02",
+    "a": {
+      "question": "What is the founder of the fictional city Bellora?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the first mayor of the fictional city Bellora?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-03",
+    "a": {
+      "question": "What is the founder of the fictional city Cedarport?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the first mayor of the fictional city Cedarport?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-04",
+    "a": {
+      "question": "What is the founder of the fictional city Dunhaven?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the first mayor of the fictional city Dunhaven?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-05",
+    "a": {
+      "question": "What is the founder of the fictional city Emberton?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the first mayor of the fictional city Emberton?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-06",
+    "a": {
+      "question": "What is the tallest building of the fictional city Alderbay?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest building of the fictional city Alderbay?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-07",
+    "a": {
+      "question": "What is the tallest building of the fictional city Bellora?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest building of the fictional city Bellora?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-08",
+    "a": {
+      "question": "What is the tallest building of the fictional city Cedarport?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest building of the fictional city Cedarport?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-09",
+    "a": {
+      "question": "What is the tallest building of the fictional city Dunhaven?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest building of the fictional city Dunhaven?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-10",
+    "a": {
+      "question": "What is the tallest building of the fictional city Emberton?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest building of the fictional city Emberton?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-11",
+    "a": {
+      "question": "What is the largest park of the fictional city Alderbay?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest park of the fictional city Alderbay?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-12",
+    "a": {
+      "question": "What is the largest park of the fictional city Bellora?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest park of the fictional city Bellora?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-13",
+    "a": {
+      "question": "What is the largest park of the fictional city Cedarport?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest park of the fictional city Cedarport?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-14",
+    "a": {
+      "question": "What is the largest park of the fictional city Dunhaven?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest park of the fictional city Dunhaven?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-15",
+    "a": {
+      "question": "What is the largest park of the fictional city Emberton?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the oldest park of the fictional city Emberton?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-16",
+    "a": {
+      "question": "What is the northern border river of the fictional city Alderbay?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the southern border river of the fictional city Alderbay?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-17",
+    "a": {
+      "question": "What is the northern border river of the fictional city Bellora?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the southern border river of the fictional city Bellora?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-18",
+    "a": {
+      "question": "What is the northern border river of the fictional city Cedarport?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the southern border river of the fictional city Cedarport?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-19",
+    "a": {
+      "question": "What is the northern border river of the fictional city Dunhaven?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the southern border river of the fictional city Dunhaven?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "distinct-20",
+    "a": {
+      "question": "What is the northern border river of the fictional city Emberton?",
+      "answer": "Alder"
+    },
+    "b": {
+      "question": "What is the southern border river of the fictional city Emberton?",
+      "answer": "Birch"
+    },
+    "expected": "distinct",
+    "control": "scope"
+  },
+  {
+    "id": "alias-01",
+    "a": {
+      "question": "How far is the fictional Arlen trail?",
+      "answer": "1000 metres"
+    },
+    "b": {
+      "question": "How far is the fictional Arlen trail?",
+      "answer": "1 kilometre"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-02",
+    "a": {
+      "question": "How long is the fictional Arlen lecture?",
+      "answer": "60 minutes"
+    },
+    "b": {
+      "question": "How long is the fictional Arlen lecture?",
+      "answer": "1 hour"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-03",
+    "a": {
+      "question": "How many bells does fictional Arlen have?",
+      "answer": "twelve"
+    },
+    "b": {
+      "question": "How many bells does fictional Arlen have?",
+      "answer": "12"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-04",
+    "a": {
+      "question": "Which country hosted the fictional Arlen show?",
+      "answer": "United Kingdom"
+    },
+    "b": {
+      "question": "Which country hosted the fictional Arlen show?",
+      "answer": "UK"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-05",
+    "a": {
+      "question": "Which country hosted the fictional Bellora show?",
+      "answer": "United States of America"
+    },
+    "b": {
+      "question": "Which country hosted the fictional Bellora show?",
+      "answer": "USA"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-06",
+    "a": {
+      "question": "Who wrote Hamlet?",
+      "answer": "William Shakespeare"
+    },
+    "b": {
+      "question": "Who wrote Hamlet?",
+      "answer": "Shakespeare"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-07",
+    "a": {
+      "question": "Which author used the pen name Mark Twain?",
+      "answer": "Samuel Clemens"
+    },
+    "b": {
+      "question": "Which author used the pen name Mark Twain?",
+      "answer": "Mark Twain"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-08",
+    "a": {
+      "question": "How wide is the fictional Arlen model?",
+      "answer": "100 centimetres"
+    },
+    "b": {
+      "question": "How wide is the fictional Arlen model?",
+      "answer": "1 metre"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-09",
+    "a": {
+      "question": "How many seats does fictional Arlen hall have?",
+      "answer": "twenty-four"
+    },
+    "b": {
+      "question": "How many seats does fictional Arlen hall have?",
+      "answer": "24"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  },
+  {
+    "id": "alias-10",
+    "a": {
+      "question": "In which month does the fictional Arlen festival occur?",
+      "answer": "February"
+    },
+    "b": {
+      "question": "In which month does the fictional Arlen festival occur?",
+      "answer": "the second month of the year"
+    },
+    "expected": "semantic_duplicate",
+    "control": "alias"
+  }
+]
