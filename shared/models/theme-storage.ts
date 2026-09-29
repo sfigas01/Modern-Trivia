@@ -422,6 +422,11 @@ export const themeFactReviewOutcomes = pgTable(
   },
   (table) => [
     index('idx_theme_fact_review_outcomes_status_validity').on(table.status, table.validUntil),
+    uniqueIndex('uq_theme_fact_review_outcome_attempt_verdict_hash').on(
+      table.attemptId,
+      table.aggregateVerdict,
+      table.outputHash
+    ),
     check(
       'theme_fact_review_outcome_fields',
       sql`(${table.status} = 'reviewed' AND ${table.aggregateVerdict} IS NOT NULL AND ${table.aggregateVerdict} IN ('pass', 'flag', 'fail') AND ${table.dimensions} IS NOT NULL AND jsonb_typeof(${table.dimensions}) = 'object' AND ${table.dimensions} ?& ARRAY['entailment', 'scope', 'canonical_answer', 'aliases', 'conflict', 'source_independence'] AND ${table.dimensions} - ARRAY['entailment', 'scope', 'canonical_answer', 'aliases', 'conflict', 'source_independence'] = '{}'::jsonb AND ${table.outputHash} IS NOT NULL AND ${table.validUntil} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} IN ('invalid_output', 'failed') AND ${table.aggregateVerdict} IS NULL AND ${table.dimensions} IS NULL AND ${table.outputHash} IS NULL AND ${table.validUntil} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('invalid_output', 'reviewer_failure', 'evidence_changed', 'storage_failure'))`
@@ -773,6 +778,14 @@ export const themeCandidates = pgTable(
   },
   (table) => [
     uniqueIndex('uq_theme_candidates_job_ordinal').on(table.jobId, table.ordinal),
+    uniqueIndex('uq_theme_candidates_exact_binding').on(
+      table.id,
+      table.jobId,
+      table.ordinal,
+      table.factId,
+      table.factRevisionId,
+      table.contentHash
+    ),
     index('idx_theme_candidates_job_status').on(table.jobId, table.status),
     foreignKey({
       name: 'fk_theme_candidates_attempt_job',
@@ -820,12 +833,230 @@ export const themeQuestionRevisions = pgTable(
       table.revision
     ),
     uniqueIndex('uq_theme_question_revisions_candidate').on(table.candidateId),
+    uniqueIndex('uq_theme_question_revisions_candidate_binding').on(
+      table.id,
+      table.candidateId,
+      table.contentHash
+    ),
     check(
       'theme_question_revisions_owner',
       sql`(${table.questionId} IS NOT NULL) <> (${table.candidateId} IS NOT NULL)`
     ),
     check('theme_question_revisions_revision', sql`${table.revision} > 0`),
     check('theme_question_revisions_hash_format', sql`${table.contentHash} ~ '^[a-f0-9]{64}$'`),
+  ]
+);
+
+export const themeQuestionGenerationAttempts = pgTable(
+  'theme_question_generation_attempts',
+  {
+    id: uuid('id').primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    jobId: uuid('job_id').notNull(),
+    ordinal: integer('ordinal').notNull(),
+    candidateId: uuid('candidate_id').notNull(),
+    questionRevisionId: uuid('question_revision_id').notNull(),
+    factId: uuid('fact_id').notNull(),
+    factRevisionId: uuid('fact_revision_id').notNull(),
+    factContentHash: varchar('fact_content_hash', { length: 64 }).notNull(),
+    factReviewAttemptId: uuid('fact_review_attempt_id').notNull(),
+    factReviewVerdict: varchar('fact_review_verdict', { length: 8 }).notNull().default('pass'),
+    factReviewOutputHash: varchar('fact_review_output_hash', { length: 64 }).notNull(),
+    writerKind: varchar('writer_kind', { length: 16 }).$type<'model' | 'human'>().notNull(),
+    writerId: varchar('writer_id', { length: 255 }).notNull(),
+    provider: varchar('provider', { length: 255 }),
+    model: varchar('model', { length: 255 }),
+    executionId: uuid('execution_id').notNull().unique(),
+    generationPolicyVersion: varchar('generation_policy_version', { length: 255 }).notNull(),
+    policySnapshot: jsonb('policy_snapshot').$type<Record<string, unknown>>().notNull(),
+    policyHash: varchar('policy_hash', { length: 64 }).notNull(),
+    promptVersion: varchar('prompt_version', { length: 255 }).notNull(),
+    promptHash: varchar('prompt_hash', { length: 64 }).notNull(),
+    promptSnapshot: text('prompt_snapshot').notNull(),
+    inputManifest: jsonb('input_manifest').$type<Record<string, unknown>>().notNull(),
+    inputFingerprint: varchar('input_fingerprint', { length: 64 }).notNull(),
+    eligibilityFingerprint: varchar('eligibility_fingerprint', { length: 64 }).notNull(),
+    evaluatedAt: timestamp('evaluated_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_question_generation_job_ordinal').on(table.jobId, table.ordinal),
+    uniqueIndex('uq_theme_question_generation_candidate_id').on(table.candidateId),
+    uniqueIndex('uq_theme_question_generation_question_revision_id').on(table.questionRevisionId),
+    uniqueIndex('uq_theme_question_generation_attempt_binding').on(
+      table.id,
+      table.jobId,
+      table.ordinal,
+      table.candidateId,
+      table.questionRevisionId,
+      table.factId,
+      table.factRevisionId,
+      table.factContentHash,
+      table.factReviewAttemptId,
+      table.factReviewOutputHash
+    ),
+    index('idx_theme_question_generation_fact_review').on(
+      table.factRevisionId,
+      table.factReviewAttemptId
+    ),
+    foreignKey({
+      name: 'fk_theme_question_generation_job',
+      columns: [table.jobId],
+      foreignColumns: [themePreparationJobs.id],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_fact_revision',
+      columns: [table.factRevisionId, table.factId],
+      foreignColumns: [themeFactRevisions.id, themeFactRevisions.factId],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_review_attempt',
+      columns: [table.factReviewAttemptId, table.factRevisionId, table.factContentHash],
+      foreignColumns: [
+        themeFactReviewAttempts.id,
+        themeFactReviewAttempts.factRevisionId,
+        themeFactReviewAttempts.factContentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_passing_review',
+      columns: [table.factReviewAttemptId, table.factReviewVerdict, table.factReviewOutputHash],
+      foreignColumns: [
+        themeFactReviewOutcomes.attemptId,
+        themeFactReviewOutcomes.aggregateVerdict,
+        themeFactReviewOutcomes.outputHash,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_generation_contract',
+      sql`${table.contractVersion} = 'theme-question-generation-v1'`
+    ),
+    check('theme_question_generation_ordinal', sql`${table.ordinal} BETWEEN 1 AND 100`),
+    check('theme_question_generation_review_verdict', sql`${table.factReviewVerdict} = 'pass'`),
+    check(
+      'theme_question_generation_writer_fields',
+      sql`(${table.writerKind} = 'model' AND ${table.provider} IS NOT NULL AND ${table.model} IS NOT NULL) OR (${table.writerKind} = 'human' AND ${table.provider} IS NULL AND ${table.model} IS NULL)`
+    ),
+    check(
+      'theme_question_generation_policy_object',
+      sql`jsonb_typeof(${table.policySnapshot}) = 'object'`
+    ),
+    check(
+      'theme_question_generation_manifest_object',
+      sql`jsonb_typeof(${table.inputManifest}) = 'object'`
+    ),
+    check('theme_question_generation_policy_hash', sql`${table.policyHash} ~ '^[a-f0-9]{64}$'`),
+    check('theme_question_generation_prompt_hash', sql`${table.promptHash} ~ '^[a-f0-9]{64}$'`),
+    check(
+      'theme_question_generation_input_hash',
+      sql`${table.inputFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_generation_eligibility_hash',
+      sql`${table.eligibilityFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check('theme_question_generation_fact_hash', sql`${table.factContentHash} ~ '^[a-f0-9]{64}$'`),
+    check(
+      'theme_question_generation_review_hash',
+      sql`${table.factReviewOutputHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_generation_prompt_length',
+      sql`length(${table.promptSnapshot}) BETWEEN 1 AND 32000`
+    ),
+  ]
+);
+
+export const themeQuestionGenerationOutcomes = pgTable(
+  'theme_question_generation_outcomes',
+  {
+    attemptId: uuid('attempt_id').primaryKey(),
+    jobId: uuid('job_id').notNull(),
+    ordinal: integer('ordinal').notNull(),
+    candidateId: uuid('candidate_id').notNull(),
+    questionRevisionId: uuid('question_revision_id').notNull(),
+    factId: uuid('fact_id').notNull(),
+    factRevisionId: uuid('fact_revision_id').notNull(),
+    factContentHash: varchar('fact_content_hash', { length: 64 }).notNull(),
+    factReviewAttemptId: uuid('fact_review_attempt_id').notNull(),
+    factReviewOutputHash: varchar('fact_review_output_hash', { length: 64 }).notNull(),
+    status: varchar('status', { length: 24 }).notNull(),
+    questionContentHash: varchar('question_content_hash', { length: 64 }),
+    failureCode: varchar('failure_code', { length: 64 }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'fk_theme_question_generation_outcome_attempt_binding',
+      columns: [
+        table.attemptId,
+        table.jobId,
+        table.ordinal,
+        table.candidateId,
+        table.questionRevisionId,
+        table.factId,
+        table.factRevisionId,
+        table.factContentHash,
+        table.factReviewAttemptId,
+        table.factReviewOutputHash,
+      ],
+      foreignColumns: [
+        themeQuestionGenerationAttempts.id,
+        themeQuestionGenerationAttempts.jobId,
+        themeQuestionGenerationAttempts.ordinal,
+        themeQuestionGenerationAttempts.candidateId,
+        themeQuestionGenerationAttempts.questionRevisionId,
+        themeQuestionGenerationAttempts.factId,
+        themeQuestionGenerationAttempts.factRevisionId,
+        themeQuestionGenerationAttempts.factContentHash,
+        themeQuestionGenerationAttempts.factReviewAttemptId,
+        themeQuestionGenerationAttempts.factReviewOutputHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_outcome_candidate',
+      columns: [
+        table.candidateId,
+        table.jobId,
+        table.ordinal,
+        table.factId,
+        table.factRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeCandidates.id,
+        themeCandidates.jobId,
+        themeCandidates.ordinal,
+        themeCandidates.factId,
+        themeCandidates.factRevisionId,
+        themeCandidates.contentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_outcome_question_revision',
+      columns: [table.questionRevisionId, table.candidateId, table.questionContentHash],
+      foreignColumns: [
+        themeQuestionRevisions.id,
+        themeQuestionRevisions.candidateId,
+        themeQuestionRevisions.contentHash,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_generation_outcome_status',
+      sql`${table.status} IN ('persisted', 'declined', 'invalid_output', 'ineligible', 'failed')`
+    ),
+    check(
+      'theme_question_generation_outcome_fields',
+      sql`(${table.status} = 'persisted' AND ${table.questionContentHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} = 'declined' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_declined') OR (${table.status} = 'invalid_output' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'invalid_output') OR (${table.status} = 'ineligible' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'ineligible') OR (${table.status} = 'failed' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('writer_failure', 'candidate_conflict'))`
+    ),
+    check(
+      'theme_question_generation_outcome_fact_hash',
+      sql`${table.factContentHash} ~ '^[a-f0-9]{64}$' AND ${table.factReviewOutputHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_generation_outcome_question_hash',
+      sql`${table.questionContentHash} IS NULL OR ${table.questionContentHash} ~ '^[a-f0-9]{64}$'`
+    ),
   ]
 );
 
