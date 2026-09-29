@@ -57,6 +57,15 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         await admin.query(
           await readFile(new URL(`../../migrations/${file}`, import.meta.url), 'utf8')
         );
+      // db:push may have already created the Drizzle unique index before SQL migrations run.
+      await admin.query(`CREATE UNIQUE INDEX uq_theme_fact_revisions_id_hash
+        ON theme_fact_revisions (id, content_hash)`);
+      const provenanceMigration = await readFile(
+        new URL('../../migrations/0011_theme_fact_derivation_provenance.sql', import.meta.url),
+        'utf8'
+      );
+      await admin.query(provenanceMigration);
+      await admin.query(provenanceMigration);
       pool = new pg.Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
       await createPostgresThemeSourceRegistryRepository(pool).append(manifest);
       const body = Buffer.from('The fictional event occurred in 1901.');
@@ -102,6 +111,17 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
           minimumOriginGroups: 1,
           timeSensitiveTtlMs: 3 * 24 * 60 * 60 * 1000,
         },
+        provenance: {
+          attemptId: randomUUID(),
+          derivationPolicyVersion: 'fact-test-policy-v1',
+          promptVersion: 'test-prompt-v1',
+          promptText: 'Derive one bounded fact.',
+          producerKind: 'human' as const,
+          producerId: 'test-proposer',
+          provider: null,
+          model: null,
+          executionId: randomUUID(),
+        },
       };
       const proposer = () => ({
         status: 'proposed' as const,
@@ -130,10 +150,35 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         pool,
         () => new Date('2026-09-28T12:00:00.000Z')
       );
-      const [first, second] = await Promise.all([
-        repository.deriveAndPersist(request, proposer),
-        repository.deriveAndPersist(request, proposer),
-      ]);
+      let dispatchStarted!: () => void;
+      let releaseDispatch!: () => void;
+      const started = new Promise<void>((resolve) => {
+        dispatchStarted = resolve;
+      });
+      const release = new Promise<void>((resolve) => {
+        releaseDispatch = resolve;
+      });
+      let dispatches = 0;
+      const firstPromise = repository.deriveAndPersist(request, async () => {
+        dispatches++;
+        dispatchStarted();
+        await release;
+        return proposer();
+      });
+      await started;
+      await expect(
+        repository.deriveAndPersist(request, () => {
+          dispatches++;
+          return proposer();
+        })
+      ).rejects.toMatchObject({ code: 'attempt_unresolved' });
+      releaseDispatch();
+      const first = await firstPromise;
+      const second = await repository.deriveAndPersist(request, () => {
+        dispatches++;
+        return proposer();
+      });
+      expect(dispatches).toBe(1);
       expect(first.status).toBe('proposed');
       expect(second.status).toBe('proposed');
       if (first.status !== 'proposed' || second.status !== 'proposed')
@@ -152,6 +197,102 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         (await pool.query('SELECT count(*)::int AS count FROM theme_fact_evidence_passages'))
           .rows[0].count
       ).toBe(1);
+      expect(
+        (await pool.query('SELECT count(*)::int AS count FROM theme_fact_derivation_attempts'))
+          .rows[0].count
+      ).toBe(1);
+      expect(
+        (await pool.query('SELECT count(*)::int AS count FROM theme_fact_derivation_outcomes'))
+          .rows[0].count
+      ).toBe(1);
+      const legacyFactId = randomUUID();
+      const legacyRevisionId = randomUUID();
+      await pool.query('INSERT INTO theme_facts (id, canonical_key) VALUES ($1, $2)', [
+        legacyFactId,
+        'legacy-unbound-fact',
+      ]);
+      await pool.query(
+        `INSERT INTO theme_fact_revisions
+         (id, fact_id, contract_version, revision, statement, scope, canonical_answer,
+          supported_aliases, content_hash, time_sensitive)
+         VALUES ($1, $2, 'theme-reliability-v1', 1, 'Legacy statement',
+                 '{}'::jsonb, 'legacy', '[]'::jsonb, $3, false)`,
+        [legacyRevisionId, legacyFactId, 'd'.repeat(64)]
+      );
+      expect(
+        (
+          await pool.query(
+            'SELECT count(*)::int AS count FROM theme_fact_derivation_outcomes WHERE fact_revision_id = $1',
+            [legacyRevisionId]
+          )
+        ).rows[0].count
+      ).toBe(0);
+      await expect(
+        pool.query('UPDATE theme_fact_derivation_attempts SET producer_id = producer_id')
+      ).rejects.toMatchObject({ code: '55000' });
+      await expect(pool.query('DELETE FROM theme_fact_derivation_outcomes')).rejects.toMatchObject({
+        code: '55000',
+      });
+      async function cloneAttempt(id: string, requestedRevisionId: string) {
+        await pool!.query(
+          `INSERT INTO theme_fact_derivation_attempts
+         (id, contract_version, canonical_key, requested_revision_id, expected_latest_revision,
+          derivation_policy_version, policy_snapshot, policy_hash, prompt_version, prompt_hash,
+          input_manifest, input_fingerprint, producer_kind, producer_id, provider, model, execution_id)
+         SELECT $1, contract_version, canonical_key, $2,
+          expected_latest_revision, derivation_policy_version, policy_snapshot, policy_hash,
+          prompt_version, prompt_hash, input_manifest, input_fingerprint, producer_kind,
+          producer_id, provider, model, $3
+         FROM theme_fact_derivation_attempts WHERE id = $4`,
+          [id, requestedRevisionId, randomUUID(), request.provenance.attemptId]
+        );
+      }
+      const persistedOutcomeSql = `INSERT INTO theme_fact_derivation_outcomes
+         (attempt_id, outcome, proposal_snapshot, output_hash, fact_revision_id,
+          fact_content_hash, bindings_fingerprint)
+         VALUES ($1, 'persisted', '{}'::jsonb, $2, $3, $4, $5)`;
+      const invalidAttemptId = randomUUID();
+      await cloneAttempt(invalidAttemptId, legacyRevisionId);
+      await expect(
+        pool.query(persistedOutcomeSql, [
+          invalidAttemptId,
+          'a'.repeat(64),
+          legacyRevisionId,
+          'b'.repeat(64),
+          'c'.repeat(64),
+        ])
+      ).rejects.toMatchObject({
+        code: '23503',
+        constraint: 'fk_theme_fact_derivation_outcome_revision',
+      });
+      const mismatchedAttemptId = randomUUID();
+      await cloneAttempt(mismatchedAttemptId, randomUUID());
+      await expect(
+        pool.query(persistedOutcomeSql, [
+          mismatchedAttemptId,
+          'a'.repeat(64),
+          legacyRevisionId,
+          'd'.repeat(64),
+          'c'.repeat(64),
+        ])
+      ).rejects.toMatchObject({
+        code: '23503',
+        constraint: 'fk_theme_fact_derivation_outcome_attempt_revision',
+      });
+      const duplicateAttemptId = randomUUID();
+      await cloneAttempt(duplicateAttemptId, request.revisionId);
+      await expect(
+        pool.query(persistedOutcomeSql, [
+          duplicateAttemptId,
+          'a'.repeat(64),
+          request.revisionId,
+          first.contentHash,
+          'c'.repeat(64),
+        ])
+      ).rejects.toMatchObject({
+        code: '23505',
+        constraint: 'uq_theme_fact_derivation_outcome_revision',
+      });
 
       await admin.query(`CREATE FUNCTION ${schema}.reject_test_binding() RETURNS trigger AS $$
         BEGIN RAISE EXCEPTION 'test rejection'; END; $$ LANGUAGE plpgsql`);
@@ -161,6 +302,11 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         ...request,
         canonicalKey: 'second-fictional-fact',
         revisionId: randomUUID(),
+        provenance: {
+          ...request.provenance,
+          attemptId: randomUUID(),
+          executionId: randomUUID(),
+        },
       };
       await expect(repository.deriveAndPersist(failed, proposer)).rejects.toMatchObject({
         code: 'storage_failure',
@@ -174,7 +320,7 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
       ).toBe(0);
       expect(
         (await pool.query('SELECT count(*)::int AS count FROM theme_fact_revisions')).rows[0].count
-      ).toBe(1);
+      ).toBe(2);
     } finally {
       if (pool) await pool.end().catch(() => undefined);
       if (connected) {
