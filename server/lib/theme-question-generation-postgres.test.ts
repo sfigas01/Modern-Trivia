@@ -93,6 +93,17 @@ describe.runIf(Boolean(databaseUrl))('theme question generation PostgreSQL migra
           'theme_question_generation_outcomes_immutable',
         ])
       );
+      const targetReservationIndexes = await admin.query(
+        `SELECT indexname FROM pg_indexes
+         WHERE schemaname = $1 AND tablename = 'theme_question_generation_attempts'`,
+        [schema]
+      );
+      expect(targetReservationIndexes.rows.map((row) => row.indexname)).toEqual(
+        expect.arrayContaining([
+          'uq_theme_question_generation_candidate_id',
+          'uq_theme_question_generation_question_revision_id',
+        ])
+      );
       const outcomeConstraint = await admin.query(
         `SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
          WHERE connamespace = $1::regnamespace AND conname = 'theme_question_generation_outcome_fields'`,

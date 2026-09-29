@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS theme_question_generation_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_theme_question_generation_fact_review
   ON theme_question_generation_attempts (fact_revision_id, fact_review_attempt_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_theme_question_generation_candidate_id
+  ON theme_question_generation_attempts (candidate_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_theme_question_generation_question_revision_id
+  ON theme_question_generation_attempts (question_revision_id);
 
 CREATE TABLE IF NOT EXISTS theme_question_generation_outcomes (
   attempt_id uuid PRIMARY KEY,
@@ -89,7 +93,7 @@ CREATE TABLE IF NOT EXISTS theme_question_generation_outcomes (
     OR (status = 'declined' AND question_content_hash IS NULL AND failure_code IS NOT NULL AND failure_code = 'writer_declined')
     OR (status = 'invalid_output' AND question_content_hash IS NULL AND failure_code IS NOT NULL AND failure_code = 'invalid_output')
     OR (status = 'ineligible' AND question_content_hash IS NULL AND failure_code IS NOT NULL AND failure_code = 'ineligible')
-    OR (status = 'failed' AND question_content_hash IS NULL AND failure_code IS NOT NULL AND failure_code = 'writer_failure')
+    OR (status = 'failed' AND question_content_hash IS NULL AND failure_code IS NOT NULL AND failure_code IN ('writer_failure', 'candidate_conflict'))
   )
 );
 

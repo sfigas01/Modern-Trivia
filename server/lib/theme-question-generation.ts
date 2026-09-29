@@ -1091,6 +1091,16 @@ export function createPostgresThemeQuestionGenerationRepository(
           [request.jobId, request.ordinal]
         );
         if (occupied.rowCount) throw new ThemeQuestionGenerationError('candidate_conflict');
+        const candidateIdOccupied = await client.query(
+          'SELECT id FROM theme_candidates WHERE id = $1',
+          [request.candidateId]
+        );
+        const questionRevisionIdOccupied = await client.query(
+          'SELECT id FROM theme_question_revisions WHERE id = $1',
+          [request.questionRevisionId]
+        );
+        if (candidateIdOccupied.rowCount || questionRevisionIdOccupied.rowCount)
+          throw new ThemeQuestionGenerationError('candidate_conflict');
         await client.query(
           `INSERT INTO theme_question_generation_attempts
            (id, contract_version, job_id, ordinal, candidate_id, question_revision_id, fact_id,
@@ -1267,9 +1277,44 @@ export function createPostgresThemeQuestionGenerationRepository(
           return { status, questionContentHash };
         });
       } catch (error) {
-        if (error && typeof error === 'object' && 'code' in error && error.code === '23505')
-          throw new ThemeQuestionGenerationError('candidate_conflict');
-        throw error;
+        if (!(error instanceof ThemeQuestionGenerationError) || error.code !== 'candidate_conflict')
+          throw error;
+        await runThemeQuestionGenerationTransaction(pool, async (client) => {
+          await client.query('SELECT id FROM theme_facts WHERE id = $1 FOR UPDATE', [
+            request.factId,
+          ]);
+          await client.query(
+            'SELECT id FROM theme_fact_revisions WHERE id = $1 AND fact_id = $2 FOR UPDATE',
+            [request.factRevisionId, request.factId]
+          );
+          const storedAttemptResult = await client.query(
+            'SELECT * FROM theme_question_generation_attempts WHERE id = $1 FOR UPDATE',
+            [request.attemptId]
+          );
+          const storedAttempt = storedAttemptResult.rows[0] as Record<string, any> | undefined;
+          if (!storedAttempt || !stableHeaderMatches(storedAttempt, attemptHeader))
+            throw new ThemeQuestionGenerationError('attempt_conflict');
+          if (await readOutcome(client, request.attemptId)) return;
+          await client.query(
+            `INSERT INTO theme_question_generation_outcomes
+             (attempt_id, job_id, ordinal, candidate_id, question_revision_id, fact_id,
+              fact_revision_id, fact_content_hash, fact_review_attempt_id, fact_review_output_hash,
+              status, question_content_hash, failure_code)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'failed',NULL,'candidate_conflict')`,
+            [
+              request.attemptId,
+              request.jobId,
+              request.ordinal,
+              request.candidateId,
+              request.questionRevisionId,
+              request.factId,
+              request.factRevisionId,
+              request.factContentHash,
+              request.factReviewAttemptId,
+              request.factReviewOutputHash,
+            ]
+          );
+        });
       }
       const stored = await storageSafe(() => readOutcome(pool, request.attemptId));
       if (!stored) throw new ThemeQuestionGenerationError('storage_unknown_outcome');

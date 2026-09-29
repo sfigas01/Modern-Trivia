@@ -881,6 +881,8 @@ export const themeQuestionGenerationAttempts = pgTable(
   },
   (table) => [
     uniqueIndex('uq_theme_question_generation_job_ordinal').on(table.jobId, table.ordinal),
+    uniqueIndex('uq_theme_question_generation_candidate_id').on(table.candidateId),
+    uniqueIndex('uq_theme_question_generation_question_revision_id').on(table.questionRevisionId),
     uniqueIndex('uq_theme_question_generation_attempt_binding').on(
       table.id,
       table.jobId,
@@ -1045,7 +1047,7 @@ export const themeQuestionGenerationOutcomes = pgTable(
     ),
     check(
       'theme_question_generation_outcome_fields',
-      sql`(${table.status} = 'persisted' AND ${table.questionContentHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} = 'declined' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_declined') OR (${table.status} = 'invalid_output' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'invalid_output') OR (${table.status} = 'ineligible' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'ineligible') OR (${table.status} = 'failed' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_failure')`
+      sql`(${table.status} = 'persisted' AND ${table.questionContentHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} = 'declined' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_declined') OR (${table.status} = 'invalid_output' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'invalid_output') OR (${table.status} = 'ineligible' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'ineligible') OR (${table.status} = 'failed' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('writer_failure', 'candidate_conflict'))`
     ),
     check(
       'theme_question_generation_outcome_fact_hash',

@@ -365,10 +365,22 @@ function repositoryFixture() {
     advanceOnFactLockMs: number;
     commitUnknown: boolean;
     reviews: Record<string, any>[];
-  } = { edgeKind: 'supports', nowMs, advanceOnFactLockMs: 0, commitUnknown: false, reviews: rows };
+    existingCandidateIds: Set<string>;
+    existingQuestionRevisionIds: Set<string>;
+    candidateInsertConflict: boolean;
+  } = {
+    edgeKind: 'supports',
+    nowMs,
+    advanceOnFactLockMs: 0,
+    commitUnknown: false,
+    reviews: rows,
+    existingCandidateIds: new Set(),
+    existingQuestionRevisionIds: new Set(),
+    candidateInsertConflict: false,
+  };
   const result = (items: unknown[] = []) =>
     ({ rows: items, rowCount: items.length }) as QueryResult;
-  const contextQuery = async (sql: string) => {
+  const contextQuery = async (sql: string, values: any[] = []) => {
     if (sql.includes('FROM theme_preparation_jobs'))
       return result([{ id: ids.job, candidate_ceiling: 2, theme_slug: 'fictional-history' }]);
     if (sql.includes('FROM theme_facts f JOIN theme_fact_revisions')) return result([factRow]);
@@ -378,19 +390,36 @@ function repositoryFixture() {
     if (sql.includes('SELECT passage_id, support_kind'))
       return result([{ passage_id: ids.passage, support_kind: state.edgeKind }]);
     if (sql.includes('FROM theme_fact_review_attempts')) return result(state.reviews);
+    if (sql.includes('SELECT id FROM theme_candidates WHERE id = $1'))
+      return result(
+        state.existingCandidateIds.has(values[0]) || state.candidate?.id === values[0]
+          ? [{ id: values[0] }]
+          : []
+      );
+    if (sql.includes('SELECT id FROM theme_question_revisions WHERE id = $1'))
+      return result(
+        state.existingQuestionRevisionIds.has(values[0]) || state.revision?.id === values[0]
+          ? [{ id: values[0] }]
+          : []
+      );
     if (sql.includes('SELECT * FROM theme_question_generation_attempts'))
-      return result(state.header ? [state.header] : []);
+      return result(state.header?.id === values[0] ? [state.header] : []);
     if (sql.includes('SELECT * FROM theme_question_generation_outcomes'))
-      return result(state.outcome ? [state.outcome] : []);
+      return result(state.outcome?.attempt_id === values[0] ? [state.outcome] : []);
     if (sql.includes('FROM theme_candidates c JOIN theme_question_revisions'))
       return result(
         state.candidate && state.revision ? [{ ...state.candidate, ...state.revision }] : []
       );
-    if (sql.includes('SELECT id FROM theme_candidates WHERE job_id')) return result([]);
+    if (sql.includes('SELECT id FROM theme_candidates WHERE job_id'))
+      return result(
+        state.candidate?.job_id === values[0] && state.candidate?.ordinal === values[1]
+          ? [{ id: state.candidate.id }]
+          : []
+      );
     throw new Error(`unexpected query ${sql}`);
   };
   const pool = {
-    query: async (sql: string) => contextQuery(sql),
+    query: async (sql: string, values: any[] = []) => contextQuery(sql, values),
     connect: async () => {
       const client = {
         query: async (sql: string, values: any[] = []) => {
@@ -409,8 +438,14 @@ function repositoryFixture() {
           if (sql.includes('FOR UPDATE') && sql.includes('theme_fact_revisions'))
             return result([{ id: ids.revision }]);
           if (sql.includes('SELECT * FROM theme_question_generation_attempts'))
-            return result(state.header ? [state.header] : []);
+            return result(state.header?.id === values[0] ? [state.header] : []);
           if (sql.includes('INSERT INTO theme_question_generation_attempts')) {
+            if (
+              state.header &&
+              (state.header.candidate_id === values[4] ||
+                state.header.question_revision_id === values[5])
+            )
+              throw Object.assign(new Error('unique attempt target collision'), { code: '23505' });
             state.header = {
               id: values[0],
               contract_version: values[1],
@@ -443,6 +478,8 @@ function repositoryFixture() {
             return result();
           }
           if (sql.includes('INSERT INTO theme_candidates')) {
+            if (state.candidateInsertConflict)
+              throw Object.assign(new Error('external candidate id collision'), { code: '23505' });
             state.candidate = {
               id: values[0],
               job_id: values[1],
@@ -471,13 +508,17 @@ function repositoryFixture() {
           if (sql.includes('INSERT INTO theme_question_generation_outcomes')) {
             state.outcome = {
               attempt_id: values[0],
-              status: values[10],
-              question_content_hash: values[11],
-              failure_code: values[12],
+              status: sql.includes("'failed'") ? 'failed' : values[10],
+              question_content_hash: sql.includes("'failed'") ? null : values[11],
+              failure_code: sql.includes("'candidate_conflict'")
+                ? 'candidate_conflict'
+                : sql.includes("'failed'")
+                  ? values[12]
+                  : values[12],
             };
             return result();
           }
-          return contextQuery(sql);
+          return contextQuery(sql, values);
         },
         release: vi.fn(),
       };
@@ -537,6 +578,84 @@ function repositoryFixture() {
 }
 
 describe('theme question generation safety', () => {
+  it.each(['candidate', 'question revision'] as const)(
+    'rejects a pre-existing %s id before registering or dispatching',
+    async (target) => {
+      const f = repositoryFixture();
+      if (target === 'candidate') f.state.existingCandidateIds.add(f.request.candidateId);
+      else f.state.existingQuestionRevisionIds.add(f.request.questionRevisionId);
+      const writer = vi.fn(() => ({
+        status: 'candidate' as const,
+        question: 'In which year did the event occur?',
+        explanation: 'The record states the year.',
+      }));
+
+      await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
+        code: 'candidate_conflict',
+      });
+      expect(writer).not.toHaveBeenCalled();
+      expect(f.state.header).toBeUndefined();
+      expect(f.state.outcome).toBeUndefined();
+    }
+  );
+
+  it('reserves candidate and revision ids across concurrent generation attempts', async () => {
+    const f = repositoryFixture();
+    let releaseWriter!: () => void;
+    let signalWriterEntered!: () => void;
+    const entered = new Promise<void>((resolve) => {
+      signalWriterEntered = resolve;
+    });
+    const blocked = new Promise<void>((resolve) => {
+      releaseWriter = resolve;
+    });
+    const firstWriter = vi.fn(async () => {
+      signalWriterEntered();
+      await blocked;
+      return {
+        status: 'candidate' as const,
+        question: 'In which year did the event occur?',
+        explanation: 'The record states the year.',
+      };
+    });
+    const first = f.repository.generate(f.request, firstWriter);
+    await entered;
+    const secondWriter = vi.fn(() => ({
+      status: 'candidate' as const,
+      question: 'In which year did the event occur?',
+      explanation: 'The record states the year.',
+    }));
+    const secondRequest = {
+      ...f.request,
+      attemptId: randomUUID(),
+      ordinal: 2,
+    };
+    await expect(f.repository.generate(secondRequest, secondWriter)).rejects.toMatchObject({
+      code: 'candidate_conflict',
+    });
+    expect(secondWriter).not.toHaveBeenCalled();
+    releaseWriter();
+    await expect(first).resolves.toMatchObject({ status: 'persisted' });
+    expect(firstWriter).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores a terminal conflict outcome if a candidate id is occupied after dispatch starts', async () => {
+    const f = repositoryFixture();
+    const writer = vi.fn(() => {
+      f.state.candidateInsertConflict = true;
+      return {
+        status: 'candidate' as const,
+        question: 'In which year did the event occur?',
+        explanation: 'The record states the year.',
+      };
+    });
+    const first = await f.repository.generate(f.request, writer);
+    expect(first).toMatchObject({ status: 'failed', failureCode: 'candidate_conflict' });
+    const replay = await f.repository.generate(f.request, writer);
+    expect(replay).toEqual(first);
+    expect(writer).toHaveBeenCalledTimes(1);
+  });
+
   it('persists through generate() and replays without redispatch after a candidate status change', async () => {
     const f = repositoryFixture();
     f.state.advanceOnFactLockMs = 20_000;
