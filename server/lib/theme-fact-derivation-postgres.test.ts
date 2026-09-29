@@ -8,6 +8,7 @@ import type { ThemeSourceRegistry } from '@shared/models/theme-source-registry';
 
 import { createPostgresThemeEvidencePersistenceRepository } from './theme-evidence-persistence';
 import { createPostgresThemeFactDerivationRepository } from './theme-fact-derivation';
+import { createPostgresThemeFactReviewRepository } from './theme-fact-review';
 import { extractThemeSource } from './theme-source-extraction';
 import {
   createPostgresThemeSourceRegistryRepository,
@@ -66,6 +67,11 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
       );
       await admin.query(provenanceMigration);
       await admin.query(provenanceMigration);
+      const reviewMigration = await readFile(
+        new URL('../../migrations/0012_theme_fact_reviews.sql', import.meta.url),
+        'utf8'
+      );
+      await admin.query(reviewMigration);
       pool = new pg.Pool({ connectionString: databaseUrl, options: `-c search_path=${schema}` });
       await createPostgresThemeSourceRegistryRepository(pool).append(manifest);
       const body = Buffer.from('The fictional event occurred in 1901.');
@@ -98,11 +104,23 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         metadata: { title: 'Imaginary record', language: 'en' },
       });
       const passageId = captured.passageIds[0];
+      const contradictoryText = 'The fictional event occurred in 1902.';
+      const contradictoryHash = createHash('sha256')
+        .update(contradictoryText, 'utf8')
+        .digest('hex');
+      const contradictoryPassageId = randomUUID();
+      await pool.query(
+        `INSERT INTO theme_evidence_passages
+         (id, contract_version, document_id, ordinal, locator, passage_text, content_hash)
+         SELECT $1, 'theme-reliability-v1', id, 1, 'manual contradictory record', $2, $3
+         FROM theme_evidence_documents WHERE content_hash = $4`,
+        [contradictoryPassageId, contradictoryText, contradictoryHash, source.contentHash]
+      );
       const request = {
         canonicalKey: 'fictional-event-year',
         revisionId: randomUUID().toUpperCase(),
         expectedLatestRevision: 0,
-        passageIds: [passageId.toUpperCase()],
+        passageIds: [passageId.toUpperCase(), contradictoryPassageId.toUpperCase()],
         policy: {
           sourcePolicyVersion: manifest.sourcePolicyVersion,
           extractorVersion: extraction.extractorVersion,
@@ -205,6 +223,113 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         (await pool.query('SELECT count(*)::int AS count FROM theme_fact_derivation_outcomes'))
           .rows[0].count
       ).toBe(1);
+      const reviewRepository = createPostgresThemeFactReviewRepository(
+        pool,
+        {
+          executionId: randomUUID(),
+          reviewPolicyVersion: 'test-review-policy-v1',
+          policy: { ...request.policy, validForMs: 60_000 },
+          promptVersion: 'test-review-prompt-v1',
+          promptText: 'Review the exact fact and every offered passage.',
+          reviewer: {
+            kind: 'model',
+            id: 'independent-reviewer',
+            provider: 'test-provider',
+            model: 'review-model',
+          },
+        },
+        () => new Date('2026-09-28T12:00:00.000Z')
+      );
+      const sameIdentityRepository = createPostgresThemeFactReviewRepository(
+        pool,
+        {
+          executionId: randomUUID(),
+          reviewPolicyVersion: 'test-review-policy-v1',
+          policy: { ...request.policy, validForMs: 60_000 },
+          promptVersion: 'test-review-prompt-v1',
+          promptText: 'Review the exact fact and every offered passage.',
+          reviewer: {
+            kind: 'human',
+            id: 'test-proposer',
+            provider: null,
+            model: null,
+          },
+        },
+        () => new Date('2026-09-28T12:00:00.000Z')
+      );
+      let rejectedDispatches = 0;
+      await expect(
+        sameIdentityRepository.review(
+          {
+            attemptId: randomUUID(),
+            derivationAttemptId: request.provenance.attemptId,
+            factRevisionId: request.revisionId,
+          },
+          () => {
+            rejectedDispatches++;
+            return {};
+          }
+        )
+      ).rejects.toMatchObject({ code: 'reviewer_not_independent' });
+      expect(rejectedDispatches).toBe(0);
+      const reviewAttemptId = randomUUID();
+      const reviewResult = await reviewRepository.review(
+        {
+          attemptId: reviewAttemptId,
+          derivationAttemptId: request.provenance.attemptId,
+          factRevisionId: request.revisionId,
+        },
+        (reviewInput) => {
+          dispatches++;
+          expect(reviewInput.evidence).toHaveLength(2);
+          expect(reviewInput.evidence.map((item) => item.supportKind)).toContain('uncited');
+          expect(reviewInput.evidence.map((item) => item.text)).toContain(contradictoryText);
+          const ref = (item: (typeof reviewInput.evidence)[number]) => ({
+            passageId: item.passageId,
+            passageContentHash: item.passageContentHash,
+          });
+          const cited = ref(reviewInput.evidence[0]);
+          return {
+            dimensions: {
+              entailment: { verdict: 'pass', reasons: ['supported'], passageRefs: [cited] },
+              scope: { verdict: 'pass', reasons: ['scope_match'], passageRefs: [cited] },
+              canonical_answer: {
+                verdict: 'pass',
+                reasons: ['answer_supported'],
+                passageRefs: [cited],
+              },
+              aliases: { verdict: 'pass', reasons: ['aliases_supported'], passageRefs: [cited] },
+              conflict: {
+                verdict: 'flag',
+                reasons: ['conflicting_evidence'],
+                passageRefs: [ref(reviewInput.evidence[1])],
+              },
+              source_independence: {
+                verdict: 'pass',
+                reasons: ['independent_origins'],
+                passageRefs: [cited],
+              },
+            },
+          };
+        }
+      );
+      expect(reviewResult).toMatchObject({
+        status: 'reviewed',
+        verdict: 'flag',
+        attemptId: reviewAttemptId,
+      });
+      const replayedReview = await reviewRepository.review(
+        {
+          attemptId: reviewAttemptId,
+          derivationAttemptId: request.provenance.attemptId,
+          factRevisionId: request.revisionId,
+        },
+        () => {
+          throw new Error('completed review must not be redispatched');
+        }
+      );
+      expect(replayedReview).toEqual(reviewResult);
+      expect(dispatches).toBe(2);
       const legacyFactId = randomUUID();
       const legacyRevisionId = randomUUID();
       await pool.query('INSERT INTO theme_facts (id, canonical_key) VALUES ($1, $2)', [

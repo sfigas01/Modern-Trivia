@@ -20,6 +20,7 @@ import {
 import { users } from './auth';
 import type { EvidenceDimensionResult, FactScope, QuestionContentSnapshot } from './theme-evidence';
 import type { ThemeSourceRegistry } from './theme-source-registry';
+import type { ThemeFactReviewOutput } from './theme-fact-review';
 import { questions } from './questions';
 import type { InternalThemeFailure } from './theme';
 
@@ -272,6 +273,11 @@ export const themeFactDerivationOutcomes = pgTable(
   },
   (table) => [
     uniqueIndex('uq_theme_fact_derivation_outcome_revision').on(table.factRevisionId),
+    uniqueIndex('uq_theme_fact_derivation_outcome_review_binding').on(
+      table.attemptId,
+      table.factRevisionId,
+      table.factContentHash
+    ),
     foreignKey({
       name: 'fk_theme_fact_derivation_outcome_attempt_revision',
       columns: [table.attemptId, table.factRevisionId],
@@ -317,6 +323,112 @@ export const themeFactDerivationOutcomes = pgTable(
       OR (${table.outcome} = 'policy_unsatisfied' AND ${table.proposalSnapshot} IS NOT NULL AND ${table.outputHash} IS NOT NULL AND ${table.factRevisionId} IS NULL AND ${table.factContentHash} IS NULL AND ${table.bindingsFingerprint} IS NULL AND ${table.failureCode} IS NULL)
       OR (${table.outcome} IN ('invalid_output', 'failed') AND ${table.proposalSnapshot} IS NULL AND ${table.outputHash} IS NULL AND ${table.factRevisionId} IS NULL AND ${table.factContentHash} IS NULL AND ${table.bindingsFingerprint} IS NULL AND ${table.failureCode} IS NOT NULL)
     `
+    ),
+  ]
+);
+
+export const themeFactReviewAttempts = pgTable(
+  'theme_fact_review_attempts',
+  {
+    id: uuid('id').primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    derivationAttemptId: uuid('derivation_attempt_id').notNull(),
+    factRevisionId: uuid('fact_revision_id').notNull(),
+    factContentHash: varchar('fact_content_hash', { length: 64 }).notNull(),
+    reviewSequence: integer('review_sequence').notNull(),
+    reviewPolicyVersion: varchar('review_policy_version', { length: 255 }).notNull(),
+    policySnapshot: jsonb('policy_snapshot').$type<Record<string, unknown>>().notNull(),
+    policyHash: varchar('policy_hash', { length: 64 }).notNull(),
+    promptVersion: varchar('prompt_version', { length: 255 }).notNull(),
+    promptHash: varchar('prompt_hash', { length: 64 }).notNull(),
+    inputManifest: jsonb('input_manifest').$type<Record<string, unknown>>().notNull(),
+    inputFingerprint: varchar('input_fingerprint', { length: 64 }).notNull(),
+    reviewerKind: varchar('reviewer_kind', { length: 16 }).$type<'model' | 'human'>().notNull(),
+    reviewerId: varchar('reviewer_id', { length: 255 }).notNull(),
+    provider: varchar('provider', { length: 255 }),
+    model: varchar('model', { length: 255 }),
+    executionId: uuid('execution_id').notNull().unique(),
+    evaluatedAt: timestamp('evaluated_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_fact_review_attempt_revision_sequence').on(
+      table.factRevisionId,
+      table.reviewSequence
+    ),
+    uniqueIndex('uq_theme_fact_review_attempt_id_revision_hash').on(
+      table.id,
+      table.factRevisionId,
+      table.factContentHash
+    ),
+    index('idx_theme_fact_review_attempts_revision_sequence').on(
+      table.factRevisionId,
+      table.reviewSequence.desc()
+    ),
+    foreignKey({
+      name: 'fk_theme_fact_review_derivation_outcome_binding',
+      columns: [table.derivationAttemptId, table.factRevisionId, table.factContentHash],
+      foreignColumns: [
+        themeFactDerivationOutcomes.attemptId,
+        themeFactDerivationOutcomes.factRevisionId,
+        themeFactDerivationOutcomes.factContentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_fact_review_revision_hash',
+      columns: [table.factRevisionId, table.factContentHash],
+      foreignColumns: [themeFactRevisions.id, themeFactRevisions.contentHash],
+    }).onDelete('restrict'),
+    check(
+      'theme_fact_review_attempt_contract',
+      sql`${table.contractVersion} = 'theme-fact-review-v1'`
+    ),
+    check(
+      'theme_fact_review_attempt_policy_object',
+      sql`jsonb_typeof(${table.policySnapshot}) = 'object'`
+    ),
+    check(
+      'theme_fact_review_attempt_manifest_object',
+      sql`jsonb_typeof(${table.inputManifest}) = 'object'`
+    ),
+    check('theme_fact_review_attempt_sequence', sql`${table.reviewSequence} > 0`),
+    check('theme_fact_review_attempt_fact_hash', sql`${table.factContentHash} ~ '^[a-f0-9]{64}$'`),
+    check('theme_fact_review_attempt_policy_hash', sql`${table.policyHash} ~ '^[a-f0-9]{64}$'`),
+    check('theme_fact_review_attempt_prompt_hash', sql`${table.promptHash} ~ '^[a-f0-9]{64}$'`),
+    check(
+      'theme_fact_review_attempt_input_hash',
+      sql`${table.inputFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_fact_review_attempt_reviewer_fields',
+      sql`(${table.reviewerKind} = 'model' AND ${table.provider} IS NOT NULL AND ${table.model} IS NOT NULL) OR (${table.reviewerKind} = 'human' AND ${table.provider} IS NULL AND ${table.model} IS NULL)`
+    ),
+  ]
+);
+
+export const themeFactReviewOutcomes = pgTable(
+  'theme_fact_review_outcomes',
+  {
+    attemptId: uuid('attempt_id')
+      .primaryKey()
+      .references(() => themeFactReviewAttempts.id, { onDelete: 'restrict' }),
+    status: varchar('status', { length: 24 }).notNull(),
+    aggregateVerdict: varchar('aggregate_verdict', { length: 8 }),
+    dimensions: jsonb('dimensions').$type<ThemeFactReviewOutput['dimensions']>(),
+    outputHash: varchar('output_hash', { length: 64 }),
+    validUntil: timestamp('valid_until', { withTimezone: true }),
+    failureCode: varchar('failure_code', { length: 64 }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('idx_theme_fact_review_outcomes_status_validity').on(table.status, table.validUntil),
+    check(
+      'theme_fact_review_outcome_fields',
+      sql`(${table.status} = 'reviewed' AND ${table.aggregateVerdict} IS NOT NULL AND ${table.aggregateVerdict} IN ('pass', 'flag', 'fail') AND ${table.dimensions} IS NOT NULL AND jsonb_typeof(${table.dimensions}) = 'object' AND ${table.dimensions} ?& ARRAY['entailment', 'scope', 'canonical_answer', 'aliases', 'conflict', 'source_independence'] AND ${table.dimensions} - ARRAY['entailment', 'scope', 'canonical_answer', 'aliases', 'conflict', 'source_independence'] = '{}'::jsonb AND ${table.outputHash} IS NOT NULL AND ${table.validUntil} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} IN ('invalid_output', 'failed') AND ${table.aggregateVerdict} IS NULL AND ${table.dimensions} IS NULL AND ${table.outputHash} IS NULL AND ${table.validUntil} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('invalid_output', 'reviewer_failure', 'evidence_changed', 'storage_failure'))`
+    ),
+    check(
+      'theme_fact_review_outcome_hash',
+      sql`${table.outputHash} IS NULL OR ${table.outputHash} ~ '^[a-f0-9]{64}$'`
     ),
   ]
 );
