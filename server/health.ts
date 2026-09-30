@@ -17,11 +17,22 @@ export function registerHealthRoute(
   database: HealthDatabase,
   timeoutMs = DEFAULT_DB_CHECK_TIMEOUT_MS
 ) {
+  // At most one probe query is outstanding. A timed-out query can't be
+  // cancelled from here, so while it is still pending later health requests
+  // wait on the same query instead of each taking another pool connection.
+  let inFlight: Promise<unknown> | null = null;
+  const probe = () =>
+    (inFlight ??= Promise.resolve()
+      .then(() => database.query('SELECT 1'))
+      .finally(() => {
+        inFlight = null;
+      }));
+
   app.get('/health', async (_req, res) => {
     let timer: NodeJS.Timeout | undefined;
     try {
       await Promise.race([
-        database.query('SELECT 1'),
+        probe(),
         new Promise((_resolve, reject) => {
           timer = setTimeout(() => reject(new Error('database check timed out')), timeoutMs);
         }),

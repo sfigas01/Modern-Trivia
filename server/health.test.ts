@@ -42,4 +42,27 @@ describe('GET /health', () => {
       .get('/health')
       .expect(503);
   });
+
+  it('does not stack database queries while an earlier probe is still pending', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    let answer: (value: unknown) => void = () => undefined;
+    const query = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        })
+    );
+    const app = buildApp(query, 20);
+
+    await request(app).get('/health').expect(503);
+    await request(app).get('/health').expect(503);
+    expect(query).toHaveBeenCalledTimes(1);
+
+    // Once the stalled query settles, the next probe runs a fresh query.
+    answer({ rows: [] });
+    await new Promise((resolve) => setImmediate(resolve));
+    query.mockResolvedValueOnce({ rows: [] });
+    await request(app).get('/health').expect(200);
+    expect(query).toHaveBeenCalledTimes(2);
+  });
 });
