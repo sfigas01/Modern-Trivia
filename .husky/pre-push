@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Skip tests in environments where npm is not on PATH
-# (e.g. Replit Git pane, deploy runners, CI without node setup)
+# (e.g. deploy runners, CI without node setup)
 if ! command -v npm >/dev/null 2>&1; then
   echo "[pre-push] npm not found on PATH – skipping tests (non-dev environment)"
   exit 0

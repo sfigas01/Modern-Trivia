@@ -23,7 +23,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for f in AGENTS.md CLAUDE.md replit.md; do
+          for f in AGENTS.md CLAUDE.md; do
             if [ ! -f "$f" ]; then
               echo "::error file=$f::Missing required shared agent file: $f"
               exit 1
@@ -33,12 +33,6 @@ jobs:
           if ! cmp -s AGENTS.md CLAUDE.md; then
             echo "::error::AGENTS.md and CLAUDE.md must remain identical."
             diff -u AGENTS.md CLAUDE.md || true
-            exit 1
-          fi
-
-          if ! cmp -s AGENTS.md replit.md; then
-            echo "::error::AGENTS.md and replit.md must remain identical."
-            diff -u AGENTS.md replit.md || true
             exit 1
           fi
 
@@ -141,12 +135,6 @@ jobs:
           # because all API routes are intercepted by Playwright before hitting
           # the server.
           SESSION_SECRET: ci-e2e-placeholder-session-secret-not-for-production
-          # REPL_ID is the OIDC client identifier passed to openid-client
-          # discovery (https://replit.com/oidc). Discovery fetches the public
-          # OIDC metadata document and succeeds with any non-empty client ID;
-          # no real Replit app is needed since auth routes are never exercised
-          # during the smoke test.
-          REPL_ID: ci-playwright-smoke
           # AI_INTEGRATIONS_OPENAI_API_KEY must be non-empty — several server
           # modules (lib/ai, lib/guardian, lib/verifier, etc.) instantiate
           # `new OpenAI({ apiKey: ... })` at import time, and the SDK throws

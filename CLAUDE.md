@@ -1,14 +1,14 @@
 # Modern Trivia Agent Manual (Shared)
 
-This file is shared across `AGENTS.md`, `CLAUDE.md`, and `replit.md`. All three must contain identical content.
+This file is shared across `AGENTS.md` and `CLAUDE.md`. Both must contain identical content. (`replit.md` was retired when the app moved from Replit to Railway, STE-219.)
 
-Multiple agents work on this repo (Claude Code, Replit, Codex, Antigravity). Expect uncommitted changes from other sessions.
+Multiple agents work on this repo (Claude Code, Codex, Antigravity). Expect uncommitted changes from other sessions.
 
 ## Sync Contract
 
-1. If any rule is added/changed/removed in one file, mirror it in the other two in the same change.
-2. All three files are equal entrypoints; none is canonical-only.
-3. If sync cannot complete in one pass, add a mismatch note in all three files.
+1. If any rule is added/changed/removed in one file, mirror it in the other in the same change.
+2. Both files are equal entrypoints; neither is canonical-only.
+3. If sync cannot complete in one pass, add a mismatch note in both files.
 
 ## Linear as Shared Memory
 
@@ -24,7 +24,7 @@ Linear (Modern Trivia project) is the source of truth for priorities, status, an
 
 1. Never commit `.env` files, API keys, credentials, or secrets.
 2. Use `.env.example` as the reference template for environment variables.
-3. Put production secrets in Replit Secrets.
+3. Put production secrets in Railway service variables (Modern Trivia project → `modern-trivia` service → Variables).
 4. If hardcoded secrets are found, stop and flag immediately.
 
 ## Admin API & Content Sweep Tooling
@@ -33,13 +33,13 @@ Scripts in `scripts/` run admin operations against a deployed app over HTTP with
 
 ### Access mechanism
 
-- A request carrying `Authorization: Bearer <ADMIN_API_KEY>` bypasses the OIDC session and acts as the admin whose Replit user ID is `ADMIN_API_KEY_USER_ID`. Implementation: `server/replit_integrations/auth/replitAuth.ts`.
+- A request carrying `Authorization: Bearer <ADMIN_API_KEY>` bypasses the sign-in session and acts as the admin whose `users.id` is `ADMIN_API_KEY_USER_ID`. Implementation: `server/auth/auth.ts`.
 - Required env vars are documented **by name only** in `.env.example`: `ADMIN_API_KEY`, `ADMIN_API_KEY_USER_ID`, `PROD_URL`.
 
 ### Secret handling (required)
 
 1. `ADMIN_API_KEY` grants full admin access — treat it as a credential, not config.
-2. Store it only in Replit Secrets (prod) and a local, gitignored `.env.local`. Never in `.env.example`, source, or docs.
+2. Store it only in Railway variables (prod) and a local, gitignored `.env.local`. Never in `.env.example`, source, or docs.
 3. Never commit it or paste it into chat, PRs, issues, commit messages, logs, or reports. Scripts read it from `.env.local` at runtime — never hardcode, echo, or print it.
 4. Rotate with `openssl rand -hex 32`; rotate immediately if it is ever exposed.
 
@@ -106,14 +106,14 @@ These rules apply whenever two or more agent sessions (Claude, Codex, or any com
 5. **Merge PRs one at a time — never simultaneously.** When multiple parallel sessions finish, merge them sequentially. After each merge, every remaining open PR branch must pull the updated main before that PR is reviewed or merged.
 6. **Flag file-level conflict risk before starting.** If a new session's issue is likely to touch the same files as another currently in-progress session, stop and flag this to the user before starting work. Parallel sessions should target different areas of the codebase where possible (e.g. one API, one client).
 
-## Replit Sync
+## Deployment (Railway)
 
-After any PR is merged to main, remind the user to sync Replit before making changes there:
+Production runs on Railway (project **Modern Trivia**, service `modern-trivia`). Setup, variables and runbooks: `docs/guides/railway_deployment.md`.
 
-1. Open Replit Shell
-2. Run `git pull origin main` (or `git fetch origin && git reset --hard origin/main` if there are conflicts)
-
-This prevents PUSH_REJECTED errors caused by Replit's local copy being behind GitHub.
+1. Merging to `main` deploys production automatically. There is no separate host to sync.
+2. The `preview` environment deploys a chosen branch against its own database. Use it for risky changes; never point it at production data.
+3. **Schema changes must ship as SQL migrations** in `migrations/`. `runMigrations()` applies them at boot under an advisory lock. Nothing runs `drizzle-kit push` against an existing database on deploy (Replit used to), so a `shared/` schema change without a migration will not reach production.
+4. Never print, paste or commit Railway variable values. Agents may read variable names and deploy logs; secret values are entered by the owner in the Railway dashboard.
 
 ## Commit Messages
 
@@ -172,7 +172,7 @@ This applies to every task completion. Specific expectations:
 - **Linear:** Move the issue to the correct state. Leave a closing comment summarizing what was shipped (what changed, what files, any trade-offs or follow-ups).
 - **GitHub releases:** Create a release when shipping a user-visible fix or feature. Bug fixes → patch version (e.g. v0.5.1). New features → minor version (e.g. v0.6.0). Breaking changes → major version.
 - **PR descriptions:** Must clearly describe what changed and why before requesting merge.
-- **`CLAUDE.md` / `AGENTS.md` / `replit.md`:** Update all three files in sync whenever agent workflow rules change. See Sync Contract above.
+- **`CLAUDE.md` / `AGENTS.md`:** Update both files in sync whenever agent workflow rules change. See Sync Contract above.
 
 Do not report a task as complete until documentation is confirmed. The user's signal that this is working: every task handoff includes an explicit "Documentation updated" confirmation listing the what and where.
 
