@@ -54,7 +54,7 @@ vi.mock('./db', () => ({
   },
 }));
 
-vi.mock('./replit_integrations/auth', () => authMocks);
+vi.mock('./auth', () => authMocks);
 vi.mock('./lib/subjectivity-enricher', () => ({ enrichSubjectiveFindings: vi.fn() }));
 vi.mock('./lib/ai', () => ({ analyzeDispute: vi.fn() }));
 vi.mock('./lib/guardian', () => ({

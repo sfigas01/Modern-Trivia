@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 import { DISPUTE_VOTE_OUTCOMES, disputeIdSchema, roomNicknameSchema } from './models/rooms';
 
-// Export auth models (REQUIRED for Replit Auth)
+// Export auth models (users and sessions for Google sign-in)
 export * from './models/auth';
 
 // Export chat models (for AI integrations)
