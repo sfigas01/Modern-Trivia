@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 // Linked from the Google OAuth consent screen. Keep it accurate when the data
 // the app stores changes.
 const LAST_UPDATED = 'September 29, 2026';
-const CONTACT_EMAIL = 'PRIVACY_CONTACT_EMAIL_TBD';
+const CONTACT_EMAIL = 'superquestly@googlegroups.com';
 
 export default function Privacy() {
   return (
