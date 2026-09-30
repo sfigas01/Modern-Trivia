@@ -34,6 +34,8 @@ Railway's `railway.json` (Config as Code) is deprecated and new services cannot 
 
 Recommended in the dashboard for `production`: **Settings → Source → Wait for CI**, so a red `main` never deploys.
 
+**Backups:** Railway's automated Postgres backups need the Pro plan. On Hobby, take a manual `pg_dump` before risky changes and a few times a year (enable Postgres public access briefly, dump, then remove it). The job aid is tracked in STE-227.
+
 ## Variables
 
 Set on the `modern-trivia` service in **each** environment. Names only here; values live in Railway. Never paste values into chat, PRs, issues or logs.
