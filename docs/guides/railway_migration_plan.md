@@ -1,8 +1,20 @@
 # Railway migration plan (Replit → Railway)
 
-**Status:** in progress (phase 0 and phase 1 started 2026-09-29; see the execution notes below). **Owner:** Stephanie. **Linear:** STE-219 (epic) and its children STE-220–STE-227. Written 2026-09-29 against `main` at `1912478`.
+**Status:** ✅ **completed 2026-09-30.** Production runs on Railway at https://superquestly.up.railway.app from `main` @ `3aebfb3` (PR #197). Replit is paused, not deleted, pending decommission (see the completion record below). **Owner:** Stephanie. **Linear:** STE-219 (epic) and its children STE-220–STE-227. Written 2026-09-29 against `main` at `1912478`.
 
 This guide is the execution plan for moving Modern Trivia off Replit onto Railway. It says **when** to do it relative to the on-demand theme work (STE-167 / STE-25), what the current code depends on, which decisions need the owner, and how to run the move safely. The same move was done for Pass-Track on 2026-09-27; its lessons are recorded in Linear STE-278 and repeated in section 7.
+
+## Completion record (2026-09-30)
+
+- **PR / merge:** #197, squash-merged as `3aebfb3` after the data copy was verified. Release `v0.11.0`.
+- **Production URL:** https://superquestly.up.railway.app. Google redirect `…/api/callback`.
+- **Data copy (section 6):** Replit production (Postgres 16) → Railway production (Postgres 18) with `pg_dump`/`pg_restore` 16.10, `sessions` data excluded, every guard passed. **All 16 tables matched on exact `count(*)`**, including `users` 6, `questions` 315, `admin_roles` 2, `seen_questions` 0, `disputes` 42, `question_edits` 511, `question_quality_sweep_dismissals` 107 (`sessions` 2 → 0 by design). Full table in Linear STE-224.
+- **Migrations:** Replit production was at `0007`. The cutover deploy applied **0008–0013** on the copied data. Rehearsed first on a rebuilt 0007-era database: all 446 columns matched the schema the app expects.
+- **Authentication:** the owner's existing account was matched by email and kept its `users.id` and admin access. A new Google account is a player only. The staging `.test` admin role was revoked afterwards, so the owner is the only admin.
+- **Smoke tests (production):** quick play, multiplayer room, question generation with Guardian on the direct OpenAI key, `/health` 200. No auth, session, database or migration errors in the logs.
+- **Operations:** Postgres public access removed after the copy. `ADMIN_API_KEY` rotated; the content sweep works against the new `PROD_URL`.
+- **Known limitations:** Railway backups need the Pro plan, so on Hobby the backup strategy is a manual `pg_dump` (STE-227). A player whose Google email differs from their Replit email gets a new account; production had no seen-question history, so none was lost.
+- **Remaining:** watch logs for 24–48 hours; decommission Replit after a stable week and owner approval, then rotate or revoke every secret that lived there (STE-225).
 
 ## Execution notes (2026-09-29)
 
