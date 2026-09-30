@@ -899,6 +899,12 @@ export const themeQuestionGenerationAttempts = pgTable(
       table.factRevisionId,
       table.factReviewAttemptId
     ),
+    uniqueIndex('uq_theme_question_generation_review_binding').on(
+      table.id,
+      table.candidateId,
+      table.questionRevisionId,
+      table.factRevisionId
+    ),
     foreignKey({
       name: 'fk_theme_question_generation_job',
       columns: [table.jobId],
@@ -986,6 +992,12 @@ export const themeQuestionGenerationOutcomes = pgTable(
     completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex('uq_theme_question_generation_outcome_review_binding').on(
+      table.attemptId,
+      table.candidateId,
+      table.questionRevisionId,
+      table.questionContentHash
+    ),
     foreignKey({
       name: 'fk_theme_question_generation_outcome_attempt_binding',
       columns: [
@@ -1087,6 +1099,12 @@ export const themeEvidenceReviews = pgTable(
       table.questionRevisionId,
       table.reviewedAt
     ),
+    uniqueIndex('uq_theme_evidence_reviews_id_revision_hash_verdict').on(
+      table.id,
+      table.questionRevisionId,
+      table.questionContentHash,
+      table.verdict
+    ),
     index('idx_theme_evidence_reviews_verdict_expiry').on(table.verdict, table.validUntil),
     check('theme_evidence_reviews_verdict', sql`${table.verdict} IN ('pass', 'flag', 'fail')`),
     check(
@@ -1128,6 +1146,169 @@ export const themeEvidenceReviewPassages = pgTable(
       .references(() => themeEvidencePassages.id, { onDelete: 'restrict' }),
   },
   (table) => [primaryKey({ columns: [table.reviewId, table.passageId] })]
+);
+
+export const themeQuestionEvidenceReviewAttempts = pgTable(
+  'theme_question_evidence_review_attempts',
+  {
+    id: uuid('id').primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    candidateId: uuid('candidate_id').notNull(),
+    questionRevisionId: uuid('question_revision_id').notNull(),
+    questionContentHash: varchar('question_content_hash', { length: 64 }).notNull(),
+    generationAttemptId: uuid('generation_attempt_id').notNull(),
+    factRevisionId: uuid('fact_revision_id')
+      .notNull()
+      .references(() => themeFactRevisions.id, { onDelete: 'restrict' }),
+    reviewSequence: integer('review_sequence').notNull(),
+    reviewerKind: varchar('reviewer_kind', { length: 16 }).notNull(),
+    reviewerId: varchar('reviewer_id', { length: 255 }).notNull(),
+    provider: varchar('provider', { length: 255 }),
+    model: varchar('model', { length: 255 }),
+    executionId: uuid('execution_id').notNull().unique(),
+    reviewPolicyVersion: varchar('review_policy_version', { length: 255 }).notNull(),
+    policySnapshot: jsonb('policy_snapshot').$type<Record<string, unknown>>().notNull(),
+    policyHash: varchar('policy_hash', { length: 64 }).notNull(),
+    promptVersion: varchar('prompt_version', { length: 255 }).notNull(),
+    promptHash: varchar('prompt_hash', { length: 64 }).notNull(),
+    inputManifest: jsonb('input_manifest').$type<Record<string, unknown>>().notNull(),
+    inputFingerprint: varchar('input_fingerprint', { length: 64 }).notNull(),
+    evaluatedAt: timestamp('evaluated_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_question_evidence_review_sequence').on(
+      table.questionRevisionId,
+      table.reviewSequence
+    ),
+    uniqueIndex('uq_theme_question_evidence_review_attempt_binding').on(
+      table.id,
+      table.candidateId,
+      table.questionRevisionId,
+      table.questionContentHash
+    ),
+    index('idx_theme_question_evidence_review_newest').on(
+      table.questionRevisionId,
+      table.reviewSequence
+    ),
+    foreignKey({
+      name: 'fk_theme_question_evidence_review_question',
+      columns: [table.questionRevisionId, table.candidateId, table.questionContentHash],
+      foreignColumns: [
+        themeQuestionRevisions.id,
+        themeQuestionRevisions.candidateId,
+        themeQuestionRevisions.contentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_evidence_review_generation',
+      columns: [
+        table.generationAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.factRevisionId,
+      ],
+      foreignColumns: [
+        themeQuestionGenerationAttempts.id,
+        themeQuestionGenerationAttempts.candidateId,
+        themeQuestionGenerationAttempts.questionRevisionId,
+        themeQuestionGenerationAttempts.factRevisionId,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_evidence_review_generation_outcome',
+      columns: [
+        table.generationAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionGenerationOutcomes.attemptId,
+        themeQuestionGenerationOutcomes.candidateId,
+        themeQuestionGenerationOutcomes.questionRevisionId,
+        themeQuestionGenerationOutcomes.questionContentHash,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_evidence_review_contract',
+      sql`${table.contractVersion} = 'theme-question-evidence-review-v1'`
+    ),
+    check('theme_question_evidence_review_sequence_positive', sql`${table.reviewSequence} > 0`),
+    check(
+      'theme_question_evidence_review_policy_object',
+      sql`jsonb_typeof(${table.policySnapshot}) = 'object'`
+    ),
+    check(
+      'theme_question_evidence_review_manifest_object',
+      sql`jsonb_typeof(${table.inputManifest}) = 'object'`
+    ),
+    check(
+      'theme_question_evidence_review_hashes',
+      sql`${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.policyHash} ~ '^[a-f0-9]{64}$' AND ${table.promptHash} ~ '^[a-f0-9]{64}$' AND ${table.inputFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_evidence_review_reviewer_fields',
+      sql`(${table.reviewerKind} = 'model' AND ${table.provider} IS NOT NULL AND ${table.model} IS NOT NULL) OR (${table.reviewerKind} = 'human' AND ${table.provider} IS NULL AND ${table.model} IS NULL)`
+    ),
+  ]
+);
+
+export const themeQuestionEvidenceReviewOutcomes = pgTable(
+  'theme_question_evidence_review_outcomes',
+  {
+    attemptId: uuid('attempt_id')
+      .primaryKey()
+      .references(() => themeQuestionEvidenceReviewAttempts.id, { onDelete: 'restrict' }),
+    candidateId: uuid('candidate_id').notNull(),
+    questionRevisionId: uuid('question_revision_id').notNull(),
+    questionContentHash: varchar('question_content_hash', { length: 64 }).notNull(),
+    status: varchar('status', { length: 24 }).notNull(),
+    reviewId: uuid('review_id').unique(),
+    verdict: varchar('verdict', { length: 10 }),
+    outputHash: varchar('output_hash', { length: 64 }),
+    failureCode: varchar('failure_code', { length: 64 }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'fk_theme_question_evidence_review_outcome_attempt',
+      columns: [
+        table.attemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionEvidenceReviewAttempts.id,
+        themeQuestionEvidenceReviewAttempts.candidateId,
+        themeQuestionEvidenceReviewAttempts.questionRevisionId,
+        themeQuestionEvidenceReviewAttempts.questionContentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_evidence_review_outcome_review',
+      columns: [table.reviewId, table.questionRevisionId, table.questionContentHash, table.verdict],
+      foreignColumns: [
+        themeEvidenceReviews.id,
+        themeEvidenceReviews.questionRevisionId,
+        themeEvidenceReviews.questionContentHash,
+        themeEvidenceReviews.verdict,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_evidence_review_outcome_status',
+      sql`${table.status} IN ('reviewed', 'invalid_output', 'failed', 'ineligible')`
+    ),
+    check(
+      'theme_question_evidence_review_outcome_hash',
+      sql`${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND (${table.outputHash} IS NULL OR ${table.outputHash} ~ '^[a-f0-9]{64}$')`
+    ),
+    check(
+      'theme_question_evidence_review_outcome_fields',
+      sql`(${table.status} = 'reviewed' AND ${table.reviewId} IS NOT NULL AND ${table.verdict} IS NOT NULL AND ${table.verdict} IN ('pass', 'flag', 'fail') AND ${table.outputHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} <> 'reviewed' AND ${table.reviewId} IS NULL AND ${table.verdict} IS NULL AND ${table.outputHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = CASE ${table.status} WHEN 'invalid_output' THEN 'invalid_output' WHEN 'failed' THEN 'reviewer_failure' WHEN 'ineligible' THEN 'evidence_changed' END)`
+    ),
+  ]
 );
 
 export const themeQuestionReservations = pgTable(
@@ -1267,5 +1448,9 @@ export type ThemeJobAttempt = typeof themeJobAttempts.$inferSelect;
 export type ThemeCandidate = typeof themeCandidates.$inferSelect;
 export type ThemeQuestionRevision = typeof themeQuestionRevisions.$inferSelect;
 export type ThemeEvidenceReview = typeof themeEvidenceReviews.$inferSelect;
+export type ThemeQuestionEvidenceReviewAttempt =
+  typeof themeQuestionEvidenceReviewAttempts.$inferSelect;
+export type ThemeQuestionEvidenceReviewOutcome =
+  typeof themeQuestionEvidenceReviewOutcomes.$inferSelect;
 export type ThemeQuestionReservation = typeof themeQuestionReservations.$inferSelect;
 export type ThemeQuestionExposure = typeof themeQuestionExposures.$inferSelect;

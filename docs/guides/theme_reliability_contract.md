@@ -1,6 +1,6 @@
 # Theme reliability foundation contract
 
-This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7 candidate boundary. It defines durable contracts and database invariants; it does not enable source retrieval, live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
+This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7/S8a candidate and question-review boundaries. It defines durable contracts and database invariants; it does not enable live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
 
 ## Reliability boundary
 
@@ -13,6 +13,8 @@ Evidence support, exact-question approval, and roster eligibility are separate d
 The existing static QA, coherence, obviousness, and semantic novelty checks remain required before atomic approval. They are outside this foundation slice. The foundation is therefore an enforcement surface for a later reliability pipeline, not proof that generation is currently reliable.
 
 S7 can persist one pending candidate from one currently eligible, independently reviewed fact revision. It does not mark that candidate accepted or eligible for gameplay; the existing QA, question evidence review, semantic novelty, and approval stages remain separate gates.
+
+S8a adds `migrations/0014_theme_question_evidence_reviews.sql` and mirrored Drizzle definitions for immutable question-review attempt headers and terminal outcomes. A header binds the exact S7 generation attempt, candidate, question revision, content hash, fact revision, increasing review sequence, reviewer identity, and policy/prompt/input hashes. A reviewed outcome binds the existing seven-dimension `theme_evidence_reviews` row and its fact/passage links; failed attempts contain only allowlisted safe failure codes. The newest attempt controls eligibility even if it has no outcome or an adverse result. S8a does not change candidate status or grant gameplay eligibility.
 
 ## Immutable evidence and revisions
 
