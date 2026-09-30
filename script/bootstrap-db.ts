@@ -40,6 +40,17 @@ async function main(): Promise<number> {
     const appTables = tables.filter((t) => t.tablename !== MIGRATIONS_TABLE);
 
     if (appTables.length > 0) {
+      // A push interrupted part-way leaves some tables behind. runMigrations()
+      // assumes the base schema is complete, so fail loudly instead of
+      // skipping a partially initialized database.
+      const present = new Set(appTables.map((t) => t.tablename));
+      const missing = REQUIRED_TABLES.filter((name) => !present.has(name));
+      if (missing.length > 0) {
+        console.error(
+          `[bootstrap] database has ${appTables.length} application tables but is missing base tables: ${missing.join(', ')}. Refusing to continue; inspect or reset the database by hand.`
+        );
+        return 1;
+      }
       console.log(
         `[bootstrap] database has ${appTables.length} application tables; skipping (runMigrations applies pending SQL migrations at boot)`
       );
