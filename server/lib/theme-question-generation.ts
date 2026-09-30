@@ -110,7 +110,7 @@ type EvidenceRow = {
   registry: Record<string, any> | null;
 };
 
-type Loaded = {
+export type ThemeQuestionGenerationContext = {
   job: { id: string; candidate_ceiling: number; theme_slug: string };
   fact: Record<string, any>;
   factSnapshot: Record<string, any>;
@@ -224,19 +224,20 @@ function storedJson(value: unknown): Record<string, any> {
   return parsed as Record<string, any>;
 }
 
-async function loadGenerationContext(
+export async function loadGenerationContext(
   db: Pool | PoolClient,
   request: ThemeQuestionGenerationRequest,
   config: ThemeQuestionGenerationConfig,
-  evaluatedAt: Date
-): Promise<Loaded> {
+  evaluatedAt: Date,
+  reviewPromptHashOverride?: string
+): Promise<ThemeQuestionGenerationContext> {
   const jobResult = await db.query(
     `SELECT j.id, j.candidate_ceiling, g.theme_slug
      FROM theme_preparation_jobs j JOIN theme_game_sessions g ON g.id = j.game_id
      WHERE j.id = $1`,
     [request.jobId]
   );
-  const job = jobResult.rows[0] as Loaded['job'] | undefined;
+  const job = jobResult.rows[0] as ThemeQuestionGenerationContext['job'] | undefined;
   if (!job || request.ordinal > job.candidate_ceiling)
     throw new ThemeQuestionGenerationError('ineligible');
 
@@ -701,7 +702,7 @@ async function loadGenerationContext(
     reviewPolicyVersion: config.factReviewPolicyVersion,
     reviewPolicyHash,
     reviewPromptVersion: config.factReviewPromptVersion,
-    reviewPromptHash: hashText(config.factReviewPromptText),
+    reviewPromptHash: reviewPromptHashOverride ?? hashText(config.factReviewPromptText),
   } satisfies ThemeFactReviewEligibilityGraph;
   const eligibility = evaluateThemeFactReviewEligibility(graph);
 
@@ -1194,7 +1195,7 @@ export function createPostgresThemeQuestionGenerationRepository(
           const completedAt = now();
           if (!(completedAt instanceof Date) || !Number.isFinite(completedAt.valueOf()))
             throw new ThemeQuestionGenerationError('storage_failure');
-          let current: Loaded | null = null;
+          let current: ThemeQuestionGenerationContext | null = null;
           try {
             current = await loadGenerationContext(client, request, config, completedAt);
           } catch (error) {
