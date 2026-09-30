@@ -223,12 +223,16 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         (await pool.query('SELECT count(*)::int AS count FROM theme_fact_derivation_outcomes'))
           .rows[0].count
       ).toBe(1);
+      // The review policy is a strict, separately hashed contract; derivation-only
+      // fields such as timeSensitiveTtlMs must not leak into it.
+      const { timeSensitiveTtlMs: _derivationOnly, ...sharedPolicy } = request.policy;
+      const reviewPolicy = { ...sharedPolicy, validForMs: 60_000 };
       const reviewRepository = createPostgresThemeFactReviewRepository(
         pool,
         {
           executionId: randomUUID(),
           reviewPolicyVersion: 'test-review-policy-v1',
-          policy: { ...request.policy, validForMs: 60_000 },
+          policy: reviewPolicy,
           promptVersion: 'test-review-prompt-v1',
           promptText: 'Review the exact fact and every offered passage.',
           reviewer: {
@@ -245,7 +249,7 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
         {
           executionId: randomUUID(),
           reviewPolicyVersion: 'test-review-policy-v1',
-          policy: { ...request.policy, validForMs: 60_000 },
+          policy: reviewPolicy,
           promptVersion: 'test-review-prompt-v1',
           promptText: 'Review the exact fact and every offered passage.',
           reviewer: {
@@ -301,7 +305,7 @@ describe.runIf(Boolean(databaseUrl))('theme fact proposal PostgreSQL transaction
               aliases: { verdict: 'pass', reasons: ['aliases_supported'], passageRefs: [cited] },
               conflict: {
                 verdict: 'flag',
-                reasons: ['conflicting_evidence'],
+                reasons: ['conflict_unresolved'],
                 passageRefs: [ref(reviewInput.evidence[1])],
               },
               source_independence: {
