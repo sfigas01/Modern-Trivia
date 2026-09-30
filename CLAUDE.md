@@ -115,6 +115,13 @@ Production runs on Railway (project **Modern Trivia**, service `modern-trivia`).
 3. **Schema changes must ship as SQL migrations** in `migrations/`. `runMigrations()` applies them at boot under an advisory lock. Nothing runs `drizzle-kit push` against an existing database on deploy (Replit used to), so a `shared/` schema change without a migration will not reach production.
 4. Never print, paste or commit Railway variable values. Agents may read variable names and deploy logs; secret values are entered by the owner in the Railway dashboard.
 
+### After each merge to `main`
+
+1. Confirm Railway's production deploy for the merge commit succeeded and `https://superquestly.up.railway.app/health` returns 200 (Railway MCP `list-deployments` / `environment-status`, or `curl`). A failed deploy leaves the previous version serving: tell the owner and merge nothing else until it is fixed.
+2. If the PR added a migration, confirm the deploy log shows `[migrate] Applied: <file>` with no errors.
+3. Remind the owner to `git pull` in the main checkout. (This replaces the old Replit sync reminder.)
+4. Every remaining open PR branch merges the updated `main` before its own review or merge (see Parallel session rules).
+
 ## Commit Messages
 
 Use Conventional Commits: `<type>(<scope>): <description>`
