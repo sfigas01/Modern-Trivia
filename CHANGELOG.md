@@ -5,6 +5,22 @@ All notable changes to Modern Trivia will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Hosting moved from Replit to Railway** — production is served at https://superquestly.up.railway.app and deploys from `main`; Railway healthchecks gate every deploy via the new `GET /health` endpoint (STE-219)
+- **Sign in with Google** — replaces Replit sign-in for players and admins. Existing accounts are matched by email and keep their game history and admin rights. A player whose Google email differs from their old Replit email starts with a new account (STE-220)
+- **Node.js 22** — runtime, CI and `engines` moved from Node 20 (STE-287)
+
+### Added
+
+- **Privacy policy page** at `/privacy`, linked from the Google sign-in screen (STE-220)
+
+### Removed
+
+- Replit-only code and configuration: `.replit`, `replit.md`, Replit Vite plugins, the unused Replit audio/chat/image/batch integrations, and their dependencies (STE-222)
+
 ## [v0.4.2] - 2026-03-22
 
 ### Fixed

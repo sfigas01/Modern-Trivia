@@ -109,7 +109,7 @@ export default function Admin() {
               onClick={() => (window.location.href = '/api/login')}
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Sign In with Replit
+              Sign In with Google
             </Button>
             <Button variant="outline" className="w-full" onClick={() => setLocation('/')}>
               Back to Home
@@ -176,7 +176,9 @@ export default function Admin() {
                     </SelectTrigger>
                     <SelectContent>
                       {VALID_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

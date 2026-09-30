@@ -4,6 +4,8 @@
 > **Date:** 2026-08-08
 > **Purpose:** Run a full programmatic content quality sweep against the production Modern Trivia database, using the existing quality pipeline (static audit, duplicate detection, AI fact-checking) via the admin API endpoints.
 
+> **Update (STE-219, Railway migration):** the app now runs on Railway and signs users in with Google. Auth lives in `server/auth/auth.ts` (the API-key bypass is unchanged). Store `ADMIN_API_KEY` in Railway variables, not Replit Secrets. `ADMIN_API_KEY_USER_ID` is a `users.id`; existing ids were preserved by email matching, so a value set before the migration still works. Set `PROD_URL=https://superquestly.up.railway.app` in `.env.local`. The Replit details below are kept as the original design record.
+
 ---
 
 ## Part 1: Auth Middleware Analysis

@@ -9,16 +9,16 @@ After setting up authentication, you'll need to designate which users can access
 Before granting admin access, the user must sign in to the application at least once. This creates their user record in the database.
 
 1. Go to the home page of your application
-2. Click "Sign in with Replit"
+2. Click "Sign In" and choose your Google account
 3. Complete the authentication flow
 
 ### Step 2: Grant Admin Access
 
 After the user has logged in at least once, use the database tools to grant them admin access.
 
-#### Option A: Using the Replit Database Tool
+#### Option A: Using the Railway Database Tool
 
-1. Open the Database tab in your Replit workspace
+1. Open the Railway project → `Postgres` service → **Database** tab (production environment)
 2. Navigate to the `admin_roles` table
 3. Insert a new row with the user's ID:
    ```sql
@@ -52,6 +52,7 @@ INSERT INTO admin_roles (user_id) VALUES ('the-id-from-above');
 5. Use **Reject** when no content change should be applied.
 
 Notes:
+
 - Re-running **Analyze with AI** preserves fields you already edited manually.
 - If resolving fails due to a transient API error, your draft stays in place so you can retry.
 

@@ -6,7 +6,7 @@ Modern Trivia is a browser-based multiplayer trivia party game designed for loca
 
 This project was created using ChatGPT, Replit, and Codex. The original prototype was designed by ChatGPT and built in Replit using the App Connector, and the initial README was created using Codex.
 
-Ongoing development uses four AI coding agents working concurrently: **Claude Code**, **Replit Agent**, **Codex**, and **Antigravity**. Each agent reads from `AGENTS.md` / `CLAUDE.md` / `replit.md` (kept in sync) for shared operating rules.
+Ongoing development uses AI coding agents working concurrently: **Claude Code**, **Codex**, and **Antigravity**. Each agent reads from `AGENTS.md` / `CLAUDE.md` (kept in sync) for shared operating rules. The app was hosted on Replit until it moved to Railway in 2026 (STE-219).
 
 ## Features
 
@@ -26,7 +26,7 @@ Ongoing development uses four AI coding agents working concurrently: **Claude Co
 
 ### Authentication & Admin Features
 
-- **Replit Authentication**: Secure OpenID Connect-based login
+- **Google sign-in**: any Google account can sign in as a player; admin rights come from the `admin_roles` table
 - **Dispute System**: Challenge question answers with explanations during gameplay
 - **Admin Panel**:
   - Add, edit, and delete custom questions (stored in local storage)
@@ -56,11 +56,11 @@ Ongoing development uses four AI coding agents working concurrently: **Claude Co
 
 ### Backend
 
-- **Node.js 20** with TypeScript
+- **Node.js 22** with TypeScript
 - **Express.js** web framework
 - **Drizzle ORM** for type-safe database queries
 - **PostgreSQL 16** database
-- **Replit Auth** (OpenID Connect) for authentication
+- **Google sign-in** (OpenID Connect via `openid-client`) for authentication
 - **Express Session** with PostgreSQL session store
 
 ### Libraries & Utilities
@@ -73,8 +73,8 @@ Ongoing development uses four AI coding agents working concurrently: **Claude Co
 
 ### Prerequisites
 
-- **Node.js 20+**
-- **PostgreSQL database** (provided automatically on Replit)
+- **Node.js 22** (see `.nvmrc`)
+- **PostgreSQL database**
 - **npm** or **yarn**
 
 ### Environment Variables
@@ -86,21 +86,22 @@ cp .env.example .env
 ```
 
 - Never commit `.env` files or real API keys.
-- Store production values in Replit Secrets.
+- Store production values in Railway service variables (see `docs/guides/railway_deployment.md`).
 
 Required variables:
 
 ```bash
 DATABASE_URL=postgresql://user:password@host:port/database
 SESSION_SECRET=your-session-secret-here  # Generate with: openssl rand -hex 32
-REPL_ID=your-repl-id  # Auto-set on Replit
+GOOGLE_CLIENT_ID=...      # Google OAuth web client (needed for sign-in)
+GOOGLE_CLIENT_SECRET=...
 ```
 
 Optional variables:
 
 ```bash
 PORT=5000
-ISSUER_URL=https://replit.com/oidc
+PUBLIC_URL=http://localhost:5000   # required in production
 LINEAR_API_KEY=your-linear-api-key-here
 AI_INTEGRATIONS_OPENAI_API_KEY=...
 ```
@@ -113,7 +114,7 @@ npm install
 
 ### Database Setup
 
-1. Provision a PostgreSQL instance (Replit PostgreSQL, Neon, Supabase, etc.).
+1. Provision a PostgreSQL instance (local, Railway, Neon, etc.).
 2. Verify connectivity:
 
 ```bash
@@ -195,8 +196,8 @@ Modern-Trivia/
 ├── server/              # Express backend
 │   ├── index.ts         # Main server setup
 │   ├── routes.ts        # API routes (disputes, admin)
-│   └── replit_integrations/
-│       └── auth/        # Replit Auth integration
+│   ├── health.ts        # GET /health (Railway healthcheck)
+│   └── auth/            # Google sign-in, sessions, email matching
 ├── shared/              # Shared code between client & server
 │   ├── schema.ts        # Drizzle ORM database schema
 │   └── models/          # User and session models
@@ -238,9 +239,11 @@ To grant admin access to users:
 
 ### Authentication
 
-- `POST /api/login` - Start Replit Auth flow
-- `GET /api/logout` - Logout current user
+- `GET /api/login` - Start Google sign-in (503 if Google credentials are not configured)
+- `GET /api/callback` - Google redirect target; signs the user in and redirects to `/`
+- `GET /api/logout` - Sign out and redirect to `/`
 - `GET /api/auth/user` - Get current authenticated user
+- `GET /health` - Healthcheck: 200 when the server is up and the database answers, 503 otherwise
 
 ### Disputes
 
@@ -271,14 +274,14 @@ Questions are stored in `client/src/lib/questions.json` and can be supplemented 
 
 ## Deployment
 
-This application is designed to run on Replit with autoscale deployment:
+Production runs on [Railway](https://railway.com) at https://superquestly.up.railway.app and deploys automatically from `main`. A `preview` environment with its own database is available for testing branches.
 
-1. **Build Command**: `npm run build`
-2. **Run Command**: `node ./dist/index.cjs`
-3. **Required Modules**: nodejs-20, web, postgresql-16
-4. **Port**: 5000 (mapped to external port 80)
+- **Build:** `npm run build`
+- **Pre-deploy:** `npm run db:bootstrap` (creates the base schema only when the database is empty)
+- **Start:** `npm run start` — applies pending SQL migrations (`runMigrations()`), then listens on `PORT` (5000)
+- **Healthcheck:** `GET /health`
 
-The Replit configuration is defined in `.replit`.
+Full setup, variables, and runbooks: [`docs/guides/railway_deployment.md`](docs/guides/railway_deployment.md).
 
 ## Notes
 
@@ -286,7 +289,7 @@ The Replit configuration is defined in `.replit`.
 - Players can submit disputes without signing in; dispute review and management require admin access
 - Admin roles are managed in the PostgreSQL database
 - Answer verification uses fuzzy matching with an 80% similarity threshold to handle minor typos and formatting differences
-- `DATABASE_URL` and `SESSION_SECRET` are required to start the server
+- `DATABASE_URL` and `SESSION_SECRET` are required to start the server; sign-in also needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and (in production) `PUBLIC_URL`
 
 ## License
 

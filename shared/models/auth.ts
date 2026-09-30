@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { index, jsonb, pgTable, timestamp, varchar, boolean } from 'drizzle-orm/pg-core';
 
 // Session storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// (IMPORTANT) Required by sign-in; don't drop it.
 export const sessions = pgTable(
   'sessions',
   {
@@ -14,7 +14,7 @@ export const sessions = pgTable(
 );
 
 // User storage table.
-// (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+// (IMPORTANT) Required by sign-in; don't drop it.
 export const users = pgTable('users', {
   id: varchar('id')
     .primaryKey()

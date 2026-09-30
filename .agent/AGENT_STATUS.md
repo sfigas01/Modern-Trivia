@@ -12,7 +12,7 @@
 3. **When done:** Move your entry to "Recently Completed" and update Linear.
 4. **Conflicts:** If two agents claim the same issue, the earlier timestamp wins. The later agent should pick a different task.
 
-**Agent names:** `Claude-Code`, `Replit-Agent`, `Codex`, `Antigravity`, `Cowork`
+**Agent names:** `Claude-Code`, `Codex`, `Antigravity`, `Cowork`
 
 ---
 

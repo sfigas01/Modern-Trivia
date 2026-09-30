@@ -6,8 +6,8 @@ Configuration files for using AI coding assistants to review the Modern Trivia q
 
 ### Shared Root Instructions (All Active Agents)
 
-- `AGENTS.md`, `CLAUDE.md`, and `replit.md` are intentionally kept in sync and contain the same shared rules/context.
-- If a tool auto-loads only one root file, that is acceptable because the three files are mirrored.
+- `AGENTS.md` and `CLAUDE.md` are intentionally kept in sync and contain the same shared rules/context.
+- If a tool auto-loads only one root file, that is acceptable because the two files are mirrored.
 
 ### Claude Code
 
@@ -17,10 +17,6 @@ Configuration files for using AI coding assistants to review the Modern Trivia q
 ### Codex
 
 - `AGENTS.md` in repo root — shared rules/context for Codex sessions
-
-### Replit Agent
-
-- `replit.md` in repo root — shared rules/context for Replit agent sessions
 
 ### Google Antigravity
 

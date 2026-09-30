@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from 'express';
 import { enrichSubjectiveFindings } from './lib/subjectivity-enricher';
 import type { Server } from 'http';
-import { setupAuth, registerAuthRoutes, isAuthenticated } from './replit_integrations/auth';
+import { setupAuth, registerAuthRoutes, isAuthenticated } from './auth';
 import { db } from './db';
 import {
   disputes,

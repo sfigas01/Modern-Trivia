@@ -1786,7 +1786,7 @@ export default function AdminQualitySweep() {
               onClick={() => (window.location.href = '/api/login')}
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Sign In with Replit
+              Sign In with Google
             </Button>
             <Button variant="outline" className="w-full" onClick={() => setLocation('/')}>
               Back to Home
