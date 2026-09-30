@@ -16,6 +16,7 @@ import AdminStaging from '@/pages/admin-staging';
 import AdminQuestions from '@/pages/admin-questions';
 import AdminQualitySweep from '@/pages/admin-quality-sweep';
 import NotFound from '@/pages/not-found';
+import Privacy from '@/pages/privacy';
 import { MULTIPLAYER } from '@/lib/featureFlags';
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       {MULTIPLAYER && <Route path="/join" component={JoinGame} />}
       {MULTIPLAYER && <Route path="/join/:code" component={JoinGame} />}
       {MULTIPLAYER && <Route path="/room/:code" component={Room} />}
+      <Route path="/privacy" component={Privacy} />
       <Route path="/admin" component={Admin} />
       <Route path="/admin/staging" component={AdminStaging} />
       <Route path="/admin/questions" component={AdminQuestions} />
