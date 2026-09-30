@@ -13,6 +13,7 @@
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "db:check": "tsx script/check-db.ts",
+    "db:bootstrap": "tsx script/bootstrap-db.ts",
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx script/migrate.ts",
     "db:seed": "tsx script/seed-questions.ts",

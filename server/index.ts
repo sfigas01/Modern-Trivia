@@ -5,6 +5,8 @@ import { createServer } from 'http';
 import { generalLimiter } from './middleware/rateLimiter';
 import { runMigrations } from './lib/migrate';
 import { seedQuestions } from './seed';
+import { registerHealthRoute } from './health';
+import { pool } from './db';
 
 const app = express();
 const httpServer = createServer(app);
@@ -72,6 +74,9 @@ app.use((req, res, next) => {
   await runMigrations();
   await seedQuestions();
   await registerRoutes(httpServer, app);
+  // Registered after migrations and routes so Railway only sees healthy once
+  // the app can actually serve requests.
+  registerHealthRoute(app, pool);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -91,10 +96,8 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Serve the API and the client on PORT (Railway routes the public domain to
+  // it). Defaults to 5000.
   httpServer.requestTimeout = 10 * 60 * 1000;
   httpServer.headersTimeout = 10 * 60 * 1000 + 5000;
   httpServer.keepAliveTimeout = 10 * 60 * 1000;
