@@ -33,7 +33,7 @@
  *   npx tsx scripts/content-sweep.ts [--skip-fact-check] [--skip-duplicates]
  *
  * Requires `.env.local` with:
- *   ADMIN_API_KEY=<the admin API key set in Replit Secrets>
+ *   ADMIN_API_KEY=<the admin API key set in Railway variables>
  *   PROD_URL=https://<your-prod-host>
  */
 
