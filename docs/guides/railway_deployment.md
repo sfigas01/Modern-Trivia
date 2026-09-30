@@ -51,10 +51,10 @@ Set on the `modern-trivia` service in **each** environment. Names only here; val
 | `ADMIN_API_KEY`                  | yes    | Optional; scripted admin access (`openssl rand -hex 32`)             |
 | `ADMIN_API_KEY_USER_ID`          | —      | Optional; the admin's `users.id`                                     |
 | `VITE_MULTIPLAYER`               | —      | `true` (build-time flag)                                             |
-| `VITE_THEME_ROUNDS`              | —      | Match the current production choice (build-time flag)                |
-| `THEME_LIVE_GENERATION`          | —      | Match the current production choice                                  |
+| `VITE_THEME_ROUNDS`              | —      | Unset (off), as on Replit (build-time flag)                          |
+| `THEME_LIVE_GENERATION`          | —      | Unset (off), as on Replit                                            |
 
-`AI_INTEGRATIONS_OPENAI_BASE_URL` stays **unset** so the OpenAI SDK uses its default endpoint. `VITE_*` variables are read when the client is built, so change them and redeploy.
+`AI_INTEGRATIONS_OPENAI_BASE_URL` stays **unset** so the OpenAI SDK uses its default endpoint. Replit secrets deliberately not carried over: `AI_INTEGRATIONS_OPENAI_BASE_URL` (Replit's OpenAI proxy), `OPENAI_EMBEDDINGS_API_KEY` (no longer read by the code; the direct key covers embeddings) and `GITHUB_PAT` (Replit's Git sync only; revoke it when Replit is decommissioned). Preview and production use separate OpenAI keys in the same budget-capped project. `VITE_*` variables are read when the client is built, so change them and redeploy.
 
 ## Sign-in
 
