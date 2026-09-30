@@ -1,8 +1,20 @@
 # Railway migration plan (Replit → Railway)
 
-**Status:** planned, not started. **Owner:** Stephanie. **Linear:** STE-219 (epic) and its children STE-220–STE-227. Written 2026-09-29 against `main` at `1912478`.
+**Status:** in progress (phase 0 and phase 1 started 2026-09-29; see the execution notes below). **Owner:** Stephanie. **Linear:** STE-219 (epic) and its children STE-220–STE-227. Written 2026-09-29 against `main` at `1912478`.
 
 This guide is the execution plan for moving Modern Trivia off Replit onto Railway. It says **when** to do it relative to the on-demand theme work (STE-167 / STE-25), what the current code depends on, which decisions need the owner, and how to run the move safely. The same move was done for Pass-Track on 2026-09-27; its lessons are recorded in Linear STE-278 and repeated in section 7.
+
+## Execution notes (2026-09-29)
+
+Decisions and findings from the migration session. They take precedence over the original plan text below where the two differ.
+
+- **Owner decisions (section 4):** Google sign-in for everyone; production URL `https://superquestly.up.railway.app` (`trivia.up.railway.app` was taken); a direct OpenAI key with a hard limit and alert; Railway Hobby plan. GitHub auto-merge is turned off for the freeze window.
+- **Railway layout:** project **Modern Trivia** with `production` (deploys `main`) and `preview` (deploys the migration branch, own empty Postgres, `https://modern-trivia-preview.up.railway.app`). Both run PostgreSQL **18**, so the `NN` guard in section 6 is `18` (re-verify on cutover day).
+- **`railway.json` is not used:** Railway deprecated Config as Code, and new services cannot opt in. Build, pre-deploy, start, healthcheck and restart settings are set on the service and recorded in `docs/guides/railway_deployment.md`.
+- **Fresh databases need a bootstrap:** the SQL migrations can't build a database from nothing (`0000` is a stale drizzle snapshot; later tables came from `drizzle-kit push`, which Replit ran on publish). The pre-deploy step `npm run db:bootstrap` pushes the drizzle schema only when the database has no tables. Production is unaffected because its schema comes from the data copy.
+- **Schema changes now require SQL migrations**, because nothing pushes the drizzle schema on deploy any more (recorded in `AGENTS.md` / `CLAUDE.md`).
+- **`replit.md` retired:** the sync contract now covers `AGENTS.md` and `CLAUDE.md`, and CI checks those two.
+- **Node 22** (STE-287) is folded into the migration PR.
 
 ## 1. When to migrate (the checkpoint)
 

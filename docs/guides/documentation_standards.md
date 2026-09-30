@@ -81,17 +81,17 @@ Run this checklist whenever file paths change, docs are renamed/moved, or agents
 
 ### Agent naming
 
-Active agents: **Claude Code**, **Replit Agent**, **Codex**, **Antigravity**
+Active agents: **Claude Code**, **Codex**, **Antigravity**
 
 - [ ] `docs/PRODUCT_ROADMAP.md` — agent list in STE-66 section matches active set
 - [ ] `docs/guides/ai_tool_setup.md` — one section per active agent, none for retired tools
 - [ ] `.agent/AGENT_STATUS.md` — Agent names row matches active set
-- [ ] `AGENTS.md` / `CLAUDE.md` / `replit.md` — Sync Contract: all three files identical (CI enforces via `cmp -s`)
+- [ ] `AGENTS.md` / `CLAUDE.md` — Sync Contract: both files identical (CI enforces via `cmp -s`)
 
 ### Shared agent manifest sync
 
-- [ ] After any edit to `AGENTS.md`, mirror the change in `CLAUDE.md` and `replit.md` in the same commit
-- [ ] CI gate `cmp -s AGENTS.md CLAUDE.md replit.md` passes before merge
+- [ ] After any edit to `AGENTS.md`, mirror the change in `CLAUDE.md` in the same commit
+- [ ] CI gate `cmp -s AGENTS.md CLAUDE.md` passes before merge
 
 ### Stale coordination files
 

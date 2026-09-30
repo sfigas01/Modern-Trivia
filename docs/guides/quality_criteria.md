@@ -4,7 +4,7 @@
 
 Modern Trivia is a browser-based multiplayer trivia party game designed for local teams (2-6 teams) playing together. The app was created using ChatGPT, Replit, and Codex, with Claude Code used for documentation updates.
 
-**Live URL:** https://replit.com/@stephaniefigas/Modern-Trivia
+**Live URL:** https://superquestly.up.railway.app
 **Repository:** https://github.com/sfigas01/Modern-Trivia
 
 **Core Philosophy:** "Freshly Squeezed & Globally Smart" — A trivia game that mixes hyper-local Canadiana with globally relevant general knowledge, avoiding US-centric defaults while staying accessible to Canadians aged 18-50.
@@ -114,11 +114,11 @@ _Examples: Poutine, Canadian slang ("double-double", "toque"), CN Tower, cottage
 
 ### Backend
 
-- Node.js 20 + TypeScript
+- Node.js 22 + TypeScript
 - Express.js
 - Drizzle ORM
 - PostgreSQL 16
-- Replit Auth (OpenID Connect)
+- Google sign-in (OpenID Connect)
 
 ---
 
