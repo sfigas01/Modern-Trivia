@@ -21,16 +21,16 @@ The two environments are isolated: the `${{Postgres.DATABASE_URL}}` reference re
 
 Railway's `railway.json` (Config as Code) is deprecated and new services cannot use it, so these settings are set on the service in the Railway dashboard (or via the Railway MCP `update-service`). This table is the reference; keep it in sync with Railway.
 
-| Setting             | Value                  | Why                                                                                                  |
-| ------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| Builder             | Railpack               | Detects Node from `package.json` `engines` (`22.x`) / `.nvmrc`.                                      |
-| Build command       | `npm run build`        | Vite client → `dist/public`, esbuild server → `dist/index.cjs`.                                      |
-| Pre-deploy command  | `npm run db:bootstrap` | Creates the base schema **only on a database with no tables** (see below). No-op on production.      |
-| Start command       | `npm run start`        | Runs `runMigrations()` (SQL files in `migrations/`, advisory-locked), seeds, then listens on `PORT`. |
-| Healthcheck path    | `/health`              | 200 only after boot finished and the database answers `SELECT 1`; 503 otherwise.                     |
-| Healthcheck timeout | 300 s                  | Migrations run before the server listens.                                                            |
-| Restart policy      | On failure, 10 retries |                                                                                                      |
-| Public domain port  | 5000                   | Must match `PORT`.                                                                                   |
+| Setting             | Value                  | Why                                                                                                         |
+| ------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Builder             | Railpack               | Detects Node from `package.json` `engines` (`22.x`) / `.nvmrc`.                                             |
+| Build command       | `npm run build`        | Vite client → `dist/public`, esbuild server → `dist/index.cjs`.                                             |
+| Pre-deploy command  | `npm run db:bootstrap` | Creates the base schema **only on a database with no application tables** (see below). No-op on production. |
+| Start command       | `npm run start`        | Runs `runMigrations()` (SQL files in `migrations/`, advisory-locked), seeds, then listens on `PORT`.        |
+| Healthcheck path    | `/health`              | 200 only after boot finished and the database answers `SELECT 1`; 503 otherwise.                            |
+| Healthcheck timeout | 300 s                  | Migrations run before the server listens.                                                                   |
+| Restart policy      | On failure, 10 retries |                                                                                                             |
+| Public domain port  | 5000                   | Must match `PORT`.                                                                                          |
 
 Recommended in the dashboard for `production`: **Settings → Source → Wait for CI**, so a red `main` never deploys.
 
@@ -68,7 +68,9 @@ Set on the `modern-trivia` service in **each** environment. Names only here; val
 
 The SQL migrations cannot build a database from nothing: `0000` is an old drizzle snapshot that `runMigrations()` treats as already applied, and later tables only ever came from `drizzle-kit push` (which Replit ran on every publish). So:
 
-- `npm run db:bootstrap` runs `drizzle-kit push` **only when the database has no tables**, then `runMigrations()` applies `0001`…latest at boot. This is the same order CI's E2E job uses. `drizzle-kit push` currently prints a foreign-key error on an empty database but exits 0; the SQL migrations then complete the schema.
+- `npm run db:bootstrap` runs `drizzle-kit push` **only when the database has no application tables**, then `runMigrations()` applies `0001`…latest at boot. This is the same order CI's E2E job uses.
+- A `_sql_migrations` table holding only the `0000` marker (left by a boot that failed before the schema existed) is dropped first, because drizzle-kit would otherwise stop to ask about it. If `_sql_migrations` records anything else but no application tables exist, the bootstrap refuses and the deploy fails.
+- `drizzle-kit push` prints a foreign-key error on an empty database and can exit 0 even on failure, so the bootstrap checks that `users`, `sessions`, `questions` and `admin_roles` exist afterwards and fails the deploy otherwise. The SQL migrations then complete the schema.
 - On any database that already has tables, the bootstrap does nothing.
 - **Every schema change must ship as a SQL migration** in `migrations/`. Nothing pushes the drizzle schema to an existing database on deploy.
 
