@@ -69,13 +69,16 @@ vi.mock('wouter', () => ({
 
 vi.mock('@/lib/featureFlags', () => ({
   MULTIPLAYER: true,
+  PIXEL_UI: false,
 }));
+
+const auth = vi.hoisted(() => ({ isAuthenticated: false, isAdmin: false }));
 
 vi.mock('@/hooks/use-auth', () => ({
   useAuth: () => ({
-    user: null,
+    user: auth.isAuthenticated ? { email: 'host@example.com' } : null,
     isLoading: false,
-    isAuthenticated: false,
+    isAuthenticated: auth.isAuthenticated,
     logout: vi.fn(),
     isLoggingOut: false,
   }),
@@ -83,7 +86,7 @@ vi.mock('@/hooks/use-auth', () => ({
 
 vi.mock('@/hooks/use-admin', () => ({
   useAdmin: () => ({
-    isAdmin: false,
+    isAdmin: auth.isAdmin,
     isLoading: false,
     error: null,
   }),
@@ -123,6 +126,8 @@ describe('Home page with VITE_MULTIPLAYER enabled', () => {
   beforeEach(() => {
     localStorage.clear();
     mockSetLocation.mockClear();
+    auth.isAuthenticated = false;
+    auth.isAdmin = false;
     vi.stubGlobal('fetch', createFetchMock());
   });
 
@@ -137,6 +142,29 @@ describe('Home page with VITE_MULTIPLAYER enabled', () => {
     expect(screen.getByTestId('button-mode-host')).toBeDefined();
     expect(screen.getByTestId('button-mode-join')).toBeDefined();
     expect(screen.queryByText('Team Setup')).toBeNull();
+  });
+
+  describe('account links on the mode chooser (STE-239)', () => {
+    it('offers Sign In and hides Admin when signed out', () => {
+      renderHome();
+      expect(screen.getByTestId('button-login')).toBeInTheDocument();
+      expect(screen.queryByTestId('link-admin')).toBeNull();
+    });
+
+    it('hides Admin from a signed-in non-admin', () => {
+      auth.isAuthenticated = true;
+      renderHome();
+      expect(screen.getByTestId('button-logout')).toHaveTextContent('Sign Out (host)');
+      expect(screen.queryByTestId('link-admin')).toBeNull();
+    });
+
+    it('lets a signed-in admin open the Admin Panel', () => {
+      auth.isAuthenticated = true;
+      auth.isAdmin = true;
+      renderHome();
+      fireEvent.click(screen.getByTestId('link-admin'));
+      expect(mockSetLocation).toHaveBeenCalledWith('/admin');
+    });
   });
 
   describe('invite QR code (?code=)', () => {

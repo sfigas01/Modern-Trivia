@@ -1,0 +1,491 @@
+/* Trivia Clash pixel design system (STE-128). Values come from the design
+   system's colors_and_type.css; class names keep its `tc-` prefix so nothing
+   here touches the classic UI. Loaded only with VITE_PIXEL_UI on. */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+.tc-screen {
+  --tc-sky-100: #d8efff;
+  --tc-sky-200: #b6dcff;
+  --tc-sky-300: #7ec0ff;
+  --tc-sky-400: #4aa3f7;
+  --tc-sky-500: #2b7fde;
+  --tc-panel-100: #5ea0ff;
+  --tc-panel-200: #3a78db;
+  --tc-panel-300: #2b5ec0;
+  --tc-panel-400: #1d4499;
+  --tc-panel-500: #142e75;
+  --tc-panel-600: #0b1c4a;
+  --tc-coin-100: #ffe89c;
+  --tc-coin-300: #ffc92e;
+  --tc-coin-500: #e08a00;
+  --tc-coin-700: #6b3a00;
+  --tc-red-300: #ff6c5a;
+  --tc-red-500: #d83a2a;
+  --tc-red-700: #7a1812;
+  --tc-magenta-300: #e26ad7;
+  --tc-magenta-500: #b23bb0;
+  --tc-magenta-700: #5e1c66;
+  --tc-green-300: #7fe26a;
+  --tc-green-500: #3aa83a;
+  --tc-green-700: #1a5c1f;
+  --tc-correct-bg: #2e7c2e;
+  --tc-stone-300: #a09a91;
+  --tc-stone-500: #6f6a63;
+  --tc-stone-700: #2f2a26;
+  --tc-parchment-100: #fff1c2;
+  --tc-parchment-300: #ecd396;
+  --tc-parchment-500: #b58a40;
+  --tc-parchment-700: #5a3a14;
+  --tc-ink: #0a0a0f;
+  --tc-font-pixel: 'Press Start 2P', system-ui, monospace;
+  --tc-font-body: 'VT323', 'Press Start 2P', monospace;
+
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  color: #fff;
+  font-family: var(--tc-font-body);
+  font-size: 22px;
+  line-height: 1.2;
+  -webkit-font-smoothing: none;
+  background: var(--tc-sky-400);
+}
+
+/* ---------- World ----------
+   Pixel-art layers from public/world/, drawn at 2 CSS px per art pixel.
+   Each tiles horizontally and is anchored, never scaled to the viewport,
+   so wider screens reveal more clouds and islands instead of stretching.
+   Fixed behind the content so panels scroll over a still sky. */
+.tc-world {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background-image:
+    url('/world/sea.png'),
+    url('/world/islands.png'),
+    url('/world/mid.png'),
+    url('/world/mountains.png'),
+    url('/world/top.png'),
+    linear-gradient(
+      #3d8bdc 0.0% 6.25%,
+      #438fdd 6.25% 12.5%,
+      #4a94df 12.5% 18.75%,
+      #5199e1 18.75% 25.0%,
+      #599ee3 25.0% 31.25%,
+      #62a4e4 31.25% 37.5%,
+      #6aaae6 37.5% 43.75%,
+      #73b0e8 43.75% 50.0%,
+      #7cb6eb 50.0% 56.25%,
+      #85bced 56.25% 62.5%,
+      #8fc2ef 62.5% 68.75%,
+      #98c9f1 68.75% 75.0%,
+      #a2cff3 75.0% 81.25%,
+      #abd6f5 81.25% 87.5%,
+      #b5dcf8 87.5% 93.75%,
+      #bfe3fa 93.75% 100.0%
+    );
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, no-repeat;
+  background-size:
+    960px 300px,
+    1800px 640px,
+    1520px 180px,
+    1280px 280px,
+    1200px 260px,
+    100% 100%;
+  background-position:
+    left 50% bottom 0,
+    /* big island's grass line (240px into the tile) sits at 46% height */
+    left 50% top calc(46vh - 240px),
+    left 30% top 30vh,
+    /* mountain bases meet the haze just below the island tops */
+    left 50% top calc(54vh - 280px),
+    left 50% top 0,
+    0 0;
+}
+
+/* ---------- Layout ---------- */
+.tc-column {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.tc-wordmark {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+.tc-wordmark img {
+  width: min(400px, 100%);
+  height: auto;
+  image-rendering: pixelated;
+}
+/* Sits on a chip: plain text on the mid-sky bands fails contrast. */
+.tc-tagline {
+  align-self: center;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--tc-panel-400);
+  border: 3px solid var(--tc-ink);
+  box-shadow: 3px 3px 0 var(--tc-ink);
+  text-align: center;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.tc-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- Panels ---------- */
+.tc-frame {
+  background: var(--tc-panel-300);
+  border: 4px solid var(--tc-ink);
+  box-shadow:
+    inset 3px 3px 0 var(--tc-panel-100),
+    inset -3px -3px 0 var(--tc-panel-500),
+    6px 6px 0 var(--tc-ink);
+}
+.tc-frame__title {
+  margin: 0;
+  padding: 16px;
+  background: var(--tc-panel-400);
+  border-bottom: 4px solid var(--tc-ink);
+  text-align: center;
+  font-family: var(--tc-font-pixel);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-frame__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+.tc-sub {
+  background: var(--tc-panel-400);
+  border: 3px solid var(--tc-ink);
+  box-shadow:
+    inset 3px 3px 0 var(--tc-panel-500),
+    inset -2px -2px 0 var(--tc-panel-200);
+}
+.tc-hint {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--tc-sky-100);
+}
+.tc-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ---------- Text ---------- */
+.tc-label {
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+
+/* ---------- Buttons ---------- */
+.tc-btn {
+  --face: var(--tc-panel-300);
+  --hi: var(--tc-panel-100);
+  --lo: var(--tc-panel-500);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 12px 16px;
+  margin: 0;
+  border: 4px solid var(--tc-ink);
+  border-radius: 0;
+  background: var(--face);
+  color: #fff;
+  font-family: var(--tc-font-pixel);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+  cursor: pointer;
+  box-shadow:
+    inset 3px 3px 0 var(--hi),
+    inset -3px -4px 0 var(--lo),
+    4px 4px 0 var(--tc-ink);
+}
+.tc-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow:
+    inset 3px 3px 0 var(--hi),
+    inset -3px -4px 0 var(--lo);
+}
+.tc-btn:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -9px;
+}
+.tc-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  filter: saturate(0.6);
+}
+@media (hover: hover) {
+  .tc-btn:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+}
+.tc-btn--block {
+  width: 100%;
+}
+.tc-btn--lg {
+  min-height: 72px;
+  font-size: 18px;
+}
+.tc-btn--sm {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 10px;
+}
+.tc-btn--red {
+  --face: var(--tc-red-500);
+  --hi: var(--tc-red-300);
+  --lo: var(--tc-red-700);
+}
+.tc-btn--magenta {
+  --face: var(--tc-magenta-500);
+  --hi: var(--tc-magenta-300);
+  --lo: var(--tc-magenta-700);
+}
+/* Green face darkened from green-500 so white text passes contrast. */
+.tc-btn--green {
+  --face: var(--tc-correct-bg);
+  --hi: var(--tc-green-300);
+  --lo: var(--tc-green-700);
+}
+.tc-btn--stone {
+  --face: var(--tc-stone-500);
+  --hi: var(--tc-stone-300);
+  --lo: var(--tc-stone-700);
+}
+/* Yellow face takes ink text: white on coin yellow fails contrast. */
+.tc-btn--coin {
+  --face: var(--tc-coin-300);
+  --hi: var(--tc-coin-100);
+  --lo: var(--tc-coin-500);
+  color: var(--tc-ink);
+  text-shadow: 2px 2px 0 var(--tc-coin-100);
+}
+
+/* Selectable tiles (categories, round counts). */
+.tc-slot {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 8px;
+  margin: 0;
+  border: 3px solid var(--tc-ink);
+  border-radius: 0;
+  background: var(--tc-panel-400);
+  color: #fff;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+  cursor: pointer;
+  box-shadow:
+    inset 3px 3px 0 var(--tc-panel-500),
+    inset -2px -2px 0 var(--tc-panel-200);
+}
+.tc-slot[aria-pressed='true'] {
+  background: var(--tc-panel-200);
+  border-color: var(--tc-sky-100);
+  box-shadow: inset 0 0 0 3px var(--tc-ink);
+}
+.tc-slot:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.tc-slot__count {
+  font-family: var(--tc-font-body);
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--tc-sky-100);
+}
+.tc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.tc-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Round-count coin: octagon sprite with ink rim. */
+.tc-coin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: var(--tc-ink);
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
+}
+.tc-coin__face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--tc-coin-300);
+  box-shadow:
+    inset -4px -4px 0 var(--tc-coin-500),
+    inset 4px 4px 0 var(--tc-coin-100);
+  clip-path: inherit;
+  color: var(--tc-coin-700);
+  font-size: 14px;
+  text-shadow: none;
+}
+
+/* ---------- Inputs ---------- */
+.tc-field {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 56px;
+  padding: 8px 16px;
+  margin: 0;
+  border: 3px solid var(--tc-ink);
+  border-radius: 0;
+  background: var(--tc-panel-500);
+  box-shadow: inset 3px 3px 0 var(--tc-panel-600);
+  color: #fff;
+  font-family: var(--tc-font-body);
+  font-size: 24px;
+  outline: none;
+}
+.tc-field::placeholder {
+  color: var(--tc-sky-200);
+}
+.tc-field:focus {
+  box-shadow:
+    inset 3px 3px 0 var(--tc-panel-600),
+    0 0 0 3px #fff;
+}
+
+/* ---------- Teams ---------- */
+.tc-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 12px;
+}
+.tc-team__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 24px;
+}
+.tc-avatar {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--tc-ink);
+  font-family: var(--tc-font-pixel);
+  font-size: 12px;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 22px;
+  color: var(--tc-sky-100);
+  border: 3px dashed var(--tc-panel-200);
+}
+
+/* ---------- Status pip ---------- */
+.tc-status {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--tc-panel-400);
+  border: 3px solid var(--tc-ink);
+  box-shadow:
+    inset 2px 2px 0 var(--tc-panel-100),
+    3px 3px 0 var(--tc-ink);
+}
+.tc-pip {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--tc-ink);
+}
+
+/* ---------- Parchment notice ---------- */
+.tc-parchment {
+  padding: 14px 16px;
+  background: var(--tc-parchment-300);
+  border: 4px solid var(--tc-ink);
+  box-shadow:
+    inset 3px 3px 0 var(--tc-parchment-100),
+    inset -3px -3px 0 var(--tc-parchment-500),
+    4px 4px 0 var(--tc-ink);
+  color: var(--tc-parchment-700);
+  font-size: 21px;
+  line-height: 1.1;
+}
+.tc-parchment p {
+  margin: 0;
+}
+.tc-parchment__title {
+  margin-bottom: 8px !important;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}

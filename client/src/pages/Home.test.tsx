@@ -79,6 +79,7 @@ vi.mock('wouter', () => ({
 
 vi.mock('@/lib/featureFlags', () => ({
   MULTIPLAYER: false,
+  PIXEL_UI: false,
 }));
 
 vi.mock('@/hooks/use-auth', () => ({
