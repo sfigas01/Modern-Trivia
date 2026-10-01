@@ -156,6 +156,14 @@ function fixture() {
       sourceClass: 'primary_record' as const,
       supportKind: 'context' as const,
     },
+    {
+      passageId: id(22),
+      passageContentHash: hashText('A second record also confirms Ottawa hosted the first final.'),
+      text: 'A second record also confirms Ottawa hosted the first final.',
+      originGroup: 'three',
+      sourceClass: 'primary_record' as const,
+      supportKind: 'supports' as const,
+    },
   ];
   const rows = evidence.map((item, index) => ({
     id: item.passageId,
@@ -305,7 +313,11 @@ function fakePool(f: ReturnType<typeof fixture>) {
     if (sql.includes('SELECT fact_revision_id FROM theme_evidence_review_facts'))
       return { rows: [{ fact_revision_id: id(7) }], rowCount: 1 };
     if (sql.includes('SELECT passage_id FROM theme_evidence_review_passages'))
-      return { rows: [{ passage_id: id(20) }], rowCount: 1 };
+      return { rows: [{ passage_id: id(20) }, { passage_id: id(22) }], rowCount: 2 };
+    if (sql.includes('SELECT r.dimension_results'))
+      return state.review
+        ? { rows: [{ dimension_results: state.review.dimension_results }], rowCount: 1 }
+        : { rows: [], rowCount: 0 };
     if (sql.includes('SELECT COALESCE(MAX(review_sequence)'))
       return { rows: [{ sequence: 1 }], rowCount: 1 };
     if (sql.includes('SELECT * FROM theme_question_evidence_review_attempts WHERE id')) {
@@ -451,6 +463,34 @@ describe('S8a repository question review', () => {
         documentId: id(30),
         url: 'https://example.org/0',
         name: 'Publisher 0',
+      },
+    });
+  });
+
+  it('does not project source metadata from an uncited linked supporting passage', async () => {
+    const f = fixture();
+    const db = fakePool(f);
+    const repo = createPostgresThemeQuestionEvidenceReviewRepository(db.pool, f.config, () => at);
+    await repo.review(f.request, () => ({
+      dimensionResults: EVIDENCE_DIMENSIONS.map((dimension) => ({
+        dimension,
+        verdict: 'pass',
+        reasons: ['supported'],
+        passageIds: [id(22)],
+      })),
+    }));
+
+    await expect(
+      repo.qaContext({
+        candidateId: f.request.candidateId,
+        questionRevisionId: f.request.questionRevisionId,
+        questionContentHash: f.request.questionContentHash,
+      })
+    ).resolves.toMatchObject({
+      source: {
+        documentId: id(32),
+        url: 'https://example.org/2',
+        name: 'Publisher 2',
       },
     });
   });

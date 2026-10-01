@@ -270,14 +270,24 @@ export async function runThemeQuestionQa(
     !Array.isArray(semantic.duplicatesFound)
   )
     return withheld('semantic', 'semantic_incomplete', { ...evidence, ...corpusValues });
-  const matchTypes = new Set([
+  const matchTypeNames = [
     'exact',
     'near_duplicate',
     'conceptual',
     'semantic_duplicate',
     'answer_conflict',
     'review_required',
-  ]);
+  ] as const;
+  const matchTypes = new Set<string>(matchTypeNames);
+  const duplicateCounts = semantic.duplicatesByType as unknown;
+  const countsAreValid =
+    duplicateCounts !== null &&
+    typeof duplicateCounts === 'object' &&
+    Object.keys(duplicateCounts).length === matchTypeNames.length &&
+    matchTypeNames.every((matchType) => {
+      const count = (duplicateCounts as Record<string, unknown>)[matchType];
+      return Number.isInteger(count) && Number(count) >= 0;
+    });
   const matchesAreValid = (semantic.duplicatesFound as unknown[]).every(
     (match) =>
       match !== null &&
@@ -287,7 +297,17 @@ export async function runThemeQuestionQa(
       matchTypes.has(String((match as { matchType?: unknown }).matchType)) &&
       Number.isFinite((match as { similarityScore?: unknown }).similarityScore)
   );
-  if (!matchesAreValid)
+  if (!countsAreValid || !matchesAreValid)
+    return withheld('semantic', 'semantic_incomplete', { ...evidence, ...corpusValues });
+  const observedCounts = Object.fromEntries(matchTypeNames.map((matchType) => [matchType, 0]));
+  for (const match of semantic.duplicatesFound)
+    observedCounts[match.matchType] = (observedCounts[match.matchType] ?? 0) + 1;
+  if (
+    matchTypeNames.some(
+      (matchType) =>
+        observedCounts[matchType] !== (duplicateCounts as Record<string, number>)[matchType]
+    )
+  )
     return withheld('semantic', 'semantic_incomplete', { ...evidence, ...corpusValues });
   if (
     semantic.duplicatesFound.length > 0 &&

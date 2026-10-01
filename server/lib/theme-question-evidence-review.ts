@@ -790,15 +790,36 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
         throw new ThemeQuestionEvidenceReviewError('ineligible');
       const request = { ...parsed.data, attemptId: randomUUID() };
       const current = await safe(() => loadContext(pool, request, config, at, false));
-      const cited = await safe(() =>
+      const linked = await safe(() =>
         pool.query(
           'SELECT passage_id FROM theme_evidence_review_passages WHERE review_id = $1 ORDER BY passage_id',
           [decision.reviewId]
         )
       );
-      const citedSupportId = cited.rows
+      const storedDimensions = await safe(() =>
+        pool.query(
+          `SELECT r.dimension_results
+           FROM theme_question_evidence_review_outcomes o
+           JOIN theme_evidence_reviews r ON r.id = o.review_id
+           WHERE o.attempt_id = $1 AND o.review_id = $2
+             AND o.status = 'reviewed' AND o.verdict = 'pass'`,
+          [decision.attemptId, decision.reviewId]
+        )
+      );
+      const dimensions = outputSchema.safeParse({
+        dimensionResults: storedDimensions.rows[0]?.dimension_results,
+      });
+      if (!dimensions.success || storedDimensions.rows.length !== 1)
+        throw new ThemeQuestionEvidenceReviewError('ineligible');
+      const dimensionPassageIds = new Set(
+        dimensions.data.dimensionResults.flatMap((result) => result.passageIds)
+      );
+      const citedSupportId = linked.rows
         .map((row: { passage_id: string }) => row.passage_id)
-        .find((passageId: string) => current.supportIds.includes(passageId));
+        .find(
+          (passageId: string) =>
+            dimensionPassageIds.has(passageId) && current.supportIds.includes(passageId)
+        );
       const passage = current.graph.passages.find((item) => item.id === citedSupportId);
       const document = current.graph.documents.find((item) => item.id === passage?.documentId);
       if (!passage || !document) throw new ThemeQuestionEvidenceReviewError('ineligible');

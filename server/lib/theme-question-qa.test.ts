@@ -205,6 +205,32 @@ describe('runThemeQuestionQa', () => {
     });
   });
 
+  it('withholds contradictory semantic duplicate counts', async () => {
+    const deps = dependencies({
+      detectDuplicates: vi.fn(async () => ({
+        ...completeReport(),
+        duplicatesByType: { ...emptyDuplicateCounts(), answer_conflict: 1 },
+      })),
+    });
+    await expect(runThemeQuestionQa(request, deps)).resolves.toMatchObject({
+      stage: 'semantic',
+      reason: 'semantic_incomplete',
+    });
+  });
+
+  it('withholds malformed semantic duplicate counts', async () => {
+    const deps = dependencies({
+      detectDuplicates: vi.fn(async () => ({
+        ...completeReport(),
+        duplicatesByType: { ...emptyDuplicateCounts(), exact: -1 },
+      })) as ThemeQuestionQaDependencies['detectDuplicates'],
+    });
+    await expect(runThemeQuestionQa(request, deps)).resolves.toMatchObject({
+      stage: 'semantic',
+      reason: 'semantic_incomplete',
+    });
+  });
+
   it('withholds every semantic match type', async () => {
     const existing = { id: 'existing-1', question: 'Name Saturn.', answer: 'Saturn' };
     const deps = dependencies({
