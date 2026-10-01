@@ -51,6 +51,7 @@ export type ThemeQuestionGenerationCode =
   | 'attempt_conflict'
   | 'attempt_unresolved'
   | 'candidate_conflict'
+  | 'repair_conflict'
   | 'storage_failure'
   | 'storage_unknown_outcome';
 
@@ -222,6 +223,61 @@ function storedJson(value: unknown): Record<string, any> {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
     throw new ThemeQuestionGenerationError('ineligible');
   return parsed as Record<string, any>;
+}
+
+async function lockRepairParent(
+  db: PoolClient,
+  request: ThemeQuestionGenerationRequest,
+  writerInput: ThemeQuestionWriterInput,
+  policy: ThemeQuestionGenerationPolicy,
+  themeSlug: string
+): Promise<void> {
+  const repair = request.repairOf;
+  if (!repair) return;
+  if (
+    request.candidateId === repair.parentCandidateId ||
+    request.questionRevisionId === repair.parentQuestionRevisionId
+  )
+    throw new ThemeQuestionGenerationError('repair_conflict');
+  const result = await db.query(
+    `SELECT c.*, q.id AS parent_revision_id, q.contract_version AS parent_revision_contract,
+       q.revision AS parent_revision_number, q.content_hash AS parent_revision_hash,
+       q.content AS parent_revision_content, g.parent_candidate_id AS generation_parent_candidate_id
+     FROM theme_candidates c
+     JOIN theme_question_revisions q ON q.candidate_id = c.id AND q.id = $2
+     JOIN theme_question_generation_attempts g ON g.candidate_id = c.id
+     JOIN theme_question_generation_outcomes o ON o.attempt_id = g.id
+       AND o.status = 'persisted' AND o.question_content_hash = c.content_hash
+     WHERE c.id = $1 FOR UPDATE OF c, q`,
+    [repair.parentCandidateId, repair.parentQuestionRevisionId]
+  );
+  const parent = result.rows[0] as Record<string, any> | undefined;
+  const parsedParent = questionContentSnapshotSchema.safeParse(parent?.content);
+  if (
+    !parent ||
+    parent.job_id !== request.jobId ||
+    parent.fact_id !== request.factId ||
+    parent.fact_revision_id !== request.factRevisionId ||
+    parent.generation_parent_candidate_id !== null ||
+    parent.parent_candidate_id !== null ||
+    parent.status !== 'pending' ||
+    Number(parent.ordinal) === request.ordinal ||
+    Number(parent.revision) !== Number(parent.parent_revision_number) ||
+    parent.parent_revision_contract !== THEME_RELIABILITY_CONTRACT_VERSION ||
+    parent.content_hash !== repair.parentQuestionContentHash ||
+    parent.parent_revision_hash !== repair.parentQuestionContentHash ||
+    !eq(parent.content, parent.parent_revision_content) ||
+    !parsedParent.success ||
+    hashQuestionSnapshot(parsedParent.data) !== repair.parentQuestionContentHash ||
+    parsedParent.data.answer !== writerInput.fact.canonicalAnswer ||
+    !eq(parsedParent.data.acceptableAnswers, writerInput.fact.supportedAliases) ||
+    parsedParent.data.category !== policy.category ||
+    parsedParent.data.difficulty !== policy.difficulty ||
+    parsedParent.data.pillar !== policy.pillar ||
+    !eq(parsedParent.data.tags, policy.tags) ||
+    parsedParent.data.themeSlug !== themeSlug
+  )
+    throw new ThemeQuestionGenerationError('repair_conflict');
 }
 
 export async function loadGenerationContext(
@@ -754,6 +810,9 @@ export async function loadGenerationContext(
     ordinal: request.ordinal,
     candidate_id: request.candidateId,
     question_revision_id: request.questionRevisionId,
+    parent_candidate_id: request.repairOf?.parentCandidateId ?? null,
+    parent_question_revision_id: request.repairOf?.parentQuestionRevisionId ?? null,
+    parent_question_content_hash: request.repairOf?.parentQuestionContentHash ?? null,
     fact_id: request.factId,
     fact_revision_id: request.factRevisionId,
     fact_content_hash: request.factContentHash,
@@ -799,6 +858,9 @@ function stableHeaderMatches(actual: Record<string, any>, expected: Record<strin
     'ordinal',
     'candidate_id',
     'question_revision_id',
+    'parent_candidate_id',
+    'parent_question_revision_id',
+    'parent_question_content_hash',
     'fact_id',
     'fact_revision_id',
     'fact_content_hash',
@@ -895,6 +957,7 @@ function sameRequestAndConfig(
     factReviewPromptHash: hashText(config.factReviewPromptText),
   };
   const storedPolicy = storedJson(row.policy_snapshot);
+  const storedManifest = storedJson(row.input_manifest);
   const storedThemeSlug = storedPolicy.themeSlug;
   delete storedPolicy.themeSlug;
   return (
@@ -903,6 +966,16 @@ function sameRequestAndConfig(
     Number(row.ordinal) === request.ordinal &&
     String(row.candidate_id).toLowerCase() === request.candidateId &&
     String(row.question_revision_id).toLowerCase() === request.questionRevisionId &&
+    (row.parent_candidate_id === null
+      ? request.repairOf === undefined
+      : String(row.parent_candidate_id).toLowerCase() === request.repairOf?.parentCandidateId) &&
+    (row.parent_question_revision_id === null
+      ? request.repairOf === undefined
+      : String(row.parent_question_revision_id).toLowerCase() ===
+        request.repairOf?.parentQuestionRevisionId) &&
+    (row.parent_question_content_hash === null
+      ? request.repairOf === undefined
+      : row.parent_question_content_hash === request.repairOf?.parentQuestionContentHash) &&
     String(row.fact_id).toLowerCase() === request.factId &&
     String(row.fact_revision_id).toLowerCase() === request.factRevisionId &&
     row.fact_content_hash === request.factContentHash &&
@@ -919,7 +992,8 @@ function sameRequestAndConfig(
     eq(storedPolicy, policy) &&
     row.prompt_version === config.promptVersion &&
     row.prompt_hash === hashText(config.promptText) &&
-    row.prompt_snapshot === config.promptText
+    row.prompt_snapshot === config.promptText &&
+    eq(storedManifest.request, request)
   );
 }
 
@@ -958,6 +1032,9 @@ async function replay(
     Number(row.ordinal) !== request.ordinal ||
     row.fact_id !== request.factId ||
     row.fact_revision_id !== request.factRevisionId ||
+    (request.repairOf
+      ? row.parent_candidate_id !== request.repairOf.parentCandidateId
+      : row.parent_candidate_id !== null) ||
     row.attempt_id !== null ||
     !['pending', 'reviewing', 'accepted', 'rejected', 'duplicate', 'superseded'].includes(
       row.status
@@ -1087,6 +1164,13 @@ export function createPostgresThemeQuestionGenerationRepository(
           lockedContext.selectedReview.outcome?.outputHash !== request.factReviewOutputHash
         )
           throw new ThemeQuestionGenerationError('ineligible');
+        await lockRepairParent(
+          client,
+          request,
+          lockedContext.writerInput,
+          config.generationPolicy,
+          String((lockedContext.header.policy_snapshot as Record<string, unknown>).themeSlug)
+        );
         const occupied = await client.query(
           'SELECT id FROM theme_candidates WHERE job_id = $1 AND ordinal = $2',
           [request.jobId, request.ordinal]
@@ -1104,13 +1188,14 @@ export function createPostgresThemeQuestionGenerationRepository(
           throw new ThemeQuestionGenerationError('candidate_conflict');
         await client.query(
           `INSERT INTO theme_question_generation_attempts
-           (id, contract_version, job_id, ordinal, candidate_id, question_revision_id, fact_id,
+           (id, contract_version, job_id, ordinal, candidate_id, question_revision_id,
+            parent_candidate_id, parent_question_revision_id, parent_question_content_hash, fact_id,
             fact_revision_id, fact_content_hash, fact_review_attempt_id, fact_review_verdict,
             fact_review_output_hash, writer_kind, writer_id, provider, model, execution_id,
             generation_policy_version, policy_snapshot, policy_hash, prompt_version, prompt_hash,
             prompt_snapshot, input_manifest, input_fingerprint, eligibility_fingerprint, evaluated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pass',$11,$12,$13,$14,$15,$16,$17,$18::jsonb,
-                   $19,$20,$21,$22,$23::jsonb,$24,$25,$26)`,
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pass',$14,$15,$16,$17,$18,$19,$20,
+                  $21::jsonb,$22,$23,$24,$25,$26::jsonb,$27,$28,$29)`,
           [
             lockedContext.header.id,
             lockedContext.header.contract_version,
@@ -1118,6 +1203,9 @@ export function createPostgresThemeQuestionGenerationRepository(
             lockedContext.header.ordinal,
             lockedContext.header.candidate_id,
             lockedContext.header.question_revision_id,
+            lockedContext.header.parent_candidate_id,
+            lockedContext.header.parent_question_revision_id,
+            lockedContext.header.parent_question_content_hash,
             lockedContext.header.fact_id,
             lockedContext.header.fact_revision_id,
             lockedContext.header.fact_content_hash,
@@ -1220,16 +1308,34 @@ export function createPostgresThemeQuestionGenerationRepository(
             failureCode = 'ineligible';
             content = null;
           }
-          const questionContentHash = content ? hashQuestionSnapshot(content) : null;
+          await lockRepairParent(
+            client,
+            request,
+            stableInput,
+            config.generationPolicy,
+            String((attemptHeader.policy_snapshot as Record<string, unknown>).themeSlug)
+          );
+          let questionContentHash = content ? hashQuestionSnapshot(content) : null;
+          if (
+            questionContentHash &&
+            request.repairOf &&
+            questionContentHash === request.repairOf.parentQuestionContentHash
+          ) {
+            status = 'failed';
+            failureCode = 'repair_unchanged';
+            content = null;
+            questionContentHash = null;
+          }
           if (content && questionContentHash) {
             await client.query(
               `INSERT INTO theme_candidates
              (id, job_id, attempt_id, parent_candidate_id, fact_id, fact_revision_id, ordinal,
               revision, status, content_hash, content, rejection_reasons)
-             VALUES ($1,$2,NULL,NULL,$3,$4,$5,1,'pending',$6,$7::jsonb,'[]'::jsonb)`,
+             VALUES ($1,$2,NULL,$3,$4,$5,$6,1,'pending',$7,$8::jsonb,'[]'::jsonb)`,
               [
                 request.candidateId,
                 request.jobId,
+                request.repairOf?.parentCandidateId ?? null,
                 request.factId,
                 request.factRevisionId,
                 request.ordinal,
