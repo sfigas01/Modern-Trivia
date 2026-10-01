@@ -156,6 +156,14 @@ function fixture() {
       sourceClass: 'primary_record' as const,
       supportKind: 'context' as const,
     },
+    {
+      passageId: id(22),
+      passageContentHash: hashText('A second record also confirms Ottawa hosted the first final.'),
+      text: 'A second record also confirms Ottawa hosted the first final.',
+      originGroup: 'three',
+      sourceClass: 'primary_record' as const,
+      supportKind: 'supports' as const,
+    },
   ];
   const rows = evidence.map((item, index) => ({
     id: item.passageId,
@@ -259,6 +267,7 @@ function fakePool(f: ReturnType<typeof fixture>) {
     unowned: boolean;
     raceReplay: boolean;
     attemptReads: number;
+    review: Record<string, unknown> | null;
   } = {
     attempt: null,
     outcome: null,
@@ -266,6 +275,7 @@ function fakePool(f: ReturnType<typeof fixture>) {
     unowned: false,
     raceReplay: false,
     attemptReads: 0,
+    review: null,
   };
   const query = vi.fn(async (sql: string, values: unknown[] = []) => {
     if (sql.includes('FROM theme_question_generation_attempts g'))
@@ -274,6 +284,40 @@ function fakePool(f: ReturnType<typeof fixture>) {
       return { rows: f.rows, rowCount: f.rows.length };
     if (sql.includes('FROM theme_evidence_reviews r') && sql.includes('o.attempt_id IS NULL'))
       return { rows: state.unowned ? [{ id: id(99) }] : [], rowCount: state.unowned ? 1 : 0 };
+    if (
+      sql.includes('FROM theme_question_evidence_review_attempts a') &&
+      sql.includes('LEFT JOIN')
+    ) {
+      if (!state.attempt) return { rows: [], rowCount: 0 };
+      return {
+        rows: [
+          {
+            ...state.attempt,
+            outcome_status: state.outcome?.status ?? null,
+            review_id: state.outcome?.review_id ?? null,
+            outcome_verdict: state.outcome?.verdict ?? null,
+            outcome_hash: state.review ? hash(state.review.dimension_results) : null,
+            review_contract: state.review?.contract_version,
+            stored_review_policy_version: state.review?.review_policy_version,
+            stored_prompt_version: state.review?.reviewer_prompt_version,
+            dimension_results: state.review?.dimension_results,
+            stored_reviewer_kind: state.review?.reviewer_kind,
+            reviewer_model: state.review?.reviewer_model,
+            reviewed_at: state.review?.reviewed_at,
+            valid_until: state.review?.valid_until,
+          },
+        ],
+        rowCount: 1,
+      };
+    }
+    if (sql.includes('SELECT fact_revision_id FROM theme_evidence_review_facts'))
+      return { rows: [{ fact_revision_id: id(7) }], rowCount: 1 };
+    if (sql.includes('SELECT passage_id FROM theme_evidence_review_passages'))
+      return { rows: [{ passage_id: id(20) }, { passage_id: id(22) }], rowCount: 2 };
+    if (sql.includes('SELECT r.dimension_results'))
+      return state.review
+        ? { rows: [{ dimension_results: state.review.dimension_results }], rowCount: 1 }
+        : { rows: [], rowCount: 0 };
     if (sql.includes('SELECT COALESCE(MAX(review_sequence)'))
       return { rows: [{ sequence: 1 }], rowCount: 1 };
     if (sql.includes('SELECT * FROM theme_question_evidence_review_attempts WHERE id')) {
@@ -307,23 +351,44 @@ function fakePool(f: ReturnType<typeof fixture>) {
     if (sql.includes('INSERT INTO theme_question_evidence_review_attempts')) {
       state.attempt = {
         id: values[0],
+        contract_version: values[1],
         candidate_id: values[2],
         question_revision_id: values[3],
         question_content_hash: values[4],
+        generation_attempt_id: values[5],
+        fact_revision_id: values[6],
+        review_sequence: values[7],
         reviewer_kind: values[8],
         reviewer_id: values[9],
         provider: values[10],
         model: values[11],
         execution_id: values[12],
         review_policy_version: values[13],
+        policy_snapshot: JSON.parse(String(values[14])),
         policy_hash: values[15],
         prompt_version: values[16],
         prompt_hash: values[17],
+        input_manifest: JSON.parse(String(values[18])),
         input_fingerprint: values[19],
+        evaluated_at: values[20],
       };
       return { rows: [], rowCount: 1 };
     }
-    if (sql.includes('INSERT INTO theme_evidence_reviews')) state.reviewCount++;
+    if (sql.includes('INSERT INTO theme_evidence_reviews')) {
+      state.reviewCount++;
+      state.review = {
+        id: values[0],
+        contract_version: values[1],
+        review_policy_version: values[4],
+        reviewer_prompt_version: values[5],
+        verdict: values[6],
+        dimension_results: JSON.parse(String(values[7])),
+        reviewer_kind: values[8],
+        reviewer_model: values[9],
+        reviewed_at: values[10],
+        valid_until: values[11],
+      };
+    }
     if (sql.includes('INSERT INTO theme_question_evidence_review_outcomes')) {
       state.outcome = {
         status: values[4],
@@ -368,6 +433,66 @@ describe('S8a repository question review', () => {
       verdict: 'pass',
     });
     expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('projects QA source metadata only from a cited supporting passage', async () => {
+    const f = fixture();
+    const db = fakePool(f);
+    const repo = createPostgresThemeQuestionEvidenceReviewRepository(db.pool, f.config, () => at);
+    const callback = vi.fn(() => ({
+      dimensionResults: EVIDENCE_DIMENSIONS.map((dimension) => ({
+        dimension,
+        verdict: 'pass',
+        reasons: ['supported'],
+        passageIds: [id(20)],
+      })),
+    }));
+    await repo.review(f.request, callback);
+
+    await expect(
+      repo.qaContext({
+        candidateId: f.request.candidateId,
+        questionRevisionId: f.request.questionRevisionId,
+        questionContentHash: f.request.questionContentHash,
+      })
+    ).resolves.toMatchObject({
+      evidenceAttemptId: f.request.attemptId,
+      evidenceReviewId: id(9),
+      evidenceFingerprint: 'e'.repeat(64),
+      source: {
+        documentId: id(30),
+        url: 'https://example.org/0',
+        name: 'Publisher 0',
+      },
+    });
+  });
+
+  it('does not project source metadata from an uncited linked supporting passage', async () => {
+    const f = fixture();
+    const db = fakePool(f);
+    const repo = createPostgresThemeQuestionEvidenceReviewRepository(db.pool, f.config, () => at);
+    await repo.review(f.request, () => ({
+      dimensionResults: EVIDENCE_DIMENSIONS.map((dimension) => ({
+        dimension,
+        verdict: 'pass',
+        reasons: ['supported'],
+        passageIds: [id(22)],
+      })),
+    }));
+
+    await expect(
+      repo.qaContext({
+        candidateId: f.request.candidateId,
+        questionRevisionId: f.request.questionRevisionId,
+        questionContentHash: f.request.questionContentHash,
+      })
+    ).resolves.toMatchObject({
+      source: {
+        documentId: id(32),
+        url: 'https://example.org/2',
+        name: 'Publisher 2',
+      },
+    });
   });
 
   it('stores a safe terminal outcome when a passing dimension cites a context passage', async () => {
