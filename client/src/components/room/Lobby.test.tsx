@@ -225,6 +225,23 @@ describe('Lobby', () => {
     await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
 
+  it('shows a QR code encoding the invite URL with the room code', () => {
+    render(
+      <Lobby
+        snapshot={makeSnapshot()}
+        currentPlayerId="host-1"
+        start={makeMutation<StartRoomResponse, StartRoomRequest>()}
+        end={makeMutation<EndRoomResponse, void>()}
+        leave={makeMutation<LeaveRoomResponse, void>()}
+      />
+    );
+
+    const qr = screen.getByTestId('qr-room-invite').querySelector('svg');
+    expect(qr).not.toBeNull();
+    expect(qr?.getAttribute('height')).toBe('220');
+    expect(screen.getByTitle('Scan to join room ABCDE')).toBeInTheDocument();
+  });
+
   it('sends the locally-seen guest question ids when starting the game', async () => {
     addGuestSeenIds(['q1', 'q2']);
     const snapshot = makeSnapshot({

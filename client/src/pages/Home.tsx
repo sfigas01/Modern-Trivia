@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MULTIPLAYER } from '@/lib/featureFlags';
+import { roomCodeSchema } from '@shared/models/rooms';
 
 // A stored room session may point at a room that has since been closed or
 // expired. Validate against the server before offering it as a rejoin target.
@@ -65,10 +66,24 @@ function useRejoinableSession(enabled: boolean): RoomSession | null {
   return session;
 }
 
+function getInviteCode(): string | null {
+  const code = new URLSearchParams(window.location.search).get('code')?.trim().toUpperCase();
+  return code && roomCodeSchema.safeParse(code).success ? code : null;
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [mode, setMode] = useState<'choose' | 'solo'>(MULTIPLAYER ? 'choose' : 'solo');
   const rejoinSession = useRejoinableSession(MULTIPLAYER);
+  const inviteCode = MULTIPLAYER ? getInviteCode() : null;
+
+  // A scanned room QR code opens `/?code=XXXXX`; forward to the join form
+  // with the code pre-filled (STE-288).
+  useEffect(() => {
+    if (inviteCode) setLocation(`/join/${inviteCode}`, { replace: true });
+  }, [inviteCode, setLocation]);
+
+  if (inviteCode) return null;
 
   if (MULTIPLAYER && mode === 'choose') {
     return (
