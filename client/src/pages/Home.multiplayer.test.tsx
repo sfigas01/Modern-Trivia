@@ -139,6 +139,26 @@ describe('Home page with VITE_MULTIPLAYER enabled', () => {
     expect(screen.queryByText('Team Setup')).toBeNull();
   });
 
+  describe('invite QR code (?code=)', () => {
+    afterEach(() => {
+      window.history.replaceState(null, '', '/');
+    });
+
+    it('forwards a valid ?code= to the join form', () => {
+      window.history.replaceState(null, '', '/?code=wxyz2');
+      renderHome();
+      expect(mockSetLocation).toHaveBeenCalledWith('/join/WXYZ2', { replace: true });
+      expect(screen.queryByTestId('button-mode-host')).toBeNull();
+    });
+
+    it('ignores an invalid ?code= and shows the mode chooser', () => {
+      window.history.replaceState(null, '', '/?code=nope');
+      renderHome();
+      expect(mockSetLocation).not.toHaveBeenCalled();
+      expect(screen.getByTestId('button-mode-host')).toBeDefined();
+    });
+  });
+
   it('navigates to /host when "Host a Game" is clicked', () => {
     renderHome();
     fireEvent.click(screen.getByTestId('button-mode-host'));

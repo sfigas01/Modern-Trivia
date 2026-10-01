@@ -38,7 +38,15 @@ async function joinRoom(code: string, body: JoinRoomRequest): Promise<JoinRoomRe
 export default function JoinGame() {
   const { code: codeFromRoute } = useParams<{ code?: string }>();
   const [, setLocation] = useLocation();
-  const [code, setCode] = useState((codeFromRoute ?? '').toUpperCase());
+  // The code arrives pre-filled from `/join/:code` or a scanned invite QR
+  // (`?code=`, STE-288); the player then only needs a nickname.
+  const [initialCode] = useState(() =>
+    (codeFromRoute ?? new URLSearchParams(window.location.search).get('code') ?? '')
+      .trim()
+      .toUpperCase()
+  );
+  const [code, setCode] = useState(initialCode);
+  const isPrefilled = roomCodeSchema.safeParse(initialCode).success;
   const [nickname, setNickname] = useState('');
 
   const joinRoomMutation = useMutation({
@@ -101,7 +109,11 @@ export default function JoinGame() {
                 <LogIn className="w-5 h-5 text-primary" />
                 Room Code
               </CardTitle>
-              <CardDescription>Ask the host for the 5-character code.</CardDescription>
+              <CardDescription data-testid="text-code-hint">
+                {isPrefilled && code === initialCode
+                  ? 'Code filled in from your invite. Just add a nickname to join.'
+                  : 'Ask the host for the 5-character code.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Input
@@ -109,7 +121,7 @@ export default function JoinGame() {
                 value={code}
                 onChange={handleCodeChange}
                 className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6 tracking-[0.3em] text-center uppercase"
-                autoFocus
+                autoFocus={!isPrefilled}
                 maxLength={5}
                 disabled={joinRoomMutation.isPending}
                 data-testid="input-code"
@@ -131,6 +143,7 @@ export default function JoinGame() {
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
+                autoFocus={isPrefilled}
                 maxLength={20}
                 disabled={joinRoomMutation.isPending}
                 data-testid="input-nickname"

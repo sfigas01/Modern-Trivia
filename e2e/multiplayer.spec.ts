@@ -247,7 +247,13 @@ test.describe('two-device multiplayer', () => {
       await expect(hostPage).toHaveURL(new RegExp(`/room/${host.code}$`));
       await expect(hostPage.getByTestId('text-room-code')).toHaveText(host.code);
 
-      await guestPage.goto(`/join/${host.code}`);
+      // Join via the lobby QR invite URL (STE-288): home forwards `?code=` to
+      // the join form with the code pre-filled.
+      await expect(hostPage.getByTestId('qr-room-invite').locator('svg')).toBeVisible();
+      await guestPage.goto(`/?code=${host.code.toLowerCase()}`);
+      await expect(guestPage).toHaveURL(new RegExp(`/join/${host.code}$`));
+      await expect(guestPage.getByTestId('input-code')).toHaveValue(host.code);
+      await expect(guestPage.getByTestId('input-nickname')).toBeFocused();
       await guestPage.getByTestId('input-nickname').fill(GUEST);
       const joinResponsePromise = guestPage.waitForResponse(
         (response) =>

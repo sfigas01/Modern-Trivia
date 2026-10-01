@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 import { Copy, DoorOpen, LogOut, Play } from 'lucide-react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import {
@@ -37,6 +38,10 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
   const isHost = snapshot.hostPlayerId === currentPlayerId;
   const activePlayers = snapshot.players.filter((player) => !player.leftAt);
   const canStart = activePlayers.length >= 2;
+
+  // Scanning lands on the home page, which forwards `?code=` to the join form
+  // with the code pre-filled (STE-288).
+  const inviteUrl = `${window.location.origin}/?code=${encodeURIComponent(snapshot.code)}`;
 
   const handleCopyLink = async () => {
     const link = `${window.location.origin}/join/${snapshot.code}`;
@@ -108,7 +113,18 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
             {snapshot.code}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col items-center gap-2">
+            <div className="rounded-xl bg-white p-3" data-testid="qr-room-invite">
+              <QRCodeSVG
+                value={inviteUrl}
+                size={220}
+                marginSize={1}
+                title={`Scan to join room ${snapshot.code}`}
+              />
+            </div>
+            <p className="text-sm text-muted-foreground">Scan with a phone camera to join</p>
+          </div>
           <Button
             variant="outline"
             className="w-full border-white/10 hover:bg-white/10"

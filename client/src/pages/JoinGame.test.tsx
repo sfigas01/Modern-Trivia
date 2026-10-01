@@ -133,6 +133,21 @@ describe('JoinGame', () => {
     expect(codeInput.value).toBe('WXYZ2');
   });
 
+  it('prefills the room code from the ?code= query param and focuses the nickname', async () => {
+    window.history.replaceState(null, '', '/join?code=wxyz2');
+    try {
+      vi.stubGlobal('fetch', createFetchMock());
+      renderJoinGame();
+
+      const codeInput = (await screen.findByTestId('input-code')) as HTMLInputElement;
+      expect(codeInput.value).toBe('WXYZ2');
+      expect(screen.getByTestId('input-nickname')).toHaveFocus();
+      expect(screen.getByTestId('text-code-hint')).toHaveTextContent(/filled in from your invite/i);
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
   it('shows a spinner while the join request is in flight', async () => {
     let resolveFetch: (value: Response) => void = () => {};
     const pending = new Promise<Response>((resolve) => {
