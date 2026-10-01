@@ -116,6 +116,20 @@ export type ThemeQuestionEvidenceReviewer = (
 export type ThemeQuestionEvidenceReviewResult =
   | { status: 'reviewed'; attemptId: string; reviewId: string; verdict: 'pass' | 'flag' | 'fail' }
   | { status: 'invalid_output' | 'failed' | 'ineligible'; attemptId: string; failureCode: string };
+export type ThemeQuestionQaContext = Readonly<{
+  candidateId: string;
+  questionRevisionId: string;
+  questionContentHash: string;
+  question: z.infer<typeof questionContentSnapshotSchema>;
+  evidenceAttemptId: string;
+  evidenceReviewId: string;
+  evidenceFingerprint: string;
+  source: {
+    documentId: string;
+    url: string;
+    name: string;
+  };
+}>;
 export class ThemeQuestionEvidenceReviewError extends Error {
   constructor(
     public readonly code:
@@ -654,7 +668,7 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
         }
       : { status: row.status, attemptId: request.attemptId, failureCode: row.failure_code };
   }
-  return {
+  const repository = {
     async eligibility(rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>) {
       const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
@@ -762,6 +776,46 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
         attempts[0].outcome = { status: 'reviewed', review: review.data };
       }
       return evaluateLatestThemeQuestionEvidenceReview(current.graph, attempts, at);
+    },
+    async qaContext(
+      rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>
+    ): Promise<ThemeQuestionQaContext> {
+      const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
+      if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
+      const at = now();
+      if (!Number.isFinite(at.valueOf()))
+        throw new ThemeQuestionEvidenceReviewError('invalid_request');
+      const decision = await repository.eligibility(parsed.data);
+      if (!decision.eligible || !decision.attemptId || !decision.reviewId)
+        throw new ThemeQuestionEvidenceReviewError('ineligible');
+      const request = { ...parsed.data, attemptId: randomUUID() };
+      const current = await safe(() => loadContext(pool, request, config, at, false));
+      const cited = await safe(() =>
+        pool.query(
+          'SELECT passage_id FROM theme_evidence_review_passages WHERE review_id = $1 ORDER BY passage_id',
+          [decision.reviewId]
+        )
+      );
+      const citedSupportId = cited.rows
+        .map((row: { passage_id: string }) => row.passage_id)
+        .find((passageId: string) => current.supportIds.includes(passageId));
+      const passage = current.graph.passages.find((item) => item.id === citedSupportId);
+      const document = current.graph.documents.find((item) => item.id === passage?.documentId);
+      if (!passage || !document) throw new ThemeQuestionEvidenceReviewError('ineligible');
+      return {
+        candidateId: parsed.data.candidateId,
+        questionRevisionId: parsed.data.questionRevisionId,
+        questionContentHash: parsed.data.questionContentHash,
+        question: structuredClone(current.question.content),
+        evidenceAttemptId: decision.attemptId,
+        evidenceReviewId: decision.reviewId,
+        evidenceFingerprint: decision.fingerprint,
+        source: {
+          documentId: document.id,
+          url: document.canonicalUrl,
+          name: document.publisher,
+        },
+      };
     },
     async review(
       rawRequest: z.infer<typeof requestSchema>,
@@ -1038,4 +1092,5 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
           };
     },
   };
+  return repository;
 }
