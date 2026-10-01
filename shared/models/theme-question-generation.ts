@@ -42,6 +42,22 @@ export const themeQuestionGenerationRequestSchema = z
     factContentHash: hashSchema,
     factReviewAttemptId: uuidSchema,
     factReviewOutputHash: hashSchema,
+    repairOf: z
+      .object({
+        parentCandidateId: uuidSchema,
+        parentQuestionRevisionId: uuidSchema,
+        parentQuestionContentHash: hashSchema,
+        evidenceReviewAttemptId: uuidSchema,
+        failureStage: z.enum(['static', 'quality']),
+        failureReason: z.enum(['static_finding', 'quality_adverse']),
+      })
+      .strict()
+      .refine(
+        (value) =>
+          (value.failureStage === 'static' && value.failureReason === 'static_finding') ||
+          (value.failureStage === 'quality' && value.failureReason === 'quality_adverse')
+      )
+      .optional(),
   })
   .strict();
 export type ThemeQuestionGenerationRequest = z.infer<typeof themeQuestionGenerationRequestSchema>;

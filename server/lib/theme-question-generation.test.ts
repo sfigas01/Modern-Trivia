@@ -10,6 +10,7 @@ import {
   snapshotThemeQuestionWriterInput,
   ThemeQuestionGenerationError,
 } from './theme-question-generation';
+import { hashQuestionSnapshot } from './theme-evidence-eligibility';
 import { hashThemeFactSnapshot } from './theme-fact-derivation';
 import { hashThemeSourceRegistry } from './theme-source-registry';
 import type { ThemeSourceRegistry } from '@shared/models/theme-source-registry';
@@ -360,6 +361,7 @@ function repositoryFixture() {
     outcome?: Record<string, any>;
     candidate?: Record<string, any>;
     revision?: Record<string, any>;
+    repairParent?: Record<string, any>;
     edgeKind: string;
     nowMs: number;
     advanceOnFactLockMs: number;
@@ -390,6 +392,8 @@ function repositoryFixture() {
     if (sql.includes('SELECT passage_id, support_kind'))
       return result([{ passage_id: ids.passage, support_kind: state.edgeKind }]);
     if (sql.includes('FROM theme_fact_review_attempts')) return result(state.reviews);
+    if (sql.includes('SELECT c.*') && sql.includes('generation_parent_candidate_id'))
+      return result(state.repairParent ? [state.repairParent] : []);
     if (sql.includes('SELECT id FROM theme_candidates WHERE id = $1'))
       return result(
         state.existingCandidateIds.has(values[0]) || state.candidate?.id === values[0]
@@ -453,27 +457,30 @@ function repositoryFixture() {
               ordinal: values[3],
               candidate_id: values[4],
               question_revision_id: values[5],
-              fact_id: values[6],
-              fact_revision_id: values[7],
-              fact_content_hash: values[8],
-              fact_review_attempt_id: values[9],
+              parent_candidate_id: values[6],
+              parent_question_revision_id: values[7],
+              parent_question_content_hash: values[8],
+              fact_id: values[9],
+              fact_revision_id: values[10],
+              fact_content_hash: values[11],
+              fact_review_attempt_id: values[12],
               fact_review_verdict: 'pass',
-              fact_review_output_hash: values[10],
-              writer_kind: values[11],
-              writer_id: values[12],
-              provider: values[13],
-              model: values[14],
-              execution_id: values[15],
-              generation_policy_version: values[16],
-              policy_snapshot: JSON.parse(values[17]),
-              policy_hash: values[18],
-              prompt_version: values[19],
-              prompt_hash: values[20],
-              prompt_snapshot: values[21],
-              input_manifest: JSON.parse(values[22]),
-              input_fingerprint: values[23],
-              eligibility_fingerprint: values[24],
-              evaluated_at: values[25],
+              fact_review_output_hash: values[13],
+              writer_kind: values[14],
+              writer_id: values[15],
+              provider: values[16],
+              model: values[17],
+              execution_id: values[18],
+              generation_policy_version: values[19],
+              policy_snapshot: JSON.parse(values[20]),
+              policy_hash: values[21],
+              prompt_version: values[22],
+              prompt_hash: values[23],
+              prompt_snapshot: values[24],
+              input_manifest: JSON.parse(values[25]),
+              input_fingerprint: values[26],
+              eligibility_fingerprint: values[27],
+              evaluated_at: values[28],
             };
             return result();
           }
@@ -484,13 +491,14 @@ function repositoryFixture() {
               id: values[0],
               job_id: values[1],
               attempt_id: null,
-              fact_id: values[2],
-              fact_revision_id: values[3],
-              ordinal: values[4],
+              parent_candidate_id: values[2],
+              fact_id: values[3],
+              fact_revision_id: values[4],
+              ordinal: values[5],
               revision: 1,
               status: 'pending',
-              content_hash: values[5],
-              content: JSON.parse(values[6]),
+              content_hash: values[6],
+              content: JSON.parse(values[7]),
             };
             return result();
           }
@@ -577,6 +585,59 @@ function repositoryFixture() {
   };
 }
 
+function repairFixture() {
+  const fixture = repositoryFixture();
+  const parentCandidateId = randomUUID();
+  const parentRevisionId = randomUUID();
+  const parentContent = {
+    question: 'In which year did the fictional event occur?',
+    answer: '1901',
+    acceptableAnswers: [],
+    explanation: 'The record states the year.',
+    category: 'History',
+    difficulty: 'Medium' as const,
+    pillar: 'Recall',
+    tags: ['history'],
+    themeSlug: 'fictional-history',
+  };
+  const parentHash = hashQuestionSnapshot(parentContent);
+  fixture.state.repairParent = {
+    id: parentCandidateId,
+    job_id: fixture.request.jobId,
+    fact_id: fixture.request.factId,
+    fact_revision_id: fixture.request.factRevisionId,
+    ordinal: 1,
+    revision: 1,
+    status: 'pending',
+    content_hash: parentHash,
+    content: parentContent,
+    parent_candidate_id: null,
+    parent_revision_id: parentRevisionId,
+    parent_revision_contract: 'theme-reliability-v1',
+    parent_revision_number: 1,
+    parent_revision_hash: parentHash,
+    parent_revision_content: parentContent,
+    generation_parent_candidate_id: null,
+  };
+  return {
+    ...fixture,
+    parentContent,
+    parentHash,
+    request: {
+      ...fixture.request,
+      ordinal: 2,
+      repairOf: {
+        parentCandidateId,
+        parentQuestionRevisionId: parentRevisionId,
+        parentQuestionContentHash: parentHash,
+        evidenceReviewAttemptId: randomUUID(),
+        failureStage: 'static' as const,
+        failureReason: 'static_finding' as const,
+      },
+    },
+  };
+}
+
 describe('theme question generation safety', () => {
   it.each(['candidate', 'question revision'] as const)(
     'rejects a pre-existing %s id before registering or dispatching',
@@ -654,6 +715,75 @@ describe('theme question generation safety', () => {
     const replay = await f.repository.generate(f.request, writer);
     expect(replay).toEqual(first);
     expect(writer).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores an unchanged repair as a terminal failure without creating a child candidate', async () => {
+    const f = repairFixture();
+    const writer = vi.fn(() => ({
+      status: 'candidate' as const,
+      question: f.parentContent.question,
+      explanation: f.parentContent.explanation,
+    }));
+
+    const first = await f.repository.generate(f.request, writer);
+    expect(first).toMatchObject({ status: 'failed', failureCode: 'repair_unchanged' });
+    expect(f.state.header).toMatchObject({
+      parent_candidate_id: f.request.repairOf.parentCandidateId,
+    });
+    expect(f.state.candidate).toBeUndefined();
+    const replay = await f.repository.generate(f.request, writer);
+    expect(replay).toEqual(first);
+    expect(writer).toHaveBeenCalledTimes(1);
+  });
+
+  it('persists a changed repair as one linked child while preserving trusted answer fields', async () => {
+    const f = repairFixture();
+    const writer = vi.fn(() => ({
+      status: 'candidate' as const,
+      question: 'What year is assigned to the fictional event in the archived record?',
+      explanation: 'The archived record assigns the event to that year.',
+    }));
+
+    const decision = await f.repository.generate(f.request, writer);
+    expect(decision).toMatchObject({ status: 'persisted' });
+    expect(f.state.candidate).toMatchObject({
+      parent_candidate_id: f.request.repairOf.parentCandidateId,
+      ordinal: 2,
+      content: {
+        answer: '1901',
+        acceptableAnswers: [],
+        question: 'What year is assigned to the fictional event in the archived record?',
+      },
+    });
+  });
+
+  it('rejects a repair whose parent is already a repair child before dispatch', async () => {
+    const f = repairFixture();
+    f.state.repairParent!.generation_parent_candidate_id = randomUUID();
+    const writer = vi.fn(() => ({ status: 'declined' as const }));
+
+    await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
+      code: 'repair_conflict',
+    });
+    expect(writer).not.toHaveBeenCalled();
+  });
+
+  it('rejects a repair policy that would change protected parent content', async () => {
+    const f = repairFixture();
+    const repository = createPostgresThemeQuestionGenerationRepository(
+      f.pool,
+      {
+        ...f.config,
+        generationPolicy: { ...f.config.generationPolicy, category: 'Sports' },
+      },
+      () => new Date(f.state.nowMs)
+    );
+    const writer = vi.fn(() => ({ status: 'declined' as const }));
+
+    await expect(repository.generate(f.request, writer)).rejects.toMatchObject({
+      code: 'repair_conflict',
+    });
+    expect(writer).not.toHaveBeenCalled();
   });
 
   it('persists through generate() and replays without redispatch after a candidate status change', async () => {

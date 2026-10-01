@@ -17,6 +17,7 @@ import {
 } from '@shared/models/theme-evidence';
 import {
   themeQuestionGenerationPolicySchema,
+  themeQuestionGenerationRequestSchema,
   type ThemeQuestionGenerationRequest,
 } from '@shared/models/theme-question-generation';
 import { themeFactReviewPolicySchema } from '@shared/models/theme-fact-review';
@@ -262,12 +263,17 @@ async function loadContext(
     `SELECT g.*, o.status AS generation_status, o.question_content_hash AS outcome_question_hash,
        c.status AS candidate_status, c.revision AS candidate_revision, c.content_hash AS candidate_hash,
        c.content AS candidate_content, c.fact_id AS candidate_fact_id, c.fact_revision_id AS candidate_fact_revision_id,
+       c.parent_candidate_id AS candidate_parent_candidate_id,
        q.contract_version AS question_contract, q.revision AS question_revision, q.content_hash AS revision_hash,
-       q.content AS revision_content, q.created_at AS revision_created_at
+       q.content AS revision_content, q.created_at AS revision_created_at,
+       pg.writer_kind AS parent_writer_kind, pg.writer_id AS parent_writer_id,
+       pg.provider AS parent_provider, pg.model AS parent_model,
+       pg.execution_id AS parent_execution_id
      FROM theme_question_generation_attempts g
      JOIN theme_question_generation_outcomes o ON o.attempt_id = g.id
      JOIN theme_candidates c ON c.id = g.candidate_id
      JOIN theme_question_revisions q ON q.id = g.question_revision_id
+     LEFT JOIN theme_question_generation_attempts pg ON pg.candidate_id = g.parent_candidate_id
      WHERE g.candidate_id = $1 AND g.question_revision_id = $2`,
     [request.candidateId, request.questionRevisionId]
   );
@@ -281,6 +287,7 @@ async function loadContext(
     g.outcome_question_hash !== request.questionContentHash ||
     g.candidate_fact_id !== g.fact_id ||
     g.candidate_fact_revision_id !== g.fact_revision_id ||
+    (g.candidate_parent_candidate_id ?? null) !== (g.parent_candidate_id ?? null) ||
     Number(g.candidate_revision) !== Number(g.question_revision) ||
     !same(g.candidate_content, g.revision_content)
   )
@@ -337,7 +344,11 @@ async function loadContext(
   };
   // S7 stores the S6b prompt hash in its immutable policy snapshot; the S8a loader
   // supplies that exact hash without needing the original raw S6b prompt text.
-  const generationRequest: ThemeQuestionGenerationRequest = {
+  const repairOf =
+    g.parent_candidate_id === null || g.parent_candidate_id === undefined
+      ? undefined
+      : (g.input_manifest as { request?: { repairOf?: unknown } } | null)?.request?.repairOf;
+  const parsedGenerationRequest = themeQuestionGenerationRequestSchema.safeParse({
     attemptId: String(g.id),
     jobId: String(g.job_id),
     ordinal: Number(g.ordinal),
@@ -348,7 +359,10 @@ async function loadContext(
     factContentHash: String(g.fact_content_hash),
     factReviewAttemptId: String(g.fact_review_attempt_id),
     factReviewOutputHash: String(g.fact_review_output_hash),
-  };
+    repairOf,
+  });
+  if (!parsedGenerationRequest.success) throw new ThemeQuestionEvidenceReviewError('ineligible');
+  const generationRequest: ThemeQuestionGenerationRequest = parsedGenerationRequest.data;
   let loaded: Awaited<ReturnType<typeof loadGenerationContext>>;
   try {
     loaded = await loadGenerationContext(
@@ -402,6 +416,21 @@ async function loadContext(
       model: g.model as string | null,
     },
   ];
+  if (generationRequest.repairOf) {
+    if (
+      typeof g.parent_writer_id !== 'string' ||
+      typeof g.parent_execution_id !== 'string' ||
+      !['model', 'human'].includes(String(g.parent_writer_kind))
+    )
+      throw new ThemeQuestionEvidenceReviewError('ineligible');
+    sources.push({
+      id: String(g.parent_writer_id),
+      executionId: String(g.parent_execution_id),
+      kind: String(g.parent_writer_kind),
+      provider: g.parent_provider as string | null,
+      model: g.parent_model as string | null,
+    });
+  }
   if (
     enforceIndependence &&
     sources.some(
