@@ -42,7 +42,7 @@ test.describe('SETUP → QUESTION → REVEAL loop', () => {
     await page.goto('/');
 
     // Assert SETUP UI is visible
-    await expect(page.getByRole('heading', { name: 'TRIVIA' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'SUPER' })).toBeVisible();
     const playSoloButton = page.getByRole('button', { name: 'Play Solo' });
     await playSoloButton.click();
     await expect(page.getByText('Team Setup')).toBeVisible();

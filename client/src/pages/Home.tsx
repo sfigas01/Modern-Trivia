@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useGame, QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
-import { useAuth } from '@/hooks/use-auth';
-import { useAdmin } from '@/hooks/use-admin';
-import { useCategoryCounts } from '@/hooks/use-category-counts';
+import { QUESTIONS_PER_TEAM_ROTATION } from '@/lib/store';
+import { useSoloSetup } from '@/hooks/use-solo-setup';
+import { useAccount } from '@/hooks/use-account';
 import { clearRoomSession, listRoomSessions, type RoomSession } from '@/lib/room-session';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,8 +21,18 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MULTIPLAYER } from '@/lib/featureFlags';
+import { MULTIPLAYER, PIXEL_UI } from '@/lib/featureFlags';
 import { roomCodeSchema } from '@shared/models/rooms';
+
+// The pixel redesign (STE-128) loads as its own chunk, so its styles and
+// fonts are only fetched when VITE_PIXEL_UI is on.
+const PixelModeChooser = lazy(() =>
+  import('./HomePixel').then((m) => ({ default: m.PixelModeChooser }))
+);
+const PixelSoloSetup = lazy(() =>
+  import('./HomePixel').then((m) => ({ default: m.PixelSoloSetup }))
+);
+const pixelFallback = <div className="min-h-screen bg-[#4aa3f7]" />;
 
 // A stored room session may point at a room that has since been closed or
 // expired. Validate against the server before offering it as a rejoin target.
@@ -86,30 +95,39 @@ export default function Home() {
   if (inviteCode) return null;
 
   if (MULTIPLAYER && mode === 'choose') {
-    return (
-      <ModeChooser
-        rejoinSession={rejoinSession}
-        onPlaySolo={() => setMode('solo')}
-        onHost={() => setLocation('/host')}
-        onJoin={() => setLocation('/join')}
-      />
+    const chooserProps: ModeChooserProps = {
+      rejoinSession,
+      onPlaySolo: () => setMode('solo'),
+      onHost: () => setLocation('/host'),
+      onJoin: () => setLocation('/join'),
+    };
+    return PIXEL_UI ? (
+      <Suspense fallback={pixelFallback}>
+        <PixelModeChooser {...chooserProps} />
+      </Suspense>
+    ) : (
+      <ModeChooser {...chooserProps} />
     );
   }
 
-  return <SoloSetup />;
+  return PIXEL_UI ? (
+    <Suspense fallback={pixelFallback}>
+      {/* With the mode chooser on, the title takes solo setup back to it. */}
+      <PixelSoloSetup onHome={MULTIPLAYER ? () => setMode('choose') : undefined} />
+    </Suspense>
+  ) : (
+    <SoloSetup />
+  );
 }
 
-function ModeChooser({
-  rejoinSession,
-  onPlaySolo,
-  onHost,
-  onJoin,
-}: {
+export interface ModeChooserProps {
   rejoinSession: RoomSession | null;
   onPlaySolo: () => void;
   onHost: () => void;
   onJoin: () => void;
-}) {
+}
+
+function ModeChooser({ rejoinSession, onPlaySolo, onHost, onJoin }: ModeChooserProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -124,12 +142,12 @@ function ModeChooser({
       >
         <div className="text-center space-y-2">
           <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            TRIVIA
+            SUPER
             <br />
-            CLASH
+            QUESTLY
           </h1>
           <p className="text-muted-foreground font-medium tracking-wide">
-            THE COMPETITIVE PARTY GAME
+            TRIVIA THAT EVERYONE CAN PLAY
           </p>
         </div>
 
@@ -172,47 +190,75 @@ function ModeChooser({
             Join a Game
           </Button>
         </div>
+
+        <AccountLinks />
       </motion.div>
     </div>
   );
 }
 
+// Sign In / Sign Out, plus Admin for admins (STE-239). Shown on the mode
+// chooser and on solo setup so the landing screen always offers sign-in.
+function AccountLinks() {
+  const { isAuthenticated, isAdmin, accountName, logout, signIn, goToAdmin } = useAccount();
+
+  return (
+    <div className="flex justify-center gap-4 items-center flex-wrap">
+      {isAdmin && (
+        <Button
+          variant="link"
+          className="text-muted-foreground text-xs"
+          onClick={goToAdmin}
+          data-testid="link-admin"
+        >
+          <Shield className="w-3 h-3 mr-1" />
+          Admin Panel
+        </Button>
+      )}
+
+      {isAuthenticated ? (
+        <Button
+          variant="link"
+          className="text-muted-foreground text-xs"
+          onClick={() => logout()}
+          data-testid="button-logout"
+        >
+          <LogOut className="w-3 h-3 mr-1" />
+          Sign Out ({accountName})
+        </Button>
+      ) : (
+        <Button
+          variant="link"
+          className="text-muted-foreground text-xs"
+          onClick={signIn}
+          data-testid="button-login"
+        >
+          <LogIn className="w-3 h-3 mr-1" />
+          Sign In
+        </Button>
+      )}
+    </div>
+  );
+}
+
 function SoloSetup() {
-  const [_, setLocation] = useLocation();
-  const { state, addTeam, removeTeam, toggleCategory, setNumRounds, startGame } = useGame();
-  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
-  const { isAdmin } = useAdmin();
-  const [newTeamName, setNewTeamName] = useState('');
-
-  const categoryCounts = useCategoryCounts(state.questions);
-
-  const totalNeeded = state.numRounds * state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const availableCount =
-    state.selectedCategories.length === 0
-      ? categoryCounts['All'] || 0
-      : state.selectedCategories.reduce((sum, cat) => sum + (categoryCounts[cat] || 0), 0);
-  const hasInsufficientQuestions =
-    state.teams.length >= 2 && availableCount < totalNeeded && availableCount > 0;
-
-  const handleAddTeam = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTeamName.trim()) {
-      addTeam(newTeamName.trim());
-      setNewTeamName('');
-    }
-  };
-
-  const handleStart = async () => {
-    await startGame(isAuthenticated);
-    setLocation('/game');
-  };
-
-  const statusLabel =
-    state.phase === 'SETUP'
-      ? 'Not Started'
-      : state.phase === 'GAME_OVER'
-        ? 'Completed'
-        : 'In Progress';
+  const {
+    state,
+    removeTeam,
+    toggleCategory,
+    setNumRounds,
+    authLoading,
+    newTeamName,
+    setNewTeamName,
+    categoryCounts,
+    totalNeeded,
+    availableCount,
+    hasInsufficientQuestions,
+    insufficientSubject,
+    handleAddTeam,
+    handleStart,
+    statusLabel,
+  } = useSoloSetup();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
@@ -228,12 +274,12 @@ function SoloSetup() {
       >
         <div className="text-center space-y-2">
           <h1 className="text-6xl font-extrabold tracking-tighter bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent drop-shadow-sm">
-            TRIVIA
+            SUPER
             <br />
-            CLASH
+            QUESTLY
           </h1>
           <p className="text-muted-foreground font-medium tracking-wide">
-            THE COMPETITIVE PARTY GAME
+            TRIVIA THAT EVERYONE CAN PLAY
           </p>
           <div className="flex justify-center">
             <Badge variant="outline" className="border-primary/40 text-primary">
@@ -374,12 +420,8 @@ function SoloSetup() {
               <div>
                 <p className="font-semibold text-yellow-300">Not enough questions</p>
                 <p className="mt-1">
-                  {state.selectedCategories.length === 0
-                    ? 'All categories have'
-                    : state.selectedCategories.length === 1
-                      ? `"${state.selectedCategories[0]}" has`
-                      : `The selected categories have`}{' '}
-                  only <span className="font-bold">{availableCount}</span> question
+                  {insufficientSubject} only <span className="font-bold">{availableCount}</span>{' '}
+                  question
                   {availableCount !== 1 ? 's' : ''}, but your setup needs{' '}
                   <span className="font-bold">{totalNeeded}</span> ({state.numRounds} rounds ×{' '}
                   {state.teams.length} teams × {QUESTIONS_PER_TEAM_ROTATION} questions/turn). The
@@ -397,41 +439,7 @@ function SoloSetup() {
             START GAME
           </Button>
 
-          <div className="flex justify-center gap-4 items-center flex-wrap">
-            {isAuthenticated && isAdmin && (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => setLocation('/admin')}
-                data-testid="link-admin"
-              >
-                <Shield className="w-3 h-3 mr-1" />
-                Admin Panel
-              </Button>
-            )}
-
-            {isAuthenticated ? (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => logout()}
-                data-testid="button-logout"
-              >
-                <LogOut className="w-3 h-3 mr-1" />
-                Sign Out ({user?.email?.split('@')[0]})
-              </Button>
-            ) : (
-              <Button
-                variant="link"
-                className="text-muted-foreground text-xs"
-                onClick={() => (window.location.href = '/api/login')}
-                data-testid="button-login"
-              >
-                <LogIn className="w-3 h-3 mr-1" />
-                Sign In
-              </Button>
-            )}
-          </div>
+          <AccountLinks />
         </div>
       </motion.div>
     </div>

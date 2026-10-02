@@ -23,3 +23,6 @@ vite.config.ts.*
 playwright-report/
 test-results/
 playwright/.cache/
+
+# Python venv for scripts/pixel-art
+.venv-pixel-art/
