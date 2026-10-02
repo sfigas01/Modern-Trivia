@@ -1,9 +1,11 @@
-/* Trivia Clash pixel design system (STE-128). Values come from the design
+/* Super Questly pixel design system (STE-128). Values come from the design
    system's colors_and_type.css; class names keep its `tc-` prefix so nothing
    here touches the classic UI. Loaded only with VITE_PIXEL_UI on. */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
 
-.tc-screen {
+/* Tokens live on :root so portalled overlays (dialogs) can use them too.
+   This stylesheet only loads with VITE_PIXEL_UI on. */
+:root {
   --tc-sky-100: #d8efff;
   --tc-sky-200: #b6dcff;
   --tc-sky-300: #7ec0ff;
@@ -39,7 +41,9 @@
   --tc-ink: #0a0a0f;
   --tc-font-pixel: 'Press Start 2P', system-ui, monospace;
   --tc-font-body: 'VT323', 'Press Start 2P', monospace;
+}
 
+.tc-screen {
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
@@ -105,6 +109,8 @@
 .tc-column {
   position: relative;
   box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   padding: 40px 16px 48px;
@@ -705,10 +711,451 @@
   line-height: 1.5;
   text-transform: uppercase;
 }
-/* Temporary home for a classic control inside a pixel screen. */
-.tc-classic-island {
-  padding: 12px;
-  background: var(--tc-panel-500);
+
+/* ---------- In-game (STE-128) ---------- */
+.tc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.tc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--tc-panel-400);
+  border: 3px solid var(--tc-ink);
+  box-shadow: 2px 2px 0 var(--tc-ink);
+  color: #fff;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  line-height: 1.4;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-chip--easy {
+  background: var(--tc-correct-bg);
+}
+.tc-chip--medium {
+  background: var(--tc-coin-300);
+  color: var(--tc-ink);
+  text-shadow: none;
+}
+.tc-chip--hard {
+  background: var(--tc-red-700);
+}
+.tc-chip--magenta {
+  background: var(--tc-magenta-700);
+}
+.tc-question {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 16px 24px;
+}
+.tc-question__text {
+  margin: 0;
+  text-align: center;
+  font-family: var(--tc-font-body);
+  font-weight: 400;
+  line-height: 1.1;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-question__text--lg {
+  font-size: 32px;
+}
+.tc-question__text--md {
+  font-size: 26px;
+}
+.tc-field--answer {
+  text-align: center;
+  font-size: 28px;
+  min-height: 64px;
+}
+.tc-answer-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+}
+.tc-reveal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.tc-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 120px;
+  padding: 12px 8px;
   border: 4px solid var(--tc-ink);
-  font-family: system-ui, sans-serif;
+  box-shadow:
+    inset 3px 3px 0 var(--hi, var(--tc-panel-100)),
+    inset -3px -3px 0 var(--lo, var(--tc-panel-500)),
+    4px 4px 0 var(--tc-ink);
+  background: var(--face, var(--tc-panel-300));
+  text-align: center;
+}
+.tc-verdict--correct {
+  --face: var(--tc-correct-bg);
+  --hi: var(--tc-green-300);
+  --lo: var(--tc-green-700);
+}
+.tc-verdict--incorrect {
+  --face: var(--tc-red-700);
+  --hi: var(--tc-red-500);
+  --lo: #4a0d09;
+}
+.tc-verdict--pass {
+  --face: var(--tc-stone-500);
+  --hi: var(--tc-stone-300);
+  --lo: var(--tc-stone-700);
+}
+.tc-verdict--answer {
+  --face: var(--tc-panel-500);
+  --hi: var(--tc-panel-200);
+  --lo: var(--tc-panel-600);
+}
+.tc-verdict__label {
+  margin: 0;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-verdict__answer {
+  margin: 0;
+  font-family: var(--tc-font-body);
+  font-size: 30px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-verdict__answer--gold {
+  color: var(--tc-coin-300);
+}
+.tc-fact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.tc-fact__source {
+  text-transform: uppercase;
+}
+.tc-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tc-actions > .tc-btn {
+  flex: 1 1 120px;
+}
+/* The primary action (first) gets the room; Dispute stays compact. */
+.tc-actions > .tc-btn:first-child {
+  flex: 2 1 200px;
+}
+.tc-standings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 8px;
+}
+.tc-standing {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.tc-standing[data-faded] {
+  opacity: 0.55;
+}
+.tc-standing__rank {
+  font-family: var(--tc-font-pixel);
+  font-size: 12px;
+  color: var(--tc-coin-300);
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-standing__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 26px;
+}
+.tc-standing__score {
+  font-family: var(--tc-font-pixel);
+  font-size: 14px;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-standing__delta {
+  font-size: 10px;
+}
+.tc-standing__delta.is-up {
+  color: var(--tc-green-300);
+}
+.tc-standing__delta.is-down {
+  color: var(--tc-red-300);
+}
+.tc-pill {
+  margin: 0;
+  padding: 8px 14px;
+  background: var(--tc-magenta-500);
+  border: 3px solid var(--tc-ink);
+  box-shadow:
+    inset 2px 2px 0 var(--tc-magenta-300),
+    3px 3px 0 var(--tc-ink);
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  line-height: 1.5;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-round-title img {
+  width: min(360px, 100%);
+}
+.tc-progress {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 12px;
+  background: var(--tc-panel-600);
+  border: 3px solid var(--tc-ink);
+}
+.tc-progress__fill {
+  height: 100%;
+  background: var(--tc-coin-300);
+  box-shadow: inset 0 -3px 0 var(--tc-coin-500);
+  transition: width 0.3s steps(6);
+}
+.tc-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 10, 15, 0.6);
+}
+.tc-dialog {
+  position: fixed;
+  z-index: 61;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  color: #fff;
+  font-family: var(--tc-font-body);
+  font-size: 22px;
+  line-height: 1.2;
+  -webkit-font-smoothing: none;
+}
+.tc-dialog:focus {
+  outline: none;
+}
+.tc-dialog__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.tc-dialog .tc-field {
+  min-height: 120px;
+  resize: vertical;
+}
+.tc-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.tc-recap dt {
+  text-transform: uppercase;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  color: var(--tc-coin-300);
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-recap dd {
+  margin: 4px 0 0;
+}
+.tc-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.tc-game-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tc-turn {
+  min-width: 150px;
+}
+.tc-turn .tc-frame__title {
+  padding: 8px 10px;
+  font-size: 10px;
+}
+.tc-turn__body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+}
+.tc-turn__name {
+  font-size: 24px;
+  line-height: 1;
+}
+.tc-turn__count {
+  font-size: 20px;
+  line-height: 1;
+  color: var(--tc-coin-300);
+}
+.tc-strip {
+  position: sticky;
+  bottom: 8px;
+  margin-top: auto; /* pin to the bottom of short screens */
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  overflow-x: auto;
+}
+.tc-strip__team {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border: 3px solid transparent;
+}
+.tc-strip__team[data-faded] {
+  opacity: 0.55;
+}
+.tc-strip__team[data-active] {
+  border-color: var(--tc-coin-300);
+  background: var(--tc-panel-400);
+}
+.tc-strip__name {
+  font-size: 20px;
+  line-height: 1;
+  max-width: 9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tc-strip__score {
+  font-family: var(--tc-font-pixel);
+  font-size: 12px;
+  color: var(--tc-coin-300);
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-handoff {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 10, 15, 0.6);
+}
+.tc-handoff__card {
+  padding: 24px 20px;
+  text-align: center;
+  font-family: var(--tc-font-pixel);
+  font-size: 18px;
+  line-height: 1.5;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-corner {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 45;
+}
+.tc-countdown {
+  font-family: var(--tc-font-pixel);
+  font-size: 14px;
+  color: var(--tc-coin-300);
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+@media (max-width: 420px) {
+  .tc-reveal {
+    grid-template-columns: 1fr;
+  }
+  .tc-verdict {
+    min-height: 0;
+  }
+}
+.tc-game-over {
+  margin: 0;
+  text-transform: uppercase;
+  font-family: var(--tc-font-pixel);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--tc-coin-300);
+  text-shadow:
+    3px 3px 0 var(--tc-ink),
+    -1px -1px 0 var(--tc-coin-700);
+}
+.tc-gold {
+  color: var(--tc-coin-300);
+}
+.tc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.tc-topbar .tc-progress {
+  position: static;
+  flex: 1 1 auto;
+}
+.tc-topbar .tc-tagline {
+  flex: 1 1 auto;
+}
+
+/* ---------- Notifications ----------
+   Sonner toasts and the Radix toaster are app-wide; this sheet only loads
+   with VITE_PIXEL_UI on, so these overrides only apply to the pixel UI. */
+[data-sonner-toast],
+li[data-radix-collection-item][data-state] {
+  border-radius: 0 !important;
+  border: 3px solid var(--tc-ink) !important;
+  background: var(--tc-panel-300) !important;
+  box-shadow:
+    inset 2px 2px 0 var(--tc-panel-100),
+    4px 4px 0 var(--tc-ink) !important;
+  color: #fff !important;
+  font-family: var(--tc-font-body) !important;
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+}
+[data-sonner-toast][data-type='error'],
+li[data-radix-collection-item][data-state].destructive {
+  background: var(--tc-red-700) !important;
+}
+[data-sonner-toast][data-type='success'] {
+  background: var(--tc-correct-bg) !important;
+}
+[data-sonner-toast] [data-title],
+li[data-radix-collection-item][data-state] > div > div:first-child {
+  font-family: var(--tc-font-pixel) !important;
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+  text-transform: uppercase;
 }

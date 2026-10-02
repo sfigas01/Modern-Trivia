@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { Link } from 'wouter';
 import './pixel.css';
 
@@ -86,6 +86,7 @@ export function PixelButton({
   variant?: PixelButtonVariant;
   size?: 'sm' | 'lg';
   block?: boolean;
+  ref?: Ref<HTMLButtonElement>;
 }) {
   const classes = [pixelButtonClass({ variant, size, block }), className].filter(Boolean).join(' ');
   return <button type={type} className={classes} {...props} />;

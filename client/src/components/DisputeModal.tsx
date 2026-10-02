@@ -13,7 +13,7 @@ import {
 import { saveDispute } from '@/lib/disputes';
 import { useToast } from '@/hooks/use-toast';
 
-interface DisputeModalProps {
+export interface DisputeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   questionId: string;
@@ -27,8 +27,9 @@ interface DisputeModalProps {
   submitDispute?: (explanation: string) => Promise<void>;
 }
 
-export function DisputeModal({
-  open,
+// Form state and submission for the dispute dialog, shared by the classic and
+// pixel (VITE_PIXEL_UI) dialogs.
+export function useDisputeForm({
   onOpenChange,
   questionId,
   questionText,
@@ -96,6 +97,13 @@ export function DisputeModal({
     setExplanation('');
     onOpenChange(false);
   };
+
+  return { explanation, setExplanation, isSubmitting, handleSubmit };
+}
+
+export function DisputeModal(props: DisputeModalProps) {
+  const { open, onOpenChange, questionText, correctAnswer, submittedAnswer } = props;
+  const { explanation, setExplanation, isSubmitting, handleSubmit } = useDisputeForm(props);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

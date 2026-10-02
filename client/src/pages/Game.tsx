@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'wouter';
-import { useGame } from '@/lib/store';
+import { lazy, Suspense } from 'react';
+import { useSoloGame } from '@/hooks/use-solo-game';
+import { PIXEL_UI } from '@/lib/featureFlags';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,35 +8,47 @@ import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Trophy, Flag, ExternalLink, LogOut } from 'lucide-react';
 import { DisputeModal } from '@/components/DisputeModal';
-import { useToast } from '@/hooks/use-toast';
 import { getDifficultyBadgeClass } from '@/lib/utils';
 
-const QUESTIONS_PER_TEAM_ROTATION = 4;
+// The pixel redesign (STE-128) loads as its own chunk, only with VITE_PIXEL_UI on.
+const PixelGame = lazy(() => import('./GamePixel'));
 
 export default function Game() {
-  const [_, setLocation] = useLocation();
-  const [disputeOpen, setDisputeOpen] = useState(false);
-  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
-  const { toast } = useToast();
+  return PIXEL_UI ? (
+    <Suspense fallback={<div className="min-h-screen bg-[#4aa3f7]" />}>
+      <PixelGame />
+    </Suspense>
+  ) : (
+    <ClassicGame />
+  );
+}
+
+function ClassicGame() {
   const {
     state,
     setTypedAnswer,
     submitAnswer,
     passQuestion,
-    awardDisputedPoints,
     markDisputeSubmitted,
     advanceToScoreUpdate,
     continueToNextRound,
-    endGame,
-    resetGame,
-  } = useGame();
-
-  // Redirect if invalid state — only when explicitly in SETUP with no teams
-  useEffect(() => {
-    if (state.phase === 'SETUP' && state.teams.length === 0) {
-      setLocation('/');
-    }
-  }, [state.phase, state.teams.length, setLocation]);
+    disputeOpen,
+    setDisputeOpen,
+    showQuitConfirm,
+    setShowQuitConfirm,
+    isScoreUpdate,
+    isReveal,
+    currentQ,
+    activeTeam,
+    completedRounds,
+    rankedTeams,
+    canDisputeAttempt,
+    canAwardDisputedPoints,
+    handleAwardDisputedPoints,
+    handleKeyDown,
+    confirmQuit,
+    startNewGame,
+  } = useSoloGame();
 
   if (state.phase === 'SETUP') {
     return (
@@ -145,60 +157,16 @@ export default function Game() {
             </CardContent>
           </Card>
           <div className="flex justify-center">
-            <Button
-              onClick={() => {
-                resetGame();
-                setLocation('/');
-              }}
-            >
-              Start New Game
-            </Button>
+            <Button onClick={startNewGame}>Start New Game</Button>
           </div>
         </div>
       </div>
     );
   }
 
-  const isScoreUpdate = state.phase === 'SCORE_UPDATE';
-  const currentQ = isScoreUpdate ? null : state.questions[state.currentQuestionIndex];
-  // If we are in REVEAL state, we might be 'between' indices effectively if we handled it differently,
-  // but here index increments AFTER reveal. So currentQ is still the one we just answered.
-  // Wait, advanceToScoreUpdate increments index. So in REVEAL, index is correct.
-
-  // Actually, if we are in REVEAL, currentQ should be valid.
-  // If we are in GAME_OVER, we returned early.
-
   if (!isScoreUpdate && !currentQ) return null;
 
-  const activeTeam = state.teams.find((t) => t.id === state.activeTeamId);
-  const isReveal = state.phase === 'REVEAL';
   const statusLabel = 'In Progress';
-  const questionsPerRound = state.teams.length * QUESTIONS_PER_TEAM_ROTATION;
-  const completedRounds =
-    questionsPerRound > 0 ? Math.floor(state.currentQuestionIndex / questionsPerRound) : 0;
-  const rankedTeams = [...state.teams].sort((a, b) => b.score - a.score);
-  const canDisputeAttempt =
-    isReveal &&
-    state.currentAttempt?.verdict === 'INCORRECT' &&
-    state.currentAttempt.pointsAwarded !== true;
-  const canAwardDisputedPoints =
-    canDisputeAttempt &&
-    state.currentAttempt?.disputeSubmitted === true &&
-    state.currentAttempt.pointsAwarded !== true;
-
-  const handleAwardDisputedPoints = () => {
-    awardDisputedPoints();
-    toast({
-      title: 'Points Awarded',
-      description: `Points awarded to ${activeTeam?.name || 'team'}.`,
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isReveal && state.typedAnswer.trim()) {
-      submitAnswer();
-    }
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -492,10 +460,7 @@ export default function Game() {
                 <Button
                   variant="destructive"
                   className="flex-1"
-                  onClick={() => {
-                    setShowQuitConfirm(false);
-                    endGame();
-                  }}
+                  onClick={confirmQuit}
                   data-testid="button-confirm-quit"
                 >
                   End Game
