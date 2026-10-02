@@ -11,6 +11,7 @@ Design System").
 | `world.py`      | The sky world background, five tiling layers: `top`, `mid`, `mountains`, `islands`, `sea`                                        | `client/public/world/`        |
 | `compose.py`    | A preview of the layered world at any viewport size, matching `.tc-world` in `pixel.css`                                         | (preview only)                |
 | `og.py`         | The social share image                                                                                                           | `client/public/opengraph.jpg` |
+| `icon.py`       | App icon: a golden "?" block (`favicon.svg`, `favicon.png`, `apple-touch-icon.png`)                                              | `client/public/`              |
 
 ## Setup
 
@@ -24,6 +25,7 @@ python3 -m venv .venv-pixel-art && .venv-pixel-art/bin/pip install -r scripts/pi
 .venv-pixel-art/bin/python scripts/pixel-art/world.py client/public/world
 .venv-pixel-art/bin/python scripts/pixel-art/clashblock.py client/public/brand
 .venv-pixel-art/bin/python scripts/pixel-art/og.py client/public/world client/public/opengraph.jpg
+.venv-pixel-art/bin/python scripts/pixel-art/icon.py client/public
 ```
 
 `world.py` also takes layer names to rebuild just those (`... client/public/world islands`).
