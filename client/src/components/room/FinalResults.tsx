@@ -13,7 +13,8 @@ export interface FinalResultsProps {
   currentPlayerId: string;
 }
 
-export function FinalResults({ snapshot, currentPlayerId }: FinalResultsProps) {
+// Ranking and the exit handler for the GAME_OVER phase. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useFinalResults({ snapshot }: FinalResultsProps) {
   const [, setLocation] = useLocation();
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
   const topScore = ranked[0]?.score ?? 0;
@@ -24,6 +25,18 @@ export function FinalResults({ snapshot, currentPlayerId }: FinalResultsProps) {
     clearRoomSession(snapshot.code);
     setLocation('/');
   }
+
+  return {
+    ranked,
+    winners,
+    isTie,
+    handleBackToHome,
+  };
+}
+
+export function FinalResults(props: FinalResultsProps) {
+  const { currentPlayerId } = props;
+  const { ranked, winners, isTie, handleBackToHome } = useFinalResults(props);
 
   return (
     <div className="w-full max-w-lg space-y-6 text-center">

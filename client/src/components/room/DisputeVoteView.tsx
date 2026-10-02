@@ -17,7 +17,7 @@ import { cn, getDifficultyBadgeClass } from '@/lib/utils';
 
 type DisputeVoteSnapshot = Extract<RoomSnapshot, { phase: 'DISPUTE_VOTE' }>;
 
-interface DisputeVoteViewProps {
+export interface DisputeVoteViewProps {
   snapshot: DisputeVoteSnapshot;
   currentPlayerId: string;
   castDisputeVote: UseMutationResult<CastDisputeVoteResponse, Error, CastDisputeVoteRequest>;
@@ -29,7 +29,8 @@ function secondsRemaining(closesAt: string): number {
   return Math.max(0, Math.ceil((new Date(closesAt).getTime() - Date.now()) / 1000));
 }
 
-export function DisputeVoteView({
+// Vote state, countdown and handlers for the DISPUTE_VOTE phase. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useDisputeVoteView({
   snapshot,
   currentPlayerId,
   castDisputeVote,
@@ -82,6 +83,39 @@ export function DisputeVoteView({
       },
     });
   }
+
+  return {
+    vote,
+    attempt,
+    remaining,
+    isHost,
+    isDisputingPlayer,
+    isEligible,
+    hasVoted,
+    canVote,
+    submittedCount,
+    eligibleCount,
+    handleVote,
+    handleCancel,
+  };
+}
+
+export function DisputeVoteView(props: DisputeVoteViewProps) {
+  const { snapshot, castDisputeVote, cancelDisputeVote } = props;
+  const {
+    vote,
+    attempt,
+    remaining,
+    isHost,
+    isDisputingPlayer,
+    isEligible,
+    hasVoted,
+    canVote,
+    submittedCount,
+    eligibleCount,
+    handleVote,
+    handleCancel,
+  } = useDisputeVoteView(props);
 
   return (
     <div className="w-full max-w-lg space-y-4" data-testid="dispute-vote-view">

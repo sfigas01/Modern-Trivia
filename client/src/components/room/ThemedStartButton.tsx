@@ -56,7 +56,9 @@ export interface ThemedStartButtonProps {
   canStart: boolean;
 }
 
-export function ThemedStartButton({ code, theme, canStart }: ThemedStartButtonProps) {
+// Themed-game start and generation progress, shared by the classic and pixel
+// (VITE_PIXEL_UI) lobby controls.
+export function useThemedStart({ code }: ThemedStartButtonProps) {
   const [preparing, setPreparing] = useState(false);
 
   const start = useMutation({
@@ -85,6 +87,22 @@ export function ThemedStartButton({ code, theme, canStart }: ThemedStartButtonPr
   // Preparation is terminal on error; the host can retry from the error panel.
   const isBusy = start.isPending || (preparing && progress?.status !== 'error');
 
+  return {
+    progress,
+    preparing,
+    isBusy,
+    startGame: () => start.mutate(),
+    retry: () => {
+      setPreparing(false);
+      start.mutate();
+    },
+  };
+}
+
+export function ThemedStartButton(props: ThemedStartButtonProps) {
+  const { theme, canStart } = props;
+  const { progress, preparing, isBusy, startGame, retry } = useThemedStart(props);
+
   return (
     <div className="space-y-3">
       <Button
@@ -92,7 +110,7 @@ export function ThemedStartButton({ code, theme, canStart }: ThemedStartButtonPr
         disabled={!canStart || isBusy}
         onClick={() => {
           if (!canStart || isBusy) return;
-          start.mutate();
+          startGame();
         }}
         data-testid="button-start-themed-game"
       >
@@ -122,14 +140,7 @@ export function ThemedStartButton({ code, theme, canStart }: ThemedStartButtonPr
           data-testid="text-theme-error"
         >
           {progress.error ?? 'Themed preparation failed.'}{' '}
-          <button
-            type="button"
-            className="underline"
-            onClick={() => {
-              setPreparing(false);
-              start.mutate();
-            }}
-          >
+          <button type="button" className="underline" onClick={retry}>
             Try again
           </button>
         </div>

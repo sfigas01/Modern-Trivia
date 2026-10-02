@@ -1,9 +1,8 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { MAX_PLAYERS } from '@shared/models/rooms';
 
-import { LeaveConfirmModal } from './LeaveConfirmModal';
 import { PixelPlayerRoster } from './PixelPlayerRoster';
-import { ThemedStartButton } from './ThemedStartButton';
+import { PixelLeaveConfirmModal, PixelThemedStart } from './PixelRoomViews';
 import { useLobby, type LobbyProps } from '@/hooks/use-lobby';
 import {
   PixelBusy,
@@ -108,11 +107,7 @@ export default function PixelLobby({
       {isHost ? (
         <div className="tc-stack">
           {snapshot.theme ? (
-            // Themed rooms keep the classic start control (generation progress)
-            // until overlays and system states are reskinned (STE-233).
-            <div className="tc-classic-island">
-              <ThemedStartButton code={snapshot.code} theme={snapshot.theme} canStart={canStart} />
-            </div>
+            <PixelThemedStart code={snapshot.code} theme={snapshot.theme} canStart={canStart} />
           ) : (
             <>
               <PixelButton
@@ -167,7 +162,7 @@ export default function PixelLobby({
       )}
 
       {showLeaveModal && (
-        <LeaveConfirmModal
+        <PixelLeaveConfirmModal
           snapshot={snapshot}
           currentPlayerId={currentPlayerId}
           isPending={isLeaving}
