@@ -1,146 +1,48 @@
-import { useState } from 'react';
-import { useLocation } from 'wouter';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, UserPlus, Zap } from 'lucide-react';
-import {
-  ROOM_ROUND_OPTIONS,
-  roomCategoriesSchema,
-  roomRoundsSchema,
-  type CreateRoomRequest,
-  type CreateRoomResponse,
-  type ThemeSuggestResponse,
-} from '@shared/models/rooms';
+import { ROOM_ROUND_OPTIONS } from '@shared/models/rooms';
 
-import { useGame } from '@/lib/store';
-import { useCategoryCounts } from '@/hooks/use-category-counts';
-import { saveRoomSession } from '@/lib/room-session';
-import { THEME_ROUNDS } from '@/lib/featureFlags';
+import { useHostGame } from '@/hooks/use-host-game';
+import { PIXEL_UI, THEME_ROUNDS } from '@/lib/featureFlags';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 
-async function suggestThemeCategories(theme: string): Promise<ThemeSuggestResponse> {
-  const res = await fetch('/api/theme/suggest', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ theme }),
-  });
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = await res.json();
-      if (typeof data?.message === 'string') message = data.message;
-    } catch {
-      // no JSON body
-    }
-    throw new Error(message);
-  }
-  return res.json() as Promise<ThemeSuggestResponse>;
-}
-
-async function createRoom(body: CreateRoomRequest): Promise<CreateRoomResponse> {
-  const res = await fetch('/api/rooms', {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = await res.json();
-      if (typeof data?.message === 'string') message = data.message;
-    } catch {
-      // response had no JSON body; fall back to statusText
-    }
-    throw new Error(message);
-  }
-
-  return res.json() as Promise<CreateRoomResponse>;
-}
+// The pixel redesign (STE-231) loads as its own chunk, only with VITE_PIXEL_UI on.
+const PixelHostGame = lazy(() => import('./HostGamePixel'));
 
 export default function HostGame() {
-  const [, setLocation] = useLocation();
-  const { state, toggleCategory, setNumRounds } = useGame();
-  const [nickname, setNickname] = useState('');
-  const [opponentDisputeVotingEnabled, setOpponentDisputeVotingEnabled] = useState(false);
-  const [theme, setTheme] = useState('');
+  return PIXEL_UI ? (
+    <Suspense fallback={<div className="min-h-screen bg-[#4aa3f7]" />}>
+      <PixelHostGame />
+    </Suspense>
+  ) : (
+    <ClassicHostGame />
+  );
+}
 
-  const categoryCounts = useCategoryCounts(state.questions);
-
-  // Drive the selected-category set toward the suggestions using the existing
-  // toggleCategory action, so no shared store change is needed (keeps this
-  // additive for the STE-128 redesign).
-  const applySuggestedCategories = (suggested: string[]) => {
-    const target = new Set(suggested);
-    for (const c of state.selectedCategories) {
-      if (!target.has(c)) toggleCategory(c);
-    }
-    for (const c of suggested) {
-      if (!state.selectedCategories.includes(c)) toggleCategory(c);
-    }
-  };
-
-  const suggestMutation = useMutation({
-    mutationFn: suggestThemeCategories,
-    onSuccess: (response) => {
-      applySuggestedCategories(response.categories);
-      toast.success('Suggested categories applied — adjust them if you like.');
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Could not suggest categories. Please try again.');
-    },
-  });
-
-  const trimmedTheme = theme.trim();
-  const handleSuggest = () => {
-    if (trimmedTheme.length < 2 || suggestMutation.isPending) return;
-    suggestMutation.mutate(trimmedTheme);
-  };
-
-  const createRoomMutation = useMutation({
-    mutationFn: createRoom,
-    onSuccess: (response) => {
-      saveRoomSession({ code: response.code, playerId: response.playerId, token: response.token });
-      setLocation(`/room/${response.code}`);
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create room. Please try again.');
-    },
-  });
-
-  const trimmedNickname = nickname.trim();
-  const isNicknameValid = trimmedNickname.length > 0;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isNicknameValid || createRoomMutation.isPending) return;
-
-    const categoriesValue =
-      state.selectedCategories.length === 0 ? ['All'] : state.selectedCategories;
-    const categories = roomCategoriesSchema.safeParse(categoriesValue);
-    const numRounds = roomRoundsSchema.safeParse(state.numRounds);
-    if (!categories.success || !numRounds.success) {
-      toast.error('Invalid category or rounds selection. Please try again.');
-      return;
-    }
-
-    createRoomMutation.mutate({
-      nickname: trimmedNickname,
-      categories: categories.data,
-      numRounds: numRounds.data,
-      opponentDisputeVotingEnabled,
-      // Only sent when the feature is on and the host entered a theme; the
-      // server ignores it when the flag is off.
-      ...(THEME_ROUNDS && trimmedTheme.length >= 2 ? { theme: trimmedTheme } : {}),
-    });
-  };
+function ClassicHostGame() {
+  const {
+    state,
+    toggleCategory,
+    setNumRounds,
+    categoryCounts,
+    nickname,
+    setNickname,
+    isNicknameValid,
+    theme,
+    setTheme,
+    trimmedTheme,
+    handleSuggest,
+    isSuggesting,
+    opponentDisputeVotingEnabled,
+    setOpponentDisputeVotingEnabled,
+    handleSubmit,
+    isCreating,
+  } = useHostGame();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-background to-background">
@@ -180,7 +82,7 @@ export default function HostGame() {
                 className="bg-white/5 border-white/10 focus:border-primary/50 text-lg py-6"
                 autoFocus
                 maxLength={20}
-                disabled={createRoomMutation.isPending}
+                disabled={isCreating}
                 data-testid="input-nickname"
               />
             </CardContent>
@@ -206,7 +108,7 @@ export default function HostGame() {
                     onChange={(e) => setTheme(e.target.value)}
                     className="bg-white/5 border-white/10 focus:border-primary/50"
                     maxLength={60}
-                    disabled={createRoomMutation.isPending}
+                    disabled={isCreating}
                     data-testid="input-theme"
                   />
                   <Button
@@ -214,14 +116,10 @@ export default function HostGame() {
                     variant="outline"
                     className="border-white/10 hover:bg-white/10 whitespace-nowrap"
                     onClick={handleSuggest}
-                    disabled={
-                      trimmedTheme.length < 2 ||
-                      suggestMutation.isPending ||
-                      createRoomMutation.isPending
-                    }
+                    disabled={trimmedTheme.length < 2 || isSuggesting || isCreating}
                     data-testid="button-suggest-categories"
                   >
-                    {suggestMutation.isPending ? (
+                    {isSuggesting ? (
                       <Spinner className="mr-2" />
                     ) : (
                       <Sparkles className="w-4 h-4 mr-2" />
@@ -244,7 +142,7 @@ export default function HostGame() {
                   type="button"
                   variant={state.selectedCategories.length === 0 ? 'default' : 'outline'}
                   onClick={() => toggleCategory('All')}
-                  disabled={createRoomMutation.isPending}
+                  disabled={isCreating}
                   className={`border-white/10 hover:bg-white/10 ${
                     state.selectedCategories.length === 0
                       ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
@@ -261,7 +159,7 @@ export default function HostGame() {
                       type="button"
                       variant={state.selectedCategories.includes(category) ? 'default' : 'outline'}
                       onClick={() => toggleCategory(category)}
-                      disabled={createRoomMutation.isPending}
+                      disabled={isCreating}
                       className={`border-white/10 hover:bg-white/10 ${
                         state.selectedCategories.includes(category)
                           ? 'ring-2 ring-primary ring-offset-2 ring-offset-background'
@@ -291,7 +189,7 @@ export default function HostGame() {
                     type="button"
                     variant={state.numRounds === rounds ? 'default' : 'outline'}
                     onClick={() => setNumRounds(rounds)}
-                    disabled={createRoomMutation.isPending}
+                    disabled={isCreating}
                     className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                   >
                     {rounds}
@@ -314,7 +212,7 @@ export default function HostGame() {
                 <Switch
                   checked={opponentDisputeVotingEnabled}
                   onCheckedChange={setOpponentDisputeVotingEnabled}
-                  disabled={createRoomMutation.isPending}
+                  disabled={isCreating}
                   aria-label="Opponent dispute voting"
                   aria-describedby="opponent-dispute-voting-description"
                   data-testid="switch-opponent-dispute-voting"
@@ -326,10 +224,10 @@ export default function HostGame() {
           <Button
             type="submit"
             className="w-full h-16 text-xl font-bold tracking-wide rounded-2xl shadow-[0_0_40px_-10px_var(--color-primary)] hover:shadow-[0_0_60px_-10px_var(--color-primary)] transition-all"
-            disabled={!isNicknameValid || createRoomMutation.isPending}
+            disabled={!isNicknameValid || isCreating}
             data-testid="button-create-room"
           >
-            {createRoomMutation.isPending ? (
+            {isCreating ? (
               <>
                 <Spinner className="mr-2" />
                 Creating Room...

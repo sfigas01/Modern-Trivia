@@ -8,7 +8,7 @@ import HostGame from './HostGame';
 import { GameProvider } from '@/lib/store';
 
 // Themed games enabled for this suite.
-vi.mock('@/lib/featureFlags', () => ({ MULTIPLAYER: true, THEME_ROUNDS: true }));
+vi.mock('@/lib/featureFlags', () => ({ MULTIPLAYER: true, THEME_ROUNDS: true, PIXEL_UI: false }));
 
 const storage: Record<string, string> = {};
 function stubLocalStorage() {

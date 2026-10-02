@@ -5,6 +5,8 @@ import { useAccount } from '@/hooks/use-account';
 import {
   PixelAvatar,
   PixelButton,
+  PixelCategoryGrid,
+  PixelRoundPicker,
   PixelFrame,
   PixelScreen,
   PixelWordmark,
@@ -106,8 +108,6 @@ export function PixelSoloSetup() {
     statusLabel,
   } = useSoloSetup();
 
-  const allSelected = state.selectedCategories.length === 0;
-
   return (
     <PixelScreen>
       <PixelWordmark />
@@ -163,49 +163,17 @@ export function PixelSoloSetup() {
 
       <PixelFrame title="Category">
         <p className="tc-hint">Choose one or more topics for this round.</p>
-        <div className="tc-grid-2 tc-scroll" style={{ maxHeight: 248 }}>
-          <button
-            type="button"
-            className="tc-slot"
-            aria-pressed={allSelected}
-            onClick={() => toggleCategory('All')}
-          >
-            All <span className="tc-slot__count">({categoryCounts['All'] || 0})</span>
-          </button>
-          {state.categories
-            .filter((c) => c !== 'All')
-            .map((category) => (
-              <button
-                key={category}
-                type="button"
-                className="tc-slot"
-                aria-pressed={state.selectedCategories.includes(category)}
-                onClick={() => toggleCategory(category)}
-              >
-                {category} <span className="tc-slot__count">({categoryCounts[category] || 0})</span>
-              </button>
-            ))}
-        </div>
+        <PixelCategoryGrid
+          categories={state.categories}
+          selected={state.selectedCategories}
+          counts={categoryCounts}
+          onToggle={toggleCategory}
+        />
       </PixelFrame>
 
       <PixelFrame title="Number of Rounds">
         <p className="tc-hint">How many questions to play.</p>
-        <div className="tc-grid-4">
-          {ROUND_OPTIONS.map((rounds) => (
-            <button
-              key={rounds}
-              type="button"
-              className="tc-slot"
-              aria-pressed={state.numRounds === rounds}
-              aria-label={`${rounds} rounds`}
-              onClick={() => setNumRounds(rounds)}
-            >
-              <span className="tc-coin">
-                <span className="tc-coin__face">{rounds}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+        <PixelRoundPicker options={ROUND_OPTIONS} value={state.numRounds} onChange={setNumRounds} />
       </PixelFrame>
 
       {hasInsufficientQuestions && (

@@ -63,28 +63,25 @@
   pointer-events: none;
   image-rendering: pixelated;
   background-image:
-    url('/world/sea.png'),
-    url('/world/islands.png'),
-    url('/world/mid.png'),
-    url('/world/mountains.png'),
-    url('/world/top.png'),
+    url('/world/sea.png'), url('/world/islands.png'), url('/world/mid.png'),
+    url('/world/mountains.png'), url('/world/top.png'),
     linear-gradient(
-      #3d8bdc 0.0% 6.25%,
+      #3d8bdc 0% 6.25%,
       #438fdd 6.25% 12.5%,
       #4a94df 12.5% 18.75%,
-      #5199e1 18.75% 25.0%,
-      #599ee3 25.0% 31.25%,
+      #5199e1 18.75% 25%,
+      #599ee3 25% 31.25%,
       #62a4e4 31.25% 37.5%,
       #6aaae6 37.5% 43.75%,
-      #73b0e8 43.75% 50.0%,
-      #7cb6eb 50.0% 56.25%,
+      #73b0e8 43.75% 50%,
+      #7cb6eb 50% 56.25%,
       #85bced 56.25% 62.5%,
       #8fc2ef 62.5% 68.75%,
-      #98c9f1 68.75% 75.0%,
-      #a2cff3 75.0% 81.25%,
+      #98c9f1 68.75% 75%,
+      #a2cff3 75% 81.25%,
       #abd6f5 81.25% 87.5%,
       #b5dcf8 87.5% 93.75%,
-      #bfe3fa 93.75% 100.0%
+      #bfe3fa 93.75% 100%
     );
   background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, no-repeat;
   background-size:
@@ -96,11 +93,10 @@
     100% 100%;
   background-position:
     left 50% bottom 0,
-    /* big island's grass line (240px into the tile) sits at 46% height */
-    left 50% top calc(46vh - 240px),
+    /* big island's grass line (240px into the tile) sits at 46% height */ left 50% top
+      calc(46vh - 240px),
     left 30% top 30vh,
-    /* mountain bases meet the haze just below the island tops */
-    left 50% top calc(54vh - 280px),
+    /* mountain bases meet the haze just below the island tops */ left 50% top calc(54vh - 280px),
     left 50% top 0,
     0 0;
 }
@@ -488,4 +484,132 @@
   font-size: 10px;
   line-height: 1.5;
   text-transform: uppercase;
+}
+
+/* ---------- Inner-screen header ---------- */
+.tc-wordmark--sm {
+  display: flex;
+  justify-content: center;
+}
+.tc-wordmark--sm img {
+  width: min(240px, 70%);
+  height: auto;
+  image-rendering: pixelated;
+}
+.tc-wordmark--sm:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
+/* ---------- Category tiles ---------- */
+.tc-cat-grid {
+  grid-auto-rows: 1fr;
+}
+.tc-cat {
+  min-height: 52px;
+  padding: 6px 8px;
+  font-family: var(--tc-font-body);
+  font-size: 21px;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+  /* centre the wrapped name + count block vertically */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  column-gap: 6px;
+}
+.tc-cat .tc-slot__count {
+  font-size: 18px;
+}
+.tc-slot:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---------- Switch ---------- */
+.tc-switch {
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 88px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  border: 3px solid var(--tc-ink);
+  border-radius: 0;
+  background: var(--tc-stone-700);
+  box-shadow: inset 3px 3px 0 #000;
+  cursor: pointer;
+}
+.tc-switch[aria-checked='true'] {
+  background: var(--tc-correct-bg);
+}
+.tc-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 32px;
+  height: 32px;
+  background: var(--tc-stone-300);
+  border: 3px solid var(--tc-ink);
+  box-sizing: border-box;
+  box-shadow: inset 2px 2px 0 var(--tc-stone-100);
+}
+.tc-switch[aria-checked='true'] .tc-switch__knob {
+  left: auto;
+  right: 3px;
+  background: var(--tc-coin-300);
+  box-shadow: inset 2px 2px 0 var(--tc-coin-100);
+}
+.tc-switch__text {
+  width: 100%;
+  padding: 0 10px 0 42px;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-switch[aria-checked='true'] .tc-switch__text {
+  padding: 0 42px 0 10px;
+}
+.tc-switch:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+.tc-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---------- Busy indicator: stepped spinner ---------- */
+.tc-busy {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 3px solid currentColor;
+  border-right-color: transparent;
+  animation: tc-spin 0.6s steps(4) infinite;
+}
+@keyframes tc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-busy {
+    animation: none;
+  }
+}
+
+/* Room code entry: wide letter spacing, centred. */
+.tc-field--code {
+  text-align: center;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 32px;
 }
