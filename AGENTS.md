@@ -119,7 +119,7 @@ Production runs on Railway (project **Modern Trivia**, service `modern-trivia`).
 
 1. Confirm Railway's production deploy for the merge commit succeeded and `https://superquestly.up.railway.app/health` returns 200 (Railway MCP `list-deployments` / `environment-status`, or `curl`). A failed deploy leaves the previous version serving: tell the owner and merge nothing else until it is fixed.
 2. If the PR added a migration, confirm the deploy log shows `[migrate] Applied: <file>` with no errors.
-3. Remind the owner to `git pull` in the main checkout. (This replaces the old Replit sync reminder.)
+3. Pull the merged `main` into the owner's main checkout (the first entry in `git worktree list`), but only when it is safe: it is on `main`, `git status --porcelain` is empty, and the update is a fast-forward (`git -C <main checkout> pull --ff-only origin main`). If any check fails (another branch checked out, uncommitted changes that may be another agent's work, or a non-fast-forward), do not stash, reset, switch branches or commit there: leave it and tell the owner what was found. Report the result either way.
 4. Every remaining open PR branch merges the updated `main` before its own review or merge (see Parallel session rules).
 
 ## Commit Messages
