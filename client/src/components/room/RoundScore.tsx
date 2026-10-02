@@ -18,7 +18,13 @@ export interface RoundScoreProps {
   refetch: () => void;
 }
 
-export function RoundScore({ snapshot, currentPlayerId, continueRound, refetch }: RoundScoreProps) {
+// Standings and the next-round handler for the ROUND_SCORE phase. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useRoundScore({
+  snapshot,
+  currentPlayerId,
+  continueRound,
+  refetch,
+}: RoundScoreProps) {
   const isHost = snapshot.hostPlayerId === currentPlayerId;
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
 
@@ -34,6 +40,17 @@ export function RoundScore({ snapshot, currentPlayerId, continueRound, refetch }
       },
     });
   }
+
+  return {
+    isHost,
+    ranked,
+    handleNextRound,
+  };
+}
+
+export function RoundScore(props: RoundScoreProps) {
+  const { currentPlayerId, continueRound } = props;
+  const { isHost, ranked, handleNextRound } = useRoundScore(props);
 
   return (
     <div className="w-full max-w-lg space-y-6 text-center">
@@ -90,7 +107,8 @@ export function RoundScore({ snapshot, currentPlayerId, continueRound, refetch }
           className="w-full h-14 text-lg font-bold"
           data-testid="button-next-round"
         >
-          {continueRound.isPending ? 'Starting…' : 'Next Round'} <ArrowRight className="ml-2 w-5 h-5" />
+          {continueRound.isPending ? 'Starting…' : 'Next Round'}{' '}
+          <ArrowRight className="ml-2 w-5 h-5" />
         </Button>
       ) : (
         <p className="text-center text-muted-foreground" data-testid="text-waiting-host-round">

@@ -23,13 +23,14 @@ import { clearRoomSession, getRoomSession } from '@/lib/room-session';
 import { PIXEL_UI } from '@/lib/featureFlags';
 import type { RoomPlayerSnapshot } from '@shared/models/rooms';
 
-// The pixel lobby (STE-234) loads as its own chunk, only with VITE_PIXEL_UI on.
-const PixelLobby = lazy(() => import('@/components/room/PixelLobby'));
+// The pixel room (STE-128) loads as its own chunk, only with VITE_PIXEL_UI on.
+const PixelRoom = lazy(() => import('@/components/room/PixelRoom'));
 
 export default function Room() {
   const { code } = useParams<{ code: string }>();
   const [, setLocation] = useLocation();
   const session = useMemo(() => getRoomSession(code), [code]);
+  const room = useRoom(code, { enabled: !!session });
   const {
     snapshot,
     isLoading,
@@ -47,7 +48,7 @@ export default function Room() {
     castDisputeVote,
     cancelDisputeVote,
     refetch,
-  } = useRoom(code, { enabled: !!session });
+  } = room;
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [handoffPlayer, setHandoffPlayer] = useState<RoomPlayerSnapshot | null>(null);
@@ -94,6 +95,22 @@ export default function Room() {
     return null;
   }
 
+  if (PIXEL_UI) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#4aa3f7]" />}>
+        <PixelRoom
+          room={room}
+          session={session}
+          handoffPlayer={handoffPlayer}
+          onDismissHandoff={handleDismissHandoff}
+          showLeaveModal={showLeaveModal}
+          setShowLeaveModal={setShowLeaveModal}
+          onLeaveConfirm={handleLeaveConfirm}
+        />
+      </Suspense>
+    );
+  }
+
   if (isLoading && !snapshot) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -121,21 +138,6 @@ export default function Room() {
 
   if (snapshot.status === 'abandoned') {
     return <RoomAbandoned snapshot={snapshot} />;
-  }
-
-  if (PIXEL_UI && snapshot.phase === 'LOBBY') {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-[#4aa3f7]" />}>
-        <PixelLobby
-          snapshot={snapshot}
-          currentPlayerId={session.playerId}
-          start={start}
-          end={end}
-          leave={leave}
-          isDisconnected={isDisconnected}
-        />
-      </Suspense>
-    );
   }
 
   const showProgress =

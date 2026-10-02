@@ -10,7 +10,8 @@ export interface RoomAbandonedProps {
   snapshot: RoomSnapshot;
 }
 
-export function RoomAbandoned({ snapshot }: RoomAbandonedProps) {
+// Final standings and exit for a room the host abandoned. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useRoomAbandoned({ snapshot }: RoomAbandonedProps) {
   const [, setLocation] = useLocation();
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
   const homeButtonRef = useRef<HTMLButtonElement>(null);
@@ -23,6 +24,16 @@ export function RoomAbandoned({ snapshot }: RoomAbandonedProps) {
     clearRoomSession(snapshot.code);
     setLocation('/');
   }
+
+  return {
+    ranked,
+    homeButtonRef,
+    handleBackToHome,
+  };
+}
+
+export function RoomAbandoned(props: RoomAbandonedProps) {
+  const { ranked, homeButtonRef, handleBackToHome } = useRoomAbandoned(props);
 
   return (
     <div

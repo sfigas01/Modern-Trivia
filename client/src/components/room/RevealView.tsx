@@ -32,7 +32,8 @@ export interface RevealViewProps {
   refetch: () => void;
 }
 
-export function RevealView({
+// Reveal state and handlers for the REVEAL phase. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useRevealView({
   snapshot,
   currentPlayerId,
   advance,
@@ -99,6 +100,39 @@ export function RevealView({
       throw error;
     }
   }
+
+  return {
+    attempt,
+    canAdvance,
+    answeringPlayer,
+    disputeOpen,
+    setDisputeOpen,
+    finalizedVote,
+    canDispute,
+    canAwardPoints,
+    hasPendingManualDispute,
+    handleNext,
+    handleAwardDisputedPoints,
+    handleSubmitDispute,
+  };
+}
+
+export function RevealView(props: RevealViewProps) {
+  const { snapshot, advance, awardDispute } = props;
+  const {
+    attempt,
+    canAdvance,
+    answeringPlayer,
+    disputeOpen,
+    setDisputeOpen,
+    finalizedVote,
+    canDispute,
+    canAwardPoints,
+    hasPendingManualDispute,
+    handleNext,
+    handleAwardDisputedPoints,
+    handleSubmitDispute,
+  } = useRevealView(props);
 
   return (
     <div className="w-full max-w-lg space-y-4">

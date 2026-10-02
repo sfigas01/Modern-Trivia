@@ -29,7 +29,8 @@ export interface QuestionViewProps {
   refetch: () => void;
 }
 
-export function QuestionView({
+// Turn state and answer handlers for the QUESTION phase. Shared by the classic and pixel (VITE_PIXEL_UI) views.
+export function useQuestionView({
   snapshot,
   currentPlayerId,
   answer,
@@ -73,6 +74,33 @@ export function QuestionView({
     if (skip.isPending) return;
     skip.mutate(undefined, { onError: handleActionError });
   }
+
+  return {
+    value,
+    setValue,
+    inputRef,
+    isMyTurn,
+    activePlayer,
+    canSkip,
+    handleSubmit,
+    handlePass,
+    handleSkip,
+  };
+}
+
+export function QuestionView(props: QuestionViewProps) {
+  const { snapshot, answer, skip } = props;
+  const {
+    value,
+    setValue,
+    inputRef,
+    isMyTurn,
+    activePlayer,
+    canSkip,
+    handleSubmit,
+    handlePass,
+    handleSkip,
+  } = useQuestionView(props);
 
   return (
     <div className="w-full max-w-lg space-y-4">
