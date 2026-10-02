@@ -856,6 +856,9 @@ export const themeQuestionGenerationAttempts = pgTable(
     ordinal: integer('ordinal').notNull(),
     candidateId: uuid('candidate_id').notNull(),
     questionRevisionId: uuid('question_revision_id').notNull(),
+    parentCandidateId: uuid('parent_candidate_id'),
+    parentQuestionRevisionId: uuid('parent_question_revision_id'),
+    parentQuestionContentHash: varchar('parent_question_content_hash', { length: 64 }),
     factId: uuid('fact_id').notNull(),
     factRevisionId: uuid('fact_revision_id').notNull(),
     factContentHash: varchar('fact_content_hash', { length: 64 }).notNull(),
@@ -883,6 +886,13 @@ export const themeQuestionGenerationAttempts = pgTable(
     uniqueIndex('uq_theme_question_generation_job_ordinal').on(table.jobId, table.ordinal),
     uniqueIndex('uq_theme_question_generation_candidate_id').on(table.candidateId),
     uniqueIndex('uq_theme_question_generation_question_revision_id').on(table.questionRevisionId),
+    uniqueIndex('uq_theme_question_generation_repair_parent')
+      .on(table.parentCandidateId)
+      .where(sql`${table.parentCandidateId} IS NOT NULL`),
+    uniqueIndex('uq_theme_question_generation_repair_binding').on(
+      table.id,
+      table.parentCandidateId
+    ),
     uniqueIndex('uq_theme_question_generation_attempt_binding').on(
       table.id,
       table.jobId,
@@ -909,6 +919,19 @@ export const themeQuestionGenerationAttempts = pgTable(
       name: 'fk_theme_question_generation_job',
       columns: [table.jobId],
       foreignColumns: [themePreparationJobs.id],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_generation_repair_parent_revision',
+      columns: [
+        table.parentQuestionRevisionId,
+        table.parentCandidateId,
+        table.parentQuestionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionRevisions.id,
+        themeQuestionRevisions.candidateId,
+        themeQuestionRevisions.contentHash,
+      ],
     }).onDelete('restrict'),
     foreignKey({
       name: 'fk_theme_question_generation_fact_revision',
@@ -939,6 +962,10 @@ export const themeQuestionGenerationAttempts = pgTable(
     ),
     check('theme_question_generation_ordinal', sql`${table.ordinal} BETWEEN 1 AND 100`),
     check('theme_question_generation_review_verdict', sql`${table.factReviewVerdict} = 'pass'`),
+    check(
+      'theme_question_generation_repair_binding',
+      sql`(${table.parentCandidateId} IS NULL AND ${table.parentQuestionRevisionId} IS NULL AND ${table.parentQuestionContentHash} IS NULL) OR (${table.parentCandidateId} IS NOT NULL AND ${table.parentQuestionRevisionId} IS NOT NULL AND ${table.parentQuestionContentHash} IS NOT NULL AND ${table.parentQuestionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.parentCandidateId} <> ${table.candidateId} AND ${table.parentQuestionRevisionId} <> ${table.questionRevisionId})`
+    ),
     check(
       'theme_question_generation_writer_fields',
       sql`(${table.writerKind} = 'model' AND ${table.provider} IS NOT NULL AND ${table.model} IS NOT NULL) OR (${table.writerKind} = 'human' AND ${table.provider} IS NULL AND ${table.model} IS NULL)`
@@ -1059,7 +1086,7 @@ export const themeQuestionGenerationOutcomes = pgTable(
     ),
     check(
       'theme_question_generation_outcome_fields',
-      sql`(${table.status} = 'persisted' AND ${table.questionContentHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} = 'declined' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_declined') OR (${table.status} = 'invalid_output' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'invalid_output') OR (${table.status} = 'ineligible' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'ineligible') OR (${table.status} = 'failed' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('writer_failure', 'candidate_conflict'))`
+      sql`(${table.status} = 'persisted' AND ${table.questionContentHash} IS NOT NULL AND ${table.failureCode} IS NULL) OR (${table.status} = 'declined' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'writer_declined') OR (${table.status} = 'invalid_output' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'invalid_output') OR (${table.status} = 'ineligible' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} = 'ineligible') OR (${table.status} = 'failed' AND ${table.questionContentHash} IS NULL AND ${table.failureCode} IS NOT NULL AND ${table.failureCode} IN ('writer_failure', 'candidate_conflict', 'repair_unchanged'))`
     ),
     check(
       'theme_question_generation_outcome_fact_hash',
@@ -1311,6 +1338,77 @@ export const themeQuestionEvidenceReviewOutcomes = pgTable(
   ]
 );
 
+export const themeQuestionRepairOutcomes = pgTable(
+  'theme_question_repair_outcomes',
+  {
+    generationAttemptId: uuid('generation_attempt_id').primaryKey(),
+    parentCandidateId: uuid('parent_candidate_id').notNull().unique(),
+    candidateId: uuid('candidate_id'),
+    questionRevisionId: uuid('question_revision_id'),
+    questionContentHash: varchar('question_content_hash', { length: 64 }),
+    status: varchar('status', { length: 24 }).notNull(),
+    stage: varchar('stage', { length: 16 }).notNull(),
+    reason: varchar('reason', { length: 64 }).notNull(),
+    evidenceReviewAttemptId: uuid('evidence_review_attempt_id'),
+    evidenceReviewId: uuid('evidence_review_id'),
+    evidenceFingerprint: varchar('evidence_fingerprint', { length: 64 }),
+    qaPolicyVersion: varchar('qa_policy_version', { length: 255 }),
+    qaEvaluatedAt: timestamp('qa_evaluated_at', { withTimezone: true }),
+    corpusRevision: varchar('corpus_revision', { length: 255 }),
+    corpusHash: varchar('corpus_hash', { length: 64 }),
+    completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'fk_theme_question_repair_generation',
+      columns: [table.generationAttemptId, table.parentCandidateId],
+      foreignColumns: [
+        themeQuestionGenerationAttempts.id,
+        themeQuestionGenerationAttempts.parentCandidateId,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_repair_generation_outcome',
+      columns: [
+        table.generationAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionGenerationOutcomes.attemptId,
+        themeQuestionGenerationOutcomes.candidateId,
+        themeQuestionGenerationOutcomes.questionRevisionId,
+        themeQuestionGenerationOutcomes.questionContentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_repair_evidence_attempt',
+      columns: [
+        table.evidenceReviewAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionEvidenceReviewAttempts.id,
+        themeQuestionEvidenceReviewAttempts.candidateId,
+        themeQuestionEvidenceReviewAttempts.questionRevisionId,
+        themeQuestionEvidenceReviewAttempts.questionContentHash,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_repair_status',
+      sql`${table.status} IN ('passed', 'withheld', 'declined', 'invalid_output', 'failed', 'ineligible')`
+    ),
+    check('theme_question_repair_stage', sql`${table.stage} IN ('generation', 'evidence', 'qa')`),
+    check(
+      'theme_question_repair_fields',
+      sql`(${table.stage} = 'generation' AND ${table.status} IN ('declined', 'invalid_output', 'failed', 'ineligible') AND ${table.candidateId} IS NULL AND ${table.questionRevisionId} IS NULL AND ${table.questionContentHash} IS NULL AND ${table.evidenceReviewAttemptId} IS NULL AND ${table.evidenceReviewId} IS NULL AND ${table.evidenceFingerprint} IS NULL AND ${table.qaPolicyVersion} IS NULL AND ${table.qaEvaluatedAt} IS NULL AND ${table.corpusRevision} IS NULL AND ${table.corpusHash} IS NULL) OR (${table.stage} = 'evidence' AND ${table.status} = 'withheld' AND ${table.candidateId} IS NOT NULL AND ${table.questionRevisionId} IS NOT NULL AND ${table.questionContentHash} IS NOT NULL AND ${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.evidenceReviewAttemptId} IS NOT NULL AND ${table.qaPolicyVersion} IS NULL AND ${table.qaEvaluatedAt} IS NULL AND ${table.corpusRevision} IS NULL AND ${table.corpusHash} IS NULL) OR (${table.stage} = 'qa' AND ${table.status} IN ('passed', 'withheld') AND ${table.candidateId} IS NOT NULL AND ${table.questionRevisionId} IS NOT NULL AND ${table.questionContentHash} IS NOT NULL AND ${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.evidenceReviewAttemptId} IS NOT NULL AND ${table.evidenceReviewId} IS NOT NULL AND ${table.evidenceFingerprint} IS NOT NULL AND ${table.evidenceFingerprint} ~ '^[a-f0-9]{64}$' AND ${table.qaPolicyVersion} IS NOT NULL AND ${table.qaEvaluatedAt} IS NOT NULL AND (${table.corpusHash} IS NULL OR ${table.corpusHash} ~ '^[a-f0-9]{64}$'))`
+    ),
+  ]
+);
+
 export const themeQuestionReservations = pgTable(
   'theme_question_reservations',
   {
@@ -1452,5 +1550,6 @@ export type ThemeQuestionEvidenceReviewAttempt =
   typeof themeQuestionEvidenceReviewAttempts.$inferSelect;
 export type ThemeQuestionEvidenceReviewOutcome =
   typeof themeQuestionEvidenceReviewOutcomes.$inferSelect;
+export type ThemeQuestionRepairOutcome = typeof themeQuestionRepairOutcomes.$inferSelect;
 export type ThemeQuestionReservation = typeof themeQuestionReservations.$inferSelect;
 export type ThemeQuestionExposure = typeof themeQuestionExposures.$inferSelect;

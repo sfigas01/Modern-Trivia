@@ -1,12 +1,12 @@
 # Theme reliability foundation contract
 
-This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7/S8a candidate and question-review boundaries. It defines durable contracts and database invariants; it does not enable live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
+This guide describes the additive `theme-reliability-v1` foundation and the STE-25 S7 through S9 candidate, evidence-review, provisional QA, and bounded-repair boundaries. It defines durable contracts and database invariants plus fail-closed orchestration boundaries; it does not enable live model calls, themed-game orchestration, client behavior, or end-to-end reliable generation by itself.
 
 ## Reliability boundary
 
 The intended pipeline is:
 
-`coverage plan → research/retrieval → supported scoped facts → candidate writing → independent evidence review → existing QA → semantic novelty → atomic approval/persistence → roster-specific reservation`
+`coverage plan → research/retrieval → supported scoped facts → candidate writing → independent evidence review → existing QA → semantic novelty → optional bounded repair and full re-review → atomic approval/persistence → roster-specific reservation`
 
 Evidence support, exact-question approval, and roster eligibility are separate decisions. A pass in one layer never implies a pass in another. Missing, malformed, stale, incomplete, conflicting, or flagged evidence withholds the question. An answer appearing in a passage does not prove that the question is entailed or that it has only one valid answer.
 
@@ -15,6 +15,10 @@ The existing static QA, coherence, obviousness, and semantic novelty checks rema
 S7 can persist one pending candidate from one currently eligible, independently reviewed fact revision. It does not mark that candidate accepted or eligible for gameplay; the existing QA, question evidence review, semantic novelty, and approval stages remain separate gates.
 
 S8a adds `migrations/0014_theme_question_evidence_reviews.sql` and mirrored Drizzle definitions for immutable question-review attempt headers and terminal outcomes. A header binds the exact S7 generation attempt, candidate, question revision, content hash, fact revision, increasing review sequence, reviewer identity, and policy/prompt/input hashes. A reviewed outcome binds the existing seven-dimension `theme_evidence_reviews` row and its fact/passage links; failed attempts contain only allowlisted safe failure codes. The newest attempt controls eligibility even if it has no outcome or an adverse result. S8a does not change candidate status or grant gameplay eligibility.
+
+S8b composes the existing static, fact/coherence/obviousness, and STE-26 semantic checks without changing those algorithms. Every check is mandatory and fail-closed: any static finding, non-pass or incomplete quality verdict, semantic match, conflict, uncertainty, incomplete comparison, dependency failure, or evidence/corpus change withholds the candidate. Source metadata for static QA comes from the current cited supporting evidence rather than being invented or copied into the gameplay-content hash. S8b is read-only and intentionally adds no schema: its pass is provisional, leaves the candidate pending, and cannot authorize approval, persistence into the shared question pool, reservation, or gameplay. Durable provider-attempt accounting and an atomic final approval recheck remain required before runtime activation.
+
+S9 adds one durable repair claim for an original candidate withheld specifically by a static finding or an adverse complete quality verdict. It does not repair evidence, semantic, incomplete, dependency, or recheck failures and never repairs a repair child. The new child has a new candidate ID, revision ID, ordinal, content hash, S8a attempt, and complete S8b evaluation. Only question wording and explanation can change; trusted answer and policy fields are projected again from the same fact. An unchanged result fails terminally. The repair outcome is append-only and exact retries replay without model work. A successful result is still pending and provisional, so the later approval transaction must recheck current evidence, corpus, and roster state before shared-pool insertion.
 
 ## Immutable evidence and revisions
 
