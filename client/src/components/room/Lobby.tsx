@@ -1,84 +1,36 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
-import { toast } from 'sonner';
+import { Link } from 'wouter';
 import { QRCodeSVG } from 'qrcode.react';
 import { Copy, DoorOpen, LogOut, Play } from 'lucide-react';
-import type { UseMutationResult } from '@tanstack/react-query';
-import {
-  MAX_PLAYERS,
-  type EndRoomResponse,
-  type LeaveRoomResponse,
-  type RoomSnapshot,
-  type StartRoomRequest,
-  type StartRoomResponse,
-} from '@shared/models/rooms';
+import { MAX_PLAYERS } from '@shared/models/rooms';
 
 import { LeaveConfirmModal } from './LeaveConfirmModal';
 
 import { PlayerRoster } from './PlayerRoster';
 import { ThemedStartButton } from './ThemedStartButton';
-import { clearRoomSession } from '@/lib/room-session';
+import { useLobby, type LobbyProps } from '@/hooks/use-lobby';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { getGuestSeenIds } from '@/lib/guest-seen';
 
-type LobbySnapshot = Extract<RoomSnapshot, { phase: 'LOBBY' }>;
+export type { LobbyProps };
 
-export interface LobbyProps {
-  snapshot: LobbySnapshot;
-  currentPlayerId: string;
-  start: UseMutationResult<StartRoomResponse, Error, StartRoomRequest>;
-  end: UseMutationResult<EndRoomResponse, Error, void>;
-  leave: UseMutationResult<LeaveRoomResponse, Error, void>;
-}
-
-export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyProps) {
-  const [, setLocation] = useLocation();
-  const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const isHost = snapshot.hostPlayerId === currentPlayerId;
-  const activePlayers = snapshot.players.filter((player) => !player.leftAt);
-  const canStart = activePlayers.length >= 2;
-
-  // Scanning lands on the home page, which forwards `?code=` to the join form
-  // with the code pre-filled (STE-288).
-  const inviteUrl = `${window.location.origin}/?code=${encodeURIComponent(snapshot.code)}`;
-
-  const handleCopyLink = async () => {
-    const link = `${window.location.origin}/join/${snapshot.code}`;
-    try {
-      await navigator.clipboard.writeText(link);
-      toast.success('Join link copied to clipboard!');
-    } catch {
-      toast.error('Could not copy link. Please copy it manually.');
-    }
-  };
-
-  const handleStart = () => {
-    if (!canStart || start.isPending) return;
-    start.mutate(
-      { excludeQuestionIds: getGuestSeenIds() },
-      {
-        onError: (error) => toast.error(error.message || 'Failed to start game. Please try again.'),
-      }
-    );
-  };
-
-  const handleClose = () => {
-    if (end.isPending) return;
-    end.mutate(undefined, {
-      onError: (error) => toast.error(error.message || 'Failed to close room. Please try again.'),
-    });
-  };
-
-  const handleLeaveConfirm = () => {
-    leave.mutate(undefined, {
-      onSuccess: () => {
-        clearRoomSession(snapshot.code);
-        setLocation('/');
-      },
-      onError: (error) => toast.error(error.message || 'Failed to leave room. Please try again.'),
-    });
-  };
+export function Lobby(props: LobbyProps) {
+  const { snapshot, currentPlayerId } = props;
+  const {
+    isHost,
+    activePlayers,
+    canStart,
+    inviteUrl,
+    handleCopyLink,
+    handleStart,
+    handleClose,
+    handleLeaveConfirm,
+    showLeaveModal,
+    openLeaveModal,
+    closeLeaveModal,
+    isStarting,
+    isClosing,
+    isLeaving,
+  } = useLobby(props);
 
   if (snapshot.status !== 'lobby') {
     return (
@@ -169,12 +121,12 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
             <>
               <Button
                 className="w-full h-14 text-lg font-bold"
-                disabled={!canStart || start.isPending}
+                disabled={!canStart || isStarting}
                 onClick={handleStart}
                 data-testid="button-start-game"
               >
                 <Play className="w-5 h-5 mr-2" />
-                {start.isPending ? 'Starting...' : 'Start Game'}
+                {isStarting ? 'Starting...' : 'Start Game'}
               </Button>
               {!canStart && (
                 <p
@@ -189,7 +141,7 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
           <Button
             variant="outline"
             className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
-            disabled={end.isPending}
+            disabled={isClosing}
             onClick={handleClose}
             data-testid="button-close-room"
           >
@@ -205,8 +157,8 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
           <Button
             variant="outline"
             className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
-            disabled={leave.isPending}
-            onClick={() => setShowLeaveModal(true)}
+            disabled={isLeaving}
+            onClick={openLeaveModal}
             data-testid="button-leave-room"
           >
             <LogOut className="w-4 h-4 mr-2" />
@@ -219,9 +171,9 @@ export function Lobby({ snapshot, currentPlayerId, start, end, leave }: LobbyPro
         <LeaveConfirmModal
           snapshot={snapshot}
           currentPlayerId={currentPlayerId}
-          isPending={leave.isPending}
+          isPending={isLeaving}
           onConfirm={handleLeaveConfirm}
-          onCancel={() => setShowLeaveModal(false)}
+          onCancel={closeLeaveModal}
         />
       )}
     </div>

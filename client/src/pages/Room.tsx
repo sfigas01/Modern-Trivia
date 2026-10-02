@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { AnimatePresence, motion } from 'framer-motion';
 import { QUESTIONS_PER_TEAM_ROTATION } from '@shared/lib/answers';
@@ -20,7 +20,11 @@ import { useRoom } from '@/hooks/use-room';
 import { useAuth } from '@/hooks/use-auth';
 import { useRecordRoomQuestion } from '@/hooks/use-record-room-question';
 import { clearRoomSession, getRoomSession } from '@/lib/room-session';
+import { PIXEL_UI } from '@/lib/featureFlags';
 import type { RoomPlayerSnapshot } from '@shared/models/rooms';
+
+// The pixel lobby (STE-234) loads as its own chunk, only with VITE_PIXEL_UI on.
+const PixelLobby = lazy(() => import('@/components/room/PixelLobby'));
 
 export default function Room() {
   const { code } = useParams<{ code: string }>();
@@ -117,6 +121,21 @@ export default function Room() {
 
   if (snapshot.status === 'abandoned') {
     return <RoomAbandoned snapshot={snapshot} />;
+  }
+
+  if (PIXEL_UI && snapshot.phase === 'LOBBY') {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#4aa3f7]" />}>
+        <PixelLobby
+          snapshot={snapshot}
+          currentPlayerId={session.playerId}
+          start={start}
+          end={end}
+          leave={leave}
+          isDisconnected={isDisconnected}
+        />
+      </Suspense>
+    );
   }
 
   const showProgress =
