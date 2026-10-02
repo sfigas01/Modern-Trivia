@@ -110,7 +110,7 @@ export default function PixelRoom({
       : null;
 
   return (
-    <PixelScreen>
+    <PixelScreen wide>
       {isDisconnected && (
         <div className="tc-banner" data-testid="text-disconnected" aria-live="polite">
           Connection lost. Reconnecting…
@@ -136,7 +136,7 @@ export default function PixelRoom({
             aria-label="Leave game"
             data-testid="button-leave-game"
           >
-            Leave
+            Exit
           </PixelButton>
         )}
       </div>

@@ -201,7 +201,7 @@ describe('Pixel solo game', () => {
 
   it('ends the game early from the Quit dialog and shows final scores', async () => {
     renderGamePage();
-    fireEvent.click(await screen.findByTestId('button-quit-game'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Exit game' }));
     expect(await screen.findByRole('dialog', { name: 'End Game Early?' })).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('button-confirm-quit'));
 

@@ -5,11 +5,12 @@ import './pixel.css';
 // Building blocks of the Super Questly pixel design system (STE-128).
 // Styling lives in pixel.css; these only assemble the markup.
 
-export function PixelScreen({ children }: { children: ReactNode }) {
+// `wide` gives in-game screens a wider column on desktop.
+export function PixelScreen({ children, wide }: { children: ReactNode; wide?: boolean }) {
   return (
     <div className="tc-screen">
       <div className="tc-world" aria-hidden="true" />
-      <main className="tc-column">{children}</main>
+      <main className={wide ? 'tc-column tc-column--game' : 'tc-column'}>{children}</main>
     </div>
   );
 }

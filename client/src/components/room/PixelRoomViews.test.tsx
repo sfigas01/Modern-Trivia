@@ -151,6 +151,10 @@ describe('PixelRevealView', () => {
     expect(screen.getByTestId('text-verdict')).toHaveTextContent('INCORRECT (-2)');
     expect(screen.getByText('Mercury')).toBeInTheDocument();
     expect(screen.getByText('Mercury orbits closest to the sun.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Example Source' })).toHaveAttribute(
+      'href',
+      'https://example.com'
+    );
     fireEvent.click(screen.getByTestId('button-next'));
     expect(advance.mutate).toHaveBeenCalled();
   });

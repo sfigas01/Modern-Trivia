@@ -44,6 +44,40 @@ export default function GamePixel() {
     startNewGame,
   } = useSoloGame();
 
+  // Exit sits in the top bar of every in-game screen and confirms first.
+  const exitButton = (
+    <PixelButton
+      variant="stone"
+      size="sm"
+      onClick={() => setShowQuitConfirm(true)}
+      aria-label="Exit game"
+      data-testid="button-quit-game"
+    >
+      Exit
+    </PixelButton>
+  );
+  const quitDialog = (
+    <PixelDialog
+      open={showQuitConfirm}
+      onOpenChange={setShowQuitConfirm}
+      title="End Game Early?"
+      description="The game will end and final scores will be shown."
+    >
+      <PixelDialogActions>
+        <PixelButton
+          variant="stone"
+          onClick={() => setShowQuitConfirm(false)}
+          data-testid="button-cancel-quit"
+        >
+          Keep Playing
+        </PixelButton>
+        <PixelButton variant="red" onClick={confirmQuit} data-testid="button-confirm-quit">
+          End Game
+        </PixelButton>
+      </PixelDialogActions>
+    </PixelDialog>
+  );
+
   if (state.phase === 'SETUP') {
     return (
       <PixelScreen>
@@ -72,7 +106,8 @@ export default function GamePixel() {
         ? Math.floor(state.currentQuestionIndex / (state.teams.length * 4))
         : completedRounds;
     return (
-      <PixelScreen>
+      <PixelScreen wide>
+        <div className="tc-topbar">{exitButton}</div>
         <PixelRoundHeader label={`Round ${round} Complete`} />
         <PixelFrame title="Standings">
           <PixelStandings rows={standings} />
@@ -80,6 +115,7 @@ export default function GamePixel() {
         <PixelButton variant="magenta" size="lg" block onClick={continueToNextRound}>
           {isScoreUpdate ? 'Start Next Round' : 'Next Round'}
         </PixelButton>
+        {quitDialog}
       </PixelScreen>
     );
   }
@@ -111,8 +147,11 @@ export default function GamePixel() {
   const attempt = state.currentAttempt;
 
   return (
-    <PixelScreen>
-      <PixelProgress value={progressPercent} />
+    <PixelScreen wide>
+      <div className="tc-topbar">
+        <PixelProgress value={progressPercent} />
+        {exitButton}
+      </div>
 
       <div className="tc-game-top">
         <p className="tc-chip">In Progress</p>
@@ -195,14 +234,6 @@ export default function GamePixel() {
       )}
 
       <nav className="tc-frame tc-strip" aria-label="Scores">
-        <PixelButton
-          variant="stone"
-          size="sm"
-          onClick={() => setShowQuitConfirm(true)}
-          data-testid="button-quit-game"
-        >
-          Quit
-        </PixelButton>
         {state.teams.map((team, index) => (
           <div
             key={team.id}
@@ -216,25 +247,7 @@ export default function GamePixel() {
         ))}
       </nav>
 
-      <PixelDialog
-        open={showQuitConfirm}
-        onOpenChange={setShowQuitConfirm}
-        title="End Game Early?"
-        description="The game will end and final scores will be shown."
-      >
-        <PixelDialogActions>
-          <PixelButton
-            variant="stone"
-            onClick={() => setShowQuitConfirm(false)}
-            data-testid="button-cancel-quit"
-          >
-            Keep Playing
-          </PixelButton>
-          <PixelButton variant="red" onClick={confirmQuit} data-testid="button-confirm-quit">
-            End Game
-          </PixelButton>
-        </PixelDialogActions>
-      </PixelDialog>
+      {quitDialog}
     </PixelScreen>
   );
 }
