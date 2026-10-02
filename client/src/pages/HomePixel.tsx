@@ -89,7 +89,7 @@ const STATUS_PIP: Record<string, string> = {
   Completed: '#2e7c2e',
 };
 
-export function PixelSoloSetup() {
+export function PixelSoloSetup({ onHome }: { onHome?: () => void }) {
   const {
     state,
     removeTeam,
@@ -110,7 +110,7 @@ export function PixelSoloSetup() {
 
   return (
     <PixelScreen>
-      <PixelWordmark />
+      <PixelWordmark onHome={onHome} />
       <div className="tc-status tc-label">
         <span className="tc-pip" style={{ background: STATUS_PIP[statusLabel] }} />
         {statusLabel}

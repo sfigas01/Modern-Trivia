@@ -153,6 +153,12 @@ describe('Pixel Host a Game', () => {
     });
   });
 
+  it('links the title home', async () => {
+    vi.stubGlobal('fetch', createFetchMock());
+    renderPage(<HostGame />);
+    expect(await screen.findByRole('link', { name: 'Super Questly' })).toHaveAttribute('href', '/');
+  });
+
   it('goes back home', async () => {
     vi.stubGlobal('fetch', createFetchMock());
     renderPage(<HostGame />);

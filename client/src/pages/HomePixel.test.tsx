@@ -199,6 +199,15 @@ describe('Pixel Home (VITE_PIXEL_UI on)', () => {
       expect(screen.queryByRole('heading', { name: 'Team Setup' })).toBeNull();
     });
 
+    it('returns from solo setup to the mode chooser when the title is clicked', async () => {
+      renderHome();
+      fireEvent.click(await screen.findByTestId('button-mode-solo'));
+      await screen.findByRole('heading', { name: 'Team Setup' });
+      fireEvent.click(screen.getByRole('link', { name: 'Super Questly' }));
+      expect(await screen.findByTestId('button-mode-host')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Team Setup' })).toBeNull();
+    });
+
     it('opens the pixel solo setup from Play Solo', async () => {
       renderHome();
       fireEvent.click(await screen.findByTestId('button-mode-solo'));

@@ -14,22 +14,25 @@ export function PixelScreen({ children }: { children: ReactNode }) {
   );
 }
 
-export function PixelWordmark() {
+// The SUPER QUESTLY wordmark, the same size on every screen, and always a
+// link home. `onHome` lets a screen that lives at "/" itself (solo setup)
+// reset its own state, since navigating to the current URL changes nothing.
+export function PixelWordmark({ onHome }: { onHome?: () => void }) {
   return (
     <h1 className="tc-wordmark">
-      <img src="/brand/super-questly-wordmark.svg" alt="Super Questly" width={520} height={212} />
+      <Link href="/" onClick={onHome} title="Home">
+        <img src="/brand/super-questly-wordmark.svg" alt="Super Questly" width={520} height={212} />
+      </Link>
     </h1>
   );
 }
 
-// Inner-screen header: a smaller wordmark (back to home) over the page title.
+// Inner-screen header: the wordmark over the page title chip.
 export function PixelPageHeader({ title }: { title: string }) {
   return (
-    <header className="tc-stack" style={{ gap: 12 }}>
-      <Link href="/" className="tc-wordmark tc-wordmark--sm" aria-label="Super Questly home">
-        <img src="/brand/super-questly-wordmark.svg" alt="" width={520} height={212} />
-      </Link>
-      <h1 className="tc-tagline">{title}</h1>
+    <header className="tc-stack" style={{ gap: 16 }}>
+      <PixelWordmark />
+      <h2 className="tc-tagline">{title}</h2>
     </header>
   );
 }

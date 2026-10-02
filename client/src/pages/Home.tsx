@@ -112,7 +112,8 @@ export default function Home() {
 
   return PIXEL_UI ? (
     <Suspense fallback={pixelFallback}>
-      <PixelSoloSetup />
+      {/* With the mode chooser on, the title takes solo setup back to it. */}
+      <PixelSoloSetup onHome={MULTIPLAYER ? () => setMode('choose') : undefined} />
     </Suspense>
   ) : (
     <SoloSetup />
