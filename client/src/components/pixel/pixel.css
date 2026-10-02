@@ -607,3 +607,108 @@
   text-transform: uppercase;
   font-size: 32px;
 }
+
+/* ---------- Room lobby (STE-234) ---------- */
+.tc-room-code {
+  margin: 0;
+  text-align: center;
+  font-family: var(--tc-font-pixel);
+  font-size: 32px;
+  letter-spacing: 0.25em;
+  padding-left: 0.25em; /* balance the trailing letter-spacing */
+  color: var(--tc-coin-300);
+  text-shadow:
+    3px 3px 0 var(--tc-ink),
+    -1px -1px 0 var(--tc-coin-700);
+}
+/* QR codes need a white quiet zone to scan; frame it like a pixel card. */
+.tc-qr {
+  align-self: center;
+  display: flex;
+  padding: 8px;
+  background: #fff;
+  border: 4px solid var(--tc-ink);
+  box-shadow: 4px 4px 0 var(--tc-ink);
+}
+.tc-qr svg {
+  display: block;
+  image-rendering: pixelated;
+}
+.tc-roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 8px;
+}
+.tc-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+.tc-player[data-faded] {
+  opacity: 0.55;
+}
+.tc-player[data-active] {
+  outline: 3px solid var(--tc-coin-300);
+  outline-offset: -3px;
+}
+.tc-player__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 24px;
+}
+.tc-player__note {
+  color: var(--tc-sky-200);
+  font-size: 20px;
+}
+.tc-player__score {
+  font-family: var(--tc-font-pixel);
+  font-size: 14px;
+  color: var(--tc-coin-300);
+  text-shadow: 2px 2px 0 var(--tc-ink);
+}
+.tc-pip[data-presence='online'] {
+  background: var(--tc-green-300);
+}
+.tc-pip[data-presence='away'] {
+  background: var(--tc-coin-300);
+}
+.tc-pip[data-presence='stale'],
+.tc-pip[data-presence='left'] {
+  background: var(--tc-stone-300);
+}
+.tc-badge {
+  flex-shrink: 0;
+  padding: 4px 6px;
+  background: var(--tc-coin-300);
+  border: 2px solid var(--tc-ink);
+  color: var(--tc-ink);
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.tc-banner {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 10px 12px;
+  background: var(--tc-coin-300);
+  border: 3px solid var(--tc-ink);
+  color: var(--tc-ink);
+  text-align: center;
+  font-family: var(--tc-font-pixel);
+  font-size: 10px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+/* Temporary home for a classic control inside a pixel screen. */
+.tc-classic-island {
+  padding: 12px;
+  background: var(--tc-panel-500);
+  border: 4px solid var(--tc-ink);
+  font-family: system-ui, sans-serif;
+}
