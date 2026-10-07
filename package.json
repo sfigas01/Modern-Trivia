@@ -127,7 +127,7 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^4.1.11",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.28.1",
@@ -137,7 +137,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "husky": "^9.1.7",
     "jsdom": "^28.1.0",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.4.0",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
     "supertest": "^7.2.2",
@@ -145,7 +145,7 @@
     "tsx": "^4.22.4",
     "typescript": "5.9.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.11"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
