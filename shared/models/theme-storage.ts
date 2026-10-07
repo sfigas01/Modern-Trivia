@@ -786,6 +786,7 @@ export const themeCandidates = pgTable(
       table.factRevisionId,
       table.contentHash
     ),
+    uniqueIndex('uq_theme_candidates_id_content_hash').on(table.id, table.contentHash),
     index('idx_theme_candidates_job_status').on(table.jobId, table.status),
     foreignKey({
       name: 'fk_theme_candidates_attempt_job',
@@ -828,6 +829,11 @@ export const themeQuestionRevisions = pgTable(
   (table) => [
     uniqueIndex('uq_theme_question_revisions_id_hash').on(table.id, table.contentHash),
     uniqueIndex('uq_theme_question_revisions_id_question').on(table.id, table.questionId),
+    uniqueIndex('uq_theme_question_revisions_library_binding').on(
+      table.id,
+      table.questionId,
+      table.contentHash
+    ),
     uniqueIndex('uq_theme_question_revisions_question_revision').on(
       table.questionId,
       table.revision
@@ -1298,6 +1304,14 @@ export const themeQuestionEvidenceReviewOutcomes = pgTable(
     completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex('uq_theme_question_evidence_outcome_approval_binding').on(
+      table.attemptId,
+      table.candidateId,
+      table.questionRevisionId,
+      table.questionContentHash,
+      table.reviewId,
+      table.verdict
+    ),
     foreignKey({
       name: 'fk_theme_question_evidence_review_outcome_attempt',
       columns: [
@@ -1405,6 +1419,100 @@ export const themeQuestionRepairOutcomes = pgTable(
     check(
       'theme_question_repair_fields',
       sql`(${table.stage} = 'generation' AND ${table.status} IN ('declined', 'invalid_output', 'failed', 'ineligible') AND ${table.candidateId} IS NULL AND ${table.questionRevisionId} IS NULL AND ${table.questionContentHash} IS NULL AND ${table.evidenceReviewAttemptId} IS NULL AND ${table.evidenceReviewId} IS NULL AND ${table.evidenceFingerprint} IS NULL AND ${table.qaPolicyVersion} IS NULL AND ${table.qaEvaluatedAt} IS NULL AND ${table.corpusRevision} IS NULL AND ${table.corpusHash} IS NULL) OR (${table.stage} = 'evidence' AND ${table.status} = 'withheld' AND ${table.candidateId} IS NOT NULL AND ${table.questionRevisionId} IS NOT NULL AND ${table.questionContentHash} IS NOT NULL AND ${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.evidenceReviewAttemptId} IS NOT NULL AND ${table.qaPolicyVersion} IS NULL AND ${table.qaEvaluatedAt} IS NULL AND ${table.corpusRevision} IS NULL AND ${table.corpusHash} IS NULL) OR (${table.stage} = 'qa' AND ${table.status} IN ('passed', 'withheld') AND ${table.candidateId} IS NOT NULL AND ${table.questionRevisionId} IS NOT NULL AND ${table.questionContentHash} IS NOT NULL AND ${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.evidenceReviewAttemptId} IS NOT NULL AND ${table.evidenceReviewId} IS NOT NULL AND ${table.evidenceFingerprint} IS NOT NULL AND ${table.evidenceFingerprint} ~ '^[a-f0-9]{64}$' AND ${table.qaPolicyVersion} IS NOT NULL AND ${table.qaEvaluatedAt} IS NOT NULL AND (${table.corpusHash} IS NULL OR ${table.corpusHash} ~ '^[a-f0-9]{64}$'))`
+    ),
+  ]
+);
+
+export const themeQuestionApprovals = pgTable(
+  'theme_question_approvals',
+  {
+    id: uuid('id').primaryKey(),
+    contractVersion: varchar('contract_version', { length: 64 }).notNull(),
+    candidateId: uuid('candidate_id').notNull().unique(),
+    questionRevisionId: uuid('question_revision_id').notNull().unique(),
+    questionContentHash: varchar('question_content_hash', { length: 64 }).notNull(),
+    generationAttemptId: uuid('generation_attempt_id').notNull().unique(),
+    evidenceAttemptId: uuid('evidence_attempt_id').notNull().unique(),
+    evidenceReviewId: uuid('evidence_review_id').notNull(),
+    evidenceVerdict: varchar('evidence_verdict', { length: 10 }).notNull().default('pass'),
+    evidenceFingerprint: varchar('evidence_fingerprint', { length: 64 }).notNull(),
+    qaPolicyVersion: varchar('qa_policy_version', { length: 255 }).notNull(),
+    qaEvaluatedAt: timestamp('qa_evaluated_at', { withTimezone: true }).notNull(),
+    corpusRevision: varchar('corpus_revision', { length: 255 }).notNull(),
+    corpusHash: varchar('corpus_hash', { length: 64 }).notNull(),
+    libraryQuestionId: varchar('library_question_id', { length: 255 })
+      .notNull()
+      .unique()
+      .references(() => questions.id, { onDelete: 'restrict' }),
+    libraryRevisionId: uuid('library_revision_id').notNull().unique(),
+    sourceDocumentId: uuid('source_document_id')
+      .notNull()
+      .references(() => themeEvidenceDocuments.id, { onDelete: 'restrict' }),
+    sourceUrl: text('source_url').notNull(),
+    sourceName: varchar('source_name', { length: 255 }).notNull(),
+    approvedAt: timestamp('approved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'fk_theme_question_approval_candidate',
+      columns: [table.candidateId, table.questionContentHash],
+      foreignColumns: [themeCandidates.id, themeCandidates.contentHash],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_approval_generation',
+      columns: [
+        table.generationAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+      ],
+      foreignColumns: [
+        themeQuestionGenerationOutcomes.attemptId,
+        themeQuestionGenerationOutcomes.candidateId,
+        themeQuestionGenerationOutcomes.questionRevisionId,
+        themeQuestionGenerationOutcomes.questionContentHash,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_approval_evidence',
+      columns: [
+        table.evidenceAttemptId,
+        table.candidateId,
+        table.questionRevisionId,
+        table.questionContentHash,
+        table.evidenceReviewId,
+        table.evidenceVerdict,
+      ],
+      foreignColumns: [
+        themeQuestionEvidenceReviewOutcomes.attemptId,
+        themeQuestionEvidenceReviewOutcomes.candidateId,
+        themeQuestionEvidenceReviewOutcomes.questionRevisionId,
+        themeQuestionEvidenceReviewOutcomes.questionContentHash,
+        themeQuestionEvidenceReviewOutcomes.reviewId,
+        themeQuestionEvidenceReviewOutcomes.verdict,
+      ],
+    }).onDelete('restrict'),
+    foreignKey({
+      name: 'fk_theme_question_approval_library_revision',
+      columns: [table.libraryRevisionId, table.libraryQuestionId, table.questionContentHash],
+      foreignColumns: [
+        themeQuestionRevisions.id,
+        themeQuestionRevisions.questionId,
+        themeQuestionRevisions.contentHash,
+      ],
+    }).onDelete('restrict'),
+    check(
+      'theme_question_approval_contract',
+      sql`${table.contractVersion} = 'theme-question-approval-v1'`
+    ),
+    check('theme_question_approval_evidence_pass', sql`${table.evidenceVerdict} = 'pass'`),
+    check(
+      'theme_question_approval_hashes',
+      sql`${table.questionContentHash} ~ '^[a-f0-9]{64}$' AND ${table.evidenceFingerprint} ~ '^[a-f0-9]{64}$' AND ${table.corpusHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_approval_required_text',
+      sql`length(trim(${table.qaPolicyVersion})) > 0 AND length(trim(${table.corpusRevision})) > 0 AND length(trim(${table.sourceUrl})) > 0 AND length(trim(${table.sourceName})) > 0`
     ),
   ]
 );
@@ -1551,5 +1659,6 @@ export type ThemeQuestionEvidenceReviewAttempt =
 export type ThemeQuestionEvidenceReviewOutcome =
   typeof themeQuestionEvidenceReviewOutcomes.$inferSelect;
 export type ThemeQuestionRepairOutcome = typeof themeQuestionRepairOutcomes.$inferSelect;
+export type ThemeQuestionApproval = typeof themeQuestionApprovals.$inferSelect;
 export type ThemeQuestionReservation = typeof themeQuestionReservations.$inferSelect;
 export type ThemeQuestionExposure = typeof themeQuestionExposures.$inferSelect;

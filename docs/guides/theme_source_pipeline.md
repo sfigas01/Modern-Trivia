@@ -94,6 +94,16 @@ Migration `0015_theme_question_repairs.sql` binds the new generation attempt to 
 
 Even a successful repair remains pending and provisional. S9 does not accept the candidate, insert it into the shared question pool, reserve it for a roster, authorize gameplay, select a live model, or run a paid evaluation.
 
+## S10 atomic final candidate approval
+
+`server/lib/theme-question-approval.ts` is a dormant PostgreSQL repository. Its caller supplies stable approval, library-question, and library-revision IDs plus trusted S8a policy and quality/semantic callbacks. The repository loads the complete ordinary approved/pending question corpus from the database and runs all of S8b itself; no caller-supplied pass or comparison corpus is accepted. A withheld result writes nothing.
+
+On a provisional pass, a short transaction serializes shared-pool changes with `LOCK TABLE questions IN SHARE ROW EXCLUSIVE MODE`. It locks and checks the pending candidate, exact candidate-owned revision, generation provenance, newest passing S8a review, and any repair outcome. It reloads current S8a eligibility at a fresh time and the database-owned corpus, then compares the exact evidence IDs/fingerprint and corpus revision/hash to the provisional QA result. A repair child requires its exact passed S9 outcome; an original with a repair claim is withheld. Any mismatch rolls back.
+
+Success inserts one ordinary approved `player_ai` question with the exact reviewed content and tags, current cited source URL/name, and compact factual provenance in `ai_analysis`; it inserts a separate immutable question-owned revision with the same content/hash, writes an immutable approval bridge, and accepts the candidate in the same transaction. The candidate-owned revision and S8a review remain unchanged. Exact completed retries return the original approval and timestamp; conflicting retries fail. A commit acknowledgment failure has an unknown outcome, so retry the same IDs to reconcile it.
+
+Approval is point-in-time global content persistence. Reservation, roster, and player-history eligibility are later decisions. A game abandoned after approval can leave the approved question in the ordinary shared pool.
+
 ## S6a immutable derivation provenance
 
 Every new call to the fact writer supplies a trusted attempt UUID, execution UUID, derivation policy version, prompt version and template text, and producer identity. A model producer also supplies provider and model identifiers; a human producer leaves those null. The proposer cannot assign these values. The writer validates all fields, hashes the prompt text without storing it, and constructs a bounded input manifest from the exact request and ordered passage hashes, document metadata, and registry sidecars. No raw passage or prompt text goes into the manifest. SHA-256 hashes use the canonical JSON form described above, except the prompt hash, which covers its exact UTF-8 bytes.
