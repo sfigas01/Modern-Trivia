@@ -123,7 +123,7 @@ function hash(value: unknown): string {
   return createHash('sha256').update(canonical(value)).digest('hex');
 }
 
-function hashCorpus(questions: CorpusQuestion[]): string {
+export function hashThemeQuestionQaCorpus(questions: CorpusQuestion[]): string {
   return hash(
     [...questions]
       .map(({ id, question, answer }) => ({ id, question, answer }))
@@ -241,7 +241,7 @@ export async function runThemeQuestionQa(
   const ids = new Set(corpus.questions.map((item) => item.id));
   if (ids.size !== corpus.questions.length || ids.has(request.candidateId))
     return withheld('semantic', 'invalid_corpus', evidence);
-  const corpusHash = hashCorpus(corpus.questions);
+  const corpusHash = hashThemeQuestionQaCorpus(corpus.questions);
   const corpusValues = { corpusRevision: corpus.revision, corpusHash };
   const semanticInput = [
     ...corpus.questions.map((item) => ({
@@ -344,7 +344,10 @@ export async function runThemeQuestionQa(
   }
   if (!sameContext(context, finalContext))
     return withheld('recheck', 'context_changed', { ...evidence, ...corpusValues });
-  if (finalCorpus.revision !== corpus.revision || hashCorpus(finalCorpus.questions) !== corpusHash)
+  if (
+    finalCorpus.revision !== corpus.revision ||
+    hashThemeQuestionQaCorpus(finalCorpus.questions) !== corpusHash
+  )
     return withheld('recheck', 'corpus_changed', { ...evidence, ...corpusValues });
 
   return {

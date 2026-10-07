@@ -698,16 +698,19 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
       : { status: row.status, attemptId: request.attemptId, failureCode: row.failure_code };
   }
   const repository = {
-    async eligibility(rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>) {
+    async eligibility(
+      rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>,
+      db: Pool | PoolClient = pool,
+      at: Date = now()
+    ) {
       const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
       const request = { ...parsed.data, attemptId: randomUUID() };
-      const at = now();
       if (!Number.isFinite(at.valueOf()))
         throw new ThemeQuestionEvidenceReviewError('invalid_request');
-      const current = await safe(() => loadContext(pool, request, config, at, false));
+      const current = await safe(() => loadContext(db, request, config, at, false));
       const unowned = await safe(() =>
-        pool.query(
+        db.query(
           `SELECT r.id FROM theme_evidence_reviews r
          LEFT JOIN theme_question_evidence_review_outcomes o
            ON o.review_id = r.id AND o.status = 'reviewed'
@@ -719,7 +722,7 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
       if (unowned.rowCount)
         return { eligible: false, reason: 'unowned_review', attemptId: null } as const;
       const rows = await safe(() =>
-        pool.query(
+        db.query(
           `SELECT a.*, o.status AS outcome_status, o.review_id, o.verdict AS outcome_verdict,
                 o.output_hash AS outcome_hash, r.contract_version AS review_contract,
                 r.review_policy_version AS stored_review_policy_version,
@@ -763,13 +766,13 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
       if (newest.outcome_status === 'reviewed') {
         const reviewId = String(newest.review_id);
         const facts = await safe(() =>
-          pool.query(
+          db.query(
             'SELECT fact_revision_id FROM theme_evidence_review_facts WHERE review_id = $1 ORDER BY fact_revision_id',
             [reviewId]
           )
         );
         const passages = await safe(() =>
-          pool.query(
+          db.query(
             'SELECT passage_id FROM theme_evidence_review_passages WHERE review_id = $1 ORDER BY passage_id',
             [reviewId]
           )
@@ -807,26 +810,27 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
       return evaluateLatestThemeQuestionEvidenceReview(current.graph, attempts, at);
     },
     async qaContext(
-      rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>
+      rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>,
+      db: Pool | PoolClient = pool,
+      at: Date = now()
     ): Promise<ThemeQuestionQaContext> {
       const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
-      const at = now();
       if (!Number.isFinite(at.valueOf()))
         throw new ThemeQuestionEvidenceReviewError('invalid_request');
-      const decision = await repository.eligibility(parsed.data);
+      const decision = await repository.eligibility(parsed.data, db, at);
       if (!decision.eligible || !decision.attemptId || !decision.reviewId)
         throw new ThemeQuestionEvidenceReviewError('ineligible');
       const request = { ...parsed.data, attemptId: randomUUID() };
-      const current = await safe(() => loadContext(pool, request, config, at, false));
+      const current = await safe(() => loadContext(db, request, config, at, false));
       const linked = await safe(() =>
-        pool.query(
+        db.query(
           'SELECT passage_id FROM theme_evidence_review_passages WHERE review_id = $1 ORDER BY passage_id',
           [decision.reviewId]
         )
       );
       const storedDimensions = await safe(() =>
-        pool.query(
+        db.query(
           `SELECT r.dimension_results
            FROM theme_question_evidence_review_outcomes o
            JOIN theme_evidence_reviews r ON r.id = o.review_id
