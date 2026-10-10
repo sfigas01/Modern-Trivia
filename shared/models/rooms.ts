@@ -17,6 +17,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 import { VALID_CATEGORIES } from '../constants/categories';
+import { themeGameSessions, themeParticipantIdentities } from './theme-storage';
 
 export const ROOM_STATUSES = ['lobby', 'active', 'finished', 'abandoned'] as const;
 export const ROOM_PHASES = [
@@ -181,6 +182,10 @@ export const rooms = pgTable('rooms', {
   // ordinary category games, which are completely unchanged. When set, the host's
   // display text drives themed question sourcing at start.
   theme: varchar('theme', { length: 60 }),
+  // Durable preparation job associated with this room, when present.
+  themePreparationGameId: uuid('theme_preparation_game_id').references(() => themeGameSessions.id, {
+    onDelete: 'restrict',
+  }),
   numRounds: integer('num_rounds').notNull(),
   questionIds: jsonb('question_ids').$type<string[]>().notNull().default([]),
   currentQuestionIndex: integer('current_question_index').notNull().default(0),
@@ -219,6 +224,10 @@ export const roomPlayers = pgTable(
     // create/join so room-wide question selection can union every participant's
     // server-side seen_questions history, not just the host's (STE-273).
     userId: varchar('user_id'),
+    // Stable theme-history identity assigned to this room participant, when present.
+    themeIdentityId: uuid('theme_identity_id').references(() => themeParticipantIdentities.id, {
+      onDelete: 'restrict',
+    }),
     // Snapshot of a guest player's locally-seen question ids, sent at join time
     // (null/empty for signed-in players, whose history is server-authoritative).
     guestSeenIds: text('guest_seen_ids').array(),
@@ -396,6 +405,10 @@ export const createRoomRequestSchema = z.object({
   // Optional themed game (STE-167 lean MVP). Only honored when the server-side
   // theme feature flag is on; ignored otherwise so ordinary flows are unchanged.
   theme: themeInputSchema.optional(),
+  // Opaque browser-scoped identity for guest exposure history. This is not an
+  // account identifier; authenticated requests use it only to link prior browser
+  // history to the account derived from the sign-in session.
+  stableGuestSubjectId: z.string().uuid().optional(),
 });
 export const excludeQuestionIdsSchema = z
   .array(z.string().trim().min(1))
@@ -405,6 +418,10 @@ export const excludeQuestionIdsSchema = z
   });
 export const joinRoomRequestSchema = z.object({
   nickname: roomNicknameSchema,
+  // Opaque browser-scoped identity for guest exposure history. This is not an
+  // account identifier; authenticated requests use it only to link prior browser
+  // history to the account derived from the sign-in session.
+  stableGuestSubjectId: z.string().uuid().optional(),
   // A guest joiner's locally-seen question ids, so room-wide selection can
   // exclude questions any player has already seen — not just the host (STE-273).
   // Ignored for signed-in players (their history is server-authoritative).

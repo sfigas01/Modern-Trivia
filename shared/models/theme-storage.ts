@@ -468,6 +468,9 @@ export const themeGameSessions = pgTable(
     idempotencyOwnerHash: varchar('idempotency_owner_hash', { length: 64 }).notNull(),
     requestFingerprint: varchar('request_fingerprint', { length: 64 }).notNull(),
     roomId: uuid('room_id'),
+    generationOwnerUserId: varchar('generation_owner_user_id').references(() => users.id, {
+      onDelete: 'restrict',
+    }),
     mode: varchar('mode', { length: 20 }).notNull(),
     status: varchar('status', { length: 32 }).notNull().default('setup'),
     theme: varchar('theme', { length: 60 }).notNull(),
@@ -500,6 +503,11 @@ export const themeGameSessions = pgTable(
   (table) => [
     uniqueIndex('uq_theme_game_sessions_id_ceiling').on(table.id, table.candidateCeiling),
     index('idx_theme_game_sessions_room').on(table.roomId),
+    uniqueIndex('uq_theme_game_sessions_active_room')
+      .on(table.roomId)
+      .where(
+        sql`${table.roomId} IS NOT NULL AND ${table.status} NOT IN ('completed', 'failed', 'abandoned', 'expired')`
+      ),
     index('idx_theme_game_sessions_status_expiry').on(table.status, table.expiresAt),
     check('theme_game_sessions_mode', sql`${table.mode} IN ('multiplayer', 'shared_device')`),
     check(
@@ -553,6 +561,9 @@ export const themeParticipantIdentities = pgTable(
   (table) => [
     uniqueIndex('uq_theme_participant_identities_kind_hash').on(table.kind, table.stableKeyHash),
     index('idx_theme_participant_identities_user').on(table.accountUserId),
+    uniqueIndex('uq_theme_identity_account')
+      .on(table.accountUserId)
+      .where(sql`${table.kind} = 'account'`),
     check(
       'theme_participant_identities_kind',
       sql`${table.kind} IN ('account', 'guest_browser', 'shared_device')`

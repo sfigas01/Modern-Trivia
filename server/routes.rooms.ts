@@ -3,7 +3,7 @@ import type { Express, Request, Response } from 'express';
 import { and, asc, eq, inArray, isNull, lte, or, sql, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 
-import { db } from './db';
+import { db, pool } from './db';
 import { advanceRoomEngine, createRoomAttempt } from './lib/room-engine';
 import {
   logQuestionPoolBackfill,
@@ -14,14 +14,15 @@ import {
 } from './lib/question-pool';
 import type { AuthenticatedRequest } from './types';
 import { aiLimiter } from './middleware/rateLimiter';
+import { isThemeRoundsEnabled } from './lib/theme-game';
 import {
-  isThemeRoundsEnabled,
-  computeRoomSeenInputs,
-  getThemeProgress,
-  initThemeProgress,
-  runThemedGamePreparation,
-  themedQuestionLimit,
-} from './lib/theme-game';
+  createThemeAdmission,
+  resolveThemeIdentity,
+  cancelThemeAdmission,
+  ThemeAdmissionError,
+} from './lib/theme-admission';
+import { requireThemePlayerSignIn } from './lib/theme-player-auth';
+import { themeSqlTransaction } from './lib/theme-sql-transaction';
 import {
   QUESTIONS_PER_TEAM_ROTATION,
   pointsFor,
@@ -121,6 +122,17 @@ export function generateRoomCode(): string {
     { length: 5 },
     () => ROOM_CODE_ALPHABET[randomInt(ROOM_CODE_ALPHABET.length)]
   ).join('');
+}
+
+function legacyThemeProgress(job: import('@shared/models/theme').PublicThemeJob) {
+  return {
+    status: job.progress.failure ? 'error' : 'preparing',
+    ready: job.progress.readyCount,
+    total: job.progress.requiredCount,
+    reused: 0,
+    generated: 0,
+    error: job.progress.failure?.message ?? null,
+  };
 }
 
 function generatePlayerToken(): string {
@@ -306,7 +318,7 @@ function sendRoomError(res: Response, error: unknown, context: string) {
     return res.status(422).json({ message: 'Invalid room data', errors: error.errors });
   }
 
-  if (error instanceof RoomRouteError) {
+  if (error instanceof RoomRouteError || error instanceof ThemeAdmissionError) {
     return res.status(error.status).json({ message: error.message });
   }
 
@@ -434,6 +446,11 @@ export function registerRoomRoutes(app: Express): void {
       // Only honor a themed game when the feature flag is on; otherwise the
       // theme is ignored so ordinary flows are completely unchanged.
       const theme = isThemeRoundsEnabled() ? input.theme?.trim() || null : null;
+      if (theme) {
+        requireThemePlayerSignIn(req);
+        if (input.numRounds !== 5)
+          throw new RoomRouteError(422, 'Themed games require five rounds');
+      }
 
       // Lobby rooms use a short expiry; active rooms receive a longer expiry
       // when started. Creation opportunistically cleans up either kind.
@@ -459,6 +476,12 @@ export function registerRoomRoutes(app: Express): void {
               })
               .returning();
 
+            const themeIdentityId = theme
+              ? await resolveThemeIdentity(themeSqlTransaction(tx), {
+                  userId: getUserId(req),
+                  stableGuestSubjectId: input.stableGuestSubjectId,
+                })
+              : null;
             const [host] = await tx
               .insert(roomPlayers)
               .values({
@@ -468,6 +491,7 @@ export function registerRoomRoutes(app: Express): void {
                 joinOrder: 0,
                 isHost: true,
                 userId: getUserId(req) ?? null,
+                themeIdentityId,
               })
               .returning();
 
@@ -522,6 +546,9 @@ export function registerRoomRoutes(app: Express): void {
             throw new RoomRouteError(409, 'Game has already started');
           }
 
+          if (room.themePreparationGameId)
+            throw new RoomRouteError(409, 'Themed roster is locked during preparation');
+
           const allPlayers = await tx
             .select()
             .from(roomPlayers)
@@ -546,6 +573,12 @@ export function registerRoomRoutes(app: Express): void {
           const joiningUserId = getUserId(req) ?? null;
           const guestSeenIds = joiningUserId === null ? (input.excludeQuestionIds ?? []) : null;
 
+          const themeIdentityId = room.theme
+            ? await resolveThemeIdentity(themeSqlTransaction(tx), {
+                userId: joiningUserId,
+                stableGuestSubjectId: input.stableGuestSubjectId,
+              })
+            : null;
           const [player] = await tx
             .insert(roomPlayers)
             .values({
@@ -555,6 +588,7 @@ export function registerRoomRoutes(app: Express): void {
               joinOrder: (allPlayers.at(-1)?.joinOrder ?? -1) + 1,
               isHost: false,
               userId: joiningUserId,
+              themeIdentityId,
               guestSeenIds,
             })
             .returning();
@@ -758,108 +792,33 @@ export function registerRoomRoutes(app: Express): void {
     }
   });
 
-  // Themed game start (STE-167 lean MVP). Validates the lobby exactly like the
-  // ordinary start, then kicks off best-effort background preparation (reuse +
-  // Guardian generation) and returns immediately with initial progress. The
-  // client polls /theme-progress for "generating… X of N", and the room flips
-  // to active (via the ordinary snapshot poll) once preparation completes.
+  // Durable admission only. Preparation remains paused until the S11B worker is enabled.
   app.post('/api/rooms/:code/theme-start', aiLimiter, async (req, res) => {
     try {
-      if (!isThemeRoundsEnabled()) {
-        throw new RoomRouteError(404, 'Themed games are not enabled');
-      }
+      if (!isThemeRoundsEnabled()) throw new RoomRouteError(404, 'Themed games are not enabled');
+      const userId = requireThemePlayerSignIn(req);
       const code = parseRoomCode(req.params.code);
-      const { excludeQuestionIds = [] } = themeStartRequestSchema.parse(req.body);
-
-      // Validate lobby + host + roster up front (short, no generation) so the
-      // caller gets a synchronous error for the common failure cases.
-      const prep = await db.transaction(async (tx) => {
-        const [room] = await tx
-          .select()
-          .from(rooms)
-          .where(eq(rooms.code, code))
-          .limit(1)
-          .for('update');
-
-        if (!room) throw new RoomRouteError(404, 'Room not found');
-        if (isExpired(room)) throw new RoomRouteError(404, 'Room expired');
-        if (room.status !== 'lobby' || room.phase !== 'LOBBY') {
-          throw new RoomRouteError(409, 'Game has already started');
-        }
-        if (!room.theme) {
-          throw new RoomRouteError(409, 'This room is not a themed room');
-        }
-
-        const actor = await authenticateRoomPlayer(req, room.id, tx);
-        requireHost(actor, room);
-        if (!room.hostPlayerId) {
-          throw new RoomRouteError(409, 'Room has no host');
-        }
-
-        const players = await tx
-          .select()
-          .from(roomPlayers)
-          .where(and(eq(roomPlayers.roomId, room.id), isNull(roomPlayers.leftAt)))
-          .orderBy(asc(roomPlayers.joinOrder));
-
-        if (players.length < 2) {
-          throw new RoomRouteError(409, 'At least two players are required to start');
-        }
-
-        // If preparation is already running for this room, don't start a second
-        // job — return the existing progress (idempotent-ish for the lean MVP).
-        const existing = getThemeProgress(room.code);
-        if (existing && existing.status === 'preparing') {
-          return { room, players, actor, alreadyRunning: true as const };
-        }
-
-        return { room, players, actor, alreadyRunning: false as const };
-      });
-
-      const total = themedQuestionLimit(prep.room.numRounds, prep.players.length);
-
-      if (prep.alreadyRunning) {
-        const current = getThemeProgress(prep.room.code);
-        return res.status(202).json(themeStartResponseSchema.parse(current));
-      }
-
-      const progress = initThemeProgress(prep.room.code, total);
-
-      // Reuse the ordinary start's guest-history handling (STE-273): an
-      // authenticated host is server-authoritative; only a guest host's
-      // client-supplied exclusion list is trusted.
-      const seen = computeRoomSeenInputs(prep.players, excludeQuestionIds, !prep.actor.userId);
-
-      // Fire-and-forget: best-effort background preparation. No durable jobs /
-      // recovery in the lean MVP (full plan territory).
-      void runThemedGamePreparation({
-        room: prep.room,
-        players: prep.players,
-        categories: parseRoomCategories(prep.room.category),
-        theme: prep.room.theme as string,
-        hostPlayerId: prep.room.hostPlayerId as string,
-        seen,
-      });
-
-      return res.status(202).json(themeStartResponseSchema.parse(progress));
+      themeStartRequestSchema.parse(req.body);
+      const playerToken = req.get('X-Player-Token');
+      if (!playerToken) throw new RoomRouteError(401, 'Player token required');
+      const job = await createThemeAdmission(pool).start({ code, playerToken, userId });
+      const progress = legacyThemeProgress(job);
+      return res
+        .status(job.progress.status === 'shortfall' ? 409 : 202)
+        .json({ ...themeStartResponseSchema.parse(progress), job });
     } catch (error) {
       return sendRoomError(res, error, 'Error starting themed room:');
     }
   });
 
-  // Poll themed preparation progress for the waiting UX. Any room participant
-  // (host or joiner) may read it.
   app.get('/api/rooms/:code/theme-progress', async (req, res) => {
     try {
-      if (!isThemeRoundsEnabled()) {
-        throw new RoomRouteError(404, 'Themed games are not enabled');
-      }
+      if (!isThemeRoundsEnabled()) throw new RoomRouteError(404, 'Themed games are not enabled');
       const code = parseRoomCode(req.params.code);
-      const progress = getThemeProgress(code);
-      if (!progress) {
-        throw new RoomRouteError(404, 'No themed preparation in progress for this room');
-      }
-      return res.json(themeProgressResponseSchema.parse(progress));
+      const playerToken = req.get('X-Player-Token');
+      if (!playerToken) throw new RoomRouteError(401, 'Player token required');
+      const job = await createThemeAdmission(pool).progress({ code, playerToken });
+      return res.json({ ...themeProgressResponseSchema.parse(legacyThemeProgress(job)), job });
     } catch (error) {
       return sendRoomError(res, error, 'Error reading themed progress:');
     }
@@ -1507,6 +1466,8 @@ export function registerRoomRoutes(app: Express): void {
         }
 
         const actor = await authenticateRoomPlayer(req, room.id, tx);
+        if (room.themePreparationGameId)
+          throw new RoomRouteError(409, 'Themed roster is locked; the host can end preparation');
 
         // Fetch all current (non-departed) players before marking actor as departed
         // so the leaving player is included and advanceRoomEngine can reference them.
@@ -1736,6 +1697,8 @@ export function registerRoomRoutes(app: Express): void {
 
         const actor = await authenticateRoomPlayer(req, room.id, tx);
         requireHost(actor, room);
+        if (room.themePreparationGameId)
+          await cancelThemeAdmission(themeSqlTransaction(tx), room.themePreparationGameId);
         const isLobby = room.phase === 'LOBBY';
         const [endedRoom] = await tx
           .update(rooms)
@@ -1820,6 +1783,8 @@ export function registerRoomRoutes(app: Express): void {
         }
 
         const hostAgeMs = now.getTime() - host.lastSeenAt.getTime();
+        if (currentRoom.themePreparationGameId) return currentRoom;
+
         if (
           currentRoom.status === 'lobby' &&
           currentRoom.phase === 'LOBBY' &&

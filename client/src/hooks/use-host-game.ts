@@ -13,6 +13,7 @@ import {
 import { useGame } from '@/lib/store';
 import { useCategoryCounts } from '@/hooks/use-category-counts';
 import { saveRoomSession } from '@/lib/room-session';
+import { getStableGuestSubjectId } from '@/lib/guest-subject';
 import { THEME_ROUNDS } from '@/lib/featureFlags';
 
 async function suggestThemeCategories(theme: string): Promise<ThemeSuggestResponse> {
@@ -130,6 +131,7 @@ export function useHostGame() {
       categories: categories.data,
       numRounds: numRounds.data,
       opponentDisputeVotingEnabled,
+      stableGuestSubjectId: getStableGuestSubjectId(),
       // Only sent when the feature is on and the host entered a theme; the
       // server ignores it when the flag is off.
       ...(THEME_ROUNDS && trimmedTheme.length >= 2 ? { theme: trimmedTheme } : {}),

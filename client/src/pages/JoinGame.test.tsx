@@ -26,6 +26,7 @@ function stubLocalStorage() {
 
 const mockSetLocation = vi.fn();
 let mockParams: { code?: string } = {};
+let lastJoinBody: unknown;
 
 vi.mock('wouter', () => ({
   useLocation: () => ['/join', mockSetLocation],
@@ -49,11 +50,25 @@ vi.mock('sonner', () => ({
   },
 }));
 
-function createFetchMock(overrides?: { joinRoom?: () => Promise<Response> }) {
-  return vi.fn((input: string | URL | Request) => {
+function createFetchMock(overrides?: {
+  joinRoom?: () => Promise<Response>;
+  authenticated?: boolean;
+}) {
+  return vi.fn((input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
+    if (url.includes('/api/auth/user')) {
+      if (overrides?.authenticated) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ id: 'account-1', email: 'player@example.com' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false, status: 401 } as Response);
+    }
+
     if (url.includes('/join')) {
+      if (typeof init?.body === 'string') lastJoinBody = JSON.parse(init.body);
       if (overrides?.joinRoom) return overrides.joinRoom();
       return Promise.resolve({
         ok: true,
@@ -88,6 +103,7 @@ describe('JoinGame', () => {
     mockSetLocation.mockClear();
     toastError.mockClear();
     mockParams = {};
+    lastJoinBody = undefined;
   });
 
   afterEach(() => {
@@ -122,6 +138,43 @@ describe('JoinGame', () => {
     fireEvent.change(codeInput, { target: { value: 'abcde' } });
 
     expect(codeInput.value).toBe('ABCDE');
+  });
+
+  it('sends the persistent opaque guest subject when joining a room', async () => {
+    mockParams = { code: 'ABCDE' };
+    vi.stubGlobal('fetch', createFetchMock());
+    renderJoinGame();
+
+    fireEvent.change(await screen.findByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-join-room'));
+
+    await waitFor(() =>
+      expect(lastJoinBody).toMatchObject({
+        stableGuestSubjectId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+      })
+    );
+    expect(localStorage.getItem('trivia:guest-subject:v1')).toBe(
+      (lastJoinBody as { stableGuestSubjectId: string }).stableGuestSubjectId
+    );
+  });
+
+  it('sends the persistent opaque browser subject for signed-in players too', async () => {
+    mockParams = { code: 'ABCDE' };
+    vi.stubGlobal('fetch', createFetchMock({ authenticated: true }));
+    renderJoinGame();
+
+    fireEvent.change(await screen.findByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-join-room'));
+
+    await waitFor(() =>
+      expect(lastJoinBody).toMatchObject({
+        stableGuestSubjectId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+      })
+    );
   });
 
   it('prefills the room code from the route param', async () => {

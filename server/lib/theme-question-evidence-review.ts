@@ -257,7 +257,8 @@ async function loadContext(
   request: z.infer<typeof requestSchema>,
   config: ThemeQuestionEvidenceReviewConfig,
   at: Date,
-  enforceIndependence = true
+  enforceIndependence = true,
+  allowAccepted = false
 ): Promise<Context> {
   const result = await db.query(
     `SELECT g.*, o.status AS generation_status, o.question_content_hash AS outcome_question_hash,
@@ -281,7 +282,7 @@ async function loadContext(
   if (
     !g ||
     g.generation_status !== 'persisted' ||
-    g.candidate_status !== 'pending' ||
+    (g.candidate_status !== 'pending' && !(allowAccepted && g.candidate_status === 'accepted')) ||
     g.candidate_hash !== request.questionContentHash ||
     g.revision_hash !== request.questionContentHash ||
     g.outcome_question_hash !== request.questionContentHash ||
@@ -701,14 +702,15 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
     async eligibility(
       rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>,
       db: Pool | PoolClient = pool,
-      at: Date = now()
+      at: Date = now(),
+      allowAccepted = false
     ) {
       const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
       const request = { ...parsed.data, attemptId: randomUUID() };
       if (!Number.isFinite(at.valueOf()))
         throw new ThemeQuestionEvidenceReviewError('invalid_request');
-      const current = await safe(() => loadContext(db, request, config, at, false));
+      const current = await safe(() => loadContext(db, request, config, at, false, allowAccepted));
       const unowned = await safe(() =>
         db.query(
           `SELECT r.id FROM theme_evidence_reviews r
@@ -812,17 +814,18 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
     async qaContext(
       rawRequest: Omit<z.infer<typeof requestSchema>, 'attemptId'>,
       db: Pool | PoolClient = pool,
-      at: Date = now()
+      at: Date = now(),
+      allowAccepted = false
     ): Promise<ThemeQuestionQaContext> {
       const parsed = requestSchema.omit({ attemptId: true }).safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionEvidenceReviewError('invalid_request');
       if (!Number.isFinite(at.valueOf()))
         throw new ThemeQuestionEvidenceReviewError('invalid_request');
-      const decision = await repository.eligibility(parsed.data, db, at);
+      const decision = await repository.eligibility(parsed.data, db, at, allowAccepted);
       if (!decision.eligible || !decision.attemptId || !decision.reviewId)
         throw new ThemeQuestionEvidenceReviewError('ineligible');
       const request = { ...parsed.data, attemptId: randomUUID() };
-      const current = await safe(() => loadContext(db, request, config, at, false));
+      const current = await safe(() => loadContext(db, request, config, at, false, allowAccepted));
       const linked = await safe(() =>
         db.query(
           'SELECT passage_id FROM theme_evidence_review_passages WHERE review_id = $1 ORDER BY passage_id',
