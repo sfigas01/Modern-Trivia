@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
-import type { ThemeProgress, ThemeStartResponse } from '@shared/models/rooms';
+import {
+  themeStartResponseSchema,
+  type ThemeProgress,
+  type ThemeStartResponse,
+} from '@shared/models/rooms';
 
 import { getGuestSeenIds } from '@/lib/guest-seen';
 import { getRoomSession } from '@/lib/room-session';
@@ -28,17 +32,22 @@ async function postThemeStart(code: string): Promise<ThemeStartResponse> {
     headers: { 'Content-Type': 'application/json', ...authHeaders(code) },
     body: JSON.stringify({ excludeQuestionIds: getGuestSeenIds() }),
   });
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    // no JSON body
+  }
   if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = await res.json();
-      if (typeof data?.message === 'string') message = data.message;
-    } catch {
-      // no JSON body
-    }
+    const shortfall = themeStartResponseSchema.safeParse(data);
+    if (shortfall.success && shortfall.data.status === 'error') return shortfall.data;
+    const message =
+      typeof (data as { message?: unknown } | undefined)?.message === 'string'
+        ? (data as { message: string }).message
+        : res.statusText;
     throw new Error(message);
   }
-  return res.json() as Promise<ThemeStartResponse>;
+  return themeStartResponseSchema.parse(data);
 }
 
 async function fetchThemeProgress(code: string): Promise<ThemeProgress> {
@@ -60,13 +69,14 @@ export interface ThemedStartButtonProps {
 // (VITE_PIXEL_UI) lobby controls.
 export function useThemedStart({ code }: ThemedStartButtonProps) {
   const [preparing, setPreparing] = useState(false);
+  const [startProgress, setStartProgress] = useState<ThemeStartResponse>();
 
   const start = useMutation({
     mutationFn: () => postThemeStart(code),
     onSuccess: (progress) => {
-      setPreparing(true);
+      setStartProgress(progress);
+      setPreparing(progress.status !== 'error');
       if (progress.status === 'error') {
-        setPreparing(false);
         toast.error(progress.error ?? 'Themed preparation failed.');
       }
     },
@@ -83,33 +93,30 @@ export function useThemedStart({ code }: ThemedStartButtonProps) {
       query.state.data?.status === 'preparing' ? PROGRESS_POLL_MS : false,
   });
 
-  const progress = progressQuery.data;
-  // Preparation is terminal on error; the host can retry from the error panel.
+  const progress = progressQuery.data ?? startProgress;
+  const hasTerminalError = progress?.status === 'error';
   const isBusy = start.isPending || (preparing && progress?.status !== 'error');
 
   return {
     progress,
     preparing,
     isBusy,
+    hasTerminalError,
     startGame: () => start.mutate(),
-    retry: () => {
-      setPreparing(false);
-      start.mutate();
-    },
   };
 }
 
 export function ThemedStartButton(props: ThemedStartButtonProps) {
   const { theme, canStart } = props;
-  const { progress, preparing, isBusy, startGame, retry } = useThemedStart(props);
+  const { progress, preparing, isBusy, hasTerminalError, startGame } = useThemedStart(props);
 
   return (
     <div className="space-y-3">
       <Button
         className="w-full h-14 text-lg font-bold"
-        disabled={!canStart || isBusy}
+        disabled={!canStart || isBusy || hasTerminalError}
         onClick={() => {
-          if (!canStart || isBusy) return;
+          if (!canStart || isBusy || hasTerminalError) return;
           startGame();
         }}
         data-testid="button-start-themed-game"
@@ -139,10 +146,7 @@ export function ThemedStartButton(props: ThemedStartButtonProps) {
           aria-live="polite"
           data-testid="text-theme-error"
         >
-          {progress.error ?? 'Themed preparation failed.'}{' '}
-          <button type="button" className="underline" onClick={retry}>
-            Try again
-          </button>
+          {progress.error ?? 'Themed preparation failed.'}
         </div>
       )}
 

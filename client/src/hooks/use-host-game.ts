@@ -13,6 +13,7 @@ import {
 import { useGame } from '@/lib/store';
 import { useCategoryCounts } from '@/hooks/use-category-counts';
 import { saveRoomSession } from '@/lib/room-session';
+import { getStableGuestSubjectId } from '@/lib/guest-subject';
 import { THEME_ROUNDS } from '@/lib/featureFlags';
 
 async function suggestThemeCategories(theme: string): Promise<ThemeSuggestResponse> {
@@ -93,6 +94,7 @@ export function useHostGame() {
   });
 
   const trimmedTheme = theme.trim();
+  const isThemed = THEME_ROUNDS && trimmedTheme.length >= 2;
   const handleSuggest = () => {
     if (trimmedTheme.length < 2 || suggestMutation.isPending) return;
     suggestMutation.mutate(trimmedTheme);
@@ -119,7 +121,7 @@ export function useHostGame() {
     const categoriesValue =
       state.selectedCategories.length === 0 ? ['All'] : state.selectedCategories;
     const categories = roomCategoriesSchema.safeParse(categoriesValue);
-    const numRounds = roomRoundsSchema.safeParse(state.numRounds);
+    const numRounds = roomRoundsSchema.safeParse(isThemed ? 5 : state.numRounds);
     if (!categories.success || !numRounds.success) {
       toast.error('Invalid category or rounds selection. Please try again.');
       return;
@@ -130,9 +132,10 @@ export function useHostGame() {
       categories: categories.data,
       numRounds: numRounds.data,
       opponentDisputeVotingEnabled,
+      stableGuestSubjectId: getStableGuestSubjectId(),
       // Only sent when the feature is on and the host entered a theme; the
       // server ignores it when the flag is off.
-      ...(THEME_ROUNDS && trimmedTheme.length >= 2 ? { theme: trimmedTheme } : {}),
+      ...(isThemed ? { theme: trimmedTheme } : {}),
     });
   };
 
@@ -147,6 +150,7 @@ export function useHostGame() {
     theme,
     setTheme,
     trimmedTheme,
+    isThemed,
     handleSuggest,
     isSuggesting: suggestMutation.isPending,
     opponentDisputeVotingEnabled,

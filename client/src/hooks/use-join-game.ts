@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { roomCodeSchema, type JoinRoomRequest, type JoinRoomResponse } from '@shared/models/rooms';
 
 import { getGuestSeenIds } from '@/lib/guest-seen';
+import { getStableGuestSubjectId } from '@/lib/guest-subject';
 import { saveRoomSession } from '@/lib/room-session';
 
 async function joinRoom(code: string, body: JoinRoomRequest): Promise<JoinRoomResponse> {
@@ -74,6 +75,7 @@ export function useJoinGame() {
     joinRoomMutation.mutate({
       nickname: trimmedNickname,
       excludeQuestionIds: getGuestSeenIds(),
+      stableGuestSubjectId: getStableGuestSubjectId(),
     });
   };
 

@@ -60,9 +60,24 @@ const QUESTIONS = [
   },
 ];
 
-function createFetchMock(overrides?: { createRoom?: () => Promise<Response> }) {
-  return vi.fn((input: string | URL | Request) => {
+let lastCreateBody: unknown;
+
+function createFetchMock(overrides?: {
+  createRoom?: () => Promise<Response>;
+  authenticated?: boolean;
+}) {
+  return vi.fn((input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+    if (url.includes('/api/auth/user')) {
+      if (overrides?.authenticated) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ id: 'account-1', email: 'host@example.com' }),
+        } as Response);
+      }
+      return Promise.resolve({ ok: false, status: 401 } as Response);
+    }
 
     if (url.includes('/api/questions')) {
       return Promise.resolve({
@@ -72,6 +87,7 @@ function createFetchMock(overrides?: { createRoom?: () => Promise<Response> }) {
     }
 
     if (url.includes('/api/rooms')) {
+      if (typeof init?.body === 'string') lastCreateBody = JSON.parse(init.body);
       if (overrides?.createRoom) return overrides.createRoom();
       return Promise.resolve({
         ok: true,
@@ -115,6 +131,7 @@ describe('HostGame', () => {
     localStorage.clear();
     mockSetLocation.mockClear();
     toastError.mockClear();
+    lastCreateBody = undefined;
   });
 
   afterEach(() => {
@@ -135,6 +152,41 @@ describe('HostGame', () => {
 
     fireEvent.change(screen.getByTestId('input-nickname'), { target: { value: 'Steph' } });
     expect(createButton).not.toBeDisabled();
+  });
+
+  it('sends the persistent opaque guest subject when creating a room', async () => {
+    vi.stubGlobal('fetch', createFetchMock());
+    renderHostGame();
+
+    fireEvent.change(await screen.findByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-create-room'));
+
+    await waitFor(() =>
+      expect(lastCreateBody).toMatchObject({
+        stableGuestSubjectId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+      })
+    );
+    expect(localStorage.getItem('trivia:guest-subject:v1')).toBe(
+      (lastCreateBody as { stableGuestSubjectId: string }).stableGuestSubjectId
+    );
+  });
+
+  it('sends the persistent opaque browser subject for signed-in hosts too', async () => {
+    vi.stubGlobal('fetch', createFetchMock({ authenticated: true }));
+    renderHostGame();
+
+    fireEvent.change(await screen.findByTestId('input-nickname'), { target: { value: 'Steph' } });
+    fireEvent.click(screen.getByTestId('button-create-room'));
+
+    await waitFor(() =>
+      expect(lastCreateBody).toMatchObject({
+        stableGuestSubjectId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+      })
+    );
   });
 
   it('shows a spinner while the create room request is in flight', async () => {

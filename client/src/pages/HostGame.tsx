@@ -36,6 +36,7 @@ function ClassicHostGame() {
     theme,
     setTheme,
     trimmedTheme,
+    isThemed,
     handleSuggest,
     isSuggesting,
     opponentDisputeVotingEnabled,
@@ -179,18 +180,20 @@ function ClassicHostGame() {
                 <Zap className="w-4 h-4 text-primary" />
                 Number of Rounds
               </CardTitle>
-              <CardDescription>How many questions to play.</CardDescription>
+              <CardDescription>
+                {isThemed ? 'Themed games use five rounds.' : 'How many questions to play.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-4 gap-2">
-                {ROOM_ROUND_OPTIONS.map((rounds) => (
+                {(isThemed ? [5] : ROOM_ROUND_OPTIONS).map((rounds) => (
                   <Button
                     key={rounds}
                     type="button"
-                    variant={state.numRounds === rounds ? 'default' : 'outline'}
+                    variant={(isThemed ? 5 : state.numRounds) === rounds ? 'default' : 'outline'}
                     onClick={() => setNumRounds(rounds)}
-                    disabled={isCreating}
-                    className={`border-white/10 hover:bg-white/10 ${state.numRounds === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+                    disabled={isCreating || isThemed}
+                    className={`border-white/10 hover:bg-white/10 ${(isThemed ? 5 : state.numRounds) === rounds ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
                   >
                     {rounds}
                   </Button>

@@ -306,7 +306,7 @@ function canonicalFingerprintPayload(input: {
   });
 }
 
-function prepareCreateInput(
+export function prepareThemeLifecycleCreate(
   input: CreateThemeLifecycleInput,
   now: Date,
   hash: (value: string) => string
@@ -478,7 +478,9 @@ export function createThemeLifecycleService(options: {
 
   return {
     async createGame(input: CreateThemeLifecycleInput): Promise<ThemeLifecycleBundle> {
-      return options.repository.createGameWithRosterAndJob(prepareCreateInput(input, now(), hash));
+      return options.repository.createGameWithRosterAndJob(
+        prepareThemeLifecycleCreate(input, now(), hash)
+      );
     },
 
     async acquireLease(jobId: string, leaseDurationMs: number) {
@@ -753,6 +755,90 @@ async function selectJobForGame(
   return result.rows[0] ? mapJob(result.rows[0]) : null;
 }
 
+export async function createThemeLifecycleInTransaction(
+  client: PoolClient,
+  input: PreparedThemeLifecycleCreate
+): Promise<ThemeLifecycleBundle> {
+  const plan = themeGamePlanFor(input.request.playerCount);
+  const inserted = await client.query<GameRow>(
+    `INSERT INTO theme_game_sessions
+       (contract_version, idempotency_key, idempotency_owner_hash, request_fingerprint,
+        room_id, mode, status, theme, theme_slug, related_categories, player_count,
+        question_count, themed_question_target, related_question_target, candidate_ceiling,
+        opening_question_target, opening_themed_target, opening_related_target,
+        roster_locked_at, expires_at, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, 'preflight', $7, $8, $9::jsonb, $10,
+             $11, $12, $13, $14, $15, $16, $17, $18, $19, $18, $18)
+     ON CONFLICT (idempotency_key) DO NOTHING
+     RETURNING *`,
+    [
+      input.request.contractVersion,
+      input.request.idempotencyKey,
+      input.idempotencyOwnerHash,
+      input.requestFingerprint,
+      input.roomId,
+      input.request.mode,
+      input.request.theme,
+      input.request.themeSlug,
+      JSON.stringify(input.request.relatedCategories),
+      input.request.playerCount,
+      plan.questionCount,
+      plan.themedQuestionTarget,
+      plan.relatedQuestionTarget,
+      plan.candidateCeiling,
+      plan.openingQuestionTarget,
+      plan.openingThemedTarget,
+      plan.openingRelatedTarget,
+      input.now,
+      input.expiresAt,
+    ]
+  );
+
+  let game = inserted.rows[0] ? mapGame(inserted.rows[0]) : null;
+  const created = Boolean(game);
+  if (!game) {
+    game = await selectGameByKey(client, input.request.idempotencyKey);
+    if (!game) throw new Error('Idempotent game row was not visible after conflict');
+    if (
+      game.idempotencyOwnerHash !== input.idempotencyOwnerHash ||
+      game.requestFingerprint !== input.requestFingerprint
+    ) {
+      throw new ThemeLifecycleError(
+        'idempotency_conflict',
+        'Idempotency key belongs to a different owner or request'
+      );
+    }
+  }
+
+  if (created) {
+    for (const member of input.roster) {
+      await client.query(
+        `INSERT INTO theme_game_participants
+           (game_id, identity_id, room_player_id, seat, joined_at)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [game.id, member.identityId, member.roomPlayerId ?? null, member.seat, input.now]
+      );
+    }
+    await client.query(
+      `INSERT INTO theme_preparation_jobs
+         (contract_version, game_id, stable_key, status, public_stage,
+          candidate_ceiling, created_at, updated_at)
+       VALUES ($1, $2, $3, 'queued', 'waiting', $4, $5, $5)`,
+      [
+        game.contractVersion,
+        game.id,
+        `theme-game:${game.id}:prepare-v1`,
+        game.candidateCeiling,
+        input.now,
+      ]
+    );
+  }
+
+  const job = await selectJobForGame(client, game.id);
+  if (!job) throw new Error('Theme preparation job missing for game');
+  return { game, job, created };
+}
+
 export function createPostgresThemeLifecycleRepository(
   pool: Pick<Pool, 'connect'>
 ): ThemeLifecycleRepository {
@@ -761,85 +847,9 @@ export function createPostgresThemeLifecycleRepository(
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        const plan = themeGamePlanFor(input.request.playerCount);
-        const inserted = await client.query<GameRow>(
-          `INSERT INTO theme_game_sessions
-             (contract_version, idempotency_key, idempotency_owner_hash, request_fingerprint,
-              room_id, mode, status, theme, theme_slug, related_categories, player_count,
-              question_count, themed_question_target, related_question_target, candidate_ceiling,
-              opening_question_target, opening_themed_target, opening_related_target,
-              roster_locked_at, expires_at, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, 'preflight', $7, $8, $9::jsonb, $10,
-                   $11, $12, $13, $14, $15, $16, $17, $18, $19, $18, $18)
-           ON CONFLICT (idempotency_key) DO NOTHING
-           RETURNING *`,
-          [
-            input.request.contractVersion,
-            input.request.idempotencyKey,
-            input.idempotencyOwnerHash,
-            input.requestFingerprint,
-            input.roomId,
-            input.request.mode,
-            input.request.theme,
-            input.request.themeSlug,
-            JSON.stringify(input.request.relatedCategories),
-            input.request.playerCount,
-            plan.questionCount,
-            plan.themedQuestionTarget,
-            plan.relatedQuestionTarget,
-            plan.candidateCeiling,
-            plan.openingQuestionTarget,
-            plan.openingThemedTarget,
-            plan.openingRelatedTarget,
-            input.now,
-            input.expiresAt,
-          ]
-        );
-
-        let game = inserted.rows[0] ? mapGame(inserted.rows[0]) : null;
-        const created = Boolean(game);
-        if (!game) {
-          game = await selectGameByKey(client, input.request.idempotencyKey);
-          if (!game) throw new Error('Idempotent game row was not visible after conflict');
-          if (
-            game.idempotencyOwnerHash !== input.idempotencyOwnerHash ||
-            game.requestFingerprint !== input.requestFingerprint
-          ) {
-            throw new ThemeLifecycleError(
-              'idempotency_conflict',
-              'Idempotency key belongs to a different owner or request'
-            );
-          }
-        }
-
-        if (created) {
-          for (const member of input.roster) {
-            await client.query(
-              `INSERT INTO theme_game_participants
-                 (game_id, identity_id, room_player_id, seat, joined_at)
-               VALUES ($1, $2, $3, $4, $5)`,
-              [game.id, member.identityId, member.roomPlayerId ?? null, member.seat, input.now]
-            );
-          }
-          await client.query(
-            `INSERT INTO theme_preparation_jobs
-               (contract_version, game_id, stable_key, status, public_stage,
-                candidate_ceiling, created_at, updated_at)
-             VALUES ($1, $2, $3, 'queued', 'waiting', $4, $5, $5)`,
-            [
-              game.contractVersion,
-              game.id,
-              `theme-game:${game.id}:prepare-v1`,
-              game.candidateCeiling,
-              input.now,
-            ]
-          );
-        }
-
-        const job = await selectJobForGame(client, game.id);
-        if (!job) throw new Error('Theme preparation job missing for game');
+        const bundle = await createThemeLifecycleInTransaction(client, input);
         await client.query('COMMIT');
-        return { game, job, created };
+        return bundle;
       } catch (error) {
         await client.query('ROLLBACK');
         throw error;
