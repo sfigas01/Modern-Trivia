@@ -68,8 +68,41 @@ describe('ThemedStartButton', () => {
     renderButton();
     fireEvent.click(screen.getByTestId('button-start-themed-game'));
 
-    await waitFor(() => expect(screen.getByTestId('text-theme-progress')).toBeInTheDocument());
-    expect(screen.getByTestId('text-theme-progress')).toHaveTextContent('12 of 40 ready');
+    await waitFor(() =>
+      expect(screen.getByTestId('text-theme-progress')).toHaveTextContent('12 of 40 ready')
+    );
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the durable shortfall message returned with a conflict response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 409,
+          statusText: 'Conflict',
+          json: () =>
+            Promise.resolve({
+              status: 'error',
+              ready: 0,
+              total: 40,
+              reused: 0,
+              generated: 0,
+              error: 'Not enough verified related questions.',
+            }),
+        } as Response)
+      )
+    );
+
+    renderButton();
+    fireEvent.click(screen.getByTestId('button-start-themed-game'));
+
+    await waitFor(() => expect(screen.getByTestId('text-theme-error')).toBeInTheDocument());
+    expect(screen.getByTestId('text-theme-error')).toHaveTextContent(
+      'Not enough verified related questions.'
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
     vi.unstubAllGlobals();
   });
 });

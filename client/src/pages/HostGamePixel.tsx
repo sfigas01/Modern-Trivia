@@ -27,6 +27,7 @@ export default function HostGamePixel() {
     theme,
     setTheme,
     trimmedTheme,
+    isThemed,
     handleSuggest,
     isSuggesting,
     opponentDisputeVotingEnabled,
@@ -102,12 +103,14 @@ export default function HostGamePixel() {
         </PixelFrame>
 
         <PixelFrame title="Number of Rounds">
-          <p className="tc-hint">How many questions to play.</p>
+          <p className="tc-hint">
+            {isThemed ? 'Themed games use five rounds.' : 'How many questions to play.'}
+          </p>
           <PixelRoundPicker
-            options={ROOM_ROUND_OPTIONS}
-            value={state.numRounds}
+            options={isThemed ? [5] : ROOM_ROUND_OPTIONS}
+            value={isThemed ? 5 : state.numRounds}
             onChange={setNumRounds}
-            disabled={isCreating}
+            disabled={isCreating || isThemed}
           />
         </PixelFrame>
 

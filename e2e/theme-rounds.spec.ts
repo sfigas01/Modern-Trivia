@@ -81,7 +81,7 @@ function player(id: string, nickname: string, isHost: boolean, joinOrder: number
 
 async function installThemeFixtures(
   context: BrowserContext,
-  state: { phase: 'LOBBY' | 'QUESTION' },
+  state: { phase: 'LOBBY' | 'QUESTION'; createBody?: Record<string, unknown> },
   outcome: 'ready' | 'shortfall' = 'ready'
 ) {
   // Deterministic question catalog for the host setup screen.
@@ -110,6 +110,7 @@ async function installThemeFixtures(
   // so a plain `**/api/rooms/ABCD2` glob would miss every later poll (including
   // the one that flips the room to QUESTION) and let it hit the real server.
   await context.route(/\/api\/rooms(?:\?.*)?$/, async (route) => {
+    state.createBody = route.request().postDataJSON() as Record<string, unknown>;
     await route.fulfill({
       status: 201,
       contentType: 'application/json',
@@ -119,6 +120,21 @@ async function installThemeFixtures(
 
   let progressPolls = 0;
   await context.route(new RegExp(`/api/rooms/${CODE}/theme-start(?:\\?.*)?$`), async (route) => {
+    if (outcome === 'shortfall') {
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'error',
+          ready: 0,
+          total: 40,
+          reused: 0,
+          generated: 0,
+          error: 'Not enough verified related questions.',
+        }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 202,
       contentType: 'application/json',
@@ -135,21 +151,6 @@ async function installThemeFixtures(
 
   await context.route(new RegExp(`/api/rooms/${CODE}/theme-progress(?:\\?.*)?$`), async (route) => {
     progressPolls += 1;
-    if (outcome === 'shortfall') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'error',
-          ready: 26,
-          total: 40,
-          reused: 26,
-          generated: 0,
-          error: 'Could only assemble 26 of 40 questions for "baseball".',
-        }),
-      });
-      return;
-    }
     if (progressPolls >= 2) {
       // Preparation complete: flip the room snapshot to QUESTION so the room
       // poll transitions the client into the game.
@@ -212,6 +213,8 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     await page.getByTestId('input-nickname').fill('Host');
     await page.getByTestId('button-create-room').click();
 
+    expect(state.createBody).toMatchObject({ theme: 'baseball', numRounds: 5 });
+
     // ── Lobby: themed room shows the theme and a themed start button ────────
     await page.waitForURL(`**/room/${CODE}`);
     await expect(page.getByTestId('button-start-themed-game')).toBeVisible();
@@ -245,7 +248,7 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     await page.getByTestId('button-start-themed-game').click();
 
     await expect(page.getByTestId('text-theme-error')).toContainText(
-      'Could only assemble 26 of 40 questions',
+      'Not enough verified related questions.',
       { timeout: 15000 }
     );
     await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
