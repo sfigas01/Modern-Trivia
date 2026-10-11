@@ -65,31 +65,42 @@ export async function resolveThemeIdentity(
     );
     await db.query(
       `INSERT INTO theme_identity_links(source_identity_id,target_identity_id)
-       VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+       VALUES ($1,$2) ON CONFLICT (source_identity_id) DO NOTHING`,
       [guest.rows[0].id, identityId]
     );
   }
   return identityId;
 }
 
-/** Union linked subjects in both directions; lock in a stable order before history/reservations. */
+/**
+ * Lock the roster identities before snapshotting links, then include only guest
+ * history that flows into an account. A guest browser is claimed by its first
+ * signed-in account, so shared browsers never connect two account histories.
+ */
 async function historySubjects(db: SqlQuery, identities: string[]): Promise<string[]> {
+  const startingIds = Array.from(new Set(identities)).sort();
+  await db.query(
+    `SELECT id FROM theme_participant_identities WHERE id = ANY($1::uuid[])
+     ORDER BY CASE kind WHEN 'account' THEN 0 ELSE 1 END,id FOR UPDATE`,
+    [startingIds]
+  );
   const rows = await db.query(
     `WITH RECURSIVE subjects(id) AS (
        SELECT unnest($1::uuid[])
        UNION
-       SELECT CASE WHEN link.source_identity_id = subjects.id THEN link.target_identity_id
-                   ELSE link.source_identity_id END
-       FROM subjects JOIN theme_identity_links link
-         ON link.source_identity_id = subjects.id OR link.target_identity_id = subjects.id
+       SELECT link.source_identity_id
+       FROM subjects JOIN theme_identity_links link ON link.target_identity_id = subjects.id
      ) SELECT id FROM subjects ORDER BY id`,
-    [identities]
+    [startingIds]
   );
   const ids = rows.rows.map((row) => String(row.id));
-  await db.query(
-    'SELECT id FROM theme_participant_identities WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE',
-    [ids]
-  );
+  const linkedIds = ids.filter((id) => !startingIds.includes(id));
+  if (linkedIds.length)
+    await db.query(
+      `SELECT id FROM theme_participant_identities WHERE id = ANY($1::uuid[])
+       ORDER BY id FOR UPDATE`,
+      [linkedIds]
+    );
   return ids;
 }
 

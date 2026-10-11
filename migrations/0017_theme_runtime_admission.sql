@@ -15,6 +15,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_theme_game_sessions_active_room
   WHERE room_id IS NOT NULL AND status NOT IN ('completed','failed','abandoned','expired');
 CREATE UNIQUE INDEX IF NOT EXISTS uq_theme_identity_account
   ON theme_participant_identities(account_user_id) WHERE kind = 'account';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_theme_identity_links_guest_source
+  ON theme_identity_links(source_identity_id);
 
 CREATE OR REPLACE FUNCTION protect_theme_generation_owner() RETURNS trigger AS $$
 BEGIN

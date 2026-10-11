@@ -592,6 +592,7 @@ export const themeIdentityLinks = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.sourceIdentityId, table.targetIdentityId] }),
+    uniqueIndex('uq_theme_identity_links_guest_source').on(table.sourceIdentityId),
     check(
       'theme_identity_links_distinct',
       sql`${table.sourceIdentityId} <> ${table.targetIdentityId}`

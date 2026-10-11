@@ -67,6 +67,22 @@ describe.runIf(Boolean(databaseUrl))('S11A PostgreSQL admission and history', ()
       });
       expect(secondIdentity).toBe(guestIdentity);
       const hostIdentity = await resolveThemeIdentity(pool, { userId: 'host-account' });
+      await resolveThemeIdentity(pool, {
+        userId: 'host-account',
+        stableGuestSubjectId: guestSubject,
+      });
+      const otherIdentity = await resolveThemeIdentity(pool, {
+        userId: 'other-account',
+        stableGuestSubjectId: guestSubject,
+      });
+      expect(
+        (
+          await pool.query(
+            'SELECT target_identity_id FROM theme_identity_links WHERE source_identity_id=$1',
+            [guestIdentity]
+          )
+        ).rows
+      ).toEqual([{ target_identity_id: hostIdentity }]);
       const roomId = randomUUID(),
         hostPlayer = randomUUID(),
         guestPlayer = randomUUID();
@@ -161,7 +177,6 @@ describe.runIf(Boolean(databaseUrl))('S11A PostgreSQL admission and history', ()
       ).rejects.toMatchObject({ code: '23505' });
       // Shared signed-in participants join two different rooms in opposite seat
       // orders. Admission must lock persisted identity IDs in the same order.
-      const otherIdentity = await resolveThemeIdentity(pool, { userId: 'other-account' });
       const reversedRooms = [
         {
           code: 'ABCD3',

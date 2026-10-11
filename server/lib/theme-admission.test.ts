@@ -285,14 +285,19 @@ describe('dormant atomic theme admission', () => {
         command.text.startsWith('INSERT INTO theme_participant_identities')
       )
     ).toBe(false);
-    expect(
-      test.commands.find((command) => command.text.startsWith('WITH RECURSIVE'))?.values
-    ).toEqual([[hostIdentity, guestIdentity]]);
-    expect(
-      test.commands.find((command) =>
-        command.text.startsWith('SELECT id FROM theme_participant_identities')
-      )?.text
-    ).toContain('ORDER BY id FOR UPDATE');
+    const initialLock = test.commands.findIndex((command) =>
+      command.text.startsWith('SELECT id FROM theme_participant_identities')
+    );
+    const closure = test.commands.findIndex((command) => command.text.startsWith('WITH RECURSIVE'));
+    expect(initialLock).toBeGreaterThan(-1);
+    expect(initialLock).toBeLessThan(closure);
+    expect(test.commands[initialLock].values).toEqual([[hostIdentity, guestIdentity].sort()]);
+    expect(test.commands[initialLock].text).toContain(
+      "ORDER BY CASE kind WHEN 'account' THEN 0 ELSE 1 END,id FOR UPDATE"
+    );
+    expect(test.commands[closure].values).toEqual([[hostIdentity, guestIdentity].sort()]);
+    expect(test.commands[closure].text).toContain('link.target_identity_id = subjects.id');
+    expect(test.commands[closure].text).not.toContain(' OR ');
   });
   it('fails closed if a signed-in participant has no persisted history identity', async () => {
     const test = setup({ missingHostIdentity: true });
@@ -377,6 +382,7 @@ describe('authoritative theme identity and exposure', () => {
     ]);
     expect(calls[1].values).toEqual([themeSubjectHash(`guest:${subject}`)]);
     expect(calls[2].values).toEqual([guestIdentity, hostIdentity]);
+    expect(calls[2].text).toContain('ON CONFLICT (source_identity_id) DO NOTHING');
     expect(JSON.stringify(calls)).not.toContain(subject);
   });
   it('refuses anonymous identity reset when no stable subject is supplied', async () => {
