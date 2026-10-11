@@ -232,7 +232,7 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     );
   });
 
-  test('an inventory shortfall stays in the lobby and gives the host a clear retry path', async ({
+  test('a non-retryable inventory shortfall stays in the lobby without a retry action', async ({
     page,
     context,
   }) => {
@@ -251,8 +251,8 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
       'Not enough verified related questions.',
       { timeout: 15000 }
     );
-    await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
-    await expect(page.getByTestId('button-start-themed-game')).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);
+    await expect(page.getByTestId('button-start-themed-game')).toBeDisabled();
     await expect(page).toHaveURL(new RegExp(`/room/${CODE}$`));
     expect(state.phase).toBe('LOBBY');
   });

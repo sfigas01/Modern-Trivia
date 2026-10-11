@@ -541,15 +541,15 @@ export function PixelTurnHandoff({
 // Pixel themed-game start with generation progress (STE-233).
 export function PixelThemedStart(props: ThemedStartButtonProps) {
   const { theme, canStart } = props;
-  const { progress, preparing, isBusy, startGame, retry } = useThemedStart(props);
+  const { progress, preparing, isBusy, hasTerminalError, startGame } = useThemedStart(props);
   return (
     <div className="tc-stack">
       <PixelButton
         variant="red"
         size="lg"
         block
-        disabled={!canStart || isBusy}
-        onClick={() => canStart && !isBusy && startGame()}
+        disabled={!canStart || isBusy || hasTerminalError}
+        onClick={() => canStart && !isBusy && !hasTerminalError && startGame()}
         data-testid="button-start-themed-game"
       >
         {isBusy ? (
@@ -574,9 +574,6 @@ export function PixelThemedStart(props: ThemedStartButtonProps) {
       {progress?.status === 'error' && (
         <div className="tc-parchment" aria-live="polite" data-testid="text-theme-error">
           <p>{progress.error ?? 'Themed preparation failed.'}</p>
-          <PixelButton variant="stone" size="sm" onClick={retry}>
-            Try again
-          </PixelButton>
         </div>
       )}
       {!canStart && (

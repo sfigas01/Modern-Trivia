@@ -94,33 +94,29 @@ export function useThemedStart({ code }: ThemedStartButtonProps) {
   });
 
   const progress = progressQuery.data ?? startProgress;
-  // Preparation is terminal on error; the host can retry from the error panel.
+  const hasTerminalError = progress?.status === 'error';
   const isBusy = start.isPending || (preparing && progress?.status !== 'error');
 
   return {
     progress,
     preparing,
     isBusy,
+    hasTerminalError,
     startGame: () => start.mutate(),
-    retry: () => {
-      setPreparing(false);
-      setStartProgress(undefined);
-      start.mutate();
-    },
   };
 }
 
 export function ThemedStartButton(props: ThemedStartButtonProps) {
   const { theme, canStart } = props;
-  const { progress, preparing, isBusy, startGame, retry } = useThemedStart(props);
+  const { progress, preparing, isBusy, hasTerminalError, startGame } = useThemedStart(props);
 
   return (
     <div className="space-y-3">
       <Button
         className="w-full h-14 text-lg font-bold"
-        disabled={!canStart || isBusy}
+        disabled={!canStart || isBusy || hasTerminalError}
         onClick={() => {
-          if (!canStart || isBusy) return;
+          if (!canStart || isBusy || hasTerminalError) return;
           startGame();
         }}
         data-testid="button-start-themed-game"
@@ -150,10 +146,7 @@ export function ThemedStartButton(props: ThemedStartButtonProps) {
           aria-live="polite"
           data-testid="text-theme-error"
         >
-          {progress.error ?? 'Themed preparation failed.'}{' '}
-          <button type="button" className="underline" onClick={retry}>
-            Try again
-          </button>
+          {progress.error ?? 'Themed preparation failed.'}
         </div>
       )}
 

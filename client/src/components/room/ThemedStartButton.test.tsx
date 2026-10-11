@@ -102,7 +102,8 @@ describe('ThemedStartButton', () => {
     expect(screen.getByTestId('text-theme-error')).toHaveTextContent(
       'Not enough verified related questions.'
     );
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('button-start-themed-game')).toBeDisabled();
     vi.unstubAllGlobals();
   });
 });
