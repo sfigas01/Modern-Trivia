@@ -677,10 +677,18 @@ export const themeDailyBudgets = pgTable(
     budgetDate: date('budget_date').primaryKey(),
     currency: varchar('currency', { length: 3 }).notNull().default('USD'),
     limitMicros: integer('limit_micros').notNull(),
+    accountDailyLimitMicros: integer('account_daily_limit_micros'),
+    accountRollingLimitMicros: integer('account_rolling_limit_micros'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [check('theme_daily_budgets_limit', sql`${table.limitMicros} >= 0`)]
+  (table) => [
+    check('theme_daily_budgets_limit', sql`${table.limitMicros} >= 0`),
+    check(
+      'theme_daily_budgets_account_limits',
+      sql`${table.accountDailyLimitMicros} >= 0 AND ${table.accountRollingLimitMicros} >= 0`
+    ),
+  ]
 );
 
 export const themeBudgetAllocations = pgTable(
@@ -692,7 +700,9 @@ export const themeBudgetAllocations = pgTable(
       .references(() => themeDailyBudgets.budgetDate, { onDelete: 'restrict' }),
     jobId: uuid('job_id')
       .notNull()
-      .references(() => themePreparationJobs.id, { onDelete: 'cascade' }),
+      .references(() => themePreparationJobs.id, { onDelete: 'restrict' }),
+    ownerUserId: varchar('owner_user_id').references(() => users.id, { onDelete: 'restrict' }),
+    policyFingerprint: varchar('policy_fingerprint', { length: 64 }),
     status: varchar('status', { length: 24 }).notNull().default('reserved'),
     reservedMicros: integer('reserved_micros').notNull(),
     settledMicros: integer('settled_micros').notNull().default(0),
@@ -704,14 +714,41 @@ export const themeBudgetAllocations = pgTable(
     uniqueIndex('uq_theme_budget_allocations_id_job').on(table.id, table.jobId),
     index('idx_theme_budget_allocations_day_status').on(table.budgetDate, table.status),
     index('idx_theme_budget_allocations_job').on(table.jobId),
+    index('idx_theme_budget_allocations_owner_created').on(table.ownerUserId, table.createdAt),
     check(
       'theme_budget_allocations_status',
-      sql`${table.status} IN ('reserved', 'partially_settled', 'settled', 'released', 'expired')`
+      sql`${table.status} IN ('reserved', 'partially_settled', 'settled', 'released', 'expired', 'unknown')`
     ),
     check(
       'theme_budget_allocations_amounts',
-      sql`${table.reservedMicros} >= 0 AND ${table.settledMicros} >= 0 AND ${table.settledMicros} <= ${table.reservedMicros}`
+      sql`${table.reservedMicros} >= 0 AND ${table.settledMicros} >= 0`
     ),
+    check(
+      'theme_budget_allocations_policy_fingerprint',
+      sql`${table.policyFingerprint} IS NULL OR ${table.policyFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+  ]
+);
+
+/** Append-only operator decisions; original allocation amounts remain immutable. */
+export const themeBudgetReconciliations = pgTable(
+  'theme_budget_reconciliations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    allocationId: uuid('allocation_id')
+      .notNull()
+      .references(() => themeBudgetAllocations.id, { onDelete: 'restrict' }),
+    decision: varchar('decision', { length: 24 }).notNull(),
+    reason: text('reason').notNull(),
+    actorUserId: varchar('actor_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('uq_theme_budget_reconciliations_allocation').on(table.allocationId),
+    check('theme_budget_reconciliations_decision', sql`${table.decision} = 'overrun_acknowledged'`),
+    check('theme_budget_reconciliations_reason', sql`length(trim(${table.reason})) > 0`),
   ]
 );
 
@@ -721,7 +758,7 @@ export const themeJobAttempts = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     jobId: uuid('job_id')
       .notNull()
-      .references(() => themePreparationJobs.id, { onDelete: 'cascade' }),
+      .references(() => themePreparationJobs.id, { onDelete: 'restrict' }),
     allocationId: uuid('allocation_id'),
     sequence: integer('sequence').notNull(),
     operation: varchar('operation', { length: 24 }).notNull(),
@@ -729,6 +766,7 @@ export const themeJobAttempts = pgTable(
     provider: varchar('provider', { length: 255 }),
     model: varchar('model', { length: 255 }),
     providerRequestKey: varchar('provider_request_key', { length: 255 }),
+    requestFingerprint: varchar('request_fingerprint', { length: 64 }),
     candidateSlotsConsumed: integer('candidate_slots_consumed').notNull().default(0),
     reservedCostMicros: integer('reserved_cost_micros').notNull().default(0),
     actualCostMicros: integer('actual_cost_micros').notNull().default(0),
@@ -743,6 +781,9 @@ export const themeJobAttempts = pgTable(
     uniqueIndex('uq_theme_job_attempts_sequence').on(table.jobId, table.sequence),
     uniqueIndex('uq_theme_job_attempts_id_job').on(table.id, table.jobId),
     uniqueIndex('uq_theme_job_attempts_provider_request').on(table.providerRequestKey),
+    uniqueIndex('uq_theme_job_attempts_allocation')
+      .on(table.allocationId)
+      .where(sql`${table.allocationId} IS NOT NULL`),
     index('idx_theme_job_attempts_status').on(table.status),
     foreignKey({
       name: 'fk_theme_job_attempts_allocation_job',
@@ -759,7 +800,11 @@ export const themeJobAttempts = pgTable(
     ),
     check(
       'theme_job_attempts_accounting',
-      sql`${table.sequence} > 0 AND ${table.candidateSlotsConsumed} BETWEEN 0 AND 100 AND ${table.reservedCostMicros} >= 0 AND ${table.actualCostMicros} >= 0 AND ${table.actualCostMicros} <= ${table.reservedCostMicros} AND (${table.inputTokens} IS NULL OR ${table.inputTokens} >= 0) AND (${table.outputTokens} IS NULL OR ${table.outputTokens} >= 0)`
+      sql`${table.sequence} > 0 AND ${table.candidateSlotsConsumed} BETWEEN 0 AND 100 AND ${table.reservedCostMicros} >= 0 AND ${table.actualCostMicros} >= 0 AND (${table.inputTokens} IS NULL OR ${table.inputTokens} >= 0) AND (${table.outputTokens} IS NULL OR ${table.outputTokens} >= 0)`
+    ),
+    check(
+      'theme_job_attempts_request_fingerprint',
+      sql`${table.requestFingerprint} IS NULL OR ${table.requestFingerprint} ~ '^[a-f0-9]{64}$'`
     ),
   ]
 );
