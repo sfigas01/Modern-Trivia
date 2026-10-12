@@ -437,7 +437,14 @@ async function promoteHost(
   return newHost;
 }
 
-export function registerRoomRoutes(app: Express): void {
+export interface ThemePreparationScheduler {
+  run(jobId: string): Promise<unknown>;
+}
+
+export function registerRoomRoutes(
+  app: Express,
+  options: { themePreparationScheduler?: ThemePreparationScheduler } = {}
+): void {
   app.post('/api/rooms', async (req, res) => {
     try {
       const input = createRoomRequestSchema.parse(req.body);
@@ -792,7 +799,27 @@ export function registerRoomRoutes(app: Express): void {
     }
   });
 
-  // Durable admission only. Preparation remains paused until the S11B worker is enabled.
+  const scheduleThemePreparation = (job: import('@shared/models/theme').PublicThemeJob) => {
+    const recoverableStatuses = new Set([
+      'queued',
+      'waiting',
+      'researching',
+      'retrieving',
+      'extracting',
+      'writing',
+      'reviewing',
+      'qa',
+      'semantic_check',
+      'reserving',
+    ]);
+    if (!options.themePreparationScheduler || !recoverableStatuses.has(job.progress.status)) return;
+    void options.themePreparationScheduler.run(job.jobId).catch(() => {
+      console.error('Error scheduling themed preparation');
+    });
+  };
+
+  // Admission commits before the optional worker is scheduled. A failed or
+  // restarted scheduler leaves the durable waiting job safe to retry.
   app.post('/api/rooms/:code/theme-start', aiLimiter, async (req, res) => {
     try {
       if (!isThemeRoundsEnabled()) throw new RoomRouteError(404, 'Themed games are not enabled');
@@ -802,6 +829,7 @@ export function registerRoomRoutes(app: Express): void {
       const playerToken = req.get('X-Player-Token');
       if (!playerToken) throw new RoomRouteError(401, 'Player token required');
       const job = await createThemeAdmission(pool).start({ code, playerToken, userId });
+      scheduleThemePreparation(job);
       const progress = legacyThemeProgress(job);
       return res
         .status(job.progress.status === 'shortfall' ? 409 : 202)
@@ -818,6 +846,7 @@ export function registerRoomRoutes(app: Express): void {
       const playerToken = req.get('X-Player-Token');
       if (!playerToken) throw new RoomRouteError(401, 'Player token required');
       const job = await createThemeAdmission(pool).progress({ code, playerToken });
+      scheduleThemePreparation(job);
       return res.json({ ...themeProgressResponseSchema.parse(legacyThemeProgress(job)), job });
     } catch (error) {
       return sendRoomError(res, error, 'Error reading themed progress:');

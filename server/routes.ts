@@ -36,7 +36,7 @@ import {
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
-import { registerRoomRoutes } from './routes.rooms';
+import { registerRoomRoutes, type ThemePreparationScheduler } from './routes.rooms';
 import { themeSuggestRequestSchema, themeSuggestResponseSchema } from '@shared/schema';
 import { isThemeRoundsEnabled, fallbackThemeCategories } from './lib/theme-game';
 import { requireThemePlayerSignIn } from './lib/theme-player-auth';
@@ -188,11 +188,15 @@ function extractSourceDomain(
   return null;
 }
 
-export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+export async function registerRoutes(
+  httpServer: Server,
+  app: Express,
+  options: { themePreparationScheduler?: ThemePreparationScheduler } = {}
+): Promise<Server> {
   // Setup authentication (MUST be before other routes)
   await setupAuth(app);
   registerAuthRoutes(app);
-  registerRoomRoutes(app);
+  registerRoomRoutes(app, options);
 
   // Signed-in setup uses deterministic category suggestions while live providers are dormant.
   app.post('/api/theme/suggest', aiLimiter, async (req, res) => {

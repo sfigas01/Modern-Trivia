@@ -181,6 +181,11 @@ function job(shortfall = false) {
   };
 }
 
+function jobAt(status: string) {
+  const value = job();
+  return { ...value, progress: { ...value.progress, status } };
+}
+
 describe('signed-in themed setup', () => {
   it('requires a real sign-in session for suggestions and makes no model call', async () => {
     const app = await buildTestApp();
@@ -255,15 +260,28 @@ describe('durable theme-start route', () => {
     });
     expect(runThemedGamePreparation).not.toHaveBeenCalled();
   });
+  it('schedules only an admitted waiting job through the injected durable worker', async () => {
+    admissionMock.start.mockResolvedValueOnce(job());
+    const scheduler = { run: vi.fn(async () => undefined) };
+    await request(await buildTestApp({ themePreparationScheduler: scheduler }))
+      .post('/api/rooms/ABCD2/theme-start')
+      .set('X-Test-Session', 'host-account')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(202);
+    expect(scheduler.run).toHaveBeenCalledWith(job().jobId);
+  });
   it('reports an explicit inventory shortfall', async () => {
     admissionMock.start.mockResolvedValueOnce(job(true));
-    const res = await request(await buildTestApp())
+    const scheduler = { run: vi.fn(async () => undefined) };
+    const res = await request(await buildTestApp({ themePreparationScheduler: scheduler }))
       .post('/api/rooms/ABCD2/theme-start')
       .set('X-Test-Session', 'host-account')
       .set('X-Player-Token', 'host-secret')
       .send({})
       .expect(409);
     expect(res.body.job.progress.failure.code).toBe('related_inventory_shortfall');
+    expect(scheduler.run).not.toHaveBeenCalled();
     expect(runThemedGamePreparation).not.toHaveBeenCalled();
   });
   it('is absent when the feature flag is off', async () => {
@@ -294,6 +312,15 @@ describe('authenticated durable progress', () => {
       code: 'ABCD2',
       playerToken: 'guest-secret',
     });
+  });
+  it('reschedules an expired active stage so the worker can reclaim it', async () => {
+    admissionMock.progress.mockResolvedValueOnce(jobAt('writing'));
+    const scheduler = { run: vi.fn(async () => undefined) };
+    await request(await buildTestApp({ themePreparationScheduler: scheduler }))
+      .get('/api/rooms/ABCD2/theme-progress')
+      .set('X-Player-Token', 'guest-secret')
+      .expect(200);
+    expect(scheduler.run).toHaveBeenCalledWith(job().jobId);
   });
   it('blocks joins and departures once preparation locks the roster', async () => {
     const app = await buildTestApp();
