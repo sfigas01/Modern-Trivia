@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import type { UseMutationResult } from '@tanstack/react-query';
 import type { RoomSnapshot } from '@shared/models/rooms';
 
@@ -89,9 +89,20 @@ function mutation(extra: Record<string, unknown> = {}) {
   } as unknown as UseMutationResult<never, Error, never>;
 }
 
+beforeEach(() => {
+  const storage = new Map<string, string>();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => storage.set(key, value),
+    removeItem: (key: string) => storage.delete(key),
+    clear: () => storage.clear(),
+  });
+});
+
 afterEach(() => {
   cleanup();
   mockSetLocation.mockClear();
+  vi.unstubAllGlobals();
 });
 
 describe('PixelQuestionView', () => {

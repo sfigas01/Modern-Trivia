@@ -62,6 +62,12 @@ export interface ThemePreparationWorkerDependencies {
     | Readonly<{ ok: true; requiredThemed: number; work: readonly ThemePreparationWorkItem[] }>
     | Readonly<{ ok: false; code: 'runtime_unavailable' | 'inventory_shortfall' }>
   >;
+  /** Runs source research after recovery has resolved any earlier dispatch. */
+  research(job: ThemeJobRecord, work: readonly ThemePreparationWorkItem[]): Promise<void>;
+  /** Retrieves source material for the preflighted work. */
+  retrieve(job: ThemeJobRecord, work: readonly ThemePreparationWorkItem[]): Promise<void>;
+  /** Extracts usable facts from the retrieved source material. */
+  extract(job: ThemeJobRecord, work: readonly ThemePreparationWorkItem[]): Promise<void>;
   generate(job: ThemeJobRecord, item: ThemePreparationWorkItem): Promise<ThemeGeneratedCandidate>;
   review(job: ThemeJobRecord, candidate: ThemeGeneratedCandidate): Promise<ThemeReviewedCandidate>;
   /** S10 owns the complete QA and semantic checks before approval. */
@@ -174,13 +180,14 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         return { status: 'ignored', jobId, reason: 'not_runnable' };
 
       const claim = claimToken();
-      let job = await dependencies.lifecycle.acquireLease({
+      const leasedJob = await dependencies.lifecycle.acquireLease({
         jobId,
         claimToken: claim,
         leaseDurationMs,
         now: now(),
       });
-      if (!job) return { status: 'ignored', jobId, reason: 'lease_unavailable' };
+      if (!leasedJob) return { status: 'ignored', jobId, reason: 'lease_unavailable' };
+      let job: ThemeJobRecord = leasedJob;
       if (!RUNNABLE.has(job.status) || (job.lastFailure && !job.lastFailure.retryable)) {
         await dependencies.lifecycle.releaseLease({ jobId, claimToken: claim, now: now() });
         return { status: 'ignored', jobId, reason: 'not_runnable' };
@@ -202,9 +209,28 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         // before another paid operation may begin.
         await dependencies.assertDispatchesSettled(job.id);
 
-        job = await transition(job, claim, 'researching');
-        job = await transition(job, claim, 'retrieving');
-        job = await transition(job, claim, 'extracting');
+        const work = Object.freeze(
+          preflight.work.map((item) => Object.freeze({ ...item }))
+        ) as readonly ThemePreparationWorkItem[];
+        const runSourceStage = async (
+          status: 'researching' | 'retrieving' | 'extracting',
+          callback: (
+            stageJob: ThemeJobRecord,
+            stageWork: readonly ThemePreparationWorkItem[]
+          ) => Promise<void>
+        ) => {
+          job = await transition(job, claim, status);
+          for (const item of work) {
+            job = await renew(job, claim);
+            const stageWork = Object.freeze([item]) as readonly ThemePreparationWorkItem[];
+            await callback(job, stageWork);
+            await dependencies.assertDispatchesSettled(job.id);
+          }
+        };
+
+        await runSourceStage('researching', dependencies.research);
+        await runSourceStage('retrieving', dependencies.retrieve);
+        await runSourceStage('extracting', dependencies.extract);
         job = await transition(job, claim, 'writing');
 
         const generated: ThemeGeneratedCandidate[] = [];

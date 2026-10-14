@@ -63,6 +63,15 @@ function harness(
       requiredThemed: 1,
       work: [{ key: 'fact-1' }],
     })),
+    research: vi.fn(async (stageJob, work) => {
+      calls.push(`research:${stageJob.status}:${work.map((item) => item.key).join(',')}`);
+    }),
+    retrieve: vi.fn(async (stageJob, work) => {
+      calls.push(`retrieve:${stageJob.status}:${work.map((item) => item.key).join(',')}`);
+    }),
+    extract: vi.fn(async (stageJob, work) => {
+      calls.push(`extract:${stageJob.status}:${work.map((item) => item.key).join(',')}`);
+    }),
     generate: vi.fn(async (_job, item) => {
       calls.push(`generate:${item.key}`);
       return { itemKey: item.key, candidateId: 'candidate-1' };
@@ -117,6 +126,9 @@ describe('theme preparation worker', () => {
       approved: 1,
     });
     expect(h.calls).toEqual([
+      'research:researching:fact-1',
+      'retrieve:retrieving:fact-1',
+      'extract:extracting:fact-1',
       'generate:fact-1',
       'review:candidate-1',
       'approve:candidate-1',
@@ -144,6 +156,9 @@ describe('theme preparation worker', () => {
       jobId: JOB_ID,
       code: 'inventory_shortfall',
     });
+    expect(h.dependencies.research).not.toHaveBeenCalled();
+    expect(h.dependencies.retrieve).not.toHaveBeenCalled();
+    expect(h.dependencies.extract).not.toHaveBeenCalled();
     expect(h.dependencies.generate).not.toHaveBeenCalled();
     expect(h.dependencies.recordPause).toHaveBeenCalledWith({
       jobId: JOB_ID,
@@ -153,6 +168,91 @@ describe('theme preparation worker', () => {
       retryable: false,
     });
     expect(h.transitions).toContain('failed');
+  });
+
+  it('runs each source callback after its stage transition with immutable preflight work', async () => {
+    const events: string[] = [];
+    const h = harness({
+      assertDispatchesSettled: vi.fn(async () => {
+        events.push('settled');
+      }),
+      research: vi.fn(async (stageJob) => {
+        events.push(stageJob.status);
+      }),
+      retrieve: vi.fn(async (stageJob) => {
+        events.push(stageJob.status);
+      }),
+      extract: vi.fn(async (stageJob) => {
+        events.push(stageJob.status);
+      }),
+    });
+    await h.worker.run(JOB_ID);
+
+    for (const [index, [callback, status]] of [
+      [h.dependencies.research, 'researching'],
+      [h.dependencies.retrieve, 'retrieving'],
+      [h.dependencies.extract, 'extracting'],
+    ].entries()) {
+      expect(callback).toHaveBeenCalledWith(expect.objectContaining({ status }), [
+        { key: 'fact-1' },
+      ]);
+      const work = vi.mocked(callback).mock.calls[0][1];
+      expect(Object.isFrozen(work)).toBe(true);
+      expect(Object.isFrozen(work[0])).toBe(true);
+      expect(h.lifecycle.renewLease.mock.invocationCallOrder[index]).toBeLessThan(
+        vi.mocked(callback).mock.invocationCallOrder[0]
+      );
+    }
+    expect(events.slice(0, 7)).toEqual([
+      'settled',
+      'researching',
+      'settled',
+      'retrieving',
+      'settled',
+      'extracting',
+      'settled',
+    ]);
+    expect(h.lifecycle.renewLease).toHaveBeenCalledTimes(7);
+  });
+
+  it('pauses at a failed source stage without starting later stages', async () => {
+    const h = harness({
+      research: vi.fn(async () => {
+        throw new Error('source research failed');
+      }),
+    });
+
+    await expect(h.worker.run(JOB_ID)).resolves.toMatchObject({
+      status: 'paused',
+      code: 'preparation_failed',
+    });
+    expect(h.dependencies.research).toHaveBeenCalledTimes(1);
+    expect(h.dependencies.retrieve).not.toHaveBeenCalled();
+    expect(h.dependencies.extract).not.toHaveBeenCalled();
+    expect(h.dependencies.generate).not.toHaveBeenCalled();
+  });
+
+  it('renews the lease between source items', async () => {
+    const h = harness({
+      preflight: vi.fn(async () => ({
+        ok: true,
+        requiredThemed: 1,
+        work: [{ key: 'fact-1' }, { key: 'fact-2' }],
+      })),
+    });
+    await h.worker.run(JOB_ID);
+    expect(h.dependencies.research).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ status: 'researching' }),
+      [{ key: 'fact-1' }]
+    );
+    expect(h.dependencies.research).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ status: 'researching' }),
+      [{ key: 'fact-2' }]
+    );
+    expect(h.dependencies.retrieve).toHaveBeenCalledTimes(2);
+    expect(h.dependencies.extract).toHaveBeenCalledTimes(2);
   });
 
   it('pauses after a monetary unknown instead of continuing to another stage', async () => {
@@ -229,6 +329,18 @@ describe('theme preparation worker', () => {
     const h = harness({}, 'writing');
     await expect(h.worker.run(JOB_ID)).resolves.toMatchObject({ status: 'ready' });
     expect(h.transitions.slice(0, 2)).toEqual(['waiting', 'researching']);
+    expect(h.dependencies.research).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'researching' }),
+      [{ key: 'fact-1' }]
+    );
+    expect(h.dependencies.retrieve).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'retrieving' }),
+      [{ key: 'fact-1' }]
+    );
+    expect(h.dependencies.extract).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'extracting' }),
+      [{ key: 'fact-1' }]
+    );
     expect(h.dependencies.generate).toHaveBeenCalledTimes(1);
   });
 
@@ -243,6 +355,9 @@ describe('theme preparation worker', () => {
       code: 'provider_outcome_unknown',
     });
     expect(h.dependencies.generate).not.toHaveBeenCalled();
+    expect(h.dependencies.research).not.toHaveBeenCalled();
+    expect(h.dependencies.retrieve).not.toHaveBeenCalled();
+    expect(h.dependencies.extract).not.toHaveBeenCalled();
   });
 
   it('does not resume a durable nonretryable pause', async () => {
