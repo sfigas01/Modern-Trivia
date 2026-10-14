@@ -10,6 +10,7 @@ import {
   jsonb,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -23,6 +24,8 @@ import type { ThemeSourceRegistry } from './theme-source-registry';
 import type { ThemeFactReviewOutput } from './theme-fact-review';
 import { questions } from './questions';
 import type { InternalThemeFailure } from './theme';
+
+export type ThemePreparationRuntimePlan = Record<string, unknown>;
 
 export const themeEvidenceDocuments = pgTable(
   'theme_evidence_documents',
@@ -634,6 +637,10 @@ export const themePreparationJobs = pgTable(
     status: varchar('status', { length: 20 }).notNull().default('queued'),
     publicStage: varchar('public_stage', { length: 20 }).notNull().default('waiting'),
     candidateCeiling: integer('candidate_ceiling').notNull(),
+    planVersion: varchar('plan_version', { length: 64 }),
+    planHash: varchar('plan_hash', { length: 64 }),
+    planJson: jsonb('plan_json').$type<ThemePreparationRuntimePlan>(),
+    planHoldUntil: timestamp('plan_hold_until', { withTimezone: true }),
     candidatesUsed: integer('candidates_used').notNull().default(0),
     readyCount: integer('ready_count').notNull().default(0),
     themedReadyCount: integer('themed_ready_count').notNull().default(0),
@@ -665,10 +672,28 @@ export const themePreparationJobs = pgTable(
     ),
     check('theme_preparation_jobs_ceiling', sql`${table.candidateCeiling} IN (50, 75, 100)`),
     check(
+      'theme_preparation_jobs_plan_complete',
+      sql`(${table.planVersion} IS NULL AND ${table.planHash} IS NULL AND ${table.planJson} IS NULL AND ${table.planHoldUntil} IS NULL) OR (${table.planVersion} IS NOT NULL AND ${table.planHash} IS NOT NULL AND ${table.planJson} IS NOT NULL AND ${table.planHoldUntil} IS NOT NULL)`
+    ),
+    check(
+      'theme_preparation_jobs_plan_values',
+      sql`${table.planVersion} IS NULL OR (length(trim(${table.planVersion})) > 0 AND ${table.planHash} ~ '^[a-f0-9]{64}$' AND jsonb_typeof(${table.planJson}) = 'object')`
+    ),
+    check(
       'theme_preparation_jobs_counts',
       sql`${table.candidatesUsed} BETWEEN 0 AND ${table.candidateCeiling} AND ${table.readyCount} >= 0 AND ${table.themedReadyCount} >= 0 AND ${table.relatedReadyCount} >= 0 AND ${table.themedReadyCount} + ${table.relatedReadyCount} = ${table.readyCount}`
     ),
   ]
+);
+
+export const themeRuntimeControl = pgTable(
+  'theme_runtime_control',
+  {
+    singletonId: smallint('singleton_id').primaryKey().notNull().default(1),
+    enabled: boolean('enabled').notNull().default(false),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('theme_runtime_control_singleton', sql`${table.singletonId} = 1`)]
 );
 
 export const themeDailyBudgets = pgTable(
@@ -1706,6 +1731,7 @@ export type ThemeGameSession = typeof themeGameSessions.$inferSelect;
 export type ThemeParticipantIdentity = typeof themeParticipantIdentities.$inferSelect;
 export type ThemeGameParticipant = typeof themeGameParticipants.$inferSelect;
 export type ThemePreparationJob = typeof themePreparationJobs.$inferSelect;
+export type ThemeRuntimeControl = typeof themeRuntimeControl.$inferSelect;
 export type ThemeBudgetAllocation = typeof themeBudgetAllocations.$inferSelect;
 export type ThemeJobAttempt = typeof themeJobAttempts.$inferSelect;
 export type ThemeCandidate = typeof themeCandidates.$inferSelect;
