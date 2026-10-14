@@ -228,6 +228,17 @@ export function createPostgresThemeRuntimeRepository(
             ORDER BY id FOR UPDATE`,
           [subjects]
         );
+        // Admission performs the same cleanup while holding these identities.
+        // Repeat it here because another game's hold can expire while this job
+        // is generating; an elapsed hold must not block the final reservation.
+        await db.query(
+          `UPDATE theme_reservation_participants participant SET released_at=$2
+             FROM theme_question_reservations reservation
+            WHERE participant.reservation_id=reservation.id
+              AND participant.identity_id=ANY($1::uuid[])
+              AND participant.released_at IS NULL AND reservation.expires_at <= $2`,
+          [subjects, at]
+        );
         const backups = await db.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM theme_question_reservations
             WHERE game_id = $1 AND job_id = $2 AND role = 'related_backup'

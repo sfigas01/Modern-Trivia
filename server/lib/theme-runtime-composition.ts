@@ -165,7 +165,10 @@ export function createBudgetedThemeProvider(
       if (result.record.replay || result.value === undefined)
         throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
       if (result.record.status !== 'succeeded')
-        throw new ThemePreparationWorkerError('preparation_failed', true);
+        // The stage repository has already persisted this terminal outcome
+        // under a stable attempt identity. Re-running the worker would only
+        // replay the same failure and can never make progress.
+        throw new ThemePreparationWorkerError('preparation_failed', false);
       return result.value;
     } catch (error) {
       if (error instanceof ThemePreparationWorkerError) throw error;

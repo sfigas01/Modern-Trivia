@@ -335,6 +335,18 @@ describe('PostgreSQL theme runtime repository', () => {
         expect(
           sql.indexOf('SELECT id FROM theme_candidates WHERE id = $1 FOR UPDATE')
         ).toBeLessThan(sql.findIndex((entry) => entry.includes('FROM theme_question_approvals')));
+        const releaseExpired = sql.findIndex((entry) =>
+          entry.includes('UPDATE theme_reservation_participants participant SET released_at=$2')
+        );
+        const conflictCheck = sql.findIndex((entry) =>
+          entry.includes('SELECT 1 FROM theme_reservation_participants')
+        );
+        expect(releaseExpired).toBeGreaterThan(
+          sql.lastIndexOf(
+            'SELECT id FROM theme_participant_identities WHERE id = ANY($1::uuid[])\n            ORDER BY id FOR UPDATE'
+          )
+        );
+        expect(releaseExpired).toBeLessThan(conflictCheck);
         expect(
           statements.filter(({ sql }) => sql.includes('INSERT INTO theme_reservation_participants'))
         ).toHaveLength(2);
