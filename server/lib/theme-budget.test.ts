@@ -27,13 +27,21 @@ const input: ThemeBudgetDispatch = {
 
 type Attempt = Record<string, unknown>;
 
-function harness(options: { usage?: number; failCommit?: boolean } = {}) {
+function harness(
+  options: {
+    usage?: number;
+    failCommit?: boolean;
+    control?: 'enabled' | 'disabled' | 'missing';
+    disableAfterReserve?: boolean;
+  } = {}
+) {
   let attempt: Attempt | undefined;
   let allocationStatus = 'reserved';
   let allocationSettled = 0;
   let candidatesUsed = 0;
   let committed = false;
   let released = false;
+  let controlChecks = 0;
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
     if (sql === 'BEGIN' || sql.startsWith('SELECT pg_advisory')) return { rows: [], rowCount: 0 };
     if (sql === 'COMMIT') {
@@ -42,6 +50,19 @@ function harness(options: { usage?: number; failCommit?: boolean } = {}) {
       return { rows: [], rowCount: 0 };
     }
     if (sql === 'ROLLBACK') return { rows: [], rowCount: 0 };
+    if (sql.includes('FROM theme_runtime_control')) {
+      controlChecks += 1;
+      if (options.control === 'missing') return { rows: [], rowCount: 0 };
+      return {
+        rows: [
+          {
+            dispatch_enabled:
+              options.control !== 'disabled' && !(options.disableAfterReserve && controlChecks > 1),
+          },
+        ],
+        rowCount: 1,
+      };
+    }
     if (sql.includes('WHERE a.provider_request_key=$1'))
       return {
         rows: attempt ? [{ ...attempt, status: attempt.status }] : [],
@@ -203,6 +224,34 @@ describe('theme budget gateway', () => {
     });
     expect(provider).not.toHaveBeenCalled();
     expect(h.state().candidatesUsed).toBe(0);
+  });
+
+  it.each(['disabled', 'missing'] as const)(
+    'fails closed before reserving when runtime control is %s',
+    async (control) => {
+      const h = harness({ control });
+      const provider = vi.fn();
+      await expect(h.gateway.dispatch(input, provider)).rejects.toMatchObject({
+        code: 'runtime_disabled',
+      });
+      expect(provider).not.toHaveBeenCalled();
+      expect(h.state().candidatesUsed).toBe(0);
+    }
+  );
+
+  it('settles at zero and does not invoke after the stop commits following reservation', async () => {
+    const h = harness({ disableAfterReserve: true });
+    const provider = vi.fn();
+    await expect(h.gateway.dispatch(input, provider)).rejects.toMatchObject({
+      code: 'runtime_disabled',
+    });
+    expect(provider).not.toHaveBeenCalled();
+    expect(h.state()).toMatchObject({
+      allocationStatus: 'released',
+      allocationSettled: 0,
+      candidatesUsed: 1,
+    });
+    expect(h.state().attempt).toMatchObject({ status: 'failed', actual_cost_micros: 0 });
   });
 
   it('does not call the provider after an ambiguous reservation commit', async () => {

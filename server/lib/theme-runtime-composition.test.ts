@@ -114,6 +114,20 @@ describe('theme runtime composition', () => {
     }
   });
 
+  it('maps a durable runtime stop to a terminal unavailable worker result', async () => {
+    const invoke = vi.fn();
+    const gateway = {
+      dispatch: vi.fn(async () => {
+        throw new ThemeBudgetError('runtime_disabled', 'disabled');
+      }),
+    } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+
+    await expect(
+      createBudgetedThemeProvider(gateway, budget)(request(invoke))
+    ).rejects.toMatchObject({ code: 'runtime_unavailable', retryable: false });
+    expect(invoke).not.toHaveBeenCalled();
+  });
+
   it('turns an ambiguous physical dispatch into a non-retryable worker pause', async () => {
     const gateway = {
       dispatch: vi.fn(async () => {
