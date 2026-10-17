@@ -33,6 +33,7 @@ function harness(
     failCommit?: boolean;
     control?: 'enabled' | 'disabled' | 'missing';
     disableAfterReserve?: boolean;
+    failFinalControlCheck?: boolean;
   } = {}
 ) {
   let attempt: Attempt | undefined;
@@ -52,6 +53,8 @@ function harness(
     if (sql === 'ROLLBACK') return { rows: [], rowCount: 0 };
     if (sql.includes('FROM theme_runtime_control')) {
       controlChecks += 1;
+      if (options.failFinalControlCheck && controlChecks > 1)
+        throw new Error('control connection lost');
       if (options.control === 'missing') return { rows: [], rowCount: 0 };
       return {
         rows: [
@@ -252,6 +255,25 @@ describe('theme budget gateway', () => {
       candidatesUsed: 1,
     });
     expect(h.state().attempt).toMatchObject({ status: 'failed', actual_cost_micros: 0 });
+  });
+
+  it('settles at zero when the final control check fails before invocation', async () => {
+    const h = harness({ failFinalControlCheck: true });
+    const provider = vi.fn();
+    await expect(h.gateway.dispatch(input, provider)).rejects.toMatchObject({
+      code: 'runtime_unavailable',
+    });
+    expect(provider).not.toHaveBeenCalled();
+    expect(h.state()).toMatchObject({
+      allocationStatus: 'released',
+      allocationSettled: 0,
+      candidatesUsed: 1,
+    });
+    expect(h.state().attempt).toMatchObject({
+      status: 'failed',
+      actual_cost_micros: 0,
+      failure: { code: 'runtime_control_check_failed' },
+    });
   });
 
   it('does not call the provider after an ambiguous reservation commit', async () => {

@@ -123,7 +123,7 @@ function workerBudgetError(error: unknown): ThemePreparationWorkerError {
     // transport. A denied callback becomes a terminal attempt, so this job
     // cannot safely retry later under the same identity.
     return new ThemePreparationWorkerError('budget_exhausted', false);
-  if (error.code === 'runtime_disabled')
+  if (error.code === 'runtime_disabled' || error.code === 'runtime_unavailable')
     return new ThemePreparationWorkerError('runtime_unavailable', false);
   if (error.code === 'candidate_ceiling')
     return new ThemePreparationWorkerError('candidate_ceiling', false);

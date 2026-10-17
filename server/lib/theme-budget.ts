@@ -75,7 +75,8 @@ export class ThemeBudgetError extends Error {
       | 'overrun_anomaly'
       | 'provider_outcome_unknown'
       | 'commit_unknown'
-      | 'runtime_disabled',
+      | 'runtime_disabled'
+      | 'runtime_unavailable',
     message: string
   ) {
     super(message);
@@ -484,15 +485,18 @@ export function createThemeBudgetGateway(pool: Pool) {
     try {
       await assertThemeDispatchEnabledNow(pool);
     } catch (error) {
-      if (error instanceof ThemeRuntimeControlError && error.code === 'runtime_disabled') {
-        await settle(input, {
-          status: 'failed',
-          actualCostMicros: 0,
-          failureCode: 'runtime_disabled',
-        });
-        throw new ThemeBudgetError(error.code, error.message);
-      }
-      throw error;
+      const disabled =
+        error instanceof ThemeRuntimeControlError && error.code === 'runtime_disabled';
+      await settle(input, {
+        status: 'failed',
+        actualCostMicros: 0,
+        failureCode: disabled ? 'runtime_disabled' : 'runtime_control_check_failed',
+      });
+      if (disabled) throw new ThemeBudgetError(error.code, error.message);
+      throw new ThemeBudgetError(
+        'runtime_unavailable',
+        'The durable runtime control could not be confirmed before provider dispatch'
+      );
     }
     let response: { outcome: ThemeBudgetOutcome; value: T };
     try {

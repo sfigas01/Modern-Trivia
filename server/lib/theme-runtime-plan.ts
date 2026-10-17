@@ -13,7 +13,7 @@ const sourceItemSchema = z
     title: z.string().trim().min(1).max(500),
     language: z.string().trim().min(2).max(35),
     canonicalFactKey: z.string().trim().min(1).max(255),
-    expectedLatestFactRevision: z.number().int().nonnegative(),
+    expectedLatestFactRevision: z.number().int().min(0).max(2_147_483_646),
   })
   .strict();
 

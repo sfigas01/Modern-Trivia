@@ -84,4 +84,20 @@ describe('theme runtime plan repository', () => {
     ).rejects.toMatchObject({ code: 'invalid_plan' });
     expect(query).not.toHaveBeenCalled();
   });
+
+  it('rejects a fact revision that downstream derivation cannot represent', async () => {
+    const query = vi.fn();
+    const repository = createThemeRuntimePlanRepository({ query } as never);
+    await expect(
+      repository.attach('job', {
+        planVersion: 'preview-v1',
+        plan: {
+          ...plan,
+          items: [{ ...plan.items[0], expectedLatestFactRevision: 2_147_483_647 }],
+        },
+        holdUntil,
+      })
+    ).rejects.toMatchObject({ code: 'invalid_plan' });
+    expect(query).not.toHaveBeenCalled();
+  });
 });
