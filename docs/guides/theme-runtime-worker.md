@@ -46,7 +46,14 @@ This plan is not a provider configuration. It stores no credential, raw model re
 
 Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, together with every explicit budget variable documented in `.env.example`. There are no default caps. `THEME_BUDGET_POLICY_VERSION` and the configured limits form a durable policy fingerprint for each allocation. Missing or inconsistent configuration fails closed.
 
-The next checkpoint is provider and scheduler design: select runtime models, price every physical request conservatively, budget the nested QA/semantic transports, and inject both the evidence policy and scheduler into the room routes. That work must preserve signed-in host ownership and requires explicit approval before any credential is connected or any paid call is executed. Production flags remain unset until evaluation and the separate gameplay release decision pass.
+The next checkpoint is provider and scheduler integration under the design and
+spend gates in `docs/guides/theme-provider-evaluation-plan.md`: select runtime
+models, price every physical request conservatively, budget the nested
+QA/semantic transports, and inject both the evidence policy and scheduler into
+the room routes. That work must preserve signed-in host ownership and requires
+explicit approval before any credential is connected or any paid call is
+executed. Production flags remain unset until evaluation and the separate
+gameplay release decision pass.
 
 Migration `0018_theme_runtime_budget.sql` adds account and policy identity to allocations, request fingerprints to attempts, preserves financial history when lifecycle rows are cleaned up, permits conservative `unknown` accounting and honest cost-overrun recording, and protects durable accounting identity fields from mutation.
 
