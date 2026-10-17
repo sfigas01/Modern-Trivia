@@ -72,9 +72,11 @@ Adding a domain requires a new immutable source-policy version.
 
 Use the OpenAI Responses API with strict Structured Outputs. Every adapter has a
 versioned prompt, JSON schema, requested model, reasoning setting, token ceiling,
-timeout and retry policy. Those values belong in the immutable request identity
-and budget fingerprint. Store token counts, provider request ID, returned model
-identifier, latency and calculated cost; never store hidden reasoning or secrets.
+timeout and retry policy. Configure the OpenAI client with `maxRetries: 0` so one
+durable attempt equals exactly one physical provider request. Those values belong
+in the immutable request identity and budget fingerprint. Store token counts,
+provider request ID, returned model identifier, latency and calculated cost;
+never store hidden reasoning or secrets.
 
 Initial candidate configuration:
 
@@ -103,6 +105,7 @@ must be rechecked immediately before the paid run:
 - https://developers.openai.com/api/docs/models
 - https://developers.openai.com/api/docs/pricing
 - https://developers.openai.com/api/docs/guides/structured-outputs
+- https://developers.openai.com/api/docs/guides/prompt-caching
 
 Do not use a deprecated model merely because it is cheaper. If a stable snapshot
 is available, freeze it for the evaluation. Otherwise record the requested alias
@@ -125,37 +128,42 @@ than four possible matches is an incomplete result and withholds that candidate.
 It must never create an unbounded series of paid calls.
 
 Each reservation uses the maximum configured input and output tokens at the
-current uncached Standard price. Cached-input discounts, Batch/Flex discounts or
-lower actual output are savings at settlement, never admission assumptions.
-Provider retries must remain within the same durable attempt and reserved maximum.
+highest applicable Standard rate, including cold cache-write pricing when prompt
+caching can apply. Cached-input discounts, Batch/Flex discounts or lower actual
+output are savings at settlement, never admission assumptions. S12B does not
+automatically retry model calls. Any later retry design must create a distinct
+durable attempt, dispatch identity and reservation; an unknown outcome remains
+terminal and keeps its full reservation charged.
 
 ### Planning estimate
 
 The following is a conservative planning envelope based on the published
-Standard prices checked on 2026-10-17: Luna at $0.10 per million input tokens and
-$0.50 per million output tokens; GPT-6.1 Sol at $2 and $10; embeddings at $0.02
-per million input tokens. Prices are external configuration and must not be
-hard-coded as timeless facts.
+Standard prices checked on 2026-10-17. It prices every model input at the cold
+cache-write rate: Luna at $0.125 per million input tokens and $0.50 per million
+output tokens; GPT-6.1 Sol at $2.50 and $10; embeddings at $0.02 per million
+input tokens. Prices are external configuration and must not be hard-coded as
+timeless facts.
 
 | Candidate work                        |                 Token ceiling | Reserved estimate |
 | ------------------------------------- | ----------------------------: | ----------------: |
-| Luna fact proposal                    |    6,000 input + 1,000 output |           $0.0011 |
-| Sol fact review                       |    6,000 input + 1,200 output |           $0.0240 |
-| Luna question writing                 |      4,000 input + 800 output |           $0.0008 |
-| Sol evidence review                   |    6,000 input + 1,200 output |           $0.0240 |
-| Sol quality review                    |      4,000 input + 800 output |           $0.0160 |
+| Luna fact proposal                    |    6,000 input + 1,000 output |           $0.0013 |
+| Sol fact review                       |    6,000 input + 1,200 output |           $0.0270 |
+| Luna question writing                 |      4,000 input + 800 output |           $0.0009 |
+| Sol evidence review                   |    6,000 input + 1,200 output |           $0.0270 |
+| Sol quality review                    |      4,000 input + 800 output |           $0.0180 |
 | Embedding screen                      |            up to 10,000 input |           $0.0002 |
-| Up to four Sol semantic adjudications | each 1,500 input + 400 output |           $0.0280 |
+| Up to four Sol semantic adjudications | each 1,500 input + 400 output |           $0.0310 |
 
-Reserve **$0.10 per candidate before repair** after rounding the $0.0941 envelope
-upward. A repaired candidate repeats the evidence and QA gates; reserve **$0.17
-for the full one-repair path**. These are safety ceilings, not expected prices.
+Reserve **$0.12 per candidate before repair** after rounding the $0.10535
+envelope upward. A repaired candidate repeats the evidence and QA gates; reserve
+**$0.20 for the full one-repair path** after rounding the $0.18245 envelope
+upward. These are safety ceilings, not expected prices.
 Implementation must derive the actual micro-dollar values from versioned pricing
 configuration and reject a request whose configured token limits exceed its
 reservation.
 
 At the current 50/75/100 candidate ceilings, the absolute one-repair envelope is
-$8.50/$12.75/$17.00 per job. This shows why measured yield and token use are
+$10.00/$15.00/$20.00 per job. This shows why measured yield and token use are
 required before choosing daily or weekly limits. It is not a proposed player
 price or production allowance.
 
