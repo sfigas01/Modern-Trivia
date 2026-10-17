@@ -1,5 +1,12 @@
 import type { Pool, PoolClient } from 'pg';
 
+import {
+  assertThemeDispatchEnabled,
+  assertThemeDispatchEnabledNow,
+  THEME_BUDGET_LOCK_SQL,
+  ThemeRuntimeControlError,
+} from './theme-runtime-control';
+
 export type ThemeBudgetOperation =
   | 'research'
   | 'retrieve'
@@ -67,7 +74,9 @@ export class ThemeBudgetError extends Error {
       | 'candidate_ceiling'
       | 'overrun_anomaly'
       | 'provider_outcome_unknown'
-      | 'commit_unknown',
+      | 'commit_unknown'
+      | 'runtime_disabled'
+      | 'runtime_unavailable',
     message: string
   ) {
     super(message);
@@ -139,7 +148,7 @@ async function lockedTransaction<T>(pool: Pool, work: (db: PoolClient) => Promis
   try {
     await db.query('BEGIN');
     // Every admission and settlement uses the same transaction-scoped lock.
-    await db.query('SELECT pg_advisory_xact_lock(927421, 25011)');
+    await db.query(THEME_BUDGET_LOCK_SQL);
     const value = await work(db);
     startedCommit = true;
     await db.query('COMMIT');
@@ -225,6 +234,14 @@ export function createThemeBudgetGateway(pool: Pool) {
     return lockedTransaction(pool, async (db) => {
       const prior = await db.query<AttemptRow>(attemptSql, [input.dispatchKey]);
       if (prior.rows[0]) return replay(input, prior.rows[0]);
+
+      try {
+        await assertThemeDispatchEnabled(db);
+      } catch (error) {
+        if (error instanceof ThemeRuntimeControlError)
+          throw new ThemeBudgetError(error.code, error.message);
+        throw error;
+      }
 
       const job = await db.query<{
         owner_user_id: string | null;
@@ -465,6 +482,22 @@ export function createThemeBudgetGateway(pool: Pool) {
     const reservation = await reserve(input);
     if (reservation.replay) return { record: reservation };
     // reserve() committed and released its connection before invoking provider.
+    try {
+      await assertThemeDispatchEnabledNow(pool);
+    } catch (error) {
+      const disabled =
+        error instanceof ThemeRuntimeControlError && error.code === 'runtime_disabled';
+      await settle(input, {
+        status: 'failed',
+        actualCostMicros: 0,
+        failureCode: disabled ? 'runtime_disabled' : 'runtime_control_check_failed',
+      });
+      if (disabled) throw new ThemeBudgetError(error.code, error.message);
+      throw new ThemeBudgetError(
+        'runtime_unavailable',
+        'The durable runtime control could not be confirmed before provider dispatch'
+      );
+    }
     let response: { outcome: ThemeBudgetOutcome; value: T };
     try {
       response = await provider();

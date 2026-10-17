@@ -76,6 +76,8 @@ The SQL migrations cannot build a database from nothing: `0000` is an old drizzl
 - On any database that already has tables, the bootstrap does nothing.
 - **Every schema change must ship as a SQL migration** in `migrations/`. Nothing pushes the drizzle schema to an existing database on deploy.
 
+The themed runtime also has a database-backed control row in `theme_runtime_control`. Migration `0019_theme_preview_runtime_control.sql` creates it disabled. Keep it disabled in production; feature flags alone are not the spend-control boundary. The control currently has no public route or application bootstrap wiring.
+
 ## Runbooks
 
 **Deploy:** merge to `main`. Railway builds, runs the pre-deploy step, starts the new container and switches traffic only when `/health` returns 200.
