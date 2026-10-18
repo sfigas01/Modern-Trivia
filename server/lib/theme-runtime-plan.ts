@@ -2,6 +2,20 @@ import { createHash } from 'node:crypto';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 
+import {
+  themeClaimEvidencePolicySchema,
+  type ThemeClaimEvidencePolicy,
+} from '@shared/models/theme-source-policy';
+
+import {
+  buildWikipediaDiscoveryRequestUrl,
+  normalizeWikipediaTheme,
+  wikipediaDiscoveredSourceSchema,
+  wikipediaDiscoveryPolicySchema,
+  type WikipediaDiscoveryPolicy,
+  type WikipediaDiscoveryResult,
+} from './theme-wikipedia-discovery';
+
 const sourceItemSchema = z
   .object({
     key: z.string().trim().min(1).max(255),
@@ -40,6 +54,128 @@ export const themePreviewRuntimePlanSchema = z
 
 export type ThemePreviewRuntimePlan = z.infer<typeof themePreviewRuntimePlanSchema>;
 
+const liveSourceSchema = wikipediaDiscoveredSourceSchema.extend({
+  key: z.string().trim().min(1).max(255),
+  ordinal: z.number().int().positive().max(20),
+});
+
+export const themeLiveRuntimePlanSchema = z
+  .object({
+    contractVersion: z.literal('theme-live-runtime-plan-v1'),
+    mode: z.literal('wikipedia_discovery'),
+    normalizedTheme: z.string().trim().min(1).max(160),
+    discoveryRequestUrl: z.string().url().max(4096),
+    sourcePolicyVersion: z.string().trim().min(1).max(255),
+    sourceRegistryHash: z.string().regex(/^[a-f0-9]{64}$/),
+    discoveryPolicy: wikipediaDiscoveryPolicySchema,
+    claimEvidencePolicy: themeClaimEvidencePolicySchema,
+    budgetPolicyFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    sources: z.array(liveSourceSchema).min(1).max(20),
+  })
+  .strict()
+  .superRefine((plan, context) => {
+    if (normalizeWikipediaTheme(plan.normalizedTheme) !== plan.normalizedTheme)
+      context.addIssue({
+        code: 'custom',
+        path: ['normalizedTheme'],
+        message: 'Theme must already be normalized',
+      });
+    if (
+      plan.discoveryRequestUrl !==
+      buildWikipediaDiscoveryRequestUrl(plan.normalizedTheme, plan.discoveryPolicy).href
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['discoveryRequestUrl'],
+        message: 'Discovery request must match the pinned theme and policy',
+      });
+    if (
+      plan.sourcePolicyVersion !== plan.discoveryPolicy.sourcePolicyVersion ||
+      plan.sourceRegistryHash !== plan.discoveryPolicy.sourceRegistryHash
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['discoveryPolicy'],
+        message: 'Discovery policy must use the pinned source registry',
+      });
+    if (
+      plan.sources.length < plan.discoveryPolicy.minimumResults ||
+      plan.sources.length > plan.discoveryPolicy.maximumResults
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['sources'],
+        message: 'Selected sources violate discovery result bounds',
+      });
+    for (let index = 0; index < plan.sources.length; index++)
+      if (plan.sources[index].ordinal !== index + 1)
+        context.addIssue({
+          code: 'custom',
+          path: ['sources', index, 'ordinal'],
+          message: 'Selected source ordinals must be contiguous and ordered',
+        });
+      else if (plan.sources[index].key !== `wikipedia:${plan.sources[index].pageId}`)
+        context.addIssue({
+          code: 'custom',
+          path: ['sources', index, 'key'],
+          message: 'Selected source key must match its Wikipedia page ID',
+        });
+    for (let index = 1; index < plan.sources.length; index++) {
+      const previous = plan.sources[index - 1];
+      const current = plan.sources[index];
+      if (
+        previous.rank > current.rank ||
+        (previous.rank === current.rank && previous.pageId > current.pageId) ||
+        (previous.rank === current.rank &&
+          previous.pageId === current.pageId &&
+          previous.canonicalUrl.localeCompare(current.canonicalUrl) > 0)
+      )
+        context.addIssue({
+          code: 'custom',
+          path: ['sources', index],
+          message: 'Selected sources must preserve deterministic discovery order',
+        });
+    }
+    for (const field of ['key', 'pageId', 'canonicalUrl'] as const)
+      if (new Set(plan.sources.map((source) => source[field])).size !== plan.sources.length)
+        context.addIssue({
+          code: 'custom',
+          path: ['sources'],
+          message: `Selected source ${field} values must be unique`,
+        });
+  });
+
+export type ThemeLiveRuntimePlan = z.infer<typeof themeLiveRuntimePlanSchema>;
+export const themeRuntimePlanSchema = z.union([
+  themePreviewRuntimePlanSchema,
+  themeLiveRuntimePlanSchema,
+]);
+export type ThemeRuntimePlan = z.infer<typeof themeRuntimePlanSchema>;
+
+export function createThemeLiveRuntimePlan(input: {
+  discovery: Extract<WikipediaDiscoveryResult, { ok: true }>['value'];
+  claimEvidencePolicy: ThemeClaimEvidencePolicy;
+  budgetPolicyFingerprint: string;
+}): ThemeLiveRuntimePlan {
+  const discoveryPolicy: WikipediaDiscoveryPolicy = input.discovery.discoveryPolicy;
+  return themeLiveRuntimePlanSchema.parse({
+    contractVersion: 'theme-live-runtime-plan-v1',
+    mode: 'wikipedia_discovery',
+    normalizedTheme: input.discovery.normalizedTheme,
+    discoveryRequestUrl: input.discovery.requestUrl,
+    sourcePolicyVersion: discoveryPolicy.sourcePolicyVersion,
+    sourceRegistryHash: discoveryPolicy.sourceRegistryHash,
+    discoveryPolicy,
+    claimEvidencePolicy: input.claimEvidencePolicy,
+    budgetPolicyFingerprint: input.budgetPolicyFingerprint,
+    sources: input.discovery.sources.map((source, index) => ({
+      ...source,
+      key: `wikipedia:${source.pageId}`,
+      ordinal: index + 1,
+    })),
+  });
+}
+
 export class ThemeRuntimePlanError extends Error {
   constructor(
     public readonly code: 'invalid_plan' | 'plan_conflict' | 'plan_missing',
@@ -62,7 +198,7 @@ function canonical(value: unknown): string {
 
 export function hashThemeRuntimePlan(input: {
   planVersion: string;
-  plan: ThemePreviewRuntimePlan;
+  plan: ThemeRuntimePlan;
   holdUntil: Date;
 }): string {
   return createHash('sha256')
@@ -78,12 +214,12 @@ export function hashThemeRuntimePlan(input: {
 
 function parse(input: { planVersion: string; plan: unknown; holdUntil: Date }): {
   planVersion: string;
-  plan: ThemePreviewRuntimePlan;
+  plan: ThemeRuntimePlan;
   holdUntil: Date;
   planHash: string;
 } {
   const planVersion = input.planVersion.trim();
-  const parsed = themePreviewRuntimePlanSchema.safeParse(input.plan);
+  const parsed = themeRuntimePlanSchema.safeParse(input.plan);
   if (
     !planVersion ||
     planVersion.length > 64 ||
@@ -91,7 +227,7 @@ function parse(input: { planVersion: string; plan: unknown; holdUntil: Date }): 
     !(input.holdUntil instanceof Date) ||
     !Number.isFinite(input.holdUntil.valueOf())
   )
-    throw new ThemeRuntimePlanError('invalid_plan', 'Invalid preview runtime plan');
+    throw new ThemeRuntimePlanError('invalid_plan', 'Invalid themed runtime plan');
   const value = { planVersion, plan: parsed.data, holdUntil: new Date(input.holdUntil) };
   return { ...value, planHash: hashThemeRuntimePlan(value) };
 }

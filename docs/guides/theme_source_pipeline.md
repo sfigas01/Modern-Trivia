@@ -30,6 +30,36 @@ The registry says which source locations the pipeline may use; it does not decla
 
 Each request and redirect must resolve to the same registry entry. The retriever accepts at most three redirects, rejects loops, validates every A and AAAA answer as public before selecting one, and pins that address for the HTTPS connection while retaining the hostname for Host, SNI, and certificate validation. IPv6 validation conservatively rejects IANA special-purpose allocations, including allocations that may be globally reachable, because the retriever only needs ordinary public publisher addresses. It verifies the peer address and never uses a shared agent or proxy. One ten-second deadline covers the whole retrieval; connection/TLS and inactivity limits are three and two seconds. Headers are limited to 16 KiB and response bodies to 2 MiB. Successful input is a complete, nonempty HTTP 200 `text/html` or `text/plain` response with identity encoding. Failures use the existing `RetrievalFailure` codes and safe fields. This stage does not extract passages or make factual judgments.
 
+## S12B-1 deterministic Wikipedia discovery
+
+The request shape follows MediaWiki's official [Search API](https://www.mediawiki.org/wiki/API%3ASearch/en), and canonical article URLs come from the official [Info API](https://www.mediawiki.org/wiki/API%3AInfo/en).
+
+`server/lib/theme-wikipedia-discovery.ts` performs one bounded English MediaWiki
+search against the fixed `https://en.wikipedia.org/w/api.php` endpoint. It
+normalizes the host-supplied theme, fixes namespace 0, result bounds, timeout,
+continuation behavior and automatic retries in a strict versioned policy, and
+uses the same public-DNS validation and pinned HTTPS transport as evidence
+retrieval. The transport accepts JSON only for this call and identifies the
+application with a fixed User-Agent. Tests inject DNS and transport fixtures, so
+they contact no external service.
+
+Discovery returns only ranked page identity, title, language and canonical
+article URL. It never returns or stores search snippets as evidence. It rejects
+malformed API output, duplicate page identities or URLs, non-article namespaces,
+wrong origins, query or fragment URLs, registry drift and article URLs not
+accepted by the exact pinned registry entry. Disambiguation pages are withheld;
+an inventory below the fixed minimum returns a typed shortfall. It does not
+retry, widen the query, follow continuation tokens or silently broaden a theme.
+The selected `/wiki/` URLs still pass through the existing bounded retriever,
+extractor and evidence-capture path before any fact can be proposed.
+
+`shared/models/theme-source-policy.ts` separately snapshots claim-risk evidence
+requirements. Stable claims may begin with the broad Wikipedia
+`secondary_reputable` source. Time-sensitive, superlative and disputed claims
+require at least two independent origin groups and at least one primary or
+authoritative source class. This S12B-1 contract records the requirement; later
+provider/review wiring must classify and enforce it before approval.
+
 ## S3 deterministic passage extraction
 
 `server/lib/theme-source-extraction.ts` synchronously converts a `RetrievedThemeSource` into passage candidates for the existing passage contract (without database IDs or `documentId`). It has no network, model, database, or clock dependency and is not wired to generation or gameplay. The extractor version is `theme-source-extractor-v1`; changing normalization, selection, exclusions, or locator behavior requires a new version and re-extraction before evidence can be reused.

@@ -38,9 +38,26 @@ The deterministic S11C proof uses injected offline transports. Approval and repa
 
 ## Durable preview plans
 
-`server/lib/theme-runtime-plan.ts` validates, hashes, attaches and reloads the exact offline preview plan. Plan identity covers the plan version, closed fixture mode, fixture and source-policy versions, budget-policy fingerprint, ordered source items and fixed hold deadline. The database accepts the first complete plan only; an exact retry replays it, while changed content or a corrupted stored hash fails closed. The plan fields are either all absent or all present.
+`server/lib/theme-runtime-plan.ts` validates, hashes, attaches and reloads both
+strict plan shapes. The existing offline preview contract is unchanged: its
+identity covers the plan version, closed fixture mode, fixture and source-policy
+versions, budget-policy fingerprint, ordered source items and fixed hold
+deadline. S12B-1 adds a distinct live-plan contract that pins the normalized
+theme, exact MediaWiki request, discovery policy, source-registry version and
+hash, claim-risk evidence policy, ordered selected article identities and budget
+fingerprint. It deliberately does not assign article IDs as fact IDs; scoped
+facts are created only after retrieval and evidence extraction.
 
-This plan is not a provider configuration. It stores no credential, raw model response or secret. It cannot schedule itself, and ordinary application startup does not instantiate it.
+The database already stores arbitrary strict plan JSON behind one immutable hash,
+so S12B-1 requires no migration. It accepts the first complete plan only; an
+exact retry replays it, while changed content, source selection, policy identity,
+hold deadline or a corrupted stored hash fails closed. Loading an attached live
+plan never reruns discovery.
+
+These plans are not provider configurations. They store no credential, raw model
+response or secret. A live-plan schema does not enable execution: the runtime
+pipeline still accepts only offline QA, no scheduler/bootstrap hook was added,
+and ordinary application startup does not instantiate themed generation.
 
 ## Configuration
 

@@ -252,5 +252,11 @@ would become large:
 4. Owner checkpoint, E1 calibration, updated cost model, second owner checkpoint
    and E2.
 
+S12B-1 implements the first item as a dormant library boundary: the English
+MediaWiki adapter, immutable claim-risk policy and strict live-plan snapshot use
+fixtures only and add no scheduler, provider credential, model call, route or
+production flag. The selected plan records article identities separately from
+later scoped fact identities.
+
 Every PR keeps production dormant. S13 owns gameplay activation, production caps,
 release notes and the user-visible release.
