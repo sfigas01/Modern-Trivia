@@ -84,6 +84,20 @@ describe('pinned native HTTPS transport', () => {
     expect(callback).toHaveBeenCalledWith(null, address.address, 4);
   });
 
+  it('allows only bounded caller-supplied Accept and User-Agent values', async () => {
+    const fake = fakeRequest(address.address);
+    await createPinnedHttpsTransport(fake.request, {
+      accept: 'application/json',
+      userAgent: 'Modern-Trivia/1.0',
+    })({ url, address, signal: new AbortController().signal });
+    expect(fake.options()).toMatchObject({
+      headers: { Accept: 'application/json', 'User-Agent': 'Modern-Trivia/1.0' },
+    });
+    expect(() =>
+      createPinnedHttpsTransport(fake.request, { userAgent: 'unsafe\r\nX-Test: yes' })
+    ).toThrow('Invalid pinned HTTPS header');
+  });
+
   it('rejects a different peer, oversized Content-Length, streamed excess, and premature close', async () => {
     await expect(
       createPinnedHttpsTransport(fakeRequest('127.0.0.1').request)({

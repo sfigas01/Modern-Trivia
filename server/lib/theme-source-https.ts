@@ -28,6 +28,18 @@ export type SourceTransport = (input: {
   signal: AbortSignal;
 }) => Promise<SourceHopResponse>;
 
+export type PinnedHttpsHeaders = Readonly<{
+  accept?: string;
+  userAgent?: string;
+}>;
+
+function safeHeader(value: string | undefined, fallback?: string): string | undefined {
+  const selected = value ?? fallback;
+  if (!selected || selected.length > 512 || /[\u0000-\u001f\u007f]/.test(selected))
+    throw new TypeError('Invalid pinned HTTPS header');
+  return selected;
+}
+
 function headersOf(response: IncomingMessage): Record<string, string[]> {
   const headers: Record<string, string[]> = {};
   for (let index = 0; index < response.rawHeaders.length; index += 2) {
@@ -51,8 +63,11 @@ function peerMatches(peer: string | undefined, selected: string): boolean {
 }
 
 export function createPinnedHttpsTransport(
-  request: typeof https.request = https.request
+  request: typeof https.request = https.request,
+  headers: PinnedHttpsHeaders = {}
 ): SourceTransport {
+  const accept = safeHeader(headers.accept, 'text/html, text/plain')!;
+  const userAgent = headers.userAgent ? safeHeader(headers.userAgent) : undefined;
   return ({ url, address, signal }) =>
     new Promise<SourceHopResponse>((resolve, reject) => {
       let settled = false;
@@ -76,9 +91,10 @@ export function createPinnedHttpsTransport(
           maxHeaderSize: MAX_SOURCE_HEADER_BYTES,
           headers: {
             Host: url.host,
-            Accept: 'text/html, text/plain',
+            Accept: accept,
             'Accept-Encoding': 'identity',
             Connection: 'close',
+            ...(userAgent ? { 'User-Agent': userAgent } : {}),
           },
           lookup: (_host, _options, callback) => callback(null, address.address, address.family),
           signal,
