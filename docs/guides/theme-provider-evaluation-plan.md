@@ -266,13 +266,16 @@ derives both reservations and measured settlement from an explicit versioned
 pricing snapshot. Refusals, incomplete output, model changes and invalid
 structured output fail closed. Transport errors remain unknown outcomes so the
 durable budget gateway retains the full reservation. Settled provider request
-IDs, returned model IDs and latency pass through a required recorder seam;
-S12B-3 supplies its durable PostgreSQL implementation. Nested quality review,
-embeddings and one immutable batch of at most four semantic adjudications per
-candidate must use the injected budget dispatch seam. S12B-3 must persist that
-selected pair batch before live invocation so process recovery cannot select
-four more pairs. This slice contains fixtures only and still creates no client,
-credential lookup, scheduler, route, migration, flag or paid call.
+IDs, returned model IDs and latency pass through a required recorder in the same
+transaction as budget settlement; S12B-3 supplies its PostgreSQL implementation.
+If either settlement or metadata recording fails, the attempt remains unresolved
+with its full hold. Input-estimation failures occur before transport invocation
+and settle as known zero-cost failures. Nested quality review, embeddings and one
+immutable batch of at most four semantic adjudications per candidate must use the
+injected budget dispatch seam. S12B-3 must persist that selected pair batch
+before live invocation so process recovery cannot select four more pairs. This
+slice contains fixtures only and still creates no client, credential lookup,
+scheduler, route, migration, flag or paid call.
 
 Every PR keeps production dormant. S13 owns gameplay activation, production caps,
 release notes and the user-visible release.

@@ -43,14 +43,41 @@ function harness(
   let committed = false;
   let released = false;
   let controlChecks = 0;
+  let transactionSnapshot:
+    | {
+        attempt: Attempt | undefined;
+        allocationStatus: string;
+        allocationSettled: number;
+        candidatesUsed: number;
+      }
+    | undefined;
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
-    if (sql === 'BEGIN' || sql.startsWith('SELECT pg_advisory')) return { rows: [], rowCount: 0 };
+    if (sql === 'BEGIN') {
+      transactionSnapshot = {
+        attempt: attempt ? { ...attempt } : undefined,
+        allocationStatus,
+        allocationSettled,
+        candidatesUsed,
+      };
+      return { rows: [], rowCount: 0 };
+    }
+    if (sql.startsWith('SELECT pg_advisory')) return { rows: [], rowCount: 0 };
     if (sql === 'COMMIT') {
       if (options.failCommit) throw new Error('connection lost');
       committed = true;
+      transactionSnapshot = undefined;
       return { rows: [], rowCount: 0 };
     }
-    if (sql === 'ROLLBACK') return { rows: [], rowCount: 0 };
+    if (sql === 'ROLLBACK') {
+      if (transactionSnapshot) {
+        attempt = transactionSnapshot.attempt;
+        allocationStatus = transactionSnapshot.allocationStatus;
+        allocationSettled = transactionSnapshot.allocationSettled;
+        candidatesUsed = transactionSnapshot.candidatesUsed;
+      }
+      transactionSnapshot = undefined;
+      return { rows: [], rowCount: 0 };
+    }
     if (sql.includes('FROM theme_runtime_control')) {
       controlChecks += 1;
       if (options.failFinalControlCheck && controlChecks > 1)
@@ -190,6 +217,52 @@ describe('theme budget gateway', () => {
       replay: false,
     });
     expect(h.state()).toMatchObject({ allocationStatus: 'settled', allocationSettled: 75 });
+  });
+
+  it('records provider metadata inside the settlement transaction', async () => {
+    const h = harness();
+    const metadata = { providerRequestId: 'resp_123' };
+    const recorder = vi.fn(async (_db, settled, received) => {
+      expect(settled).toMatchObject({ status: 'succeeded', actualCostMicros: 75 });
+      expect(received).toEqual(metadata);
+    });
+
+    await h.gateway.dispatch(
+      input,
+      async () => ({
+        outcome: { status: 'succeeded' as const, actualCostMicros: 75 },
+        value: { ok: true },
+        metadata,
+      }),
+      recorder
+    );
+
+    expect(recorder).toHaveBeenCalledOnce();
+    expect(h.state()).toMatchObject({ allocationStatus: 'settled', allocationSettled: 75 });
+  });
+
+  it('keeps the full hold when atomic metadata recording fails', async () => {
+    const h = harness();
+
+    await expect(
+      h.gateway.dispatch(
+        input,
+        async () => ({
+          outcome: { status: 'succeeded' as const, actualCostMicros: 75 },
+          value: { ok: true },
+          metadata: { providerRequestId: 'resp_123' },
+        }),
+        async () => {
+          throw new Error('metadata store unavailable');
+        }
+      )
+    ).rejects.toMatchObject({ code: 'provider_outcome_unknown' });
+    expect(h.state()).toMatchObject({
+      allocationStatus: 'unknown',
+      allocationSettled: 0,
+      candidatesUsed: 1,
+    });
+    expect(h.state().attempt).toMatchObject({ status: 'unknown', actual_cost_micros: 0 });
   });
 
   it('replays the durable dispatch key without a second provider call or candidate slot', async () => {

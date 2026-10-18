@@ -397,7 +397,8 @@ export function createThemeBudgetGateway(pool: Pool) {
 
   async function settle(
     input: ThemeBudgetDispatch,
-    outcome: ThemeBudgetOutcome
+    outcome: ThemeBudgetOutcome,
+    beforeCommit?: (db: PoolClient, record: ThemeBudgetRecord) => Promise<void>
   ): Promise<ThemeBudgetRecord> {
     validate(input);
     validateOutcome(outcome);
@@ -444,13 +445,15 @@ export function createThemeBudgetGateway(pool: Pool) {
           outcome.actualCostMicros,
         ]
       );
-      return {
+      const settled = {
         ...current,
         status: outcome.status,
         actualCostMicros: outcome.actualCostMicros,
         overrun: outcome.actualCostMicros > row.reserved_cost_micros,
         replay: false,
       };
+      if (beforeCommit) await beforeCommit(db, settled);
+      return settled;
     });
   }
 
@@ -477,8 +480,13 @@ export function createThemeBudgetGateway(pool: Pool) {
 
   async function dispatch<T, Metadata = never>(
     input: ThemeBudgetDispatch,
-    provider: () => Promise<{ outcome: ThemeBudgetOutcome; value: T; metadata?: Metadata }>
-  ): Promise<{ record: ThemeBudgetRecord; value?: T; metadata?: Metadata }> {
+    provider: () => Promise<{ outcome: ThemeBudgetOutcome; value: T; metadata?: Metadata }>,
+    recordMetadata?: (
+      db: PoolClient,
+      record: ThemeBudgetRecord,
+      metadata: Metadata
+    ) => Promise<void>
+  ): Promise<{ record: ThemeBudgetRecord; value?: T }> {
     const reservation = await reserve(input);
     if (reservation.replay) return { record: reservation };
     // reserve() committed and released its connection before invoking provider.
@@ -508,11 +516,29 @@ export function createThemeBudgetGateway(pool: Pool) {
         'Provider outcome is unknown; the full reservation remains held'
       );
     }
-    return {
-      record: await settle(input, response.outcome),
-      value: response.value,
-      metadata: response.metadata,
-    };
+    let record: ThemeBudgetRecord;
+    try {
+      record = await settle(
+        input,
+        response.outcome,
+        response.metadata !== undefined && recordMetadata
+          ? (db, settled) => recordMetadata(db, settled, response.metadata!)
+          : undefined
+      );
+    } catch (error) {
+      if (error instanceof ThemeBudgetError && error.code === 'commit_unknown') throw error;
+      try {
+        await markUnknown(input);
+      } catch (markError) {
+        if (markError instanceof ThemeBudgetError && markError.code === 'commit_unknown')
+          throw markError;
+      }
+      throw new ThemeBudgetError(
+        'provider_outcome_unknown',
+        'Provider settlement and metadata commit failed; the full reservation remains held'
+      );
+    }
+    return { record, value: response.value };
   }
 
   return { reserve, settle, markUnknown, dispatch };

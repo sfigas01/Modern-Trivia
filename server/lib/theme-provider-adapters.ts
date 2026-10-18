@@ -269,36 +269,52 @@ export function createStructuredResponseProvider<Input, Output>(options: {
     requestIdentity,
     reservedCostMicros,
     async invoke(input: Input): Promise<ThemeProviderInvocation<Output>> {
-      const serialized = serializeInput(structuredClone(input));
-      const body: ThemeResponsesRequest = {
-        model: policy.model,
-        service_tier: policy.serviceTier,
-        instructions,
-        input: canonical(serialized),
-        reasoning: { effort: policy.reasoningEffort },
-        max_output_tokens: policy.maxOutputTokens,
-        text: {
-          format: {
-            type: 'json_schema',
-            name: policy.schemaName,
-            strict: true,
-            schema,
+      const started = now();
+      let body: ThemeResponsesRequest;
+      try {
+        const serialized = serializeInput(structuredClone(input));
+        body = {
+          model: policy.model,
+          service_tier: policy.serviceTier,
+          instructions,
+          input: canonical(serialized),
+          reasoning: { effort: policy.reasoningEffort },
+          max_output_tokens: policy.maxOutputTokens,
+          text: {
+            format: {
+              type: 'json_schema',
+              name: policy.schemaName,
+              strict: true,
+              schema,
+            },
           },
-        },
-      };
+        };
+      } catch {
+        return failed('request_preparation_failed', { actualCostMicros: 0 }, null, started, now);
+      }
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), policy.timeoutMs);
-      const started = now();
       let response: ThemeResponsesResult | null = null;
       try {
-        const estimatedInputTokens = estimateInputTokens(structuredClone(body));
+        let estimatedInputTokens: number;
+        try {
+          estimatedInputTokens = estimateInputTokens(structuredClone(body));
+        } catch {
+          return failed('input_estimation_failed', { actualCostMicros: 0 }, null, started, now);
+        }
         if (
           !Number.isInteger(estimatedInputTokens) ||
           estimatedInputTokens < 1 ||
           estimatedInputTokens > policy.maxInputTokens
         )
           return failed('input_token_ceiling', { actualCostMicros: 0 }, null, started, now);
-        response = await transport.create(body, { signal: controller.signal, maxRetries: 0 });
+        try {
+          response = await transport.create(body, { signal: controller.signal, maxRetries: 0 });
+        } catch {
+          throw new ThemeProviderTransportError(
+            controller.signal.aborted ? 'provider_timeout' : 'provider_outcome_unknown'
+          );
+        }
         if (
           response.status === 'queued' ||
           response.status === 'in_progress' ||
@@ -361,10 +377,6 @@ export function createStructuredResponseProvider<Input, Output>(options: {
           outcome: { status: 'succeeded', ...base },
           metadata: metadata(response, started, now),
         };
-      } catch {
-        throw new ThemeProviderTransportError(
-          controller.signal.aborted ? 'provider_timeout' : 'provider_outcome_unknown'
-        );
       } finally {
         clearTimeout(timer);
       }

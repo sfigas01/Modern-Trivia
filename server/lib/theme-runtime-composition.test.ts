@@ -95,18 +95,32 @@ describe('theme runtime composition', () => {
       returnedModel: 'fixture-model-2026-10-01',
       latencyMs: 12,
     };
-    const dispatch = vi.fn(async (_input, invoke) => ({
-      record: record(),
-      value: (await invoke()).value,
-      metadata,
-    }));
+    const transaction = { query: vi.fn() };
+    const dispatch = vi.fn(async (_input, invoke, recordMetadata) => {
+      const response = await invoke();
+      const settled = record();
+      await recordMetadata(transaction, settled, response.metadata);
+      return { record: settled, value: response.value };
+    });
     const gateway = { dispatch } as unknown as ReturnType<typeof createThemeBudgetGateway>;
     const recorder = vi.fn(async () => undefined);
 
-    await createBudgetedThemeProvider(gateway, budget, recorder)(request());
+    await createBudgetedThemeProvider(
+      gateway,
+      budget,
+      recorder
+    )(
+      request(
+        vi.fn(async () => ({
+          outcome: { status: 'succeeded' as const, actualCostMicros: 75 },
+          value: { answer: 42 },
+          metadata,
+        }))
+      )
+    );
 
     expect(recorder).toHaveBeenCalledOnce();
-    expect(recorder).toHaveBeenCalledWith(record(), metadata);
+    expect(recorder).toHaveBeenCalledWith(transaction, record(), metadata);
   });
 
   it('fails closed when a durable budget replay reaches the provider boundary', async () => {

@@ -416,6 +416,68 @@ describe('createStructuredResponseProvider', () => {
       failureCode: 'input_token_ceiling',
     });
   });
+
+  it('settles estimator errors as known zero-cost failures before dispatch', async () => {
+    const fixture = transport({
+      id: 'unused',
+      model: policy.model,
+      status: 'completed',
+      output_text: '{"answer":"unused"}',
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    const provider = createStructuredResponseProvider({
+      transport: fixture,
+      pricing,
+      policy,
+      instructions: 'Use evidence.',
+      outputJsonSchema,
+      outputSchema,
+      serializeInput: (input) => input,
+      estimateInputTokens: () => {
+        throw new Error('fixture tokenizer failure');
+      },
+    });
+
+    const result = await provider.invoke({ evidence: 'fixture' });
+
+    expect(fixture.create).not.toHaveBeenCalled();
+    expect(result.outcome).toEqual({
+      status: 'failed',
+      actualCostMicros: 0,
+      failureCode: 'input_estimation_failed',
+    });
+  });
+
+  it('settles request-construction errors as known zero-cost failures before dispatch', async () => {
+    const fixture = transport({
+      id: 'unused',
+      model: policy.model,
+      status: 'completed',
+      output_text: '{"answer":"unused"}',
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    const provider = createStructuredResponseProvider({
+      transport: fixture,
+      pricing,
+      policy,
+      instructions: 'Use evidence.',
+      outputJsonSchema,
+      outputSchema,
+      serializeInput: () => {
+        throw new Error('fixture serialization failure');
+      },
+      estimateInputTokens: () => 10,
+    });
+
+    const result = await provider.invoke({ evidence: 'fixture' });
+
+    expect(fixture.create).not.toHaveBeenCalled();
+    expect(result.outcome).toEqual({
+      status: 'failed',
+      actualCostMicros: 0,
+      failureCode: 'request_preparation_failed',
+    });
+  });
 });
 
 describe('createBudgetedThemeQaTransports', () => {

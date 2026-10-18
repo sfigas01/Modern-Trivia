@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
 import {
   createThemeBudgetGateway,
@@ -121,6 +121,7 @@ export type ThemeBudgetedProviderRequest<T> = Readonly<{
 
 type BudgetGateway = ReturnType<typeof createThemeBudgetGateway>;
 export type ThemeProviderMetadataRecorder = (
+  db: PoolClient,
   record: ThemeBudgetRecord,
   metadata: ThemeProviderMetadata
 ) => Promise<void>;
@@ -174,10 +175,11 @@ export function createBudgetedThemeProvider(
       holdExpiresAt: input.holdExpiresAt,
     };
     try {
-      const result = await gateway.dispatch(request, input.invoke);
+      const result = await gateway.dispatch(request, input.invoke, (db, record, metadata) =>
+        recordProviderMetadata(db, record, metadata)
+      );
       if (result.record.replay)
         throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
-      if (result.metadata) await recordProviderMetadata(result.record, result.metadata);
       if (result.record.status !== 'succeeded')
         // The stage repository has already persisted this terminal outcome
         // under a stable attempt identity. Re-running the worker would only
