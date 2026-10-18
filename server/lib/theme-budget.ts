@@ -475,10 +475,10 @@ export function createThemeBudgetGateway(pool: Pool) {
     });
   }
 
-  async function dispatch<T>(
+  async function dispatch<T, Metadata = never>(
     input: ThemeBudgetDispatch,
-    provider: () => Promise<{ outcome: ThemeBudgetOutcome; value: T }>
-  ): Promise<{ record: ThemeBudgetRecord; value?: T }> {
+    provider: () => Promise<{ outcome: ThemeBudgetOutcome; value: T; metadata?: Metadata }>
+  ): Promise<{ record: ThemeBudgetRecord; value?: T; metadata?: Metadata }> {
     const reservation = await reserve(input);
     if (reservation.replay) return { record: reservation };
     // reserve() committed and released its connection before invoking provider.
@@ -498,7 +498,7 @@ export function createThemeBudgetGateway(pool: Pool) {
         'The durable runtime control could not be confirmed before provider dispatch'
       );
     }
-    let response: { outcome: ThemeBudgetOutcome; value: T };
+    let response: { outcome: ThemeBudgetOutcome; value: T; metadata?: Metadata };
     try {
       response = await provider();
     } catch {
@@ -508,7 +508,11 @@ export function createThemeBudgetGateway(pool: Pool) {
         'Provider outcome is unknown; the full reservation remains held'
       );
     }
-    return { record: await settle(input, response.outcome), value: response.value };
+    return {
+      record: await settle(input, response.outcome),
+      value: response.value,
+      metadata: response.metadata,
+    };
   }
 
   return { reserve, settle, markUnknown, dispatch };

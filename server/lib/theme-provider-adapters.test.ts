@@ -22,10 +22,12 @@ const pricing = {
   models: {
     'gpt-6-luna': {
       inputMicrosPerMillionTokens: 125_000,
+      cachedInputMicrosPerMillionTokens: 25_000,
       outputMicrosPerMillionTokens: 500_000,
     },
     'gpt-6.1-sol': {
       inputMicrosPerMillionTokens: 2_500_000,
+      cachedInputMicrosPerMillionTokens: 250_000,
       outputMicrosPerMillionTokens: 10_000_000,
     },
   },
@@ -40,6 +42,7 @@ const policy = {
   promptVersion: 'fact-proposal-prompt-v1',
   provider: 'openai',
   model: 'gpt-6-luna',
+  serviceTier: 'default',
   reasoningEffort: 'low',
   maxInputTokens: 6_000,
   maxOutputTokens: 1_000,
@@ -69,6 +72,13 @@ describe('theme provider pricing', () => {
     expect(
       reserveEmbeddingCostMicros(pricing, pricing.version, 'text-embedding-3-small', 10_000)
     ).toBe(200);
+  });
+
+  it('reserves input at the highest configured regular or cached rate', () => {
+    const higherCachedPricing = structuredClone(pricing);
+    higherCachedPricing.models['gpt-6-luna'].cachedInputMicrosPerMillionTokens = 250_000;
+
+    expect(reserveStructuredResponseCostMicros(higherCachedPricing, policy)).toBe(2_000);
   });
 
   it('rejects stale pricing identities and missing models', () => {
@@ -109,6 +119,7 @@ describe('createStructuredResponseProvider', () => {
     expect(fixture.create.mock.calls[0][1]).toMatchObject({ maxRetries: 0 });
     expect(fixture.create.mock.calls[0][0]).toEqual({
       model: policy.model,
+      service_tier: 'default',
       instructions: 'Use only the supplied evidence.',
       input: '{"evidence":"The final was in San Diego."}',
       reasoning: { effort: 'low' },
@@ -144,6 +155,65 @@ describe('createStructuredResponseProvider', () => {
       reservedCostMicros: 1_250,
     });
     expect(Object.isFrozen(provider.requestIdentity)).toBe(true);
+  });
+
+  it('settles cached and uncached input at their separate versioned rates', async () => {
+    const provider = createStructuredResponseProvider({
+      transport: transport({
+        id: 'resp_cached',
+        model: policy.model,
+        status: 'completed',
+        output_text: '{"answer":"cached"}',
+        usage: {
+          input_tokens: 100,
+          input_tokens_details: { cached_tokens: 80 },
+          output_tokens: 0,
+        },
+      }),
+      pricing,
+      policy,
+      instructions: 'Use evidence.',
+      outputJsonSchema,
+      outputSchema,
+      serializeInput: (input) => input,
+      estimateInputTokens: () => 100,
+    });
+
+    await expect(provider.invoke({ evidence: 'fixture' })).resolves.toMatchObject({
+      outcome: {
+        status: 'succeeded',
+        actualCostMicros: 5,
+        inputTokens: 100,
+        outputTokens: 0,
+      },
+    });
+  });
+
+  it('rounds the combined input charge without exceeding its full-ceiling reservation', async () => {
+    const provider = createStructuredResponseProvider({
+      transport: transport({
+        id: 'resp_rounding',
+        model: policy.model,
+        status: 'completed',
+        output_text: '{"answer":"bounded"}',
+        usage: {
+          input_tokens: policy.maxInputTokens,
+          input_tokens_details: { cached_tokens: 1 },
+          output_tokens: policy.maxOutputTokens,
+        },
+      }),
+      pricing,
+      policy,
+      instructions: 'Use evidence.',
+      outputJsonSchema,
+      outputSchema,
+      serializeInput: (input) => input,
+      estimateInputTokens: () => policy.maxInputTokens,
+    });
+
+    const result = await provider.invoke({ evidence: 'fixture' });
+
+    expect(result.outcome.actualCostMicros).toBe(provider.reservedCostMicros);
   });
 
   it('snapshots mutable construction options under the original identity', async () => {

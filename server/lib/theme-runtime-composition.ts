@@ -8,12 +8,14 @@ import {
   type ThemeBudgetDispatch,
   type ThemeBudgetOperation,
   type ThemeBudgetOutcome,
+  type ThemeBudgetRecord,
 } from './theme-budget';
 import { createPostgresThemeEvidencePersistenceRepository } from './theme-evidence-persistence';
 import { createPostgresThemeFactDerivationRepository } from './theme-fact-derivation';
 import { createPostgresThemeFactReviewRepository } from './theme-fact-review';
 import { createPostgresThemeLifecycleRepository } from './theme-lifecycle';
 import type { ThemeLifecycleRepository } from './theme-lifecycle';
+import type { ThemeProviderMetadata } from './theme-provider-adapters';
 import {
   createThemePreparationWorker,
   ThemePreparationWorkerError,
@@ -110,10 +112,18 @@ export type ThemeBudgetedProviderRequest<T> = Readonly<{
   reservedCostMicros: number;
   candidateSlots: number;
   holdExpiresAt: Date;
-  invoke: () => Promise<{ outcome: ThemeBudgetOutcome; value: T }>;
+  invoke: () => Promise<{
+    outcome: ThemeBudgetOutcome;
+    value: T;
+    metadata?: ThemeProviderMetadata;
+  }>;
 }>;
 
 type BudgetGateway = ReturnType<typeof createThemeBudgetGateway>;
+export type ThemeProviderMetadataRecorder = (
+  record: ThemeBudgetRecord,
+  metadata: ThemeProviderMetadata
+) => Promise<void>;
 
 function workerBudgetError(error: unknown): ThemePreparationWorkerError {
   if (!(error instanceof ThemeBudgetError))
@@ -139,7 +149,8 @@ function workerBudgetError(error: unknown): ThemePreparationWorkerError {
  */
 export function createBudgetedThemeProvider(
   gateway: BudgetGateway,
-  budget: ThemeRuntimeBudgetConfig
+  budget: ThemeRuntimeBudgetConfig,
+  recordProviderMetadata: ThemeProviderMetadataRecorder
 ) {
   const policyFingerprint = themeRuntimeBudgetPolicyFingerprint(budget);
   return async function dispatch<T>(input: ThemeBudgetedProviderRequest<T>): Promise<T> {
@@ -166,6 +177,7 @@ export function createBudgetedThemeProvider(
       const result = await gateway.dispatch(request, input.invoke);
       if (result.record.replay)
         throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
+      if (result.metadata) await recordProviderMetadata(result.record, result.metadata);
       if (result.record.status !== 'succeeded')
         // The stage repository has already persisted this terminal outcome
         // under a stable attempt identity. Re-running the worker would only
@@ -200,6 +212,7 @@ export type ThemeRuntimeCompositionContext = Readonly<{
 export type ThemeRuntimeCompositionOptions = Readonly<{
   pool: Pool;
   budget: ThemeRuntimeBudgetConfig;
+  recordProviderMetadata: ThemeProviderMetadataRecorder;
   repositories: ThemeSourceFirstRepositoryConfig;
   buildPipeline(context: ThemeRuntimeCompositionContext): WorkerPipeline;
   leaseDurationMs?: number;
@@ -217,6 +230,7 @@ export type ThemePreparationRuntimeOptions = Readonly<{
   runtime: RuntimeRepository;
   budgetGateway: BudgetGateway;
   budget: ThemeRuntimeBudgetConfig;
+  recordProviderMetadata: ThemeProviderMetadataRecorder;
   repositories: ReturnType<typeof createPostgresThemeSourceFirstRepositories>;
   buildPipeline(context: ThemeRuntimeCompositionContext): WorkerPipeline;
   leaseDurationMs?: number;
@@ -227,7 +241,11 @@ export type ThemePreparationRuntimeOptions = Readonly<{
 /** Dependency-injected form used by the offline composition proof. */
 export function createThemePreparationRuntime(options: ThemePreparationRuntimeOptions) {
   const now = options.now ?? (() => new Date());
-  const dispatchProvider = createBudgetedThemeProvider(options.budgetGateway, options.budget);
+  const dispatchProvider = createBudgetedThemeProvider(
+    options.budgetGateway,
+    options.budget,
+    options.recordProviderMetadata
+  );
   const pipeline = options.buildPipeline(
     Object.freeze({ repositories: options.repositories, dispatchProvider })
   );
@@ -263,6 +281,7 @@ export function createPostgresThemePreparationRuntime(options: ThemeRuntimeCompo
     runtime,
     budgetGateway: createThemeBudgetGateway(options.pool),
     budget: options.budget,
+    recordProviderMetadata: options.recordProviderMetadata,
     repositories,
     buildPipeline: options.buildPipeline,
     leaseDurationMs: options.leaseDurationMs,

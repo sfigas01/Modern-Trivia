@@ -15,6 +15,7 @@ const budget = {
   accountRollingSevenDayMicros: 50_000,
   globalDailyMicros: 100_000,
 };
+const discardProviderMetadata = vi.fn(async () => undefined);
 
 function request(
   invoke = vi.fn(async () => ({
@@ -60,7 +61,9 @@ describe('theme runtime composition', () => {
     const gateway = { dispatch } as unknown as ReturnType<typeof createThemeBudgetGateway>;
     const input = request();
 
-    await expect(createBudgetedThemeProvider(gateway, budget)(input)).resolves.toEqual({
+    await expect(
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(input)
+    ).resolves.toEqual({
       answer: 42,
     });
     expect(input.invoke).toHaveBeenCalledOnce();
@@ -86,6 +89,26 @@ describe('theme runtime composition', () => {
     expect(durable.policyFingerprint).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it('forwards settled provider metadata to the required recorder seam', async () => {
+    const metadata = {
+      providerRequestId: 'resp_123',
+      returnedModel: 'fixture-model-2026-10-01',
+      latencyMs: 12,
+    };
+    const dispatch = vi.fn(async (_input, invoke) => ({
+      record: record(),
+      value: (await invoke()).value,
+      metadata,
+    }));
+    const gateway = { dispatch } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+    const recorder = vi.fn(async () => undefined);
+
+    await createBudgetedThemeProvider(gateway, budget, recorder)(request());
+
+    expect(recorder).toHaveBeenCalledOnce();
+    expect(recorder).toHaveBeenCalledWith(record(), metadata);
+  });
+
   it('fails closed when a durable budget replay reaches the provider boundary', async () => {
     const invoke = vi.fn();
     const gateway = {
@@ -93,7 +116,7 @@ describe('theme runtime composition', () => {
     } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
     await expect(
-      createBudgetedThemeProvider(gateway, budget)(request(invoke))
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request(invoke))
     ).rejects.toMatchObject({ code: 'provider_outcome_unknown', retryable: false });
     expect(invoke).not.toHaveBeenCalled();
   });
@@ -108,7 +131,7 @@ describe('theme runtime composition', () => {
       } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
       await expect(
-        createBudgetedThemeProvider(gateway, budget)(request(invoke))
+        createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request(invoke))
       ).rejects.toMatchObject({ code });
       expect(invoke).not.toHaveBeenCalled();
     }
@@ -125,7 +148,7 @@ describe('theme runtime composition', () => {
       } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
       await expect(
-        createBudgetedThemeProvider(gateway, budget)(request(invoke))
+        createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request(invoke))
       ).rejects.toMatchObject({ code: 'runtime_unavailable', retryable: false });
       expect(invoke).not.toHaveBeenCalled();
     }
@@ -138,10 +161,9 @@ describe('theme runtime composition', () => {
       }),
     } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
-    await expect(createBudgetedThemeProvider(gateway, budget)(request())).rejects.toMatchObject({
-      code: 'provider_outcome_unknown',
-      retryable: false,
-    });
+    await expect(
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request())
+    ).rejects.toMatchObject({ code: 'provider_outcome_unknown', retryable: false });
   });
 
   it('treats a settled provider failure as terminal for its durable attempt', async () => {
@@ -152,10 +174,9 @@ describe('theme runtime composition', () => {
       })),
     } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
-    await expect(createBudgetedThemeProvider(gateway, budget)(request())).rejects.toMatchObject({
-      code: 'preparation_failed',
-      retryable: false,
-    });
+    await expect(
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request())
+    ).rejects.toMatchObject({ code: 'preparation_failed', retryable: false });
   });
 
   it('does not relabel a settled failure with no provider value as unknown', async () => {
@@ -166,9 +187,8 @@ describe('theme runtime composition', () => {
       })),
     } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
-    await expect(createBudgetedThemeProvider(gateway, budget)(request())).rejects.toMatchObject({
-      code: 'preparation_failed',
-      retryable: false,
-    });
+    await expect(
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request())
+    ).rejects.toMatchObject({ code: 'preparation_failed', retryable: false });
   });
 });

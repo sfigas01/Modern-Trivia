@@ -21,6 +21,7 @@ export const themeProviderPricingSchema = z
       z
         .object({
           inputMicrosPerMillionTokens: positiveInt32,
+          cachedInputMicrosPerMillionTokens: positiveInt32,
           outputMicrosPerMillionTokens: positiveInt32,
         })
         .strict()
@@ -41,6 +42,7 @@ export const themeStructuredResponsePolicySchema = z
     promptVersion: identifier,
     provider: z.literal('openai'),
     model: identifier,
+    serviceTier: z.literal('default'),
     reasoningEffort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']),
     maxInputTokens: positiveInt32,
     maxOutputTokens: positiveInt32,
@@ -59,6 +61,7 @@ export type ThemeJsonSchema = Readonly<Record<string, unknown>>;
 
 export type ThemeResponsesRequest = Readonly<{
   model: string;
+  service_tier: 'default';
   instructions: string;
   input: string;
   reasoning: { effort: ThemeStructuredResponsePolicy['reasoningEffort'] };
@@ -84,7 +87,11 @@ export type ThemeResponsesResult = Readonly<{
     type?: string;
     content?: readonly { type?: string; refusal?: string }[];
   }[];
-  usage?: { input_tokens?: number; output_tokens?: number } | null;
+  usage?: {
+    input_tokens?: number;
+    input_tokens_details?: { cached_tokens?: number } | null;
+    output_tokens?: number;
+  } | null;
 }>;
 
 /** Injected in S12B-2. This interface cannot discover credentials or create a client. */
@@ -156,6 +163,19 @@ function costMicros(tokens: number, rate: number): number {
   return Number(value);
 }
 
+function inputCostMicros(
+  uncachedTokens: number,
+  cachedTokens: number,
+  rates: { inputMicrosPerMillionTokens: number; cachedInputMicrosPerMillionTokens: number }
+): number {
+  const numerator =
+    BigInt(uncachedTokens) * BigInt(rates.inputMicrosPerMillionTokens) +
+    BigInt(cachedTokens) * BigInt(rates.cachedInputMicrosPerMillionTokens);
+  const value = (numerator + BigInt(999_999)) / BigInt(1_000_000);
+  if (value > BigInt(2_147_483_647)) throw new ThemeProviderAdapterError('invalid_configuration');
+  return Number(value);
+}
+
 export function reserveStructuredResponseCostMicros(
   rawPricing: ThemeProviderPricing,
   rawPolicy: ThemeStructuredResponsePolicy
@@ -167,8 +187,10 @@ export function reserveStructuredResponseCostMicros(
   const rates = pricing.data.models[policy.data.model];
   if (!rates) throw new ThemeProviderAdapterError('invalid_configuration');
   const reserved =
-    costMicros(policy.data.maxInputTokens, rates.inputMicrosPerMillionTokens) +
-    costMicros(policy.data.maxOutputTokens, rates.outputMicrosPerMillionTokens);
+    costMicros(
+      policy.data.maxInputTokens,
+      Math.max(rates.inputMicrosPerMillionTokens, rates.cachedInputMicrosPerMillionTokens)
+    ) + costMicros(policy.data.maxOutputTokens, rates.outputMicrosPerMillionTokens);
   if (reserved < 1 || reserved > 2_147_483_647)
     throw new ThemeProviderAdapterError('invalid_configuration');
   return reserved;
@@ -250,6 +272,7 @@ export function createStructuredResponseProvider<Input, Output>(options: {
       const serialized = serializeInput(structuredClone(input));
       const body: ThemeResponsesRequest = {
         model: policy.model,
+        service_tier: policy.serviceTier,
         instructions,
         input: canonical(serialized),
         reasoning: { effort: policy.reasoningEffort },
@@ -284,10 +307,14 @@ export function createStructuredResponseProvider<Input, Output>(options: {
           throw new ThemeProviderTransportError('provider_outcome_unknown');
         const rawInputTokens = response.usage?.input_tokens;
         const rawOutputTokens = response.usage?.output_tokens;
+        const rawCachedInputTokens = response.usage?.input_tokens_details?.cached_tokens ?? 0;
         if (
           !Number.isInteger(rawInputTokens) ||
           rawInputTokens! < 0 ||
           rawInputTokens! > 2_147_483_647 ||
+          !Number.isInteger(rawCachedInputTokens) ||
+          rawCachedInputTokens < 0 ||
+          rawCachedInputTokens > rawInputTokens! ||
           !Number.isInteger(rawOutputTokens) ||
           rawOutputTokens! < 0 ||
           rawOutputTokens! > 2_147_483_647
@@ -301,9 +328,11 @@ export function createStructuredResponseProvider<Input, Output>(options: {
           );
         const inputTokens = rawInputTokens!;
         const outputTokens = rawOutputTokens!;
+        const cachedInputTokens = rawCachedInputTokens;
+        const uncachedInputTokens = inputTokens - cachedInputTokens;
         const rates = pricing.models[policy.model]!;
         const actualCostMicros =
-          costMicros(inputTokens, rates.inputMicrosPerMillionTokens) +
+          inputCostMicros(uncachedInputTokens, cachedInputTokens, rates) +
           costMicros(outputTokens, rates.outputMicrosPerMillionTokens);
         const base = {
           actualCostMicros,

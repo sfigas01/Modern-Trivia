@@ -227,6 +227,7 @@ describe('concrete dormant theme pipeline', () => {
         accountRollingSevenDayMicros: 500,
         globalDailyMicros: 1_000,
       },
+      recordProviderMetadata: vi.fn(async () => undefined),
       repositories: f.repositories as unknown as Parameters<
         typeof createThemePreparationRuntime
       >[0]['repositories'],
