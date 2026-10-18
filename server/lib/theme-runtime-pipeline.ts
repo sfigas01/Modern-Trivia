@@ -4,7 +4,7 @@ import type { Pool } from 'pg';
 
 import { resolveThemeSourceUrl } from '@shared/models/theme-source-registry';
 import type { ThemeQuestionGenerationRequest } from '@shared/models/theme-question-generation';
-import type { ThemeBudgetOperation, ThemeBudgetOutcome } from './theme-budget';
+import type { ThemeBudgetOperation } from './theme-budget';
 import type { ThemeFactDerivationRequest, ThemeFactProposer } from './theme-fact-derivation';
 import type { ThemeFactReviewer } from './theme-fact-review';
 import type { ThemeJobRecord } from './theme-lifecycle';
@@ -17,6 +17,7 @@ import type { ThemeQuestionEvidenceReviewer } from './theme-question-evidence-re
 import type { ThemeQuestionWriter } from './theme-question-generation';
 import type { ThemeQuestionRepairer } from './theme-question-repair';
 import type { ThemeRuntimeCompositionContext } from './theme-runtime-composition';
+import type { ThemeRuntimeProvider } from './theme-provider-adapters';
 import { extractThemeSource } from './theme-source-extraction';
 import { retrieveThemeSource, type RetrievedThemeSource } from './theme-source-retrieval';
 
@@ -103,14 +104,7 @@ export function createPostgresThemeRuntimeCheckpoints(pool: Pool): ThemeRuntimeC
   };
 }
 
-type Provider<Input, Output> = Readonly<{
-  provider: string;
-  model: string;
-  /** Complete immutable prompt/parameter identity, included in the dispatch fingerprint. */
-  requestIdentity: unknown;
-  reservedCostMicros: number;
-  invoke(input: Input): Promise<{ value: Output; outcome: ThemeBudgetOutcome }>;
-}>;
+type Provider<Input, Output> = ThemeRuntimeProvider<Input, Output>;
 type Input<F> = F extends (input: infer I) => unknown ? I : never;
 type Output<F> = F extends (...args: never[]) => infer O ? Awaited<O> : never;
 type Pipeline = Pick<

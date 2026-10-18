@@ -128,12 +128,13 @@ than four possible matches is an incomplete result and withholds that candidate.
 It must never create an unbounded series of paid calls.
 
 Each reservation uses the maximum configured input and output tokens at the
-highest applicable Standard rate, including cold cache-write pricing when prompt
-caching can apply. Cached-input discounts, Batch/Flex discounts or lower actual
-output are savings at settlement, never admission assumptions. S12B does not
-automatically retry model calls. Any later retry design must create a distinct
-durable attempt, dispatch identity and reservation; an unknown outcome remains
-terminal and keeps its full reservation charged.
+highest applicable Standard rate. Cached-input discounts, Batch/Flex discounts
+or lower actual output are savings at settlement, never admission assumptions.
+The adapter explicitly requests the Standard service tier and settles cached and
+uncached input against separate rates from the versioned pricing snapshot. S12B
+does not automatically retry model calls. Any later retry design must create a
+distinct durable attempt, dispatch identity and reservation; an unknown outcome
+remains terminal and keeps its full reservation charged.
 
 ### Planning estimate
 
@@ -257,6 +258,24 @@ MediaWiki adapter, immutable claim-risk policy and strict live-plan snapshot use
 fixtures only and add no scheduler, provider credential, model call, route or
 production flag. The selected plan records article identities separately from
 later scoped fact identities.
+
+S12B-2 implements the second item as another dormant boundary. The shared
+Responses adapter accepts only an injected transport, uses strict JSON Schema,
+pins prompt/model/service tier/reasoning/token/timeout/no-retry identity, and
+derives both reservations and measured settlement from an explicit versioned
+pricing snapshot. Refusals, incomplete output, model changes and invalid
+structured output fail closed. Transport errors remain unknown outcomes so the
+durable budget gateway retains the full reservation. Settled provider request
+IDs, returned model IDs and latency pass through a required recorder in the same
+transaction as budget settlement; S12B-3 supplies its PostgreSQL implementation.
+If either settlement or metadata recording fails, the attempt remains unresolved
+with its full hold. Input-estimation failures occur before transport invocation
+and settle as known zero-cost failures. Nested quality review, embeddings and one
+immutable batch of at most four semantic adjudications per candidate must use the
+injected budget dispatch seam. S12B-3 must persist that selected pair batch
+before live invocation so process recovery cannot select four more pairs. This
+slice contains fixtures only and still creates no client, credential lookup,
+scheduler, route, migration, flag or paid call.
 
 Every PR keeps production dormant. S13 owns gameplay activation, production caps,
 release notes and the user-visible release.
