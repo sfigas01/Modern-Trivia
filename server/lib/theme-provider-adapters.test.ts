@@ -401,13 +401,23 @@ describe('createBudgetedThemeQaTransports', () => {
     }));
     await expect(seams.adjudicateBatch('candidate-1', pairs)).resolves.toHaveLength(4);
     await expect(
-      seams.adjudicateBatch('candidate-1', [...pairs, { pairKey: 'pair-4', input: {} }])
+      seams.adjudicateBatch('candidate-1', structuredClone(pairs))
+    ).resolves.toHaveLength(4);
+    await expect(
+      seams.adjudicateBatch('candidate-1', [{ pairKey: 'different-pair', input: {} }])
     ).rejects.toEqual(
       expect.objectContaining<Partial<ThemeProviderAdapterError>>({
         code: 'semantic_limit_exceeded',
       })
     );
     expect(dispatch).toHaveBeenCalledTimes(4);
+    await expect(
+      seams.adjudicateBatch('candidate-3', [...pairs, { pairKey: 'pair-4', input: {} }])
+    ).rejects.toEqual(
+      expect.objectContaining<Partial<ThemeProviderAdapterError>>({
+        code: 'semantic_limit_exceeded',
+      })
+    );
     await expect(
       seams.adjudicateBatch('candidate-2', [{ pairKey: 'pair-0', input: {} }])
     ).resolves.toEqual([{ verdict: 'distinct' }]);

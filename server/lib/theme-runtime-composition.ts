@@ -164,13 +164,15 @@ export function createBudgetedThemeProvider(
     };
     try {
       const result = await gateway.dispatch(request, input.invoke);
-      if (result.record.replay || result.value === undefined)
+      if (result.record.replay)
         throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
       if (result.record.status !== 'succeeded')
         // The stage repository has already persisted this terminal outcome
         // under a stable attempt identity. Re-running the worker would only
         // replay the same failure and can never make progress.
         throw new ThemePreparationWorkerError('preparation_failed', false);
+      if (result.value === undefined)
+        throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
       return result.value;
     } catch (error) {
       if (error instanceof ThemePreparationWorkerError) throw error;

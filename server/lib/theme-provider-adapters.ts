@@ -388,6 +388,10 @@ export function createBudgetedThemeQaTransports(options: {
 }) {
   if (!options || typeof options.dispatch !== 'function')
     throw new ThemeProviderAdapterError('invalid_configuration');
+  const semanticBatches = new Map<
+    string,
+    { fingerprint: string; result: Promise<readonly unknown[]> }
+  >();
   return Object.freeze({
     quality<Input, Output>(candidateId: string, input: Input): Promise<Output> {
       return options.dispatch({
@@ -416,17 +420,28 @@ export function createBudgetedThemeQaTransports(options: {
         batch.some(({ pairKey }) => !pairKey.trim())
       )
         throw new ThemeProviderAdapterError('semantic_limit_exceeded');
-      const results: Output[] = [];
-      for (const { pairKey, input } of batch)
-        results.push(
-          await options.dispatch({
-            operation: 'semantic_check',
-            stableKey: `semantic:${candidateId}:${pairKey}`,
-            provider: options.semantic as ThemeRuntimeProvider<Input, Output>,
-            input,
-          })
-        );
-      return results;
+      const fingerprint = themeProviderPolicyFingerprint(batch);
+      const existing = semanticBatches.get(candidateId);
+      if (existing) {
+        if (existing.fingerprint !== fingerprint)
+          throw new ThemeProviderAdapterError('semantic_limit_exceeded');
+        return (await existing.result) as readonly Output[];
+      }
+      const result = (async () => {
+        const values: Output[] = [];
+        for (const { pairKey, input } of batch)
+          values.push(
+            await options.dispatch({
+              operation: 'semantic_check',
+              stableKey: `semantic:${candidateId}:${pairKey}`,
+              provider: options.semantic as ThemeRuntimeProvider<Input, Output>,
+              input,
+            })
+          );
+        return values;
+      })();
+      semanticBatches.set(candidateId, { fingerprint, result });
+      return await result;
     },
   });
 }

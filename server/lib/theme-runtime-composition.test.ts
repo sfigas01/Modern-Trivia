@@ -157,4 +157,18 @@ describe('theme runtime composition', () => {
       retryable: false,
     });
   });
+
+  it('does not relabel a settled failure with no provider value as unknown', async () => {
+    const gateway = {
+      dispatch: vi.fn(async () => ({
+        record: record({ status: 'failed', actualCostMicros: 25 }),
+        value: undefined,
+      })),
+    } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+
+    await expect(createBudgetedThemeProvider(gateway, budget)(request())).rejects.toMatchObject({
+      code: 'preparation_failed',
+      retryable: false,
+    });
+  });
 });
