@@ -195,9 +195,10 @@ describe('question routes', () => {
       .send({ answer: 'Ottawa' })
       .expect(200);
 
-    expect(updateQuery.set).toHaveBeenCalledWith(
-      expect.objectContaining({ answer: 'Ottawa', updatedAt: expect.any(Date) })
-    );
+    expect(updateQuery.set).toHaveBeenCalledWith({
+      answer: 'Ottawa',
+      updatedAt: expect.any(Date),
+    });
     expect(response.body).toMatchObject({ id: 'q-1', answer: 'Ottawa' });
   });
 

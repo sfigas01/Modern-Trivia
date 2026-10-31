@@ -12,6 +12,7 @@ import {
   questions,
   seenQuestions,
   insertQuestionSchema,
+  QUESTION_ORIGINS,
   questionEdits,
   questionQualitySweepDismissals,
   duplicateFindingKey,
@@ -83,9 +84,12 @@ const seenQuestionsRequestSchema = z
 const questionEditableFieldsSchema = insertQuestionSchema
   .omit({ id: true, aiAnalysis: true })
   .extend({
-    // Keep status validation explicit on PATCH payloads so invalid values are rejected
-    // before hitting the database update.
-    status: z.enum(['draft', 'pending', 'approved', 'rejected']).optional(),
+    // Zod 4 applies defaults inside optional fields. Remove insert defaults before
+    // partializing so omitted PATCH fields remain omitted instead of being reset.
+    acceptableAnswers: z.array(z.string()),
+    tags: z.array(z.string()),
+    status: z.enum(['draft', 'pending', 'approved', 'rejected']),
+    origin: z.enum(QUESTION_ORIGINS),
   })
   .partial()
   .strict();
