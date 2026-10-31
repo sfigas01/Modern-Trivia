@@ -315,7 +315,7 @@ export async function authenticateRoomPlayer(
 
 function sendRoomError(res: Response, error: unknown, context: string) {
   if (error instanceof z.ZodError) {
-    return res.status(422).json({ message: 'Invalid room data', errors: error.errors });
+    return res.status(422).json({ message: 'Invalid room data', errors: error.issues });
   }
 
   if (error instanceof RoomRouteError || error instanceof ThemeAdmissionError) {

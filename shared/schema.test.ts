@@ -227,6 +227,15 @@ describe('insertQuestionSchema', () => {
     });
   });
 
+  it('accepts nonempty JSON analysis with Zod 4-compatible drizzle schemas', () => {
+    expect(
+      insertQuestionSchema.safeParse({
+        ...validQuestionPayload,
+        aiAnalysis: { verdict: 'pass', sources: ['https://example.com/source'] },
+      }).success
+    ).toBe(true);
+  });
+
   it.each([
     ['category', 'History'],
     ['category', 'Movies'],
