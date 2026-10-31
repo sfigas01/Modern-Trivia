@@ -481,6 +481,8 @@ describe('createStructuredResponseProvider', () => {
 });
 
 describe('createBudgetedThemeQaTransports', () => {
+  const contentHash = 'a'.repeat(64);
+
   it('routes nested QA and embedding work through the supplied dispatch', async () => {
     const provider = createStructuredResponseProvider({
       transport: transport({
@@ -497,9 +499,17 @@ describe('createBudgetedThemeQaTransports', () => {
       serializeInput: (input) => input,
       estimateInputTokens: () => 10,
     });
-    const dispatch = vi.fn(async ({ operation }: { operation: string }) => operation);
+    const order: string[] = [];
+    const dispatch = vi.fn(async ({ operation }: { operation: string }) => {
+      order.push('dispatch');
+      return operation;
+    });
+    const persistSemanticBatch = vi.fn(async () => {
+      order.push('persist');
+    });
     const seams = createBudgetedThemeQaTransports({
       dispatch: dispatch as never,
+      persistSemanticBatch,
       quality: provider,
       embeddings: provider as never,
       semantic: provider,
@@ -508,35 +518,38 @@ describe('createBudgetedThemeQaTransports', () => {
     await expect(seams.quality('candidate-1', { question: 'Q?' })).resolves.toBe('review');
     await expect(seams.embed('candidate-1', ['Q?'])).resolves.toBe('embed');
     await expect(
-      seams.adjudicateBatch('candidate-1', [{ pairKey: 'pair-a', input: {} }])
+      seams.adjudicateBatch('candidate-1', contentHash, [{ pairKey: 'pair-a', input: {} }])
     ).resolves.toEqual(['semantic_check']);
     expect(dispatch.mock.calls.map(([request]) => request.stableKey)).toEqual([
       'quality:candidate-1',
       'embed:candidate-1',
       'semantic:candidate-1:pair-a',
     ]);
+    expect(order.slice(2)).toEqual(['persist', 'dispatch']);
   });
 
   it('allows at most four semantic pair calls per candidate', async () => {
     const dispatch = vi.fn(async () => ({ verdict: 'distinct' }));
+    const persistSemanticBatch = vi.fn(async () => undefined);
     const placeholder = {} as never;
     const seams = createBudgetedThemeQaTransports({
       dispatch: dispatch as never,
+      persistSemanticBatch,
       quality: placeholder,
       embeddings: placeholder,
-      semantic: placeholder,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
     });
 
     const pairs = Array.from({ length: MAX_THEME_SEMANTIC_ADJUDICATIONS }, (_, index) => ({
       pairKey: `pair-${index}`,
       input: {},
     }));
-    await expect(seams.adjudicateBatch('candidate-1', pairs)).resolves.toHaveLength(4);
+    await expect(seams.adjudicateBatch('candidate-1', contentHash, pairs)).resolves.toHaveLength(4);
     await expect(
-      seams.adjudicateBatch('candidate-1', structuredClone(pairs))
+      seams.adjudicateBatch('candidate-1', contentHash, structuredClone(pairs))
     ).resolves.toHaveLength(4);
     await expect(
-      seams.adjudicateBatch('candidate-1', [{ pairKey: 'different-pair', input: {} }])
+      seams.adjudicateBatch('candidate-1', contentHash, [{ pairKey: 'different-pair', input: {} }])
     ).rejects.toEqual(
       expect.objectContaining<Partial<ThemeProviderAdapterError>>({
         code: 'semantic_limit_exceeded',
@@ -544,14 +557,17 @@ describe('createBudgetedThemeQaTransports', () => {
     );
     expect(dispatch).toHaveBeenCalledTimes(4);
     await expect(
-      seams.adjudicateBatch('candidate-3', [...pairs, { pairKey: 'pair-4', input: {} }])
+      seams.adjudicateBatch('candidate-3', contentHash, [
+        ...pairs,
+        { pairKey: 'pair-4', input: {} },
+      ])
     ).rejects.toEqual(
       expect.objectContaining<Partial<ThemeProviderAdapterError>>({
         code: 'semantic_limit_exceeded',
       })
     );
     await expect(
-      seams.adjudicateBatch('candidate-2', [{ pairKey: 'pair-0', input: {} }])
+      seams.adjudicateBatch('candidate-2', contentHash, [{ pairKey: 'pair-0', input: {} }])
     ).resolves.toEqual([{ verdict: 'distinct' }]);
   });
 
@@ -564,20 +580,83 @@ describe('createBudgetedThemeQaTransports', () => {
       await gate;
       return { verdict: 'distinct' };
     });
+    const persistSemanticBatch = vi.fn(async () => undefined);
     const placeholder = {} as never;
     const seams = createBudgetedThemeQaTransports({
       dispatch: dispatch as never,
+      persistSemanticBatch,
       quality: placeholder,
       embeddings: placeholder,
-      semantic: placeholder,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
     });
     const pairs = [{ pairKey: 'pair-0', input: {} }];
 
-    const pending = seams.adjudicateBatch('candidate-1', pairs);
+    const pending = seams.adjudicateBatch('candidate-1', contentHash, pairs);
     pairs.push({ pairKey: 'pair-added-late', input: {} });
     release();
 
     await expect(pending).resolves.toEqual([{ verdict: 'distinct' }]);
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('requires durable persistence and rejects changed candidate bindings before dispatch', async () => {
+    const dispatch = vi.fn(async () => ({ verdict: 'distinct' }));
+    const placeholder = {} as never;
+    expect(() =>
+      createBudgetedThemeQaTransports({
+        dispatch: dispatch as never,
+        quality: placeholder,
+        embeddings: placeholder,
+        semantic: placeholder,
+      } as never)
+    ).toThrowError(expect.objectContaining({ code: 'invalid_configuration' }));
+
+    const persisted = new Map<string, string>();
+    const persistSemanticBatch = vi.fn(
+      async (request: {
+        candidateId: string;
+        candidateContentHash: string;
+        semanticPolicyFingerprint: string;
+        pairs: readonly unknown[];
+      }) => {
+        const value = JSON.stringify(request);
+        const existing = persisted.get(request.candidateId);
+        if (existing && existing !== value) throw new Error('conflict');
+        persisted.set(request.candidateId, value);
+      }
+    );
+    const seams = createBudgetedThemeQaTransports({
+      dispatch: dispatch as never,
+      persistSemanticBatch,
+      quality: placeholder,
+      embeddings: placeholder,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
+    });
+    const pairs = [{ pairKey: 'pair-a', input: { left: 1 } }];
+    await expect(seams.adjudicateBatch('candidate-1', contentHash, pairs)).resolves.toHaveLength(1);
+    await expect(
+      seams.adjudicateBatch('candidate-1', contentHash, [{ pairKey: 'pair-b', input: { left: 2 } }])
+    ).rejects.toThrow('semantic_limit_exceeded');
+    const freshSeams = createBudgetedThemeQaTransports({
+      dispatch: dispatch as never,
+      persistSemanticBatch,
+      quality: placeholder,
+      embeddings: placeholder,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
+    });
+    await expect(
+      freshSeams.adjudicateBatch('candidate-1', contentHash, pairs)
+    ).resolves.toHaveLength(1);
+    const conflictingSeams = createBudgetedThemeQaTransports({
+      dispatch: dispatch as never,
+      persistSemanticBatch,
+      quality: placeholder,
+      embeddings: placeholder,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
+    });
+    await expect(
+      conflictingSeams.adjudicateBatch('candidate-1', 'b'.repeat(64), pairs)
+    ).rejects.toThrow('conflict');
+    expect(dispatch).toHaveBeenCalledTimes(2);
   });
 });

@@ -834,6 +834,30 @@ export const themeJobAttempts = pgTable(
   ]
 );
 
+export const themeJobAttemptProviderMetadata = pgTable(
+  'theme_job_attempt_provider_metadata',
+  {
+    attemptId: uuid('attempt_id')
+      .primaryKey()
+      .references(() => themeJobAttempts.id, { onDelete: 'restrict' }),
+    providerRequestId: varchar('provider_request_id', { length: 255 }),
+    returnedModel: varchar('returned_model', { length: 255 }),
+    latencyMs: integer('latency_ms').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('theme_job_attempt_provider_metadata_latency', sql`${table.latencyMs} >= 0`),
+    check(
+      'theme_job_attempt_provider_metadata_request',
+      sql`${table.providerRequestId} IS NULL OR length(btrim(${table.providerRequestId})) > 0`
+    ),
+    check(
+      'theme_job_attempt_provider_metadata_model',
+      sql`${table.returnedModel} IS NULL OR length(btrim(${table.returnedModel})) > 0`
+    ),
+  ]
+);
+
 export const themeCandidates = pgTable(
   'theme_candidates',
   {
@@ -890,6 +914,43 @@ export const themeCandidates = pgTable(
     check(
       'theme_candidates_rejections_array',
       sql`jsonb_typeof(${table.rejectionReasons}) = 'array'`
+    ),
+  ]
+);
+
+export const themeSemanticAdjudicationBatches = pgTable(
+  'theme_semantic_adjudication_batches',
+  {
+    candidateId: uuid('candidate_id').primaryKey(),
+    candidateContentHash: varchar('candidate_content_hash', { length: 64 }).notNull(),
+    semanticPolicyFingerprint: varchar('semantic_policy_fingerprint', { length: 64 }).notNull(),
+    pairSnapshot: jsonb('pair_snapshot')
+      .$type<readonly { pairKey: string; input: unknown }[]>()
+      .notNull(),
+    pairFingerprint: varchar('pair_fingerprint', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'fk_theme_semantic_batch_candidate_content',
+      columns: [table.candidateId, table.candidateContentHash],
+      foreignColumns: [themeCandidates.id, themeCandidates.contentHash],
+    }).onDelete('restrict'),
+    check(
+      'theme_semantic_adjudication_batches_candidate_hash',
+      sql`${table.candidateContentHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_semantic_adjudication_batches_policy_hash',
+      sql`${table.semanticPolicyFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_semantic_adjudication_batches_pair_hash',
+      sql`${table.pairFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_semantic_adjudication_batches_pair_array',
+      sql`CASE WHEN jsonb_typeof(${table.pairSnapshot}) = 'array' THEN jsonb_array_length(${table.pairSnapshot}) <= 4 AND octet_length(${table.pairSnapshot}::text) <= 262144 ELSE false END`
     ),
   ]
 );
@@ -1734,6 +1795,8 @@ export type ThemePreparationJob = typeof themePreparationJobs.$inferSelect;
 export type ThemeRuntimeControl = typeof themeRuntimeControl.$inferSelect;
 export type ThemeBudgetAllocation = typeof themeBudgetAllocations.$inferSelect;
 export type ThemeJobAttempt = typeof themeJobAttempts.$inferSelect;
+export type ThemeJobAttemptProviderMetadata = typeof themeJobAttemptProviderMetadata.$inferSelect;
+export type ThemeSemanticAdjudicationBatch = typeof themeSemanticAdjudicationBatches.$inferSelect;
 export type ThemeCandidate = typeof themeCandidates.$inferSelect;
 export type ThemeQuestionRevision = typeof themeQuestionRevisions.$inferSelect;
 export type ThemeEvidenceReview = typeof themeEvidenceReviews.$inferSelect;

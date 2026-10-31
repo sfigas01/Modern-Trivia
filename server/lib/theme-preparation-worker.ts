@@ -89,6 +89,8 @@ export interface ThemePreparationWorkerDependencies {
     code: ThemePreparationFailureCode;
     retryable: boolean;
   }): Promise<boolean>;
+  /** Cooperative process shutdown gate, checked between bounded callbacks. */
+  shouldStop?: () => boolean;
   leaseDurationMs?: number;
   claimToken?: () => string;
   now?: () => Date;
@@ -111,6 +113,16 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
   const leaseDurationMs = dependencies.leaseDurationMs ?? 30_000;
   const now = dependencies.now ?? (() => new Date());
   const claimToken = dependencies.claimToken ?? randomUUID;
+
+  function assertContinuing(): void {
+    let stopping = true;
+    try {
+      stopping = dependencies.shouldStop?.() ?? false;
+    } catch {
+      // A broken shutdown signal fails closed.
+    }
+    if (stopping) throw new ThemePreparationWorkerError('runtime_unavailable', true);
+  }
 
   async function transition(
     job: ThemeJobRecord,
@@ -194,6 +206,7 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
       }
 
       try {
+        assertContinuing();
         // A process may die after persisting an active stage. Once that lease
         // expires, normalize the durable job to waiting and replay the existing
         // repository attempts; their exact IDs prevent a second paid call.
@@ -219,9 +232,11 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
             stageWork: readonly ThemePreparationWorkItem[]
           ) => Promise<void>
         ) => {
+          assertContinuing();
           job = await transition(job, claim, status);
           for (const item of work) {
             job = await renew(job, claim);
+            assertContinuing();
             const stageWork = Object.freeze([item]) as readonly ThemePreparationWorkItem[];
             await callback(job, stageWork);
             await dependencies.assertDispatchesSettled(job.id);
@@ -236,6 +251,7 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         const generated: ThemeGeneratedCandidate[] = [];
         for (const item of preflight.work) {
           job = await renew(job, claim);
+          assertContinuing();
           generated.push(await dependencies.generate(job, item));
           await dependencies.assertDispatchesSettled(job.id);
         }
@@ -244,6 +260,7 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         const reviewed: ThemeReviewedCandidate[] = [];
         for (const candidate of generated) {
           job = await renew(job, claim);
+          assertContinuing();
           const result = await dependencies.review(job, candidate);
           await dependencies.assertDispatchesSettled(job.id);
           if (result.verdict === 'pass') reviewed.push(result);
@@ -253,14 +270,17 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         const approved: ThemeApprovedCandidate[] = [];
         for (const candidate of reviewed) {
           job = await renew(job, claim);
+          assertContinuing();
           let decision = await dependencies.approve(job, candidate);
           await dependencies.assertDispatchesSettled(job.id);
           if (decision.status === 'withheld' && decision.repairEligible && dependencies.repair) {
             job = await renew(job, claim);
+            assertContinuing();
             const repaired = await dependencies.repair(job, candidate);
             await dependencies.assertDispatchesSettled(job.id);
             if (repaired.status === 'repaired') {
               job = await renew(job, claim);
+              assertContinuing();
               decision = await dependencies.approve(job, repaired.candidate);
               await dependencies.assertDispatchesSettled(job.id);
             }
@@ -274,6 +294,7 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
           throw new ThemePreparationWorkerError('inventory_shortfall', false);
         job = await transition(job, claim, 'reserving');
         job = await renew(job, claim);
+        assertContinuing();
         const reservation = await dependencies.reserveApproved(job, approved);
         if (!reservation.ready) throw new ThemePreparationWorkerError('inventory_shortfall', false);
         job = await transition(job, claim, 'ready');

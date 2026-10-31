@@ -1,8 +1,10 @@
-# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12A)
+# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12B-3)
 
 S11B defines the bounded worker and spend-admission seam between durable themed-game admission and the existing source-first repositories. S11C assembles those repositories and maps the source registry, retrieval, extraction, fact derivation, independent fact review, question generation, independent question review, complete approval QA, one eligible repair and final roster reservation into that worker. The composition registers no route, scheduler, provider credential or production flag.
 
-S12A adds the last durable controls that can be completed without selecting or contacting a provider. Each preparation job can receive one immutable, hash-verified preview runtime plan with fixed source items, policy identity and hold deadline. A database singleton is created disabled and acts as an emergency stop for new dispatch admissions. S12A still does not register a scheduler, route, provider adapter or application bootstrap hook.
+S12A adds durable preview controls without selecting or contacting a provider. Each preparation job can receive one immutable, hash-verified preview runtime plan with fixed source items, policy identity and hold deadline. A database singleton is created disabled and acts as an emergency stop for new dispatch admissions.
+
+S12B-3 adds the dormant Railway-preview scheduler bootstrap, provider metadata persistence, immutable semantic-batch persistence and an answer-redacted evaluator. These pieces are callable integration boundaries; ordinary application startup still does not construct them because the live pipeline remains deliberately rejected until its QA and semantic transports are fully mapped. No provider credential or paid call is part of this slice.
 
 ## Spend admission
 
@@ -24,7 +26,17 @@ The control row is intentionally seeded disabled by migration `0019_theme_previe
 
 The worker advances one leased job through the lifecycle stages. It checks for unresolved monetary dispatches before the first paid callback and after every stage item, and it renews the lease between source items and provider calls. Nonretryable failures are durable terminal failures; retryable failures remain paused. Pause metadata is fenced by the claim token and expected job state so a stale worker cannot overwrite a reclaimed job. S10 performs complete QA before approval. S9 is invoked at most once and only when S10 returns an explicitly repairable result. Approved questions are reserved for the locked roster in one transaction; neither S11B nor S11C activates gameplay or records exposure.
 
-The room route accepts an injected scheduler. A committed waiting job is scheduled after Start and may be rescheduled by Progress; the database lease and the source-first repositories’ durable attempt records make those retries idempotent. Production currently injects no scheduler, model adapter, prices, source policy, prompts, or reviewer identities, so the feature remains dormant.
+The room route accepts an injected scheduler. A committed waiting job is scheduled after Start and may be rescheduled by Progress; the database lease and the source-first repositories’ durable attempt records make those retries idempotent. S12B-3 supplies a concurrency-one, bounded, deduplicating scheduler that scans on startup and periodically for recoverable job IDs. It checks the Railway `preview` environment, all live-generation and budget configuration, and the database runtime control before constructing the runtime, before enqueueing, and again when queued work is about to start. Shutdown rejects new work, drops queued work and signals the worker to settle its active bounded callback, pause durably and release its lease before returning. Production injects no scheduler, model adapter, prices, source policy, prompts, or reviewer identities, so the feature remains dormant.
+
+## Provider recovery records
+
+Migration `0020_theme_provider_runtime_persistence.sql` adds two append-only records. Provider request ID, returned model and latency are written with the attempt settlement on the caller's PostgreSQL transaction. The first semantic adjudication batch stores the complete ordered inputs, policy fingerprint and batch fingerprint before dispatch and binds them to the candidate's exact content hash. A replay must match exactly. The database limits the batch to four pairs and 256 KiB, rejects candidate-content mismatches, and blocks updates and deletes.
+
+The PostgreSQL factory installs the metadata recorder by default. The lower-level composition keeps explicit dependency injection for deterministic offline tests. Semantic-batch persistence is available to the S12B-2 adapter, but live composition remains unavailable until that adapter is mapped into a live pipeline.
+
+## Preview evaluation report
+
+`npx tsx script/theme-runtime-evaluation.ts --job <uuid> [--job <uuid> ...]` reads one to 100 explicit jobs from `THEME_EVALUATION_DATABASE_URL` only when `THEME_EVALUATION_ENVIRONMENT=preview`. Its projections share one read-only, repeatable-read PostgreSQL snapshot so settlement cannot be split across incompatible cost views. It writes `reports/theme-runtime-evaluation.json` by default. Reports include allowlisted IDs, enums, counts, token/cost totals and latency percentiles. They cannot include question text, answers, themes, evidence, prompts, provider payloads or free-form errors, and they explicitly make no factual-accuracy claim.
 
 ## S11C composition
 
@@ -61,17 +73,12 @@ and ordinary application startup does not instantiate themed generation.
 
 ## Configuration
 
-Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, together with every explicit budget variable documented in `.env.example`. There are no default caps. `THEME_BUDGET_POLICY_VERSION` and the configured limits form a durable policy fingerprint for each allocation. Missing or inconsistent configuration fails closed.
+Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, together with every explicit budget variable documented in `.env.example`. There are no default caps. `THEME_BUDGET_POLICY_VERSION` and the configured limits form a durable policy fingerprint for each allocation. Missing or inconsistent configuration fails closed. Scheduler bootstrap additionally requires Railway's environment name to be exactly `preview`, every `THEME_PREVIEW_*` value to be a positive bounded integer and the worker lease to exceed both the configured callback cap and the runtime's declared worst-case callback duration, including composite QA. Keep all scheduler variables unset in production.
 
-The next checkpoint is provider and scheduler integration under the design and
-spend gates in `docs/guides/theme-provider-evaluation-plan.md`: select runtime
-models, price every physical request conservatively, budget the nested
-QA/semantic transports, and inject both the evidence policy and scheduler into
-the room routes. That work must preserve signed-in host ownership and requires
-explicit approval before any credential is connected or any paid call is
-executed. Production flags remain unset until evaluation and the separate
-gameplay release decision pass.
+The next checkpoint is completing the live pipeline mapping under the design and spend gates in `docs/guides/theme-provider-evaluation-plan.md`, then running E0 with a disposable PostgreSQL database. That work must preserve signed-in host ownership and requires explicit approval before any credential is connected or any paid call is executed. Production flags remain unset until evaluation and the separate gameplay release decision pass.
 
 Migration `0018_theme_runtime_budget.sql` adds account and policy identity to allocations, request fingerprints to attempts, preserves financial history when lifecycle rows are cleaned up, permits conservative `unknown` accounting and honest cost-overrun recording, and protects durable accounting identity fields from mutation.
 
 Migration `0019_theme_preview_runtime_control.sql` adds the immutable job-bound plan and disabled singleton runtime control. The optional PostgreSQL migration test uses `THEME_RELIABILITY_MIGRATION_TEST_DATABASE_URL`; without a disposable database it is skipped rather than touching Railway data.
+
+Migration `0020_theme_provider_runtime_persistence.sql` adds immutable provider and semantic recovery records. Its optional PostgreSQL test uses the same disposable-database variable. Focused fixture tests do not satisfy E0's database and full-pipeline gates by themselves.
