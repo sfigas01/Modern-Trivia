@@ -118,7 +118,7 @@ const aiFixRequestSchema = z
   .strict();
 
 function sendValidationError(res: Response, message: string, error: z.ZodError) {
-  return res.status(422).json({ message, errors: error.errors });
+  return res.status(422).json({ message, errors: error.issues });
 }
 
 function parseQuestionFieldPatch(body: unknown) {
@@ -209,7 +209,7 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(422).json({
           message: 'Invalid theme',
-          errors: parsed.error.errors,
+          errors: parsed.error.issues,
         });
       }
       const categories = fallbackThemeCategories(parsed.data.theme);
@@ -605,7 +605,7 @@ export async function registerRoutes(
     } catch (error) {
       console.error('Error creating question:', error);
       if (error instanceof z.ZodError) {
-        return res.status(422).json({ message: 'Invalid question data', errors: error.errors });
+        return res.status(422).json({ message: 'Invalid question data', errors: error.issues });
       }
       res.status(500).json({ message: 'Failed to create question' });
     }
@@ -856,7 +856,7 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(422).json({
           message: 'Invalid generation parameters',
-          errors: parsed.error.errors,
+          errors: parsed.error.issues,
         });
       }
 
@@ -1394,7 +1394,7 @@ export async function registerRoutes(
     } catch (error) {
       console.error('Error dismissing finding:', error);
       if (error instanceof z.ZodError) {
-        return res.status(422).json({ message: 'Invalid dismiss request', errors: error.errors });
+        return res.status(422).json({ message: 'Invalid dismiss request', errors: error.issues });
       }
       res.status(500).json({ message: 'Failed to dismiss finding' });
     }

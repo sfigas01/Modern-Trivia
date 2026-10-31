@@ -106,7 +106,7 @@
     "vaul": "^1.1.2",
     "wouter": "^3.13.0",
     "ws": "^8.18.0",
-    "zod": "^3.25.76",
+    "zod": "^4.6.7",
     "zod-validation-error": "^5.0.0"
   },
   "devDependencies": {
@@ -127,7 +127,7 @@
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
     "@vitejs/plugin-react": "^6.0.2",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "autoprefixer": "^10.4.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.28.1",
@@ -145,7 +145,7 @@
     "tsx": "^4.22.4",
     "typescript": "5.9.3",
     "vite": "^8.3.4",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
