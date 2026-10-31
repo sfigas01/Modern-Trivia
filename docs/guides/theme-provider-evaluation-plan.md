@@ -279,3 +279,17 @@ scheduler, route, migration, flag or paid call.
 
 Every PR keeps production dormant. S13 owns gameplay activation, production caps,
 release notes and the user-visible release.
+
+## S12B-3 implementation checkpoint
+
+S12B-3 implements the third item without credentials or paid requests:
+
+- append-only PostgreSQL provider metadata recorded on the budget-settlement transaction;
+- one immutable, exact-content-bound semantic pair batch persisted before dispatch;
+- a Railway-preview-only, concurrency-one scheduler bootstrap with bounded recovery, database control checks and clean stop behavior;
+- an answer-redacted evaluator for explicit job IDs; and
+- fixture tests plus an opt-in disposable-PostgreSQL migration test.
+
+The application does not yet install this scheduler during ordinary startup. The concrete live pipeline still refuses live QA mode because its QA and semantic transports have not been fully mapped into the runtime composition. This keeps production dormant and prevents the new scheduler boundary from implying that a provider-backed run is ready.
+
+The next engineering slice completes that live pipeline mapping and E0 integration proof. E0 remains incomplete until the disposable PostgreSQL suite exercises the full scheduler/runtime recovery path. After E0 passes, stop at the existing owner checkpoint before adding a preview credential or making any paid E1 request.

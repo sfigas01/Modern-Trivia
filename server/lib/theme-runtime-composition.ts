@@ -16,6 +16,7 @@ import { createPostgresThemeFactReviewRepository } from './theme-fact-review';
 import { createPostgresThemeLifecycleRepository } from './theme-lifecycle';
 import type { ThemeLifecycleRepository } from './theme-lifecycle';
 import type { ThemeProviderMetadata } from './theme-provider-adapters';
+import { recordThemeProviderMetadata } from './theme-provider-persistence';
 import {
   createThemePreparationWorker,
   ThemePreparationWorkerError,
@@ -202,6 +203,7 @@ type WorkerPipeline = Omit<
   | 'recordPause'
   | 'reserveApproved'
   | 'leaseDurationMs'
+  | 'shouldStop'
   | 'claimToken'
   | 'now'
 >;
@@ -214,10 +216,11 @@ export type ThemeRuntimeCompositionContext = Readonly<{
 export type ThemeRuntimeCompositionOptions = Readonly<{
   pool: Pool;
   budget: ThemeRuntimeBudgetConfig;
-  recordProviderMetadata: ThemeProviderMetadataRecorder;
+  recordProviderMetadata?: ThemeProviderMetadataRecorder;
   repositories: ThemeSourceFirstRepositoryConfig;
   buildPipeline(context: ThemeRuntimeCompositionContext): WorkerPipeline;
   leaseDurationMs?: number;
+  shouldStop?: () => boolean;
   claimToken?: () => string;
   now?: () => Date;
 }>;
@@ -236,6 +239,7 @@ export type ThemePreparationRuntimeOptions = Readonly<{
   repositories: ReturnType<typeof createPostgresThemeSourceFirstRepositories>;
   buildPipeline(context: ThemeRuntimeCompositionContext): WorkerPipeline;
   leaseDurationMs?: number;
+  shouldStop?: () => boolean;
   claimToken?: () => string;
   now?: () => Date;
 }>;
@@ -256,6 +260,7 @@ export function createThemePreparationRuntime(options: ThemePreparationRuntimeOp
     ...options.runtime,
     lifecycle: options.lifecycle,
     leaseDurationMs: options.leaseDurationMs,
+    shouldStop: options.shouldStop,
     claimToken: options.claimToken,
     now,
   });
@@ -283,10 +288,13 @@ export function createPostgresThemePreparationRuntime(options: ThemeRuntimeCompo
     runtime,
     budgetGateway: createThemeBudgetGateway(options.pool),
     budget: options.budget,
-    recordProviderMetadata: options.recordProviderMetadata,
+    recordProviderMetadata:
+      options.recordProviderMetadata ??
+      ((db, record, metadata) => recordThemeProviderMetadata(db, record.attemptId, metadata)),
     repositories,
     buildPipeline: options.buildPipeline,
     leaseDurationMs: options.leaseDurationMs,
+    shouldStop: options.shouldStop,
     claimToken: options.claimToken,
     now,
   });

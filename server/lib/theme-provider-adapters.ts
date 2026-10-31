@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import type { ThemeBudgetOperation, ThemeBudgetOutcome } from './theme-budget';
+import type { ThemeSemanticBatchPersistenceRequest } from './theme-provider-persistence';
 
 const int32 = z.number().int().min(0).max(2_147_483_647);
 const positiveInt32 = int32.min(1);
@@ -426,8 +427,14 @@ export function createBudgetedThemeQaTransports(options: {
   quality: ThemeRuntimeProvider<unknown, unknown>;
   embeddings: ThemeRuntimeProvider<readonly string[], readonly number[][]>;
   semantic: ThemeRuntimeProvider<unknown, unknown>;
+  persistSemanticBatch(request: ThemeSemanticBatchPersistenceRequest): Promise<void>;
 }) {
-  if (!options || typeof options.dispatch !== 'function')
+  if (
+    !options ||
+    typeof options.dispatch !== 'function' ||
+    typeof options.persistSemanticBatch !== 'function' ||
+    options.semantic?.requestIdentity === undefined
+  )
     throw new ThemeProviderAdapterError('invalid_configuration');
   const semanticBatches = new Map<
     string,
@@ -452,16 +459,26 @@ export function createBudgetedThemeQaTransports(options: {
     },
     async adjudicateBatch<Input, Output>(
       candidateId: string,
+      candidateContentHash: string,
       pairs: readonly Readonly<{ pairKey: string; input: Input }>[]
     ): Promise<readonly Output[]> {
       const batch = structuredClone(pairs);
       if (
+        !candidateId.trim() ||
+        !/^[a-f0-9]{64}$/.test(candidateContentHash) ||
         batch.length > MAX_THEME_SEMANTIC_ADJUDICATIONS ||
         new Set(batch.map(({ pairKey }) => pairKey)).size !== batch.length ||
-        batch.some(({ pairKey }) => !pairKey.trim())
+        batch.some(({ pairKey }) => typeof pairKey !== 'string' || !pairKey.trim())
       )
         throw new ThemeProviderAdapterError('semantic_limit_exceeded');
-      const fingerprint = themeProviderPolicyFingerprint(batch);
+      const semanticPolicyFingerprint = themeProviderPolicyFingerprint(
+        options.semantic.requestIdentity
+      );
+      const fingerprint = themeProviderPolicyFingerprint({
+        candidateContentHash,
+        semanticPolicyFingerprint,
+        batch,
+      });
       const existing = semanticBatches.get(candidateId);
       if (existing) {
         if (existing.fingerprint !== fingerprint)
@@ -469,6 +486,12 @@ export function createBudgetedThemeQaTransports(options: {
         return (await existing.result) as readonly Output[];
       }
       const result = (async () => {
+        await options.persistSemanticBatch({
+          candidateId,
+          candidateContentHash,
+          semanticPolicyFingerprint,
+          pairs: batch,
+        });
         const values: Output[] = [];
         for (const { pairKey, input } of batch)
           values.push(
@@ -482,7 +505,13 @@ export function createBudgetedThemeQaTransports(options: {
         return values;
       })();
       semanticBatches.set(candidateId, { fingerprint, result });
-      return await result;
+      try {
+        return (await result) as readonly Output[];
+      } catch (error) {
+        if (semanticBatches.get(candidateId)?.result === result)
+          semanticBatches.delete(candidateId);
+        throw error;
+      }
     },
   });
 }
