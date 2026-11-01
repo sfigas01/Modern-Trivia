@@ -306,7 +306,8 @@ not stored in the replay record.
 The concrete pipeline can now map quality/coherence/obviousness review,
 embeddings and at most four semantic adjudications through the same durable
 budget gateway as fact proposal, fact review, writing, evidence review and
-repair. The themed duplicate detector uses injected transports, reports every
+repair. Embedding inputs are divided into bounded, independently replayable
+chunks and reassembled in order before duplicate screening. The themed duplicate detector uses injected transports, reports every
 candidate-versus-corpus pair and withholds rather than truncating when more than
 four pairs need model adjudication. Preview recovery also has an explicit
 per-job plan loader, so a scheduler ID cannot inherit another job's plan.

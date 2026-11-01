@@ -134,6 +134,7 @@ describe('createEmbeddingProvider', () => {
       outcome: { status: 'succeeded', actualCostMicros: 1, inputTokens: 10 },
       metadata: { providerRequestId: 'emb_1', returnedModel: embeddingPolicy.model },
     });
+    expect(provider.maxReplayItems).toBe(64);
     expect(fixture.create).toHaveBeenCalledWith(
       {
         model: embeddingPolicy.model,
@@ -143,6 +144,27 @@ describe('createEmbeddingProvider', () => {
       },
       expect.objectContaining({ maxRetries: 0 })
     );
+  });
+
+  it('bounds replay batches from vector width and rejects an unpersistable vector', () => {
+    const fixture = { create: vi.fn() };
+    const standard = createEmbeddingProvider({
+      transport: fixture,
+      pricing,
+      policy: { ...embeddingPolicy, dimensions: 1_536 },
+      estimateInputTokens: () => 10,
+    });
+
+    expect(standard.maxReplayItems).toBe(64);
+    expect(standard.requestIdentity).toMatchObject({ maxReplayItems: 64 });
+    expect(() =>
+      createEmbeddingProvider({
+        transport: fixture,
+        pricing,
+        policy: { ...embeddingPolicy, dimensions: 1_000_000 },
+        estimateInputTokens: () => 10,
+      })
+    ).toThrowError(expect.objectContaining({ code: 'invalid_configuration' }));
   });
 
   it('fails closed on malformed vectors without exposing them as usable output', async () => {
@@ -637,7 +659,7 @@ describe('createBudgetedThemeQaTransports', () => {
     const order: string[] = [];
     const dispatch = vi.fn(async ({ operation }: { operation: string }) => {
       order.push('dispatch');
-      return operation;
+      return operation === 'embed' ? [[1, 0]] : operation;
     });
     const persistSemanticBatch = vi.fn(async () => {
       order.push('persist');
@@ -646,21 +668,48 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: provider,
-      embeddings: provider as never,
+      embeddings: { ...provider, maxReplayItems: 64 } as never,
       semantic: provider,
     });
 
     await expect(seams.quality('candidate-1', { question: 'Q?' })).resolves.toBe('review');
-    await expect(seams.embed('candidate-1', ['Q?'])).resolves.toBe('embed');
+    await expect(seams.embed('candidate-1', ['Q?'])).resolves.toEqual([[1, 0]]);
     await expect(
       seams.adjudicateBatch('candidate-1', contentHash, [{ pairKey: 'pair-a', input: {} }])
     ).resolves.toEqual(['semantic_check']);
     expect(dispatch.mock.calls.map(([request]) => request.stableKey)).toEqual([
       'quality:candidate-1',
-      'embed:candidate-1',
+      'embed:candidate-1:0',
       'semantic:candidate-1:pair-a',
     ]);
     expect(order.slice(2)).toEqual(['persist', 'dispatch']);
+  });
+
+  it('chunks embeddings into independently replayable ordered batches', async () => {
+    const dispatch = vi.fn(async ({ input }: { input: readonly string[] }) =>
+      input.map((value) => [Number(value)])
+    );
+    const placeholder = {} as never;
+    const seams = createBudgetedThemeQaTransports({
+      dispatch: dispatch as never,
+      persistSemanticBatch: vi.fn(async () => undefined),
+      quality: placeholder,
+      embeddings: { maxReplayItems: 2 } as never,
+      semantic: { requestIdentity: { policy: 'test' } } as never,
+    });
+
+    await expect(seams.embed('candidate-1', ['1', '2', '3', '4', '5'])).resolves.toEqual([
+      [1],
+      [2],
+      [3],
+      [4],
+      [5],
+    ]);
+    expect(dispatch.mock.calls.map(([request]) => request.stableKey)).toEqual([
+      'embed:candidate-1:0',
+      'embed:candidate-1:1',
+      'embed:candidate-1:2',
+    ]);
   });
 
   it('allows at most four semantic pair calls per candidate', async () => {
@@ -671,7 +720,7 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: placeholder,
-      embeddings: placeholder,
+      embeddings: { maxReplayItems: 64 } as never,
       semantic: { requestIdentity: { policy: 'test' } } as never,
     });
 
@@ -721,7 +770,7 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: placeholder,
-      embeddings: placeholder,
+      embeddings: { maxReplayItems: 64 } as never,
       semantic: { requestIdentity: { policy: 'test' } } as never,
     });
     const pairs = [{ pairKey: 'pair-0', input: {} }];
@@ -741,7 +790,7 @@ describe('createBudgetedThemeQaTransports', () => {
       createBudgetedThemeQaTransports({
         dispatch: dispatch as never,
         quality: placeholder,
-        embeddings: placeholder,
+        embeddings: { maxReplayItems: 64 } as never,
         semantic: placeholder,
       } as never)
     ).toThrowError(expect.objectContaining({ code: 'invalid_configuration' }));
@@ -764,7 +813,7 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: placeholder,
-      embeddings: placeholder,
+      embeddings: { maxReplayItems: 64 } as never,
       semantic: { requestIdentity: { policy: 'test' } } as never,
     });
     const pairs = [{ pairKey: 'pair-a', input: { left: 1 } }];
@@ -776,7 +825,7 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: placeholder,
-      embeddings: placeholder,
+      embeddings: { maxReplayItems: 64 } as never,
       semantic: { requestIdentity: { policy: 'test' } } as never,
     });
     await expect(
@@ -786,7 +835,7 @@ describe('createBudgetedThemeQaTransports', () => {
       dispatch: dispatch as never,
       persistSemanticBatch,
       quality: placeholder,
-      embeddings: placeholder,
+      embeddings: { maxReplayItems: 64 } as never,
       semantic: { requestIdentity: { policy: 'test' } } as never,
     });
     await expect(

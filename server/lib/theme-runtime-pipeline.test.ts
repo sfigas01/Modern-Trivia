@@ -293,6 +293,7 @@ describe('concrete dormant theme pipeline', () => {
       model: 'deterministic',
       requestIdentity: { fixture: 'nested-qa' },
       reservedCostMicros: 1,
+      maxReplayItems: 64,
       invoke: vi.fn(async () => ({
         value,
         outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
@@ -366,6 +367,7 @@ describe('concrete dormant theme pipeline', () => {
       model: 'deterministic',
       requestIdentity: { fixture: 'nested-qa' },
       reservedCostMicros: 1,
+      maxReplayItems: 64,
       invoke: vi.fn(),
     };
     f.repositories.questionApproval.approve.mockImplementation(async (_request, qa) => {

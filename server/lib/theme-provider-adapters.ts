@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import type { ThemeBudgetOperation, ThemeBudgetOutcome } from './theme-budget';
+import { MAX_THEME_PROVIDER_RESULT_BYTES } from './theme-provider-persistence';
 import type { ThemeSemanticBatchPersistenceRequest } from './theme-provider-persistence';
 
 const int32 = z.number().int().min(0).max(2_147_483_647);
@@ -154,6 +155,8 @@ export type ThemeRuntimeProvider<Input, Output> = Readonly<{
   model: string;
   requestIdentity: unknown;
   reservedCostMicros: number;
+  /** Maximum output items guaranteed to fit one durable parsed-result record. */
+  maxReplayItems?: number;
   /** Stable logical input used by durable request fingerprinting. */
   fingerprintInput?(input: Input): unknown;
   invoke(input: Input): Promise<ThemeProviderInvocation<Output>>;
@@ -450,10 +453,18 @@ export function createEmbeddingProvider(options: {
     policy.model,
     policy.maxInputTokens
   );
+  // A finite JSON number needs at most 24 bytes; include a separator per
+  // coordinate, vector delimiters, and a fixed envelope margin.
+  const maxReplayItems = Math.min(
+    64,
+    Math.floor((MAX_THEME_PROVIDER_RESULT_BYTES - 1_024) / (policy.dimensions * 25 + 3))
+  );
+  if (maxReplayItems < 1) throw new ThemeProviderAdapterError('invalid_configuration');
   const requestIdentity = deepFreeze({
     ...structuredClone(policy),
     pricingHash: themeProviderPolicyFingerprint(pricing),
     reservedCostMicros,
+    maxReplayItems,
   });
   const now = options.now ?? Date.now;
   const transport = options.transport;
@@ -463,6 +474,7 @@ export function createEmbeddingProvider(options: {
     model: policy.model,
     requestIdentity,
     reservedCostMicros,
+    maxReplayItems,
     fingerprintInput(input: readonly string[]) {
       return [...input];
     },
@@ -624,6 +636,8 @@ export function createBudgetedThemeQaTransports(options: {
     !options ||
     typeof options.dispatch !== 'function' ||
     typeof options.persistSemanticBatch !== 'function' ||
+    !Number.isInteger(options.embeddings?.maxReplayItems) ||
+    options.embeddings.maxReplayItems! < 1 ||
     options.semantic?.requestIdentity === undefined
   )
     throw new ThemeProviderAdapterError('invalid_configuration');
@@ -640,13 +654,20 @@ export function createBudgetedThemeQaTransports(options: {
         input,
       });
     },
-    embed(candidateId: string, input: readonly string[]): Promise<readonly number[][]> {
-      return options.dispatch({
-        operation: 'embed',
-        stableKey: `embed:${candidateId}`,
-        provider: options.embeddings,
-        input,
-      });
+    async embed(candidateId: string, input: readonly string[]): Promise<readonly number[][]> {
+      const values = [...input];
+      const vectors: number[][] = [];
+      const batchSize = options.embeddings.maxReplayItems!;
+      for (let offset = 0, batch = 0; offset < values.length; offset += batchSize, batch += 1) {
+        const result = await options.dispatch({
+          operation: 'embed',
+          stableKey: `embed:${candidateId}:${batch}`,
+          provider: options.embeddings,
+          input: values.slice(offset, offset + batchSize),
+        });
+        vectors.push(...result.map((vector) => [...vector]));
+      }
+      return vectors;
     },
     async adjudicateBatch<Input, Output>(
       candidateId: string,

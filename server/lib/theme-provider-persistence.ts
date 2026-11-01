@@ -23,7 +23,7 @@ export class ThemeProviderPersistenceConflictError extends Error {
   }
 }
 
-const MAX_PROVIDER_RESULT_BYTES = 4 * 1024 * 1024;
+export const MAX_THEME_PROVIDER_RESULT_BYTES = 4 * 1024 * 1024;
 
 function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex');
@@ -43,7 +43,7 @@ function canonical(value: unknown): string {
 
 function snapshotProviderResult(value: unknown): unknown {
   const snapshot = cloneJson(value);
-  if (Buffer.byteLength(canonical(snapshot), 'utf8') > MAX_PROVIDER_RESULT_BYTES)
+  if (Buffer.byteLength(canonical(snapshot), 'utf8') > MAX_THEME_PROVIDER_RESULT_BYTES)
     throw new TypeError('invalid_theme_provider_result');
   return snapshot;
 }

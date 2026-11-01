@@ -87,7 +87,8 @@ physical request.
 Nested S10/S9 quality review, embeddings and semantic adjudication can now use
 job-bound budgeted dependencies. The themed semantic screen persists one ordered
 batch before dispatch, admits no more than four pairs and reports an incomplete
-review when a fifth pair would be required. The preview scheduler can wrap a
+review when a fifth pair would be required. Corpus embeddings are split into
+bounded, ordered attempts so every parsed vector batch fits durable replay. The preview scheduler can wrap a
 worker that reloads each job's hash-verified plan immediately before composing
 that job's runtime. This remains a callable preview boundary and is not installed
 by ordinary application startup.
