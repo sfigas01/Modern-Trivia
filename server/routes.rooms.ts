@@ -139,7 +139,8 @@ function generatePlayerToken(): string {
   return randomBytes(32).toString('base64url');
 }
 
-function parseRoomCode(rawCode: string): string {
+function parseRoomCode(rawCode: string | string[] | undefined): string {
+  if (typeof rawCode !== 'string') throw new RoomRouteError(400, 'Invalid room code');
   return roomCodeParamsSchema.parse({ code: rawCode.toUpperCase() }).code;
 }
 

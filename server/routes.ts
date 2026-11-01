@@ -42,6 +42,7 @@ import { themeSuggestRequestSchema, themeSuggestResponseSchema } from '@shared/s
 import { isThemeRoundsEnabled, fallbackThemeCategories } from './lib/theme-game';
 import { requireThemePlayerSignIn } from './lib/theme-player-auth';
 import { ThemeAdmissionError } from './lib/theme-admission';
+import { routeParam } from './lib/route-param';
 
 const VALID_PILLARS = ['GlobalEh', 'FreshPrints', 'TimeCapsule', 'GreatOutdoors'] as const;
 
@@ -276,7 +277,7 @@ export async function registerRoutes(
   // Analyze dispute with AI
   app.post('/api/disputes/:id/analyze', isAuthenticated, isAdmin, aiLimiter, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
 
       const [dispute] = await db.select().from(disputes).where(eq(disputes.id, id)).limit(1);
 
@@ -304,7 +305,7 @@ export async function registerRoutes(
   // Update dispute status
   app.patch('/api/disputes/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
       const parsed = disputeUpdateSchema.parse(req.body);
 
       const [updated] = await db
@@ -404,7 +405,7 @@ export async function registerRoutes(
 
   app.delete('/api/admin/revoke/:userId', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { userId } = req.params;
+      const userId = routeParam(req.params.userId, 'userId');
       await db.delete(adminRoles).where(eq(adminRoles.userId, userId));
       res.json({ message: 'Admin access revoked' });
     } catch (error) {
@@ -618,7 +619,7 @@ export async function registerRoutes(
   // Update a question (admin only)
   app.patch('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
       const parsed = questionPatchSchema.parse(req.body);
 
       const [updated] = await db
@@ -705,7 +706,7 @@ export async function registerRoutes(
   // Edit a single field on a question and record it in the changelog
   app.patch('/api/admin/questions/:id/field', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
       const userId = getUserId(req);
       if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -756,7 +757,7 @@ export async function registerRoutes(
     aiLimiter,
     async (req, res) => {
       try {
-        const { id } = req.params;
+        const id = routeParam(req.params.id, 'id');
         const { field } = aiFixRequestSchema.parse(req.body);
 
         const [q] = await db.select().from(questions).where(eq(questions.id, id)).limit(1);
@@ -792,7 +793,7 @@ export async function registerRoutes(
   // Fetch the edit changelog for a question
   app.get('/api/admin/questions/:id/edits', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
       const edits = await db
         .select({
           id: questionEdits.id,
@@ -819,7 +820,7 @@ export async function registerRoutes(
   // question_quality_sweep_dismissals via FK on delete cascade.
   app.delete('/api/questions/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
 
       // Clean up seen_questions rows that don't have ON DELETE CASCADE.
       await db.delete(seenQuestions).where(eq(seenQuestions.questionId, id));
@@ -986,7 +987,7 @@ export async function registerRoutes(
 
   app.post('/api/staging/:id/promote', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
 
       const [promoted] = await db
         .update(questions)
@@ -1010,7 +1011,7 @@ export async function registerRoutes(
 
   app.post('/api/staging/:id/reject', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const { id } = req.params;
+      const id = routeParam(req.params.id, 'id');
 
       const [rejected] = await db
         .update(questions)
