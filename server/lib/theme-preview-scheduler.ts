@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 
 import { readThemeRuntimeConfiguration } from './theme-runtime-config';
+import type { ThemeRuntimePlan } from './theme-runtime-plan';
 
 /**
  * Preview-only bootstrap for the durable themed preparation worker.
@@ -28,11 +29,56 @@ export type ThemePreviewSchedulerStart =
       stop(): Promise<void>;
     }>;
 
-type PreviewWorker = Readonly<{
+export type ThemePreviewWorker = Readonly<{
   /** Actual worst-case duration of one callback, including composite QA. */
   maxCallbackMs: number;
   run(jobId: string): Promise<unknown>;
 }>;
+
+export type ThemePreviewLoadedPlan = Readonly<{
+  planVersion: string;
+  plan: ThemeRuntimePlan;
+  holdUntil: Date;
+  planHash: string;
+}>;
+
+/**
+ * Reloads the immutable plan for every recovered job before its runtime is
+ * composed. `loadPlan` must verify the stored plan hash (the runtime plan
+ * repository's `load` method does this); this wrapper validates the returned
+ * envelope. That prevents one plan-bound worker from processing a different
+ * scheduler ID and never reruns discovery during recovery.
+ */
+export function createThemePreviewPlannedWorker(options: {
+  maxCallbackMs: number;
+  loadPlan(jobId: string): Promise<ThemePreviewLoadedPlan>;
+  createRuntime(input: { jobId: string; loadedPlan: ThemePreviewLoadedPlan }): {
+    run(jobId: string): Promise<unknown>;
+  };
+}): ThemePreviewWorker {
+  if (
+    !Number.isInteger(options.maxCallbackMs) ||
+    options.maxCallbackMs < 1 ||
+    typeof options.loadPlan !== 'function' ||
+    typeof options.createRuntime !== 'function'
+  )
+    throw new TypeError('invalid_theme_preview_planned_worker');
+  return Object.freeze({
+    maxCallbackMs: options.maxCallbackMs,
+    async run(jobId: string) {
+      const loadedPlan = await options.loadPlan(jobId);
+      if (
+        !loadedPlan ||
+        !loadedPlan.planVersion ||
+        !loadedPlan.planHash ||
+        !(loadedPlan.holdUntil instanceof Date) ||
+        !Number.isFinite(loadedPlan.holdUntil.valueOf())
+      )
+        throw new TypeError('invalid_theme_preview_plan');
+      return options.createRuntime({ jobId, loadedPlan }).run(jobId);
+    },
+  });
+}
 
 export interface ThemePreviewRecoveryRepository {
   /** Return at most `limit` IDs in a stable order, without claiming their leases. */
@@ -88,7 +134,7 @@ export interface ThemePreviewSchedulerDependencies {
   /** Construct the runtime only after both gates have passed. */
   createRuntime(
     config: Readonly<{ leaseDurationMs: number; maxCallbackMs: number; shouldStop: () => boolean }>
-  ): PreviewWorker;
+  ): ThemePreviewWorker;
   reportCode?(code: ThemePreviewSchedulerCode): void;
   setInterval?: (callback: () => void, milliseconds: number) => ReturnType<typeof setInterval>;
   clearInterval?: (handle: ReturnType<typeof setInterval>) => void;
@@ -178,7 +224,7 @@ export async function bootstrapThemePreviewScheduler(
   let stopped = false;
 
   // Do not construct provider/runtime composition until the durable control is on.
-  let worker: PreviewWorker;
+  let worker: ThemePreviewWorker;
   try {
     worker = dependencies.createRuntime({
       leaseDurationMs: config.leaseDurationMs,

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   bootstrapThemePreviewScheduler,
   createPostgresThemePreviewRecoveryRepository,
+  createThemePreviewPlannedWorker,
   type ThemePreviewSchedulerDependencies,
 } from './theme-preview-scheduler';
 
@@ -45,6 +46,30 @@ function dependencies(
     ...overrides,
   };
 }
+
+describe('planned preview worker', () => {
+  it('loads and binds each recovered job to its own immutable plan', async () => {
+    const loadedPlan = {
+      planVersion: 'plan-v1',
+      planHash: 'a'.repeat(64),
+      holdUntil: new Date('2026-11-01T00:00:00Z'),
+      plan: { contractVersion: 'theme-preview-runtime-plan-v1', mode: 'offline_fixture' },
+    } as never;
+    const loadPlan = vi.fn(async () => loadedPlan);
+    const run = vi.fn(async () => 'ready');
+    const createRuntime = vi.fn(() => ({ run }));
+    const worker = createThemePreviewPlannedWorker({
+      maxCallbackMs: 120_000,
+      loadPlan,
+      createRuntime,
+    });
+
+    await expect(worker.run('job-a')).resolves.toBe('ready');
+    expect(loadPlan).toHaveBeenCalledWith('job-a');
+    expect(createRuntime).toHaveBeenCalledWith({ jobId: 'job-a', loadedPlan });
+    expect(run).toHaveBeenCalledWith('job-a');
+  });
+});
 
 describe('theme preview scheduler bootstrap', () => {
   it('scans only durable runnable preview jobs in stable order', async () => {

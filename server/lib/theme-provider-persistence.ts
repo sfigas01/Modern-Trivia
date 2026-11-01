@@ -23,6 +23,8 @@ export class ThemeProviderPersistenceConflictError extends Error {
   }
 }
 
+export const MAX_THEME_PROVIDER_RESULT_BYTES = 4 * 1024 * 1024;
+
 function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -37,6 +39,60 @@ function canonical(value: unknown): string {
   const encoded = JSON.stringify(value);
   if (encoded === undefined) throw new TypeError('invalid_theme_semantic_batch');
   return encoded;
+}
+
+function snapshotProviderResult(value: unknown): unknown {
+  const snapshot = cloneJson(value);
+  if (Buffer.byteLength(canonical(snapshot), 'utf8') > MAX_THEME_PROVIDER_RESULT_BYTES)
+    throw new TypeError('invalid_theme_provider_result');
+  return snapshot;
+}
+
+/**
+ * Stores only the already-validated parsed provider value. The budget attempt's
+ * immutable request fingerprint is the replay identity; raw payloads, prompts
+ * and provider errors never enter this table.
+ */
+export async function recordThemeProviderResult(
+  client: Pick<PoolClient, 'query'>,
+  attemptId: string,
+  value: unknown
+): Promise<void> {
+  if (!attemptId.trim()) throw new TypeError('invalid_theme_provider_result');
+  const result = snapshotProviderResult(value);
+  const resultHash = hash(canonical(result));
+  await client.query(
+    `INSERT INTO theme_job_attempt_provider_results (attempt_id, result_json, result_hash)
+     VALUES ($1, $2::jsonb, $3)
+     ON CONFLICT (attempt_id) DO NOTHING`,
+    [attemptId, JSON.stringify(result), resultHash]
+  );
+  const existing = await client.query<{ result_json: unknown; result_hash: string }>(
+    `SELECT result_json, result_hash
+       FROM theme_job_attempt_provider_results WHERE attempt_id = $1`,
+    [attemptId]
+  );
+  const row = existing.rows[0];
+  if (!row || row.result_hash !== resultHash || canonical(row.result_json) !== canonical(result))
+    throw new ThemeProviderPersistenceConflictError();
+}
+
+export async function loadThemeProviderResult(
+  pool: Pick<Pool, 'query'>,
+  attemptId: string
+): Promise<unknown | null> {
+  if (!attemptId.trim()) throw new TypeError('invalid_theme_provider_result');
+  const existing = await pool.query<{ result_json: unknown; result_hash: string }>(
+    `SELECT result_json, result_hash
+       FROM theme_job_attempt_provider_results WHERE attempt_id = $1`,
+    [attemptId]
+  );
+  const row = existing.rows[0];
+  if (!row) return null;
+  const snapshot = snapshotProviderResult(row.result_json);
+  if (hash(canonical(snapshot)) !== row.result_hash)
+    throw new ThemeProviderPersistenceConflictError();
+  return snapshot;
 }
 
 type MetadataRow = {

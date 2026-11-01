@@ -16,7 +16,12 @@ import { createPostgresThemeFactReviewRepository } from './theme-fact-review';
 import { createPostgresThemeLifecycleRepository } from './theme-lifecycle';
 import type { ThemeLifecycleRepository } from './theme-lifecycle';
 import type { ThemeProviderMetadata } from './theme-provider-adapters';
-import { recordThemeProviderMetadata } from './theme-provider-persistence';
+import {
+  createThemeProviderPersistence,
+  loadThemeProviderResult,
+  recordThemeProviderMetadata,
+  recordThemeProviderResult,
+} from './theme-provider-persistence';
 import {
   createThemePreparationWorker,
   ThemePreparationWorkerError,
@@ -126,6 +131,10 @@ export type ThemeProviderMetadataRecorder = (
   record: ThemeBudgetRecord,
   metadata: ThemeProviderMetadata
 ) => Promise<void>;
+export type ThemeProviderResultPersistence = Readonly<{
+  record(db: PoolClient, record: ThemeBudgetRecord, value: unknown): Promise<void>;
+  load(record: ThemeBudgetRecord): Promise<unknown | null>;
+}>;
 
 function workerBudgetError(error: unknown): ThemePreparationWorkerError {
   if (!(error instanceof ThemeBudgetError))
@@ -152,7 +161,8 @@ function workerBudgetError(error: unknown): ThemePreparationWorkerError {
 export function createBudgetedThemeProvider(
   gateway: BudgetGateway,
   budget: ThemeRuntimeBudgetConfig,
-  recordProviderMetadata: ThemeProviderMetadataRecorder
+  recordProviderMetadata: ThemeProviderMetadataRecorder,
+  providerResults?: ThemeProviderResultPersistence
 ) {
   const policyFingerprint = themeRuntimeBudgetPolicyFingerprint(budget);
   return async function dispatch<T>(input: ThemeBudgetedProviderRequest<T>): Promise<T> {
@@ -176,11 +186,35 @@ export function createBudgetedThemeProvider(
       holdExpiresAt: input.holdExpiresAt,
     };
     try {
-      const result = await gateway.dispatch(request, input.invoke, (db, record, metadata) =>
-        recordProviderMetadata(db, record, metadata)
+      const result = await gateway.dispatch(
+        request,
+        async () => {
+          const response = await input.invoke();
+          return {
+            ...response,
+            metadata: {
+              provider: response.metadata,
+              value: response.value,
+            },
+          };
+        },
+        async (db, record, metadata) => {
+          if (metadata.provider) await recordProviderMetadata(db, record, metadata.provider);
+          if (record.status === 'succeeded' && providerResults)
+            await providerResults.record(db, record, metadata.value);
+        }
       );
-      if (result.record.replay)
-        throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
+      if (result.record.replay) {
+        if (result.record.status !== 'succeeded')
+          throw new ThemePreparationWorkerError(
+            result.record.status === 'failed' ? 'preparation_failed' : 'provider_outcome_unknown',
+            false
+          );
+        const replay = await providerResults?.load(result.record);
+        if (replay === null || replay === undefined)
+          throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
+        return replay as T;
+      }
       if (result.record.status !== 'succeeded')
         // The stage repository has already persisted this terminal outcome
         // under a stable attempt identity. Re-running the worker would only
@@ -211,6 +245,7 @@ type WorkerPipeline = Omit<
 export type ThemeRuntimeCompositionContext = Readonly<{
   repositories: ReturnType<typeof createPostgresThemeSourceFirstRepositories>;
   dispatchProvider: ReturnType<typeof createBudgetedThemeProvider>;
+  persistSemanticBatch?: ReturnType<typeof createThemeProviderPersistence>['persistSemanticBatch'];
 }>;
 
 export type ThemeRuntimeCompositionOptions = Readonly<{
@@ -236,6 +271,8 @@ export type ThemePreparationRuntimeOptions = Readonly<{
   budgetGateway: BudgetGateway;
   budget: ThemeRuntimeBudgetConfig;
   recordProviderMetadata: ThemeProviderMetadataRecorder;
+  providerResults?: ThemeProviderResultPersistence;
+  persistSemanticBatch?: ThemeRuntimeCompositionContext['persistSemanticBatch'];
   repositories: ReturnType<typeof createPostgresThemeSourceFirstRepositories>;
   buildPipeline(context: ThemeRuntimeCompositionContext): WorkerPipeline;
   leaseDurationMs?: number;
@@ -250,10 +287,15 @@ export function createThemePreparationRuntime(options: ThemePreparationRuntimeOp
   const dispatchProvider = createBudgetedThemeProvider(
     options.budgetGateway,
     options.budget,
-    options.recordProviderMetadata
+    options.recordProviderMetadata,
+    options.providerResults
   );
   const pipeline = options.buildPipeline(
-    Object.freeze({ repositories: options.repositories, dispatchProvider })
+    Object.freeze({
+      repositories: options.repositories,
+      dispatchProvider,
+      persistSemanticBatch: options.persistSemanticBatch,
+    })
   );
   return createThemePreparationWorker({
     ...pipeline,
@@ -291,6 +333,11 @@ export function createPostgresThemePreparationRuntime(options: ThemeRuntimeCompo
     recordProviderMetadata:
       options.recordProviderMetadata ??
       ((db, record, metadata) => recordThemeProviderMetadata(db, record.attemptId, metadata)),
+    providerResults: {
+      record: (db, record, value) => recordThemeProviderResult(db, record.attemptId, value),
+      load: (record) => loadThemeProviderResult(options.pool, record.attemptId),
+    },
+    persistSemanticBatch: createThemeProviderPersistence(options.pool).persistSemanticBatch,
     repositories,
     buildPipeline: options.buildPipeline,
     leaseDurationMs: options.leaseDurationMs,

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 import type { ThemeBudgetOperation, ThemeBudgetOutcome } from './theme-budget';
+import { MAX_THEME_PROVIDER_RESULT_BYTES } from './theme-provider-persistence';
 import type { ThemeSemanticBatchPersistenceRequest } from './theme-provider-persistence';
 
 const int32 = z.number().int().min(0).max(2_147_483_647);
@@ -58,6 +59,21 @@ export const themeStructuredResponsePolicySchema = z
 
 export type ThemeStructuredResponsePolicy = z.infer<typeof themeStructuredResponsePolicySchema>;
 
+export const themeEmbeddingPolicySchema = z
+  .object({
+    policyVersion: identifier,
+    provider: z.literal('openai'),
+    model: identifier,
+    dimensions: positiveInt32,
+    maxInputTokens: positiveInt32,
+    timeoutMs: z.number().int().min(1).max(120_000),
+    maxRetries: z.literal(0),
+    inputEstimatorVersion: identifier,
+    pricingVersion: identifier,
+  })
+  .strict();
+export type ThemeEmbeddingPolicy = z.infer<typeof themeEmbeddingPolicySchema>;
+
 export type ThemeJsonSchema = Readonly<Record<string, unknown>>;
 
 export type ThemeResponsesRequest = Readonly<{
@@ -103,6 +119,25 @@ export interface ThemeResponsesTransport {
   ): Promise<ThemeResponsesResult>;
 }
 
+export type ThemeEmbeddingsRequest = Readonly<{
+  model: string;
+  input: readonly string[];
+  dimensions: number;
+  encoding_format: 'float';
+}>;
+export type ThemeEmbeddingsResult = Readonly<{
+  id?: string;
+  model?: string;
+  data: readonly Readonly<{ index: number; embedding: readonly number[] }>[];
+  usage?: { prompt_tokens?: number; total_tokens?: number } | null;
+}>;
+export interface ThemeEmbeddingsTransport {
+  create(
+    request: ThemeEmbeddingsRequest,
+    options: { signal: AbortSignal; maxRetries: 0 }
+  ): Promise<ThemeEmbeddingsResult>;
+}
+
 export type ThemeProviderMetadata = Readonly<{
   providerRequestId: string | null;
   returnedModel: string | null;
@@ -120,6 +155,10 @@ export type ThemeRuntimeProvider<Input, Output> = Readonly<{
   model: string;
   requestIdentity: unknown;
   reservedCostMicros: number;
+  /** Maximum output items guaranteed to fit one durable parsed-result record. */
+  maxReplayItems?: number;
+  /** Stable logical input used by durable request fingerprinting. */
+  fingerprintInput?(input: Input): unknown;
   invoke(input: Input): Promise<ThemeProviderInvocation<Output>>;
 }>;
 
@@ -264,11 +303,14 @@ export function createStructuredResponseProvider<Input, Output>(options: {
     reservedCostMicros,
   });
 
-  return Object.freeze({
+  const provider: ThemeRuntimeProvider<Input, Output> = {
     provider: policy.provider,
     model: policy.model,
     requestIdentity,
     reservedCostMicros,
+    fingerprintInput(input: Input): unknown {
+      return serializeInput(structuredClone(input));
+    },
     async invoke(input: Input): Promise<ThemeProviderInvocation<Output>> {
       const started = now();
       let body: ThemeResponsesRequest;
@@ -382,7 +424,168 @@ export function createStructuredResponseProvider<Input, Output>(options: {
         clearTimeout(timer);
       }
     },
+  };
+  return Object.freeze(provider);
+}
+
+export function createEmbeddingProvider(options: {
+  transport: ThemeEmbeddingsTransport;
+  pricing: ThemeProviderPricing;
+  policy: ThemeEmbeddingPolicy;
+  estimateInputTokens(input: readonly string[]): number;
+  now?: () => number;
+}): ThemeRuntimeProvider<readonly string[], readonly number[][]> {
+  const parsedPolicy = themeEmbeddingPolicySchema.safeParse(options.policy);
+  const parsedPricing = themeProviderPricingSchema.safeParse(options.pricing);
+  if (
+    !options.transport ||
+    typeof options.transport.create !== 'function' ||
+    !parsedPolicy.success ||
+    !parsedPricing.success ||
+    typeof options.estimateInputTokens !== 'function'
+  )
+    throw new ThemeProviderAdapterError('invalid_configuration');
+  const policy = deepFreeze(structuredClone(parsedPolicy.data));
+  const pricing = deepFreeze(structuredClone(parsedPricing.data));
+  const reservedCostMicros = reserveEmbeddingCostMicros(
+    pricing,
+    policy.pricingVersion,
+    policy.model,
+    policy.maxInputTokens
+  );
+  // A finite JSON number needs at most 24 bytes; include a separator per
+  // coordinate, vector delimiters, and a fixed envelope margin.
+  const maxReplayItems = Math.min(
+    64,
+    Math.floor((MAX_THEME_PROVIDER_RESULT_BYTES - 1_024) / (policy.dimensions * 25 + 3))
+  );
+  if (maxReplayItems < 1) throw new ThemeProviderAdapterError('invalid_configuration');
+  const requestIdentity = deepFreeze({
+    ...structuredClone(policy),
+    pricingHash: themeProviderPolicyFingerprint(pricing),
+    reservedCostMicros,
+    maxReplayItems,
   });
+  const now = options.now ?? Date.now;
+  const transport = options.transport;
+  const estimateInputTokens = options.estimateInputTokens;
+  const provider: ThemeRuntimeProvider<readonly string[], readonly number[][]> = {
+    provider: policy.provider,
+    model: policy.model,
+    requestIdentity,
+    reservedCostMicros,
+    maxReplayItems,
+    fingerprintInput(input: readonly string[]) {
+      return [...input];
+    },
+    async invoke(input: readonly string[]) {
+      const values = [...input];
+      const started = now();
+      let estimated: number;
+      try {
+        estimated = estimateInputTokens(values);
+      } catch {
+        return failed<readonly number[][]>(
+          'input_estimation_failed',
+          { actualCostMicros: 0 },
+          null,
+          started,
+          now
+        );
+      }
+      if (
+        values.length < 1 ||
+        values.some((value) => typeof value !== 'string' || !value.trim()) ||
+        !Number.isInteger(estimated) ||
+        estimated < 1 ||
+        estimated > policy.maxInputTokens
+      )
+        return failed<readonly number[][]>(
+          'input_token_ceiling',
+          { actualCostMicros: 0 },
+          null,
+          started,
+          now
+        );
+      const request: ThemeEmbeddingsRequest = {
+        model: policy.model,
+        input: values,
+        dimensions: policy.dimensions,
+        encoding_format: 'float',
+      };
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), policy.timeoutMs);
+      try {
+        let response: ThemeEmbeddingsResult;
+        try {
+          response = await transport.create(request, {
+            signal: controller.signal,
+            maxRetries: 0,
+          });
+        } catch {
+          throw new ThemeProviderTransportError(
+            controller.signal.aborted ? 'provider_timeout' : 'provider_outcome_unknown'
+          );
+        }
+        if (response.model !== policy.model)
+          throw new ThemeProviderTransportError('provider_outcome_unknown');
+        const inputTokens = response.usage?.prompt_tokens ?? response.usage?.total_tokens;
+        if (!Number.isInteger(inputTokens) || inputTokens! < 0 || inputTokens! > 2_147_483_647)
+          return failed<readonly number[][]>(
+            'usage_missing',
+            { actualCostMicros: reservedCostMicros },
+            null,
+            started,
+            now
+          );
+        const ordered = [...response.data].sort((left, right) => left.index - right.index);
+        if (
+          ordered.length !== values.length ||
+          ordered.some(
+            ({ index, embedding }, position) =>
+              index !== position ||
+              embedding.length !== policy.dimensions ||
+              embedding.some((number) => !Number.isFinite(number)) ||
+              embedding.every((number) => number === 0)
+          )
+        )
+          return failed<readonly number[][]>(
+            'invalid_output',
+            {
+              actualCostMicros: costMicros(
+                inputTokens!,
+                pricing.embeddings[policy.model]!.inputMicrosPerMillionTokens
+              ),
+              inputTokens: inputTokens!,
+              outputTokens: 0,
+            },
+            null,
+            started,
+            now
+          );
+        return {
+          value: ordered.map(({ embedding }) => [...embedding]),
+          outcome: {
+            status: 'succeeded',
+            actualCostMicros: costMicros(
+              inputTokens!,
+              pricing.embeddings[policy.model]!.inputMicrosPerMillionTokens
+            ),
+            inputTokens: inputTokens!,
+            outputTokens: 0,
+          },
+          metadata: {
+            providerRequestId: response.id ?? null,
+            returnedModel: response.model,
+            latencyMs: Math.max(0, Math.round(now() - started)),
+          },
+        };
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+  };
+  return Object.freeze(provider);
 }
 
 function metadata(
@@ -433,6 +636,8 @@ export function createBudgetedThemeQaTransports(options: {
     !options ||
     typeof options.dispatch !== 'function' ||
     typeof options.persistSemanticBatch !== 'function' ||
+    !Number.isInteger(options.embeddings?.maxReplayItems) ||
+    options.embeddings.maxReplayItems! < 1 ||
     options.semantic?.requestIdentity === undefined
   )
     throw new ThemeProviderAdapterError('invalid_configuration');
@@ -449,13 +654,20 @@ export function createBudgetedThemeQaTransports(options: {
         input,
       });
     },
-    embed(candidateId: string, input: readonly string[]): Promise<readonly number[][]> {
-      return options.dispatch({
-        operation: 'embed',
-        stableKey: `embed:${candidateId}`,
-        provider: options.embeddings,
-        input,
-      });
+    async embed(candidateId: string, input: readonly string[]): Promise<readonly number[][]> {
+      const values = [...input];
+      const vectors: number[][] = [];
+      const batchSize = options.embeddings.maxReplayItems!;
+      for (let offset = 0, batch = 0; offset < values.length; offset += batchSize, batch += 1) {
+        const result = await options.dispatch({
+          operation: 'embed',
+          stableKey: `embed:${candidateId}:${batch}`,
+          provider: options.embeddings,
+          input: values.slice(offset, offset + batchSize),
+        });
+        vectors.push(...result.map((vector) => [...vector]));
+      }
+      return vectors;
     },
     async adjudicateBatch<Input, Output>(
       candidateId: string,

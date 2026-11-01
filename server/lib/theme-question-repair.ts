@@ -13,7 +13,11 @@ import type {
   ThemeQuestionEvidenceReviewResult,
   ThemeQuestionQaContext,
 } from './theme-question-evidence-review';
-import type { ThemeQuestionQaDecision, ThemeQuestionQaDependencies } from './theme-question-qa';
+import type {
+  ThemeQuestionQaDecision,
+  ThemeQuestionQaDependencies,
+  ThemeQuestionQaRequest,
+} from './theme-question-qa';
 import { THEME_QUESTION_QA_POLICY_VERSION, runThemeQuestionQa } from './theme-question-qa';
 
 const uuid = z.string().uuid();
@@ -124,6 +128,10 @@ export type ThemeQuestionRepairDependencies = Readonly<{
   }): Promise<ThemeQuestionQaContext>;
   qa: ThemeQuestionQaDependencies;
 }>;
+export type ThemeQuestionRepairQaOverrides = Pick<
+  ThemeQuestionQaDependencies,
+  'checkQuality' | 'detectDuplicates'
+>;
 
 export class ThemeQuestionRepairError extends Error {
   constructor(
@@ -296,7 +304,10 @@ export function createPostgresThemeQuestionRepairOrchestrator(
         parentQaDecision: ThemeQuestionQaDecision;
       },
       repairer: ThemeQuestionRepairer,
-      reviewer: ThemeQuestionEvidenceReviewer
+      reviewer: ThemeQuestionEvidenceReviewer,
+      qaOverrides?:
+        | ThemeQuestionRepairQaOverrides
+        | ((request: ThemeQuestionQaRequest) => ThemeQuestionRepairQaOverrides)
     ): Promise<ThemeQuestionRepairDecision> {
       const parsed = requestSchema.safeParse(rawRequest);
       if (!parsed.success || typeof repairer !== 'function' || typeof reviewer !== 'function')
@@ -445,14 +456,18 @@ export function createPostgresThemeQuestionRepairOrchestrator(
           corpusHash: null,
         });
 
-      const qa = await runThemeQuestionQa(
-        {
-          candidateId: generated.candidateId,
-          questionRevisionId: generated.questionRevisionId,
-          questionContentHash: generated.contentHash,
-        },
-        dependencies.qa
-      );
+      const qaRequest = {
+        candidateId: generated.candidateId,
+        questionRevisionId: generated.questionRevisionId,
+        questionContentHash: generated.contentHash,
+      };
+      const selectedQaOverrides =
+        typeof qaOverrides === 'function' ? qaOverrides(qaRequest) : qaOverrides;
+      const qa = await runThemeQuestionQa(qaRequest, {
+        ...dependencies.qa,
+        checkQuality: selectedQaOverrides?.checkQuality ?? dependencies.qa.checkQuality,
+        detectDuplicates: selectedQaOverrides?.detectDuplicates ?? dependencies.qa.detectDuplicates,
+      });
       if (
         qa.evidenceAttemptId !== repair.evidenceReviewAttemptId ||
         qa.evidenceReviewId !== evidence.reviewId ||

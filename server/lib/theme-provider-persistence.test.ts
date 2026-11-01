@@ -3,8 +3,10 @@ import type { PoolClient } from 'pg';
 
 import {
   ThemeProviderPersistenceConflictError,
+  loadThemeProviderResult,
   persistThemeSemanticBatch,
   recordThemeProviderMetadata,
+  recordThemeProviderResult,
 } from './theme-provider-persistence';
 
 function queryClient(handler: (text: string, values?: unknown[]) => unknown) {
@@ -67,6 +69,47 @@ describe('theme provider metadata persistence', () => {
         latencyMs: 1,
       })
     ).rejects.toThrow('invalid_theme_provider_metadata');
+  });
+});
+
+describe('provider result replay persistence', () => {
+  it('stores parsed output once and returns an exact hash-verified replay', async () => {
+    let stored: { result_json: unknown; result_hash: string } | undefined;
+    const client = queryClient((text, values) => {
+      if (text.includes('INSERT INTO theme_job_attempt_provider_results')) {
+        stored ??= {
+          result_json: JSON.parse(values?.[1] as string),
+          result_hash: String(values?.[2]),
+        };
+      }
+      if (text.includes('SELECT result_json')) return { rows: stored ? [stored] : [] };
+      return { rows: [] };
+    });
+    const result = { verdict: 'pass', details: [{ code: 'coherence' }] };
+
+    await recordThemeProviderResult(client, 'attempt-1', result);
+    await recordThemeProviderResult(client, 'attempt-1', structuredClone(result));
+
+    await expect(loadThemeProviderResult(client, 'attempt-1')).resolves.toEqual(result);
+  });
+
+  it('rejects changed or corrupted result replays and oversized output', async () => {
+    const stored = {
+      result_json: { verdict: 'pass' },
+      result_hash: '0'.repeat(64),
+    };
+    const client = queryClient((text) =>
+      text.includes('SELECT result_json') ? { rows: [stored] } : { rows: [] }
+    );
+    await expect(
+      recordThemeProviderResult(client, 'attempt-1', { verdict: 'fail' })
+    ).rejects.toBeInstanceOf(ThemeProviderPersistenceConflictError);
+    await expect(loadThemeProviderResult(client, 'attempt-1')).rejects.toBeInstanceOf(
+      ThemeProviderPersistenceConflictError
+    );
+    await expect(
+      recordThemeProviderResult(client, 'attempt-2', { value: 'x'.repeat(4 * 1024 * 1024) })
+    ).rejects.toThrow('invalid_theme_provider_result');
   });
 });
 

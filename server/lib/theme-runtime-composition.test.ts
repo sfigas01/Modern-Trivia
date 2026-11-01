@@ -135,6 +135,58 @@ describe('theme runtime composition', () => {
     expect(invoke).not.toHaveBeenCalled();
   });
 
+  it('returns an exact durable provider result replay without a second physical call', async () => {
+    const invoke = vi.fn();
+    const replayRecord = record({ replay: true });
+    const gateway = {
+      dispatch: vi.fn(async () => ({ record: replayRecord, value: undefined })),
+    } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+    const providerResults = {
+      record: vi.fn(async () => undefined),
+      load: vi.fn(async () => ({ answer: 42 })),
+    };
+
+    await expect(
+      createBudgetedThemeProvider(
+        gateway,
+        budget,
+        discardProviderMetadata,
+        providerResults
+      )(request(invoke))
+    ).resolves.toEqual({ answer: 42 });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(providerResults.load).toHaveBeenCalledWith(replayRecord);
+  });
+
+  it.each(['failed', 'unknown'] as const)(
+    'never loads a stray provider result for a %s replay',
+    async (status) => {
+      const invoke = vi.fn();
+      const replayRecord = record({ replay: true, status });
+      const gateway = {
+        dispatch: vi.fn(async () => ({ record: replayRecord, value: undefined })),
+      } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+      const providerResults = {
+        record: vi.fn(async () => undefined),
+        load: vi.fn(async () => ({ answer: 42 })),
+      };
+
+      await expect(
+        createBudgetedThemeProvider(
+          gateway,
+          budget,
+          discardProviderMetadata,
+          providerResults
+        )(request(invoke))
+      ).rejects.toMatchObject({
+        code: status === 'failed' ? 'preparation_failed' : 'provider_outcome_unknown',
+        retryable: false,
+      });
+      expect(invoke).not.toHaveBeenCalled();
+      expect(providerResults.load).not.toHaveBeenCalled();
+    }
+  );
+
   it('does not call a provider after budget or candidate admission is denied', async () => {
     for (const code of ['budget_exhausted', 'candidate_ceiling'] as const) {
       const invoke = vi.fn();
