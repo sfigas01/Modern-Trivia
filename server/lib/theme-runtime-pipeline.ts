@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { Pool } from 'pg';
 
+import type { Question } from '@shared/models/questions';
 import { resolveThemeSourceUrl } from '@shared/models/theme-source-registry';
 import type { ThemeQuestionGenerationRequest } from '@shared/models/theme-question-generation';
 import type { ThemeBudgetOperation } from './theme-budget';
@@ -18,6 +19,13 @@ import type { ThemeQuestionWriter } from './theme-question-generation';
 import type { ThemeQuestionRepairer } from './theme-question-repair';
 import type { ThemeRuntimeCompositionContext } from './theme-runtime-composition';
 import type { ThemeRuntimeProvider } from './theme-provider-adapters';
+import { createBudgetedThemeQaTransports } from './theme-provider-adapters';
+import type { FactCheckReport } from './verifier';
+import type { DetectDuplicatesOptions } from './duplicate-detector';
+import {
+  detectThemeQaDuplicates,
+  type ThemeQaSemanticVerdict,
+} from './theme-qa-duplicate-detector';
 import { extractThemeSource } from './theme-source-extraction';
 import { retrieveThemeSource, type RetrievedThemeSource } from './theme-source-retrieval';
 
@@ -134,8 +142,19 @@ export type ThemeRuntimePipelineOptions = Readonly<{
     >;
     repairer: Provider<Input<ThemeQuestionRepairer>, Output<ThemeQuestionRepairer>>;
   };
-  /** S10/S9 QA dependencies must be deterministic and perform zero physical provider calls. */
-  qaMode: 'offline';
+  /** Offline fixtures use repository QA; budgeted mode wraps every nested physical call. */
+  qaMode: 'offline' | 'budgeted';
+  qaProviders?: Readonly<{
+    quality: Provider<readonly Question[], FactCheckReport>;
+    embeddings: Provider<readonly string[], readonly number[][]>;
+    semantic: Provider<
+      Readonly<{
+        a: Readonly<{ question: string; answer: string }>;
+        b: Readonly<{ question: string; answer: string }>;
+      }>,
+      ThemeQaSemanticVerdict
+    >;
+  }>;
   /** Explicit injected source transport; there is no implicit network client in this factory. */
   retrieval: Omit<Parameters<typeof retrieveThemeSource>[1], 'registry'>;
 }>;
@@ -146,7 +165,8 @@ export function createThemeRuntimePipeline(
   options: ThemeRuntimePipelineOptions
 ): Pipeline {
   if (
-    options.qaMode !== 'offline' ||
+    !['offline', 'budgeted'].includes(options.qaMode) ||
+    (options.qaMode === 'budgeted' && (!options.qaProviders || !context.persistSemanticBatch)) ||
     !options.planVersion ||
     !(options.holdExpiresAt instanceof Date) ||
     !Number.isFinite(options.holdExpiresAt.valueOf()) ||
@@ -169,6 +189,13 @@ export function createThemeRuntimePipeline(
     evidenceReviewer: snapshotProvider(options.providers.evidenceReviewer),
     repairer: snapshotProvider(options.providers.repairer),
   };
+  const qaProviders = options.qaProviders
+    ? {
+        quality: snapshotProvider(options.qaProviders.quality),
+        embeddings: snapshotProvider(options.qaProviders.embeddings),
+        semantic: snapshotProvider(options.qaProviders.semantic),
+      }
+    : null;
   const retrieved = new Map<string, RetrievedThemeSource>();
   const itemFor = (key: string) => {
     const item = items.find((entry) => entry.key === key);
@@ -195,7 +222,12 @@ export function createThemeRuntimePipeline(
         operation,
         provider: provider.provider,
         model: provider.model,
-        request: { input, identity: structuredClone(provider.requestIdentity) },
+        request: {
+          input: provider.fingerprintInput
+            ? provider.fingerprintInput(structuredClone(input))
+            : input,
+          identity: structuredClone(provider.requestIdentity),
+        },
         reservedCostMicros: provider.reservedCostMicros,
         candidateSlots,
         holdExpiresAt: options.holdExpiresAt,
@@ -231,6 +263,53 @@ export function createThemeRuntimePipeline(
     } catch (error) {
       throw providerFailure ?? error;
     }
+  }
+  function qaFor(
+    job: ThemeJobRecord,
+    item: ThemeRuntimeSourceItem,
+    candidate: { candidateId: string; questionContentHash: string },
+    onProviderFailure: (error: unknown) => void
+  ) {
+    if (options.qaMode === 'offline') return undefined;
+    if (!qaProviders || !context.persistSemanticBatch)
+      throw new ThemePreparationWorkerError('runtime_unavailable', false);
+    const transports = createBudgetedThemeQaTransports({
+      dispatch: ({ operation, stableKey, provider, input }) =>
+        dispatch(job, item, `qa:${candidate.candidateId}:${stableKey}`, operation, provider, input),
+      quality: qaProviders.quality,
+      embeddings: qaProviders.embeddings,
+      semantic: qaProviders.semantic,
+      persistSemanticBatch: context.persistSemanticBatch,
+    });
+    const remember = async <T>(operation: () => Promise<T>): Promise<T> => {
+      try {
+        return await operation();
+      } catch (error) {
+        onProviderFailure(error);
+        throw error;
+      }
+    };
+    return {
+      checkQuality: (questions: Question[]) =>
+        remember(() =>
+          transports.quality<readonly Question[], FactCheckReport>(candidate.candidateId, questions)
+        ),
+      detectDuplicates: (questions: Question[], detectOptions: DetectDuplicatesOptions) =>
+        detectThemeQaDuplicates(questions, {
+          candidateId: candidate.candidateId,
+          candidateContentHash: candidate.questionContentHash,
+          scopeIds: detectOptions.scopeIds,
+          embed: (values) =>
+            remember(() =>
+              transports.embed(
+                candidate.candidateId,
+                values.map(({ id, question, answer }) => JSON.stringify({ id, question, answer }))
+              )
+            ),
+          adjudicateBatch: (candidateId, candidateContentHash, pairs) =>
+            remember(() => transports.adjudicateBatch(candidateId, candidateContentHash, pairs)),
+        }),
+    };
   }
   async function capture(job: ThemeJobRecord, item: ThemeRuntimeSourceItem) {
     const documentId = id(job, item, 'document');
@@ -321,12 +400,21 @@ export function createThemeRuntimePipeline(
   }
   async function approveRaw(job: ThemeJobRecord, candidate: ThemeGeneratedCandidate) {
     const item = itemFor(candidate.itemKey);
-    return repos.questionApproval.approve({
-      ...(await binding(candidate)),
-      approvalId: id(job, item, `approval:${candidate.candidateId}`),
-      libraryQuestionId: id(job, item, `library-question:${candidate.candidateId}`),
-      libraryRevisionId: id(job, item, `library-revision:${candidate.candidateId}`),
-    });
+    const question = await binding(candidate);
+    let providerFailure: unknown;
+    const result = await repos.questionApproval.approve(
+      {
+        ...question,
+        approvalId: id(job, item, `approval:${candidate.candidateId}`),
+        libraryQuestionId: id(job, item, `library-question:${candidate.candidateId}`),
+        libraryRevisionId: id(job, item, `library-revision:${candidate.candidateId}`),
+      },
+      qaFor(job, item, question, (error) => {
+        providerFailure = error;
+      })
+    );
+    if (providerFailure) throw providerFailure;
+    return result;
   }
   return {
     async preflight(job) {
@@ -484,7 +572,16 @@ export function createThemeRuntimePipeline(
           (input) =>
             remember(() =>
               dispatch(job, item, 'repair-review', 'review', providers.evidenceReviewer, input)
-            )
+            ),
+          options.qaMode === 'budgeted'
+            ? (request) => {
+                const qa = qaFor(job, item, request, (error) => {
+                  providerFailure = error;
+                });
+                if (!qa) throw new ThemePreparationWorkerError('runtime_unavailable', false);
+                return qa;
+              }
+            : undefined
         )
         .catch((error: unknown) => {
           throw providerFailure ?? error;
