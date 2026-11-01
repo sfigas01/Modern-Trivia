@@ -327,8 +327,41 @@ full scheduler-to-approval E0 gate.
 
 This is not yet the paid-evaluation checkpoint. The live plan pins article
 identities, while the existing pipeline still assumes one preselected fact per
-source. The next focused slice must persist bounded proposal slots and derive
-scoped fact identities from validated scope instead of treating a Wikipedia page
-or slot number as a fact. After that full fixture-plan recovery path passes on
-PostgreSQL, stop for the existing owner approval before E1. Production remains
-dormant.
+source.
+
+## S12B-4B proposal allocation checkpoint
+
+S12B-4B adds a separate `theme-live-runtime-plan-v2` contract for bounded fact
+proposal work. It allocates a fixed number of slots in deterministic round-robin
+order over the exact pinned Wikipedia source list, with an explicit total and
+per-source maximum. The v1 preview and live plan formats remain readable. Slot
+keys identify work only; they never become fact identities and rejected or
+withheld work does not create replacement slots.
+
+Migration `0022_theme_fact_proposal_slots.sql` persists the complete allocation
+and terminal proposal outcomes as append-only records. A proposed outcome is
+accepted only after the existing fact-derivation validator rechecks the durable
+passages, source-registry binding, freshness, source classes, origin-group
+minimums, citations and temporal rules. The proposal must also be anchored to
+the slot's pinned Wikipedia article and the plan's risk-specific evidence policy.
+Exact recovery can load the normalized proposal and provenance without retaining
+process memory or invoking a provider again.
+
+Canonical fact keys are derived after validation from the complete normalized
+scope: entity, relation, time, geography, domain, qualifiers and `asOf`. The key
+does not include page, passage, answer, job or slot identity. This makes the same
+scoped fact converge across slots while keeping evidence provenance separate.
+Lexical normalization does not establish semantic equivalence, so later duplicate
+review remains required.
+
+The zero-cost PostgreSQL proof covers concurrent atomic allocation, migration
+reapplication, exact restart loading, conflicting replay, pinned-source and
+passage-hash rejection, temporal failure, duplicate-scope convergence, strict SQL
+null handling and append-only enforcement. It uses local fixtures only.
+
+S12B-4C still must map source capture to slots, include immutable slot context in
+proposal requests, consume durable proposals through a recoverable local fact
+writer and run the full scheduler-to-approval fixture recovery path. The existing
+legacy derivation attempt's unresolved-crash behavior is intentionally unchanged
+until that integration. No scheduler startup, credential, route, flag or paid call
+was added. Production remains dormant, and E1 still requires the owner checkpoint.
