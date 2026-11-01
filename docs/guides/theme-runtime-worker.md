@@ -93,12 +93,24 @@ worker that reloads each job's hash-verified plan immediately before composing
 that job's runtime. This remains a callable preview boundary and is not installed
 by ordinary application startup.
 
-The remaining live-composition gap is fact allocation. A live plan records up to
-20 discovered articles, not 40 already-scoped facts. The next slice must allocate
-a bounded, versioned set of proposal slots over those pinned sources and derive
-canonical fact identity from each validated scope. Page IDs, answers and slot
-ordinals are not fact identities. Until that proof is complete, production and
-preview startup do not construct a live provider runtime.
+S12B-4B closes the fact-allocation subset of the live-composition gap without
+activating the runtime. `theme-live-runtime-plan-v2` pins a bounded round-robin
+proposal-slot manifest over the selected Wikipedia articles. Migration
+`0022_theme_fact_proposal_slots.sql` records that allocation and its terminal
+validated proposal outcomes as immutable rows. Restart recovery can load the
+stored normalized proposal and provenance directly.
+
+Proposed outcomes reuse the existing fact-derivation evidence validator and then
+verify that support is anchored to the slot's pinned article and risk-specific
+claim policy. Canonical fact identity is a versioned hash of the complete
+normalized scope only. Page IDs, passage IDs, answers, job IDs and slot ordinals
+remain outside that identity.
+
+This does not install the slots in the worker. S12B-4C must map one durable source
+capture to its slots, add immutable slot context to each proposal request, consume
+the stored proposal through a recoverable local fact-write seam and exercise the
+full scheduler-to-approval fixture recovery path. Until that proof is complete,
+production and preview startup do not construct a live provider runtime.
 
 Migration `0018_theme_runtime_budget.sql` adds account and policy identity to allocations, request fingerprints to attempts, preserves financial history when lifecycle rows are cleaned up, permits conservative `unknown` accounting and honest cost-overrun recording, and protects durable accounting identity fields from mutation.
 

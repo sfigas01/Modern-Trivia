@@ -59,6 +59,23 @@ const liveSourceSchema = wikipediaDiscoveredSourceSchema.extend({
   ordinal: z.number().int().positive().max(20),
 });
 
+export const themeProposalSlotPolicySchema = z
+  .object({
+    contractVersion: z.literal('theme-proposal-slot-policy-v1'),
+    allocationVersion: z.literal('theme-proposal-slot-round-robin-v1'),
+    totalSlots: z.number().int().min(1).max(100),
+    maximumSlotsPerSource: z.number().int().min(1).max(20),
+  })
+  .strict();
+
+const proposalSlotSchema = z
+  .object({
+    key: z.string().regex(/^proposal:[0-9]{3}$/),
+    ordinal: z.number().int().positive().max(100),
+    sourceKey: z.string().trim().min(1).max(255),
+  })
+  .strict();
+
 export const themeLiveRuntimePlanSchema = z
   .object({
     contractVersion: z.literal('theme-live-runtime-plan-v1'),
@@ -145,10 +162,93 @@ export const themeLiveRuntimePlanSchema = z
         });
   });
 
+export const themeLiveRuntimePlanV2Schema = z
+  .object({
+    contractVersion: z.literal('theme-live-runtime-plan-v2'),
+    mode: z.literal('wikipedia_discovery'),
+    normalizedTheme: z.string().trim().min(1).max(160),
+    discoveryRequestUrl: z.string().url().max(4096),
+    sourcePolicyVersion: z.string().trim().min(1).max(255),
+    sourceRegistryHash: z.string().regex(/^[a-f0-9]{64}$/),
+    discoveryPolicy: wikipediaDiscoveryPolicySchema,
+    claimEvidencePolicy: themeClaimEvidencePolicySchema,
+    budgetPolicyFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+    sources: z.array(liveSourceSchema).min(1).max(20),
+    proposalSlotPolicy: themeProposalSlotPolicySchema,
+    proposalSlots: z.array(proposalSlotSchema).min(1).max(100),
+  })
+  .strict()
+  .superRefine((plan, context) => {
+    const base = themeLiveRuntimePlanSchema.safeParse({
+      contractVersion: 'theme-live-runtime-plan-v1',
+      mode: plan.mode,
+      normalizedTheme: plan.normalizedTheme,
+      discoveryRequestUrl: plan.discoveryRequestUrl,
+      sourcePolicyVersion: plan.sourcePolicyVersion,
+      sourceRegistryHash: plan.sourceRegistryHash,
+      discoveryPolicy: plan.discoveryPolicy,
+      claimEvidencePolicy: plan.claimEvidencePolicy,
+      budgetPolicyFingerprint: plan.budgetPolicyFingerprint,
+      sources: plan.sources,
+    });
+    if (!base.success)
+      for (const issue of base.error.issues) context.addIssue({ ...issue, path: issue.path });
+    if (plan.proposalSlots.length !== plan.proposalSlotPolicy.totalSlots)
+      context.addIssue({
+        code: 'custom',
+        path: ['proposalSlots'],
+        message: 'Proposal slot count must match the pinned policy',
+      });
+    if (
+      plan.proposalSlotPolicy.totalSlots >
+      plan.sources.length * plan.proposalSlotPolicy.maximumSlotsPerSource
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['proposalSlotPolicy', 'totalSlots'],
+        message: 'Proposal slot policy exceeds the pinned source capacity',
+      });
+    const sourceKeys = new Set(plan.sources.map((source) => source.key));
+    const perSource = new Map<string, number>();
+    for (let index = 0; index < plan.proposalSlots.length; index++) {
+      const slot = plan.proposalSlots[index];
+      const expectedSource = plan.sources[index % plan.sources.length]?.key;
+      if (
+        slot.ordinal !== index + 1 ||
+        slot.key !== `proposal:${String(index + 1).padStart(3, '0')}` ||
+        slot.sourceKey !== expectedSource
+      )
+        context.addIssue({
+          code: 'custom',
+          path: ['proposalSlots', index],
+          message: 'Proposal slots must use deterministic contiguous round-robin allocation',
+        });
+      if (!sourceKeys.has(slot.sourceKey))
+        context.addIssue({
+          code: 'custom',
+          path: ['proposalSlots', index, 'sourceKey'],
+          message: 'Proposal slot must reference a pinned source',
+        });
+      perSource.set(slot.sourceKey, (perSource.get(slot.sourceKey) ?? 0) + 1);
+    }
+    if (
+      Array.from(perSource.values()).some(
+        (count) => count > plan.proposalSlotPolicy.maximumSlotsPerSource
+      )
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['proposalSlots'],
+        message: 'Proposal slots exceed the per-source policy bound',
+      });
+  });
+
 export type ThemeLiveRuntimePlan = z.infer<typeof themeLiveRuntimePlanSchema>;
+export type ThemeLiveRuntimePlanV2 = z.infer<typeof themeLiveRuntimePlanV2Schema>;
 export const themeRuntimePlanSchema = z.union([
   themePreviewRuntimePlanSchema,
   themeLiveRuntimePlanSchema,
+  themeLiveRuntimePlanV2Schema,
 ]);
 export type ThemeRuntimePlan = z.infer<typeof themeRuntimePlanSchema>;
 
@@ -172,6 +272,32 @@ export function createThemeLiveRuntimePlan(input: {
       ...source,
       key: `wikipedia:${source.pageId}`,
       ordinal: index + 1,
+    })),
+  });
+}
+
+export function createThemeLiveRuntimePlanWithProposalSlots(input: {
+  discovery: Extract<WikipediaDiscoveryResult, { ok: true }>['value'];
+  claimEvidencePolicy: ThemeClaimEvidencePolicy;
+  budgetPolicyFingerprint: string;
+  totalSlots: number;
+  maximumSlotsPerSource: number;
+}): ThemeLiveRuntimePlanV2 {
+  const base = createThemeLiveRuntimePlan(input);
+  const proposalSlotPolicy = themeProposalSlotPolicySchema.parse({
+    contractVersion: 'theme-proposal-slot-policy-v1',
+    allocationVersion: 'theme-proposal-slot-round-robin-v1',
+    totalSlots: input.totalSlots,
+    maximumSlotsPerSource: input.maximumSlotsPerSource,
+  });
+  return themeLiveRuntimePlanV2Schema.parse({
+    ...base,
+    contractVersion: 'theme-live-runtime-plan-v2',
+    proposalSlotPolicy,
+    proposalSlots: Array.from({ length: proposalSlotPolicy.totalSlots }, (_, index) => ({
+      key: `proposal:${String(index + 1).padStart(3, '0')}`,
+      ordinal: index + 1,
+      sourceKey: base.sources[index % base.sources.length].key,
     })),
   });
 }
