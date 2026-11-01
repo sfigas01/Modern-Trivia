@@ -102,9 +102,13 @@ These rules apply whenever two or more agent sessions (Claude, Codex, or any com
    ```
    git fetch origin && git merge origin/main
    ```
-4. **Sync before opening or merging a PR.** Before opening a PR, and again immediately before merging, pull latest main into the branch and resolve any conflicts. Do not merge a PR whose branch has not been updated against current main.
-5. **Merge PRs one at a time — never simultaneously.** When multiple parallel sessions finish, merge them sequentially. After each merge, every remaining open PR branch must pull the updated main before that PR is reviewed or merged.
-6. **Flag file-level conflict risk before starting.** If a new session's issue is likely to touch the same files as another currently in-progress session, stop and flag this to the user before starting work. Parallel sessions should target different areas of the codebase where possible (e.g. one API, one client).
+4. **Reinstall dependencies when the lockfile changed.** After pulling or merging `main` (rules 2 and 3), run `npm ci` if `package-lock.json` changed, so local packages match the code. A new worktree has no `node_modules`, so always run `npm ci` there. Otherwise a reused worktree can keep old major versions installed (for example Express 4 after the Express 5 upgrade) and fail type checks, tests or boot in confusing ways. To check after a merge:
+   ```
+   git diff --quiet ORIG_HEAD HEAD -- package-lock.json || npm ci
+   ```
+5. **Sync before opening or merging a PR.** Before opening a PR, and again immediately before merging, pull latest main into the branch and resolve any conflicts. Do not merge a PR whose branch has not been updated against current main.
+6. **Merge PRs one at a time — never simultaneously.** When multiple parallel sessions finish, merge them sequentially. After each merge, every remaining open PR branch must pull the updated main before that PR is reviewed or merged.
+7. **Flag file-level conflict risk before starting.** If a new session's issue is likely to touch the same files as another currently in-progress session, stop and flag this to the user before starting work. Parallel sessions should target different areas of the codebase where possible (e.g. one API, one client).
 
 ## Deployment (Railway)
 
