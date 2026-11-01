@@ -284,6 +284,115 @@ describe('concrete dormant theme pipeline', () => {
     expect(f.physical).toHaveBeenCalledTimes(4);
   });
 
+  it('maps nested quality, embeddings and bounded semantic QA through the budget seam', async () => {
+    const f = fixture();
+    const persistSemanticBatch = vi.fn(async () => undefined);
+    const context = { ...f.context, persistSemanticBatch } as ThemeRuntimeCompositionContext;
+    const runtimeProvider = <T>(value: T) => ({
+      provider: 'offline',
+      model: 'deterministic',
+      requestIdentity: { fixture: 'nested-qa' },
+      reservedCostMicros: 1,
+      invoke: vi.fn(async () => ({
+        value,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    });
+    const qaProviders = {
+      quality: runtimeProvider({
+        totalChecked: 1,
+        results: [
+          {
+            questionId: themeRuntimeItemId(job.id, 'plan-v1', item.key, 'candidate'),
+            verdict: 'pass' as const,
+            coherence: 'pass' as const,
+            obviousness: 'pass' as const,
+            confidence: 100,
+            reason: 'fixture',
+          },
+        ],
+      }),
+      embeddings: runtimeProvider([
+        [1, 0],
+        [1, 0],
+      ]),
+      semantic: runtimeProvider({ assessment: 'Different facts.', verdict: 'distinct' as const }),
+    };
+    f.repositories.questionApproval.approve.mockImplementation(async (request, qa) => {
+      expect(qa).toBeDefined();
+      const candidate = {
+        id: request.candidateId,
+        question: 'Which city hosted the first final?',
+        answer: 'San Diego',
+      } as never;
+      await expect(qa!.checkQuality([candidate])).resolves.toMatchObject({ totalChecked: 1 });
+      await expect(
+        qa!.detectDuplicates(
+          [
+            { id: 'library-1', question: 'Where was the first final held?', answer: 'Tokyo' },
+            candidate,
+          ] as never,
+          { scopeIds: new Set([request.candidateId]), cache: null, persistIds: new Set() }
+        )
+      ).resolves.toMatchObject({ status: 'complete', failedPairs: 0 });
+      return { status: 'approved', libraryQuestionId: request.libraryQuestionId };
+    });
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...f.options,
+      qaMode: 'budgeted',
+      qaProviders,
+    });
+    await pipeline.retrieve(job, [item]);
+    const candidate = await pipeline.generate(job, item);
+    const reviewed = await pipeline.review(job, candidate);
+
+    await expect(pipeline.approve(job, reviewed)).resolves.toMatchObject({ status: 'approved' });
+    expect(f.dispatchProvider.mock.calls.slice(-3).map(([request]) => request.operation)).toEqual([
+      'review',
+      'embed',
+      'semantic_check',
+    ]);
+    expect(persistSemanticBatch).toHaveBeenCalledOnce();
+  });
+
+  it('preserves a nested QA budget failure even when approval converts it to withheld', async () => {
+    const f = fixture();
+    const context = {
+      ...f.context,
+      persistSemanticBatch: vi.fn(async () => undefined),
+    } as ThemeRuntimeCompositionContext;
+    const provider = {
+      provider: 'offline',
+      model: 'deterministic',
+      requestIdentity: { fixture: 'nested-qa' },
+      reservedCostMicros: 1,
+      invoke: vi.fn(),
+    };
+    f.repositories.questionApproval.approve.mockImplementation(async (_request, qa) => {
+      try {
+        await qa!.checkQuality([]);
+      } catch {
+        // Mirrors runThemeQuestionQa's fail-closed dependency handling.
+      }
+      return { status: 'withheld', reason: 'dependency_failure' };
+    });
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...f.options,
+      qaMode: 'budgeted',
+      qaProviders: { quality: provider, embeddings: provider, semantic: provider } as never,
+    });
+    await pipeline.retrieve(job, [item]);
+    const candidate = await pipeline.generate(job, item);
+    const reviewed = await pipeline.review(job, candidate);
+    f.dispatchProvider.mockRejectedValueOnce(
+      new ThemePreparationWorkerError('budget_exhausted', false)
+    );
+
+    await expect(pipeline.approve(job, reviewed)).rejects.toMatchObject({
+      code: 'budget_exhausted',
+    });
+  });
+
   it('recreates the pipeline after generation and replays durable attempts without physical calls', async () => {
     const f = fixture();
     let pipeline = createThemeRuntimePipeline(f.context, f.options);
@@ -381,6 +490,7 @@ describe('concrete dormant theme pipeline', () => {
       failureStage: 'quality',
       failureReason: 'quality_adverse',
     });
+    expect(f.repositories.questionRepair.repair.mock.calls[0][3]).toBeUndefined();
     expect(request.generation.repairOf.evidenceReviewAttemptId).not.toBe(qa.evidenceAttemptId);
     expect(
       f.dispatchProvider.mock.calls

@@ -77,6 +77,28 @@ Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, tog
 
 The next checkpoint is completing the live pipeline mapping under the design and spend gates in `docs/guides/theme-provider-evaluation-plan.md`, then running E0 with a disposable PostgreSQL database. That work must preserve signed-in host ownership and requires explicit approval before any credential is connected or any paid call is executed. Production flags remain unset until evaluation and the separate gameplay release decision pass.
 
+S12B-4A adds migration `0021_theme_provider_result_replay.sql`. It stores the
+bounded parsed result of a successful provider attempt in the same settlement
+transaction as usage and provider metadata. The immutable attempt request
+fingerprint remains the replay identity. Exact retries load the stored value;
+unknown outcomes or missing/conflicting result rows never issue a replacement
+physical request.
+
+Nested S10/S9 quality review, embeddings and semantic adjudication can now use
+job-bound budgeted dependencies. The themed semantic screen persists one ordered
+batch before dispatch, admits no more than four pairs and reports an incomplete
+review when a fifth pair would be required. The preview scheduler can wrap a
+worker that reloads each job's hash-verified plan immediately before composing
+that job's runtime. This remains a callable preview boundary and is not installed
+by ordinary application startup.
+
+The remaining live-composition gap is fact allocation. A live plan records up to
+20 discovered articles, not 40 already-scoped facts. The next slice must allocate
+a bounded, versioned set of proposal slots over those pinned sources and derive
+canonical fact identity from each validated scope. Page IDs, answers and slot
+ordinals are not fact identities. Until that proof is complete, production and
+preview startup do not construct a live provider runtime.
+
 Migration `0018_theme_runtime_budget.sql` adds account and policy identity to allocations, request fingerprints to attempts, preserves financial history when lifecycle rows are cleaned up, permits conservative `unknown` accounting and honest cost-overrun recording, and protects durable accounting identity fields from mutation.
 
 Migration `0019_theme_preview_runtime_control.sql` adds the immutable job-bound plan and disabled singleton runtime control. The optional PostgreSQL migration test uses `THEME_RELIABILITY_MIGRATION_TEST_DATABASE_URL`; without a disposable database it is skipped rather than touching Railway data.
