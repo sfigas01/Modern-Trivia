@@ -51,6 +51,10 @@ export type ThemeQuestionApprovalConfig = Readonly<{
   detectDuplicates: ThemeQuestionQaDependencies['detectDuplicates'];
   now?: () => Date;
 }>;
+export type ThemeQuestionApprovalQaOverrides = Pick<
+  ThemeQuestionQaDependencies,
+  'checkQuality' | 'detectDuplicates'
+>;
 
 export class ThemeQuestionApprovalError extends Error {
   constructor(
@@ -285,7 +289,10 @@ export function createPostgresThemeQuestionApprovalRepository(
     config.now
   );
   return {
-    async approve(rawRequest: ThemeQuestionApprovalRequest): Promise<ThemeQuestionApprovalResult> {
+    async approve(
+      rawRequest: ThemeQuestionApprovalRequest,
+      qaOverrides?: ThemeQuestionApprovalQaOverrides
+    ): Promise<ThemeQuestionApprovalResult> {
       const parsed = requestSchema.safeParse(rawRequest);
       if (!parsed.success) throw new ThemeQuestionApprovalError('invalid_request');
       const request = parsed.data;
@@ -310,8 +317,8 @@ export function createPostgresThemeQuestionApprovalRepository(
           return current;
         },
         loadCorpus: () => loadCorpus(pool),
-        checkQuality: config.checkQuality,
-        detectDuplicates: config.detectDuplicates,
+        checkQuality: qaOverrides?.checkQuality ?? config.checkQuality,
+        detectDuplicates: qaOverrides?.detectDuplicates ?? config.detectDuplicates,
         now: config.now,
       });
       if (qa.status !== 'passed') {

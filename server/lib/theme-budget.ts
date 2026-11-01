@@ -228,7 +228,13 @@ function within(used: string, requested: number, limit: number): boolean {
   return BigInt(used) + BigInt(requested) <= BigInt(limit);
 }
 
-export function createThemeBudgetGateway(pool: Pool) {
+export function createThemeBudgetGateway(
+  pool: Pool,
+  hooks: Readonly<{
+    /** Deterministic E0 barrier after reservation commit and before the kill-switch recheck. */
+    afterReservationCommitted?: (record: ThemeBudgetRecord) => Promise<void>;
+  }> = {}
+) {
   async function reserve(input: ThemeBudgetDispatch): Promise<ThemeBudgetRecord> {
     validate(input);
     return lockedTransaction(pool, async (db) => {
@@ -489,6 +495,7 @@ export function createThemeBudgetGateway(pool: Pool) {
   ): Promise<{ record: ThemeBudgetRecord; value?: T }> {
     const reservation = await reserve(input);
     if (reservation.replay) return { record: reservation };
+    await hooks.afterReservationCommitted?.(reservation);
     // reserve() committed and released its connection before invoking provider.
     try {
       await assertThemeDispatchEnabledNow(pool);

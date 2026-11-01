@@ -279,3 +279,56 @@ scheduler, route, migration, flag or paid call.
 
 Every PR keeps production dormant. S13 owns gameplay activation, production caps,
 release notes and the user-visible release.
+
+## S12B-3 implementation checkpoint
+
+S12B-3 implements the third item without credentials or paid requests:
+
+- append-only PostgreSQL provider metadata recorded on the budget-settlement transaction;
+- one immutable, exact-content-bound semantic pair batch persisted before dispatch;
+- a Railway-preview-only, concurrency-one scheduler bootstrap with bounded recovery, database control checks and clean stop behavior;
+- an answer-redacted evaluator for explicit job IDs; and
+- fixture tests plus an opt-in disposable-PostgreSQL migration test.
+
+The application does not yet install this scheduler during ordinary startup. The concrete live pipeline still refuses live QA mode because its QA and semantic transports have not been fully mapped into the runtime composition. This keeps production dormant and prevents the new scheduler boundary from implying that a provider-backed run is ready.
+
+The next engineering slice completes that live pipeline mapping and E0 integration proof. E0 remains incomplete until the disposable PostgreSQL suite exercises the full scheduler/runtime recovery path. After E0 passes, stop at the existing owner checkpoint before adding a preview credential or making any paid E1 request.
+
+## S12B-4A nested QA and E0 accounting checkpoint
+
+S12B-4A closes the provider-recovery gap that was discovered while mapping the
+live pipeline. Validated parsed provider results are now stored append-only with
+their attempt settlement and provider metadata. An exact request replay can
+reload that result without a second physical call; a missing, changed, corrupt
+or unknown result fails closed. Raw provider payloads and free-form errors are
+not stored in the replay record.
+
+The concrete pipeline can now map quality/coherence/obviousness review,
+embeddings and at most four semantic adjudications through the same durable
+budget gateway as fact proposal, fact review, writing, evidence review and
+repair. Embedding inputs are divided into bounded, independently replayable
+chunks and reassembled in order before duplicate screening. The themed duplicate detector uses injected transports, reports every
+candidate-versus-corpus pair and withholds rather than truncating when more than
+four pairs need model adjudication. Preview recovery also has an explicit
+per-job plan loader, so a scheduler ID cannot inherit another job's plan.
+
+The zero-cost PostgreSQL proof ran against a disposable local PostgreSQL 16
+database. It covered real migrations through
+`0021_theme_provider_result_replay.sql`, exact result replay with one physical
+fixture invocation, measured token/cost and metadata settlement, budget denial,
+unknown-outcome holds and runtime disable after reservation but before
+invocation. The companion PostgreSQL suite covered recovery scans, lease
+contention and the source-first repositories. Fixture tests covered the
+four-pair semantic boundary and answer-redacted evaluator contract. No provider
+network request, credential, Railway variable or production flag was used.
+
+This completes the durable accounting and nested-QA subset of E0. It is not the
+full scheduler-to-approval E0 gate.
+
+This is not yet the paid-evaluation checkpoint. The live plan pins article
+identities, while the existing pipeline still assumes one preselected fact per
+source. The next focused slice must persist bounded proposal slots and derive
+scoped fact identities from validated scope instead of treating a Wikipedia page
+or slot number as a fact. After that full fixture-plan recovery path passes on
+PostgreSQL, stop for the existing owner approval before E1. Production remains
+dormant.

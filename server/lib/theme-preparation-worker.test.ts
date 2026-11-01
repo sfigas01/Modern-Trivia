@@ -232,6 +232,29 @@ describe('theme preparation worker', () => {
     expect(h.dependencies.generate).not.toHaveBeenCalled();
   });
 
+  it('settles the active callback then cooperatively pauses before starting another', async () => {
+    let stopping = false;
+    const h = harness({
+      shouldStop: () => stopping,
+      research: vi.fn(async () => {
+        stopping = true;
+      }),
+    });
+
+    await expect(h.worker.run(JOB_ID)).resolves.toEqual({
+      status: 'paused',
+      jobId: JOB_ID,
+      code: 'runtime_unavailable',
+    });
+    expect(h.dependencies.research).toHaveBeenCalledTimes(1);
+    expect(h.dependencies.assertDispatchesSettled).toHaveBeenCalledTimes(2);
+    expect(h.dependencies.retrieve).not.toHaveBeenCalled();
+    expect(h.dependencies.recordPause).toHaveBeenCalledWith(
+      expect.objectContaining({ code: 'runtime_unavailable', retryable: true })
+    );
+    expect(h.lifecycle.releaseLease).toHaveBeenCalled();
+  });
+
   it('renews the lease between source items', async () => {
     const h = harness({
       preflight: vi.fn(async () => ({
