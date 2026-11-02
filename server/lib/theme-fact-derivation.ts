@@ -72,6 +72,9 @@ const policySchema = z
   })
   .strict();
 
+export const themeFactDerivationPolicySchema = policySchema;
+export type ThemeFactDerivationPolicy = z.input<typeof policySchema>;
+
 const versionField = z.string().trim().min(1).max(255);
 const provenanceSchema = z
   .object({
@@ -493,6 +496,43 @@ function prepareProposal(
     policySatisfied: supportOriginCount >= policy.minimumOriginGroups,
     persistence: null,
   };
+}
+
+/**
+ * Validates a previously obtained proposal against current durable evidence.
+ * This is a local-only seam: it performs no provider dispatch and writes no fact revision.
+ */
+export async function validateThemeFactProposal(
+  db: Pool | PoolClient,
+  input: {
+    proposal: ThemeFactProposerOutput;
+    passageIds: readonly string[];
+    policy: ThemeFactDerivationPolicy;
+    now: Date;
+  }
+): Promise<{ result: ThemeFactDerivationResult; evidenceFingerprint: string }> {
+  const policy = policySchema.safeParse(input.policy);
+  const passageIds = z.array(uuidSchema).min(1).max(MAX_PASSAGES).safeParse(input.passageIds);
+  if (
+    !policy.success ||
+    !passageIds.success ||
+    !allTextSafe(input.proposal) ||
+    new Set(passageIds.data).size !== passageIds.data.length ||
+    new Set(policy.data.allowedSourceClasses).size !== policy.data.allowedSourceClasses.length ||
+    !(input.now instanceof Date) ||
+    !Number.isFinite(input.now.valueOf())
+  )
+    throw new ThemeFactDerivationError('invalid_request');
+  const evidence = await loadEvidence(db, passageIds.data, policy.data, input.now.valueOf());
+  const result = prepareProposal(
+    input.proposal,
+    evidence,
+    policy.data,
+    input.now.valueOf(),
+    '00000000-0000-4000-8000-000000000001',
+    0
+  );
+  return { result, evidenceFingerprint: evidence.fingerprint };
 }
 
 type RevisionRow = {

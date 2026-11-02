@@ -656,6 +656,7 @@ export const themePreparationJobs = pgTable(
   (table) => [
     uniqueIndex('uq_theme_preparation_jobs_game').on(table.gameId),
     uniqueIndex('uq_theme_preparation_jobs_id_game').on(table.id, table.gameId),
+    uniqueIndex('uq_theme_preparation_jobs_id_plan_hash').on(table.id, table.planHash),
     index('idx_theme_preparation_jobs_status_lease').on(table.status, table.leaseExpiresAt),
     foreignKey({
       name: 'fk_theme_preparation_jobs_game_ceiling',
@@ -682,6 +683,83 @@ export const themePreparationJobs = pgTable(
     check(
       'theme_preparation_jobs_counts',
       sql`${table.candidatesUsed} BETWEEN 0 AND ${table.candidateCeiling} AND ${table.readyCount} >= 0 AND ${table.themedReadyCount} >= 0 AND ${table.relatedReadyCount} >= 0 AND ${table.themedReadyCount} + ${table.relatedReadyCount} = ${table.readyCount}`
+    ),
+  ]
+);
+
+export const themeProposalSlots = pgTable(
+  'theme_proposal_slots',
+  {
+    jobId: uuid('job_id').notNull(),
+    planHash: varchar('plan_hash', { length: 64 }).notNull(),
+    slotKey: varchar('slot_key', { length: 32 }).notNull(),
+    slotOrdinal: integer('slot_ordinal').notNull(),
+    sourceKey: varchar('source_key', { length: 255 }).notNull(),
+    allocationVersion: varchar('allocation_version', { length: 64 }).notNull(),
+    policySnapshot: jsonb('policy_snapshot').$type<Record<string, unknown>>().notNull(),
+    policyHash: varchar('policy_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.jobId, table.slotKey] }),
+    uniqueIndex('uq_theme_proposal_slots_job_ordinal').on(table.jobId, table.slotOrdinal),
+    index('idx_theme_proposal_slots_source').on(table.jobId, table.sourceKey, table.slotOrdinal),
+    foreignKey({
+      name: 'fk_theme_proposal_slots_job_plan',
+      columns: [table.jobId, table.planHash],
+      foreignColumns: [themePreparationJobs.id, themePreparationJobs.planHash],
+    }).onDelete('restrict'),
+    check('theme_proposal_slots_plan_hash', sql`${table.planHash} ~ '^[a-f0-9]{64}$'`),
+    check('theme_proposal_slots_key', sql`${table.slotKey} ~ '^proposal:[0-9]{3}$'`),
+    check('theme_proposal_slots_ordinal', sql`${table.slotOrdinal} BETWEEN 1 AND 100`),
+    check('theme_proposal_slots_source_key', sql`${table.sourceKey} ~ '^wikipedia:[1-9][0-9]*$'`),
+    check(
+      'theme_proposal_slots_allocation_version',
+      sql`${table.allocationVersion} = 'theme-proposal-slot-round-robin-v1'`
+    ),
+    check(
+      'theme_proposal_slots_policy_object',
+      sql`jsonb_typeof(${table.policySnapshot}) = 'object'`
+    ),
+    check('theme_proposal_slots_policy_hash', sql`${table.policyHash} ~ '^[a-f0-9]{64}$'`),
+  ]
+);
+
+export const themeProposalSlotOutcomes = pgTable(
+  'theme_proposal_slot_outcomes',
+  {
+    jobId: uuid('job_id').notNull(),
+    slotKey: varchar('slot_key', { length: 32 }).notNull(),
+    status: varchar('status', { length: 16 }).$type<'proposed' | 'withheld'>().notNull(),
+    outcomeSnapshot: jsonb('outcome_snapshot').$type<Record<string, unknown>>().notNull(),
+    evidenceFingerprint: varchar('evidence_fingerprint', { length: 64 }).notNull(),
+    provenanceSnapshot: jsonb('provenance_snapshot').$type<Record<string, unknown>>().notNull(),
+    provenanceFingerprint: varchar('provenance_fingerprint', { length: 64 }).notNull(),
+    canonicalFactKey: varchar('canonical_fact_key', { length: 255 }),
+    resultHash: varchar('result_hash', { length: 64 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.jobId, table.slotKey] }),
+    foreignKey({
+      name: 'fk_theme_proposal_slot_outcomes_slot',
+      columns: [table.jobId, table.slotKey],
+      foreignColumns: [themeProposalSlots.jobId, themeProposalSlots.slotKey],
+    }).onDelete('restrict'),
+    index('idx_theme_proposal_slot_outcomes_fact').on(table.canonicalFactKey),
+    check('theme_proposal_slot_outcomes_status', sql`${table.status} IN ('proposed', 'withheld')`),
+    check(
+      'theme_proposal_slot_outcomes_evidence_hash',
+      sql`${table.evidenceFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_proposal_slot_outcomes_provenance_hash',
+      sql`${table.provenanceFingerprint} ~ '^[a-f0-9]{64}$'`
+    ),
+    check('theme_proposal_slot_outcomes_result_hash', sql`${table.resultHash} ~ '^[a-f0-9]{64}$'`),
+    check(
+      'theme_proposal_slot_outcomes_fields',
+      sql`((${table.status} = 'proposed' AND ${table.canonicalFactKey} IS NOT NULL AND ${table.canonicalFactKey} ~ '^fact-scope-v1:[a-f0-9]{64}$') OR (${table.status} = 'withheld' AND ${table.canonicalFactKey} IS NULL)) IS TRUE`
     ),
   ]
 );
