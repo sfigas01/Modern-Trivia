@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   createThemeLiveRuntimePlan,
+  createThemeLiveRuntimePlanWithProposalSlots,
   createThemeRuntimePlanRepository,
   hashThemeRuntimePlan,
   themeLiveRuntimePlanSchema,
@@ -93,6 +94,19 @@ const livePlan = createThemeLiveRuntimePlan({
   claimEvidencePolicy,
   budgetPolicyFingerprint: 'c'.repeat(64),
 });
+const slottedLivePlan = createThemeLiveRuntimePlanWithProposalSlots({
+  discovery: {
+    contractVersion: 'theme-wikipedia-discovery-v1',
+    normalizedTheme: 'World Baseball Classic',
+    requestUrl: buildWikipediaDiscoveryRequestUrl('World Baseball Classic', discoveryPolicy).href,
+    discoveryPolicy,
+    sources: livePlan.sources.map(({ key: _key, ordinal: _ordinal, ...source }) => source),
+  },
+  claimEvidencePolicy,
+  budgetPolicyFingerprint: 'c'.repeat(64),
+  totalSlots: 4,
+  maximumSlotsPerSource: 2,
+});
 
 function row(overrides: Record<string, unknown> = {}) {
   return {
@@ -182,6 +196,57 @@ describe('theme runtime plan repository', () => {
       ],
     });
     expect('canonicalFactKey' in livePlan.sources[0]).toBe(false);
+  });
+
+  it('pins bounded proposal slots in deterministic round-robin order', () => {
+    expect(slottedLivePlan).toMatchObject({
+      contractVersion: 'theme-live-runtime-plan-v2',
+      proposalSlotPolicy: {
+        allocationVersion: 'theme-proposal-slot-round-robin-v1',
+        totalSlots: 4,
+        maximumSlotsPerSource: 2,
+      },
+      proposalSlots: [
+        { key: 'proposal:001', ordinal: 1, sourceKey: 'wikipedia:10' },
+        { key: 'proposal:002', ordinal: 2, sourceKey: 'wikipedia:20' },
+        { key: 'proposal:003', ordinal: 3, sourceKey: 'wikipedia:10' },
+        { key: 'proposal:004', ordinal: 4, sourceKey: 'wikipedia:20' },
+      ],
+    });
+    expect(() =>
+      createThemeLiveRuntimePlanWithProposalSlots({
+        discovery: {
+          contractVersion: 'theme-wikipedia-discovery-v1',
+          normalizedTheme: slottedLivePlan.normalizedTheme,
+          requestUrl: slottedLivePlan.discoveryRequestUrl,
+          discoveryPolicy: slottedLivePlan.discoveryPolicy,
+          sources: slottedLivePlan.sources.map(
+            ({ key: _key, ordinal: _ordinal, ...source }) => source
+          ),
+        },
+        claimEvidencePolicy,
+        budgetPolicyFingerprint: 'c'.repeat(64),
+        totalSlots: 5,
+        maximumSlotsPerSource: 2,
+      })
+    ).toThrow();
+    expect(() =>
+      createThemeLiveRuntimePlanWithProposalSlots({
+        discovery: {
+          contractVersion: 'theme-wikipedia-discovery-v1',
+          normalizedTheme: slottedLivePlan.normalizedTheme,
+          requestUrl: slottedLivePlan.discoveryRequestUrl,
+          discoveryPolicy: slottedLivePlan.discoveryPolicy,
+          sources: slottedLivePlan.sources.map(
+            ({ key: _key, ordinal: _ordinal, ...source }) => source
+          ),
+        },
+        claimEvidencePolicy,
+        budgetPolicyFingerprint: 'c'.repeat(64),
+        totalSlots: Number.MAX_SAFE_INTEGER,
+        maximumSlotsPerSource: 2,
+      })
+    ).toThrow();
   });
 
   it('rejects changed registry identity, unnormalized themes, and reordered live sources', () => {
