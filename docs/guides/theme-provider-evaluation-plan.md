@@ -397,7 +397,10 @@ scheduler, runtime control, recovery scan, immutable per-job plan loader and
 PostgreSQL preparation runtime. The scheduler must pass the Railway-preview,
 feature, budget and database-control gates before the source-first repositories
 or injected pipeline can be constructed. Every recovered job reloads and
-hash-verifies its own stored plan before runtime composition.
+hash-verifies its own stored plan before runtime composition. The caller must
+also supply an independently calculated worst-case pipeline callback duration;
+startup fails closed when it exceeds either the configured callback cap or the
+worker lease.
 
 The zero-cost E0 proof now covers the complete deterministic boundary in two
 parts: the concrete worker/pipeline fixture proves proposal through approval and

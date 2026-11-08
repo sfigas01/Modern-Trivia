@@ -102,6 +102,7 @@ describe('PostgreSQL theme preview runtime composition', () => {
       env: { ...previewEnv, RAILWAY_ENVIRONMENT_NAME: 'production' },
       repositories: {} as never,
       buildPipeline,
+      pipelineMaxCallbackMs: 110_000,
     });
 
     expect(result).toEqual({ started: false, code: 'scheduler_disabled' });
@@ -118,6 +119,7 @@ describe('PostgreSQL theme preview runtime composition', () => {
       env: previewEnv,
       repositories: {} as never,
       buildPipeline,
+      pipelineMaxCallbackMs: 110_000,
       setInterval: () => 1 as unknown as ReturnType<typeof setInterval>,
       clearInterval: vi.fn(),
     });
@@ -145,6 +147,24 @@ describe('PostgreSQL theme preview runtime composition', () => {
       })
     );
     expect(mocks.runtimeRun).toHaveBeenCalledWith(jobId);
+  });
+
+  it('rejects a pipeline whose declared callback bound exceeds the scheduler cap', async () => {
+    const database = pool();
+    const buildPipeline = vi.fn();
+    const result = await bootstrapPostgresThemePreviewRuntime({
+      pool: database.value,
+      env: previewEnv,
+      repositories: {} as never,
+      buildPipeline,
+      pipelineMaxCallbackMs: 120_001,
+      setInterval: () => 1 as unknown as ReturnType<typeof setInterval>,
+      clearInterval: vi.fn(),
+    });
+
+    expect(result).toEqual({ started: false, code: 'scheduler_start_failed' });
+    expect(buildPipeline).not.toHaveBeenCalled();
+    expect(mocks.createRuntime).not.toHaveBeenCalled();
   });
 });
 
@@ -219,6 +239,7 @@ describe.runIf(Boolean(databaseUrl))('PostgreSQL theme preview runtime recovery'
         env: previewEnv,
         repositories: {} as never,
         buildPipeline,
+        pipelineMaxCallbackMs: 110_000,
         setInterval: () => 1 as unknown as ReturnType<typeof setInterval>,
         clearInterval: vi.fn(),
       });

@@ -78,7 +78,9 @@ Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, tog
 S12B-4D adds `server/lib/theme-preview-runtime.ts`, the callable composition
 boundary between the preview scheduler and the PostgreSQL preparation runtime.
 It reloads each job's immutable stored plan before building its pipeline and
-preserves every static and durable runtime gate. Its disposable PostgreSQL test
+preserves every static and durable runtime gate. The caller declares the
+pipeline's independently calculated worst-case callback duration, and scheduler
+startup rejects a declaration above either its configured cap or lease. Its disposable PostgreSQL test
 uses the real runtime-control, recovery-scan and plan repositories; the existing
 deterministic pipeline proof covers the connected worker through approval and
 reservation. Together these close the zero-cost E0 integration gate without a

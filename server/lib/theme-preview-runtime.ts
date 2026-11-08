@@ -33,6 +33,8 @@ export type PostgresThemePreviewRuntimeOptions = Readonly<{
   env?: NodeJS.ProcessEnv;
   repositories: ThemeRuntimeCompositionOptions['repositories'];
   buildPipeline: ThemePreviewRuntimePipelineBuilder;
+  /** Independently calculated worst-case duration of one pipeline callback. */
+  pipelineMaxCallbackMs: number;
   reportCode?(code: ThemePreviewSchedulerCode): void;
   claimToken?: () => string;
   now?: () => Date;
@@ -60,10 +62,10 @@ export async function bootstrapPostgresThemePreviewRuntime(
     env,
     readRuntimeControl: () => control.read(),
     recoveryRepository: createPostgresThemePreviewRecoveryRepository(options.pool),
-    createRuntime: ({ leaseDurationMs, maxCallbackMs, shouldStop }) => {
+    createRuntime: ({ leaseDurationMs, shouldStop }) => {
       if (!configuration.enabled) throw new TypeError('invalid_theme_preview_runtime_config');
       return createThemePreviewPlannedWorker({
-        maxCallbackMs,
+        maxCallbackMs: options.pipelineMaxCallbackMs,
         loadPlan: (jobId) => plans.load(jobId),
         createRuntime: ({ jobId, loadedPlan }) =>
           createPostgresThemePreparationRuntime({
