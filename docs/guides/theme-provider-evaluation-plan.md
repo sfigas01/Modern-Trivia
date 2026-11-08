@@ -415,3 +415,52 @@ Ordinary application startup still does not install the preview runtime, and no
 concrete OpenAI transport reads a key. The next checkpoint is the separately
 approved E1 preview connection and calibration slice. Connecting a preview key or
 executing even one paid request still requires the owner's explicit approval.
+
+## E1 preview connection plumbing
+
+The E1 plumbing adds a concrete OpenAI SDK transport for Responses and embeddings
+behind the existing budgeted provider interfaces. It forwards the adapter's strict
+Structured Outputs request, abort signal and zero-retry policy; captures response
+or request IDs, returned model, token usage and cached-input usage; and leaves
+refusal, incomplete-output, model-pin, schema, cost and timeout decisions in the
+existing fail-closed adapters.
+
+`bootstrapOpenAIThemePreviewRuntime()` preserves the earlier scheduler boundary.
+It constructs neither an OpenAI client nor its transports until the Railway
+preview configuration, database runtime control, recovery record and immutable
+stored plan have passed their existing checks and the per-plan pipeline is being
+created. One client is then shared by that process. The factory accepts a
+credential explicitly; it does not discover or read a key from the environment,
+does not log one and does not make a request merely by being constructed. The
+scheduler's returned `stop()` remains the clean application-shutdown seam.
+
+This slice deliberately does not install the runtime in ordinary application
+startup, freeze the live prompt/model/pricing bundle, add a Railway variable,
+enable database runtime control or make a provider request. Those actions form
+the owner-attended API hookup checkpoint below.
+
+### Owner-attended API hookup checkpoint
+
+Perform these steps together immediately before E1, not as part of unattended
+engineering work:
+
+1. Recheck current OpenAI model availability and Standard prices, then approve
+   the exact versioned prompt, schema, model, reasoning, token-ceiling and pricing
+   bundle for every paid operation.
+2. Confirm the E1 limits remain at most 12 candidate attempts and $2.00, and set
+   the preview database budget caps and evaluator stop at or below that amount.
+3. Create or select the separately capped Railway-preview OpenAI key. Enter it
+   directly as `AI_INTEGRATIONS_OPENAI_API_KEY` in Railway preview; never paste it
+   into chat, source, Linear, GitHub, logs or a shell command. Keep
+   `AI_INTEGRATIONS_OPENAI_BASE_URL` unset for the official OpenAI endpoint.
+4. In a focused reviewed change, supply that credential to
+   `createThemeOpenAIClient()`, install the approved provider/pipeline bundle in
+   application startup, and register the returned scheduler `stop()` in graceful
+   shutdown. Production must still instantiate no themed provider runtime.
+5. Deploy the reviewed branch to Railway preview, enable only the preview feature,
+   scheduler and database-control gates, and first verify a zero-candidate startup
+   and shutdown before authorizing the capped E1 requests.
+
+The checkpoint is reached when the plumbing PR is reviewed and merged. A key by
+itself cannot activate this code, and no agent may infer permission to connect or
+test it from the presence of the variable.
