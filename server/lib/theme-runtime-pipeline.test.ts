@@ -11,6 +11,7 @@ import {
 import {
   createThemeRuntimePipeline,
   themeRuntimeItemId,
+  type ThemeProposalSlotProviderInput,
   type ThemeRuntimePipelineOptions,
 } from './theme-runtime-pipeline';
 
@@ -32,6 +33,142 @@ const item = {
   expectedLatestFactRevision: 0,
 };
 const hash = 'a'.repeat(64);
+const secondItem = {
+  ...item,
+  key: 'second',
+  ordinal: 2,
+  sourceKey: 'wikipedia:10',
+};
+
+const proposedFact = {
+  status: 'proposed' as const,
+  statement: 'The fixture fact is true.',
+  scope: {
+    entity: 'Fixture',
+    relation: 'has fact',
+    time: null,
+    geography: null,
+    competitionOrDomain: 'trivia',
+    qualifiers: [],
+    asOf: null,
+  },
+  canonicalAnswer: 'Fixture',
+  supportedAliases: [],
+  timeSensitive: false,
+  citations: [
+    {
+      passageId: '33333333-3333-4333-8333-333333333333',
+      passageContentHash: hash,
+      supportKind: 'supports' as const,
+    },
+  ],
+};
+
+function slottedOptions(f: ReturnType<typeof fixture>, items = [item, secondItem]) {
+  const slottedItems = items.map((entry, index) => {
+    const {
+      canonicalFactKey: _canonicalFactKey,
+      expectedLatestFactRevision: _expectedRevision,
+      ...sourceItem
+    } = entry;
+    return {
+      ...sourceItem,
+      key: `proposal:${String(index + 1).padStart(3, '0')}`,
+      ordinal: index + 1,
+      sourceKey: entry.sourceKey ?? 'wikipedia:10',
+    };
+  });
+  const slots = items.map((entry, index) => ({
+    key: `proposal:${String(index + 1).padStart(3, '0')}`,
+    ordinal: index + 1,
+    sourceKey: entry.sourceKey ?? 'wikipedia:10',
+  }));
+  const plan = {
+    contractVersion: 'theme-live-runtime-plan-v2',
+    normalizedTheme: 'Fixture trivia',
+    proposalSlotPolicy: {
+      allocationVersion: 'theme-proposal-slot-round-robin-v1',
+      totalSlots: slots.length,
+      maximumSlotsPerSource: slots.length,
+    },
+    sources: [{ key: 'wikipedia:10', canonicalUrl: 'https://example.org/facts' }],
+    proposalSlots: slots,
+  };
+  return {
+    ...f.options,
+    items: slottedItems,
+    preflight: async () => ({
+      ok: true,
+      requiredThemed: items.length,
+      work: slottedItems.map(({ key }) => ({ key })),
+    }),
+    proposalSlots: {
+      planHash: hash,
+      plan,
+      proposer: {
+        ...f.options.providers.proposer,
+        invoke: (input: ThemeProposalSlotProviderInput) =>
+          f.options.providers.proposer.invoke(input.passages),
+      },
+      provenance: () => ({}) as never,
+    },
+    checkpoints: {
+      ...f.options.checkpoints,
+      passages: async () => [
+        {
+          passageId: proposedFact.citations[0].passageId,
+          text: 'The fixture passage supports the fact.',
+          contentHash: hash,
+        },
+      ],
+    },
+  } as ThemeRuntimePipelineOptions;
+}
+
+function slottedContext(
+  f: ReturnType<typeof fixture>,
+  canonicalFactKeyForSlot: (slotKey: string) => string = () => 'fixture-fact'
+) {
+  const outcomes = new Map<string, unknown>();
+  const forExecution = vi.fn((_identity: unknown) => f.repositories);
+  const proposalSlots = {
+    allocate: vi.fn(async () => ({ replay: false, allocated: 2 })),
+    loadOutcome: vi.fn(async ({ slotKey }: { slotKey: string }) => outcomes.get(slotKey) ?? null),
+    recordOutcome: vi.fn(async ({ slotKey, outcome }: { slotKey: string; outcome: unknown }) => {
+      const stored = {
+        status: 'proposed',
+        outcome,
+        canonicalFactKey: canonicalFactKeyForSlot(slotKey),
+      };
+      outcomes.set(slotKey, stored);
+      return stored;
+    }),
+    canonicalOwner: vi.fn(
+      async ({ canonicalFactKey }: { canonicalFactKey: string }) =>
+        Array.from(outcomes.entries()).find(
+          ([, outcome]) =>
+            (outcome as { canonicalFactKey: string }).canonicalFactKey === canonicalFactKey
+        )?.[0] ?? null
+    ),
+  };
+  const repositories = {
+    ...f.repositories,
+    proposalSlots,
+    factDerivation: {
+      ...f.repositories.factDerivation,
+      persistValidatedProposal: vi.fn(async (_request, proposal) => ({
+        status: 'proposed',
+        contentHash: hash,
+        policySatisfied: true,
+        persistence: { factId: 'fact', revisionId: 'revision' },
+        proposal,
+      })),
+    },
+    forExecution,
+  };
+  const context = { ...f.context, repositories } as unknown as ThemeRuntimeCompositionContext;
+  return { context, repositories, proposalSlots, outcomes };
+}
 
 function runnableJob(status: ThemeJobRecord['status'] = 'queued'): ThemeJobRecord {
   const at = new Date('2026-10-13T00:00:00Z');
@@ -534,5 +671,140 @@ describe('concrete dormant theme pipeline', () => {
       pipeline.approve(job, { itemKey: item.key, candidateId: 'missing', verdict: 'pass' })
     ).rejects.toMatchObject({ code: 'source_ineligible' });
     expect(f.repositories.questionApproval.approve).not.toHaveBeenCalled();
+  });
+
+  it('shares one evidence capture across multiple proposal slots from the same source', async () => {
+    const f = fixture();
+    const options = slottedOptions(f);
+    const { context, proposalSlots } = slottedContext(f);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    });
+
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, options.items);
+
+    expect(f.repositories.evidencePersistence.persistCapture).toHaveBeenCalledOnce();
+    expect(proposalSlots.recordOutcome).toHaveBeenCalledTimes(2);
+    expect(proposer.invoke).toHaveBeenCalledTimes(2);
+    expect(proposer.invoke.mock.calls[0][0].passages).toEqual(
+      proposer.invoke.mock.calls[1][0].passages
+    );
+    expect(proposer.invoke.mock.calls.map(([input]) => input.slot)).toEqual([
+      { key: 'proposal:001', ordinal: 1, sourceKey: 'wikipedia:10' },
+      { key: 'proposal:002', ordinal: 2, sourceKey: 'wikipedia:10' },
+    ]);
+    expect(proposer.invoke.mock.calls[0][0]).toMatchObject({
+      normalizedTheme: 'Fixture trivia',
+      allocation: {
+        version: 'theme-proposal-slot-round-robin-v1',
+        totalSlots: 2,
+        maximumSlotsPerSource: 2,
+      },
+    });
+  });
+
+  it('reuses durable proposal outcomes after pipeline recreation without re-proposing', async () => {
+    const f = fixture();
+    const options = slottedOptions(f);
+    const { context, proposalSlots } = slottedContext(f, (slotKey) => `fact-${slotKey}`);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const runtimeOptions = {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    };
+    let pipeline = createThemeRuntimePipeline(context, runtimeOptions);
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, options.items);
+    pipeline = createThemeRuntimePipeline(context, runtimeOptions);
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, options.items);
+    await expect(pipeline.generate(job, options.items[0])).resolves.toMatchObject({
+      status: 'generated',
+      candidate: { itemKey: options.items[0].key },
+    });
+
+    expect(proposalSlots.recordOutcome).toHaveBeenCalledTimes(2);
+    expect(proposer.invoke).toHaveBeenCalledTimes(2);
+    expect(proposalSlots.loadOutcome).toHaveBeenCalledTimes(7);
+  });
+
+  it('withholds a later slot that proposes a duplicate canonical scope', async () => {
+    const f = fixture();
+    const options = slottedOptions(f);
+    const { context, repositories, proposalSlots } = slottedContext(f);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    });
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, [options.items[0]]);
+
+    await expect(pipeline.generate(job, options.items[1])).resolves.toEqual({ status: 'withheld' });
+
+    expect(proposalSlots.canonicalOwner).toHaveBeenCalledTimes(2);
+    expect(repositories.factDerivation.persistValidatedProposal).toHaveBeenCalledOnce();
+    expect(f.repositories.questionGeneration.generate).not.toHaveBeenCalled();
+  });
+
+  it('uses per-slot repository execution identities for independently owned proposals', async () => {
+    const f = fixture();
+    const options = slottedOptions(f);
+    const { context, repositories } = slottedContext(f, (slotKey) => `fact-${slotKey}`);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    });
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, options.items);
+
+    const identities = repositories.forExecution.mock.calls.map(([identity]) => identity);
+    expect(identities).toHaveLength(2);
+    expect(identities[0].factReview).not.toBe(identities[1].factReview);
+    expect(identities[0].questionGeneration).not.toBe(identities[1].questionGeneration);
+    expect(identities[0].evidenceReview).not.toBe(identities[1].evidenceReview);
+    expect(identities[0].repairGeneration).not.toBe(identities[1].repairGeneration);
+    expect(identities[0].repairEvidenceReview).not.toBe(identities[1].repairEvidenceReview);
+  });
+
+  it('rejects a proposal-slot candidate ceiling before allocating slots', async () => {
+    const f = fixture();
+    const options = slottedOptions(f);
+    const { context, proposalSlots } = slottedContext(f);
+    const pipeline = createThemeRuntimePipeline(context, options);
+
+    await expect(pipeline.preflight({ ...runnableJob(), candidateCeiling: 1 })).resolves.toEqual({
+      ok: false,
+      code: 'runtime_unavailable',
+    });
+    expect(proposalSlots.allocate).not.toHaveBeenCalled();
   });
 });

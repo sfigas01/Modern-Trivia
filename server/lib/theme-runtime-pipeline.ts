@@ -6,7 +6,13 @@ import type { Question } from '@shared/models/questions';
 import { resolveThemeSourceUrl } from '@shared/models/theme-source-registry';
 import type { ThemeQuestionGenerationRequest } from '@shared/models/theme-question-generation';
 import type { ThemeBudgetOperation } from './theme-budget';
-import type { ThemeFactDerivationRequest, ThemeFactProposer } from './theme-fact-derivation';
+import type {
+  ThemeFactDerivationRequest,
+  ThemeFactProposalPassage,
+  ThemeFactProposer,
+  ThemeFactProposerOutput,
+} from './theme-fact-derivation';
+import { ThemeFactDerivationError } from './theme-fact-derivation';
 import type { ThemeFactReviewer } from './theme-fact-review';
 import type { ThemeJobRecord } from './theme-lifecycle';
 import {
@@ -18,6 +24,8 @@ import type { ThemeQuestionEvidenceReviewer } from './theme-question-evidence-re
 import type { ThemeQuestionWriter } from './theme-question-generation';
 import type { ThemeQuestionRepairer } from './theme-question-repair';
 import type { ThemeRuntimeCompositionContext } from './theme-runtime-composition';
+import type { ThemeProposalSlotOutcome, ThemeProposalSlotProvenance } from './theme-proposal-slots';
+import type { ThemeLiveRuntimePlanV2 } from './theme-runtime-plan';
 import type { ThemeRuntimeProvider } from './theme-provider-adapters';
 import { createBudgetedThemeQaTransports } from './theme-provider-adapters';
 import type { FactCheckReport } from './verifier';
@@ -42,12 +50,27 @@ export function themeRuntimeItemId(jobId: string, planVersion: string, key: stri
 
 export type ThemeRuntimeSourceItem = Readonly<{
   key: string;
+  sourceKey?: string;
   ordinal: number;
   requestedUrl: string;
   title: string;
   language: string;
-  canonicalFactKey: string;
-  expectedLatestFactRevision: number;
+  canonicalFactKey?: string;
+  expectedLatestFactRevision?: number;
+}>;
+
+export type ThemeProposalSlotProviderInput = Readonly<{
+  contractVersion: 'theme-proposal-slot-request-v1';
+  planHash: string;
+  normalizedTheme: string;
+  allocation: Readonly<{
+    version: string;
+    totalSlots: number;
+    maximumSlotsPerSource: number;
+  }>;
+  slot: Readonly<{ key: string; ordinal: number; sourceKey: string }>;
+  source: Readonly<{ key: string; url: string; title: string; language: string }>;
+  passages: readonly ThemeFactProposalPassage[];
 }>;
 
 export interface ThemeRuntimeCheckpoints {
@@ -62,6 +85,9 @@ export interface ThemeRuntimeCheckpoints {
     repairCandidateId: string,
     candidateCeiling: number
   ): Promise<number | null>;
+  passages(
+    passageIds: readonly string[]
+  ): Promise<readonly { passageId: string; text: string; contentHash: string }[]>;
 }
 
 /** Reads identifiers only. Existing repositories revalidate provenance and current eligibility. */
@@ -108,6 +134,19 @@ export function createPostgresThemeRuntimeCheckpoints(pool: Pool): ThemeRuntimeC
       );
       const ordinal = Number(latest.rows[0]?.ordinal ?? 0) + 1;
       return ordinal <= candidateCeiling ? ordinal : null;
+    },
+    async passages(passageIds) {
+      const result = await pool.query<{ id: string; text: string; content_hash: string }>(
+        `SELECT id,text,content_hash FROM theme_evidence_passages
+         WHERE id=ANY($1::uuid[]) ORDER BY array_position($1::uuid[],id)`,
+        [passageIds]
+      );
+      if (result.rows.length !== passageIds.length) return [];
+      return result.rows.map((row) => ({
+        passageId: row.id,
+        text: row.text,
+        contentHash: row.content_hash,
+      }));
     },
   };
 }
@@ -157,6 +196,15 @@ export type ThemeRuntimePipelineOptions = Readonly<{
   }>;
   /** Explicit injected source transport; there is no implicit network client in this factory. */
   retrieval: Omit<Parameters<typeof retrieveThemeSource>[1], 'registry'>;
+  proposalSlots?: Readonly<{
+    planHash: string;
+    plan: ThemeLiveRuntimePlanV2;
+    proposer: Provider<ThemeProposalSlotProviderInput, ThemeFactProposerOutput>;
+    provenance(
+      item: ThemeRuntimeSourceItem,
+      outcome: ThemeProposalSlotOutcome
+    ): ThemeProposalSlotProvenance;
+  }>;
 }>;
 
 /** Concrete dormant S3-S10 mappings. Live QA/embedding transports require a later budgeted seam. */
@@ -179,6 +227,30 @@ export function createThemeRuntimePipeline(
     throw new ThemePreparationWorkerError('runtime_unavailable', false);
   const { repositories: repos } = context;
   const items = structuredClone(options.items);
+  if (options.proposalSlots) {
+    const { plan } = options.proposalSlots;
+    if (
+      plan.contractVersion !== 'theme-live-runtime-plan-v2' ||
+      plan.proposalSlots.length !== items.length ||
+      plan.proposalSlots.some((slot, index) => {
+        const item = items[index];
+        const source = plan.sources.find((entry) => entry.key === slot.sourceKey);
+        return (
+          !item ||
+          item.key !== slot.key ||
+          item.sourceKey !== slot.sourceKey ||
+          item.ordinal !== slot.ordinal ||
+          item.requestedUrl !== source?.canonicalUrl ||
+          item.canonicalFactKey !== undefined ||
+          item.expectedLatestFactRevision !== undefined
+        );
+      })
+    )
+      throw new ThemePreparationWorkerError('runtime_unavailable', false);
+  } else if (
+    items.some((item) => !item.canonicalFactKey || item.expectedLatestFactRevision === undefined)
+  )
+    throw new ThemePreparationWorkerError('runtime_unavailable', false);
   const derivation = structuredClone(options.derivation);
   const snapshotProvider = <I, O>(provider: Provider<I, O>): Provider<I, O> =>
     Object.freeze({ ...provider, requestIdentity: structuredClone(provider.requestIdentity) });
@@ -188,6 +260,7 @@ export function createThemeRuntimePipeline(
     writer: snapshotProvider(options.providers.writer),
     evidenceReviewer: snapshotProvider(options.providers.evidenceReviewer),
     repairer: snapshotProvider(options.providers.repairer),
+    slotProposer: options.proposalSlots ? snapshotProvider(options.proposalSlots.proposer) : null,
   };
   const qaProviders = options.qaProviders
     ? {
@@ -204,6 +277,18 @@ export function createThemeRuntimePipeline(
   };
   const id = (job: ThemeJobRecord, item: ThemeRuntimeSourceItem, stage: string) =>
     themeRuntimeItemId(job.id, options.planVersion, item.key, stage);
+  const sourceId = (job: ThemeJobRecord, item: ThemeRuntimeSourceItem, stage: string) =>
+    themeRuntimeItemId(job.id, options.planVersion, item.sourceKey ?? item.key, stage);
+  const repositoriesFor = (job: ThemeJobRecord, item: ThemeRuntimeSourceItem) =>
+    typeof repos.forExecution === 'function'
+      ? repos.forExecution({
+          factReview: id(job, item, 'fact-review-execution'),
+          questionGeneration: id(job, item, 'question-generation-execution'),
+          evidenceReview: id(job, item, 'question-evidence-review-execution'),
+          repairGeneration: id(job, item, 'repair-generation-execution'),
+          repairEvidenceReview: id(job, item, 'repair-evidence-review-execution'),
+        })
+      : repos;
   async function dispatch<I, O>(
     job: ThemeJobRecord,
     item: ThemeRuntimeSourceItem,
@@ -312,7 +397,7 @@ export function createThemeRuntimePipeline(
     };
   }
   async function capture(job: ThemeJobRecord, item: ThemeRuntimeSourceItem) {
-    const documentId = id(job, item, 'document');
+    const documentId = sourceId(job, item, 'document');
     const prior = await options.checkpoints.capture(documentId);
     if (prior) return prior;
     const source = retrieved.get(documentId);
@@ -327,28 +412,125 @@ export function createThemeRuntimePipeline(
     });
     return result.passageIds;
   }
+  function proposalSlotOutcome(raw: ThemeFactProposerOutput): ThemeProposalSlotOutcome {
+    if (raw.status === 'insufficient_evidence')
+      return { status: 'withheld', reason: 'insufficient_evidence' };
+    if (raw.status === 'conflicted') return { status: 'withheld', reason: 'conflicted' };
+    return raw;
+  }
   async function fact(job: ThemeJobRecord, item: ThemeRuntimeSourceItem) {
     const passageIds = await capture(job, item);
-    const derivationAttemptId = id(job, item, 'derive');
-    const result = await withProvider<
-      Input<ThemeFactProposer>,
-      Output<ThemeFactProposer>,
-      Awaited<ReturnType<typeof repos.factDerivation.deriveAndPersist>>
-    >(
-      (callback) =>
-        repos.factDerivation.deriveAndPersist(
-          {
-            ...derivation,
-            canonicalKey: item.canonicalFactKey,
-            revisionId: id(job, item, 'fact-revision'),
-            expectedLatestRevision: item.expectedLatestFactRevision,
-            passageIds: [...passageIds],
-            provenance: { ...derivation.provenance, attemptId: derivationAttemptId },
+    let canonicalFactKey = item.canonicalFactKey;
+    let expectedLatestFactRevision = item.expectedLatestFactRevision;
+    let persistedProposal: ThemeFactProposerOutput | null = null;
+    if (options.proposalSlots) {
+      let stored = await repos.proposalSlots.loadOutcome({ jobId: job.id, slotKey: item.key });
+      if (!stored) {
+        const passages = await options.checkpoints.passages(passageIds);
+        if (passages.length !== passageIds.length)
+          throw new ThemePreparationWorkerError('source_ineligible', false);
+        const slot = options.proposalSlots.plan.proposalSlots.find(
+          (candidate) => candidate.key === item.key
+        );
+        const slotProposer = providers.slotProposer;
+        if (!slot || !item.sourceKey || !slotProposer)
+          throw new ThemePreparationWorkerError('runtime_unavailable', false);
+        const raw = await dispatch(job, item, 'proposal', 'extract_fact', slotProposer, {
+          contractVersion: 'theme-proposal-slot-request-v1',
+          planHash: options.proposalSlots.planHash,
+          normalizedTheme: options.proposalSlots.plan.normalizedTheme,
+          allocation: {
+            version: options.proposalSlots.plan.proposalSlotPolicy.allocationVersion,
+            totalSlots: options.proposalSlots.plan.proposalSlotPolicy.totalSlots,
+            maximumSlotsPerSource:
+              options.proposalSlots.plan.proposalSlotPolicy.maximumSlotsPerSource,
           },
-          callback
-        ),
-      (input) => dispatch(job, item, 'derive', 'extract_fact', providers.proposer, input)
-    );
+          slot: { key: slot.key, ordinal: slot.ordinal, sourceKey: slot.sourceKey },
+          source: {
+            key: item.sourceKey,
+            url: item.requestedUrl,
+            title: item.title,
+            language: item.language,
+          },
+          passages: passages.map((passage) => ({
+            passageId: passage.passageId,
+            text: passage.text,
+            contentHash: passage.contentHash,
+          })),
+        });
+        const outcome = proposalSlotOutcome(raw);
+        await repos.proposalSlots.recordOutcome({
+          jobId: job.id,
+          slotKey: item.key,
+          outcome,
+          provenance: options.proposalSlots.provenance(item, outcome),
+        });
+        stored = await repos.proposalSlots.loadOutcome({ jobId: job.id, slotKey: item.key });
+      }
+      if (
+        !stored ||
+        stored.status !== 'proposed' ||
+        stored.outcome.status !== 'proposed' ||
+        !stored.canonicalFactKey
+      )
+        return null;
+      if (
+        (await repos.proposalSlots.canonicalOwner({
+          jobId: job.id,
+          canonicalFactKey: stored.canonicalFactKey,
+        })) !== item.key
+      )
+        return null;
+      canonicalFactKey = stored.canonicalFactKey;
+      expectedLatestFactRevision = 0;
+      const persisted = stored.outcome;
+      persistedProposal = {
+        status: 'proposed',
+        statement: persisted.statement,
+        scope: persisted.scope,
+        canonicalAnswer: persisted.canonicalAnswer,
+        supportedAliases: persisted.supportedAliases,
+        timeSensitive: persisted.timeSensitive,
+        citations: persisted.citations,
+      };
+    }
+    if (!canonicalFactKey || expectedLatestFactRevision === undefined)
+      throw new ThemePreparationWorkerError('source_ineligible', false);
+    const derivationAttemptId = id(job, item, 'derive');
+    const itemRepositories = repositoriesFor(job, item);
+    const derivationRequest = {
+      ...derivation,
+      canonicalKey: canonicalFactKey,
+      revisionId: id(job, item, 'fact-revision'),
+      expectedLatestRevision: expectedLatestFactRevision,
+      passageIds: [...passageIds],
+      provenance: {
+        ...derivation.provenance,
+        attemptId: derivationAttemptId,
+        executionId: id(job, item, 'derive-execution'),
+      },
+    };
+    let result;
+    try {
+      result = persistedProposal
+        ? await repos.factDerivation.persistValidatedProposal(derivationRequest, persistedProposal)
+        : await withProvider<
+            Input<ThemeFactProposer>,
+            Output<ThemeFactProposer>,
+            Awaited<ReturnType<typeof repos.factDerivation.deriveAndPersist>>
+          >(
+            (callback) => repos.factDerivation.deriveAndPersist(derivationRequest, callback),
+            (input) => dispatch(job, item, 'derive', 'extract_fact', providers.proposer, input)
+          );
+    } catch (error) {
+      if (
+        options.proposalSlots &&
+        error instanceof ThemeFactDerivationError &&
+        (error.code === 'fact_conflict' || error.code === 'evidence_change_conflict')
+      )
+        return null;
+      throw error;
+    }
     if (result.status !== 'proposed' || !result.persistence || !result.policySatisfied)
       throw new ThemePreparationWorkerError('source_ineligible', false);
     const reviewAttemptId = id(job, item, 'fact-review');
@@ -358,7 +540,7 @@ export function createThemeRuntimePipeline(
       Awaited<ReturnType<typeof repos.factReview.review>>
     >(
       (callback) =>
-        repos.factReview.review(
+        itemRepositories.factReview.review(
           {
             attemptId: reviewAttemptId,
             derivationAttemptId,
@@ -383,9 +565,11 @@ export function createThemeRuntimePipeline(
   async function generationRequest(
     job: ThemeJobRecord,
     item: ThemeRuntimeSourceItem
-  ): Promise<ThemeQuestionGenerationRequest> {
+  ): Promise<ThemeQuestionGenerationRequest | null> {
+    const derived = await fact(job, item);
+    if (!derived) return null;
     return {
-      ...(await fact(job, item)),
+      ...derived,
       jobId: job.id,
       ordinal: item.ordinal,
       attemptId: id(job, item, 'generate'),
@@ -402,7 +586,7 @@ export function createThemeRuntimePipeline(
     const item = itemFor(candidate.itemKey);
     const question = await binding(candidate);
     let providerFailure: unknown;
-    const result = await repos.questionApproval.approve(
+    const result = await repositoriesFor(job, item).questionApproval.approve(
       {
         ...question,
         approvalId: id(job, item, `approval:${candidate.candidateId}`),
@@ -420,6 +604,25 @@ export function createThemeRuntimePipeline(
     async preflight(job) {
       const result = await options.preflight(job);
       if (!result.ok) return result;
+      if (options.proposalSlots) {
+        if (
+          options.proposalSlots.plan.proposalSlots.length > job.candidateCeiling ||
+          options.proposalSlots.plan.proposalSlots.some(
+            (slot, index) =>
+              result.work[index]?.key !== slot.key || slot.ordinal > job.candidateCeiling
+          )
+        )
+          return { ok: false, code: 'runtime_unavailable' };
+        try {
+          await repos.proposalSlots.allocate({
+            jobId: job.id,
+            planHash: options.proposalSlots.planHash,
+            plan: options.proposalSlots.plan,
+          });
+        } catch {
+          return { ok: false, code: 'runtime_unavailable' };
+        }
+      }
       if (
         result.work.length !== items.length ||
         result.work.some((item) => !items.some((entry) => entry.key === item.key))
@@ -440,8 +643,8 @@ export function createThemeRuntimePipeline(
     async retrieve(job, work) {
       for (const entry of work) {
         const item = itemFor(entry.key);
-        const documentId = id(job, item, 'document');
-        if (await options.checkpoints.capture(documentId)) continue;
+        const documentId = sourceId(job, item, 'document');
+        if ((await options.checkpoints.capture(documentId)) || retrieved.has(documentId)) continue;
         const result = await retrieveThemeSource(
           {
             requestedUrl: item.requestedUrl,
@@ -460,17 +663,19 @@ export function createThemeRuntimePipeline(
     async generate(job, entry) {
       const item = itemFor(entry.key);
       const request = await generationRequest(job, item);
+      if (!request) return { status: 'withheld' } as const;
       const result = await withProvider<
         Input<ThemeQuestionWriter>,
         Output<ThemeQuestionWriter>,
         Awaited<ReturnType<typeof repos.questionGeneration.generate>>
       >(
-        (callback) => repos.questionGeneration.generate(request, callback),
+        (callback) => repositoriesFor(job, item).questionGeneration.generate(request, callback),
         (input) => dispatch(job, item, 'generate', 'generate', providers.writer, input, 1)
       );
       if (result.status !== 'persisted')
         throw new ThemePreparationWorkerError('source_ineligible', false);
-      return { itemKey: item.key, candidateId: result.candidateId };
+      const candidate = { itemKey: item.key, candidateId: result.candidateId };
+      return options.proposalSlots ? ({ status: 'generated', candidate } as const) : candidate;
     },
     async review(job, candidate) {
       const item = itemFor(candidate.itemKey);
@@ -481,7 +686,7 @@ export function createThemeRuntimePipeline(
         Awaited<ReturnType<typeof repos.evidenceReview.review>>
       >(
         (callback) =>
-          repos.evidenceReview.review(
+          repositoriesFor(job, item).evidenceReview.review(
             { ...question, attemptId: id(job, item, `question-review:${candidate.candidateId}`) },
             callback
           ),
@@ -532,6 +737,7 @@ export function createThemeRuntimePipeline(
         return { status: 'withheld' };
       const parentBinding = await binding(candidate);
       const request = await generationRequest(job, item);
+      if (!request) return { status: 'withheld' };
       const repairOrdinal = await options.checkpoints.repairOrdinal(
         job.id,
         id(job, item, 'repair-candidate'),
@@ -547,8 +753,8 @@ export function createThemeRuntimePipeline(
           throw error;
         }
       };
-      const repair = await repos.questionRepair
-        .repair(
+      const repair = await repositoriesFor(job, item)
+        .questionRepair.repair(
           {
             parentQaDecision: parent.qa,
             generation: {

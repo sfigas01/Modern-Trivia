@@ -80,6 +80,7 @@ const outputSchema = z
 
 export type ThemeQuestionEvidenceReviewConfig = {
   executionId: string;
+  resumeUnresolved?: boolean;
   reviewer: z.infer<typeof reviewerSchema>;
   policy: ThemeEligibilityPolicy;
   promptText: string;
@@ -887,7 +888,19 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
           request.attemptId,
         ])
       );
-      if (prior.rows[0]) return safe(() => replay(request, prior.rows[0]));
+      if (prior.rows[0]) {
+        if (!attemptHeaderMatches(prior.rows[0], request))
+          throw new ThemeQuestionEvidenceReviewError('attempt_conflict');
+        const outcome = await safe(() =>
+          pool.query(
+            'SELECT attempt_id FROM theme_question_evidence_review_outcomes WHERE attempt_id = $1',
+            [request.attemptId]
+          )
+        );
+        if (outcome.rows[0]) return safe(() => replay(request, prior.rows[0]));
+        if (!config.resumeUnresolved)
+          throw new ThemeQuestionEvidenceReviewError('attempt_unresolved');
+      }
       const at = now();
       if (!Number.isFinite(at.valueOf()))
         throw new ThemeQuestionEvidenceReviewError('invalid_request');
@@ -916,8 +929,16 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
             'SELECT attempt_id FROM theme_question_evidence_review_outcomes WHERE attempt_id = $1',
             [request.attemptId]
           );
-          if (!outcome.rows[0]) throw new ThemeQuestionEvidenceReviewError('attempt_unresolved');
-          return { kind: 'replay' as const };
+          if (outcome.rows[0]) return { kind: 'replay' as const };
+          if (!config.resumeUnresolved)
+            throw new ThemeQuestionEvidenceReviewError('attempt_unresolved');
+          const resumedAt = now();
+          if (!Number.isFinite(resumedAt.valueOf()))
+            throw new ThemeQuestionEvidenceReviewError('invalid_request');
+          const resumed = await loadContext(db, request, config, resumedAt);
+          if (resumed.fingerprint !== optimistic.fingerprint)
+            throw new ThemeQuestionEvidenceReviewError('ineligible');
+          return { kind: 'dispatch' as const, context: resumed };
         }
         const lockedAt = now();
         if (!Number.isFinite(lockedAt.valueOf()))

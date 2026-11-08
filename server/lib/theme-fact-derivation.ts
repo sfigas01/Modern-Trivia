@@ -720,7 +720,11 @@ async function readOutcome(client: PoolClient, attemptId: string): Promise<Attem
   return result.rows[0] ?? null;
 }
 
-async function registerAttempt(pool: Pool, header: AttemptHeader): Promise<AttemptOutcome | null> {
+async function registerAttempt(
+  pool: Pool,
+  header: AttemptHeader,
+  resumeUnresolved = false
+): Promise<AttemptOutcome | null> {
   return transaction(pool, async (client) => {
     const inserted = await client.query(
       `INSERT INTO theme_fact_derivation_attempts
@@ -756,7 +760,7 @@ async function registerAttempt(pool: Pool, header: AttemptHeader): Promise<Attem
     if (!locked.rows[0] || !sameAttempt(locked.rows[0], header))
       throw new ThemeFactDerivationError('attempt_conflict');
     const outcome = await readOutcome(client, header.id);
-    if (inserted.rowCount === 0 && !outcome)
+    if (inserted.rowCount === 0 && !outcome && !resumeUnresolved)
       throw new ThemeFactDerivationError('attempt_unresolved');
     return outcome;
   });
@@ -897,7 +901,8 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
   return {
     async deriveAndPersist(
       input: ThemeFactDerivationRequest,
-      proposer: ThemeFactProposer
+      proposer: ThemeFactProposer,
+      resumeUnresolved = false
     ): Promise<ThemeFactDerivationResult> {
       const parsedRequest = requestSchema.safeParse(input);
       if (
@@ -941,7 +946,7 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
         throw new ThemeFactDerivationError('storage_failure');
       }
       const header = attemptHeader(request, evidence);
-      const completed = await registerAttempt(pool, header);
+      const completed = await registerAttempt(pool, header, resumeUnresolved);
       if (completed) {
         try {
           return await replayOutcome(pool, header, completed);
@@ -1142,6 +1147,12 @@ export function createPostgresThemeFactDerivationRepository(pool: Pool, now: () 
         if (discardClient) client.release(true);
         else client.release();
       }
+    },
+    async persistValidatedProposal(
+      input: ThemeFactDerivationRequest,
+      proposal: ThemeFactProposerOutput
+    ): Promise<ThemeFactDerivationResult> {
+      return this.deriveAndPersist(input, async () => structuredClone(proposal), true);
     },
   };
 }

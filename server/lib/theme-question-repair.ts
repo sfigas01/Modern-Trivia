@@ -243,18 +243,6 @@ export function createPostgresThemeQuestionRepairOrchestrator(
     return projectStored(parsed.data);
   }
 
-  async function attemptExists(attemptId: string): Promise<boolean> {
-    try {
-      const result = await pool.query(
-        'SELECT id FROM theme_question_generation_attempts WHERE id = $1',
-        [attemptId]
-      );
-      return Boolean(result.rowCount);
-    } catch {
-      throw new ThemeQuestionRepairError('storage_failure');
-    }
-  }
-
   async function persist(
     decision: ThemeQuestionRepairDecision
   ): Promise<ThemeQuestionRepairDecision> {
@@ -334,9 +322,6 @@ export function createPostgresThemeQuestionRepairOrchestrator(
           throw new ThemeQuestionRepairError('storage_failure');
         return completed;
       }
-      if (await attemptExists(request.generation.attemptId))
-        throw new ThemeQuestionRepairError('attempt_unresolved');
-
       let parent = await dependencies.loadParentContext({
         candidateId: repair.parentCandidateId,
         questionRevisionId: repair.parentQuestionRevisionId,
@@ -345,11 +330,9 @@ export function createPostgresThemeQuestionRepairOrchestrator(
       if (!validateParentDecision(request.parentQaDecision, repair, parent))
         throw new ThemeQuestionRepairError('parent_not_repairable');
 
-      let dispatched = false;
       const generated = await dependencies.generation.generate(
         request.generation,
         async (input) => {
-          dispatched = true;
           const current = await dependencies.loadParentContext({
             candidateId: repair.parentCandidateId,
             questionRevisionId: repair.parentQuestionRevisionId,
@@ -364,20 +347,6 @@ export function createPostgresThemeQuestionRepairOrchestrator(
           });
         }
       );
-      if (!dispatched) {
-        const replayed = await readOutcome(request.generation.attemptId);
-        if (!replayed) throw new ThemeQuestionRepairError('attempt_unresolved');
-        if (
-          replayed.candidateId !==
-            (generated.status === 'persisted' ? generated.candidateId : null) ||
-          replayed.questionRevisionId !==
-            (generated.status === 'persisted' ? generated.questionRevisionId : null) ||
-          replayed.questionContentHash !==
-            (generated.status === 'persisted' ? generated.contentHash : null)
-        )
-          throw new ThemeQuestionRepairError('storage_failure');
-        return replayed;
-      }
       if (generated.status !== 'persisted')
         return persist({
           status: generated.status,

@@ -66,6 +66,7 @@ export class ThemeFactReviewError extends Error {
 
 type ReviewConfig = {
   executionId: string;
+  resumeUnresolved?: boolean;
   reviewPolicyVersion: string;
   policy: ThemeFactReviewPolicy;
   promptVersion: string;
@@ -535,8 +536,8 @@ export function createPostgresThemeFactReviewRepository(
         if (!sameHeader(priorAttempt.rows[0] as Record<string, any>, loaded.header))
           throw new ThemeFactReviewError('attempt_conflict');
         const priorOutcome = await storageSafe(() => readOutcome(pool, request.attemptId));
-        if (!priorOutcome) throw new ThemeFactReviewError('attempt_unresolved');
-        return replay(priorOutcome, request.attemptId);
+        if (priorOutcome) return replay(priorOutcome, request.attemptId);
+        if (!config.resumeUnresolved) throw new ThemeFactReviewError('attempt_unresolved');
       }
       if (loaded.freshUntil <= evaluatedAt.valueOf())
         throw new ThemeFactReviewError('evidence_changed');
@@ -553,8 +554,9 @@ export function createPostgresThemeFactReviewRepository(
           if (!sameHeader(existing.rows[0] as Record<string, any>, expected))
             throw new ThemeFactReviewError('attempt_conflict');
           const existingOutcome = await readOutcome(client, request.attemptId);
-          if (!existingOutcome) throw new ThemeFactReviewError('attempt_unresolved');
-          return existingOutcome;
+          if (existingOutcome) return existingOutcome;
+          if (!config.resumeUnresolved) throw new ThemeFactReviewError('attempt_unresolved');
+          return null;
         }
         await client.query('SELECT id FROM theme_fact_revisions WHERE id = $1 FOR UPDATE', [
           request.factRevisionId,
@@ -573,8 +575,9 @@ export function createPostgresThemeFactReviewRepository(
           if (!sameHeader(racedAttempt.rows[0] as Record<string, any>, expected))
             throw new ThemeFactReviewError('attempt_conflict');
           const racedOutcome = await readOutcome(client, request.attemptId);
-          if (!racedOutcome) throw new ThemeFactReviewError('attempt_unresolved');
-          return racedOutcome;
+          if (racedOutcome) return racedOutcome;
+          if (!config.resumeUnresolved) throw new ThemeFactReviewError('attempt_unresolved');
+          return null;
         }
         const sequenceResult = await client.query<{ next_sequence: number }>(
           'SELECT COALESCE(MAX(review_sequence), 0) + 1 AS next_sequence FROM theme_fact_review_attempts WHERE fact_revision_id = $1',

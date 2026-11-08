@@ -399,21 +399,30 @@ function fakePool(
   return { pool, state };
 }
 
-function repository(f: Fixture, db = fakePool(f), getNow: () => Date = () => new Date(f.startMs)) {
+function repository(
+  f: Fixture,
+  db = fakePool(f),
+  getNow: () => Date = () => new Date(f.startMs),
+  configOverrides: { executionId?: string; resumeUnresolved?: boolean } = {}
+) {
+  const config = {
+    executionId: configOverrides.executionId ?? randomUUID(),
+    resumeUnresolved: configOverrides.resumeUnresolved,
+    reviewPolicyVersion: 'review-policy-v1',
+    policy: reviewerPolicy,
+    promptVersion: 'review-prompt-v1',
+    promptText: 'Review all evidence and the exact fact.',
+    reviewer: {
+      kind: 'model' as const,
+      id: 'reviewer-2',
+      provider: 'provider-b',
+      model: 'model-b',
+    },
+  };
   return {
     ...db,
-    repository: createPostgresThemeFactReviewRepository(
-      db.pool,
-      {
-        executionId: randomUUID(),
-        reviewPolicyVersion: 'review-policy-v1',
-        policy: reviewerPolicy,
-        promptVersion: 'review-prompt-v1',
-        promptText: 'Review all evidence and the exact fact.',
-        reviewer: { kind: 'model', id: 'reviewer-2', provider: 'provider-b', model: 'model-b' },
-      },
-      getNow
-    ),
+    config,
+    repository: createPostgresThemeFactReviewRepository(db.pool, config, getNow),
   };
 }
 
@@ -467,6 +476,35 @@ describe('theme fact review repository', () => {
       setup.repository.review(request, () => passingOutput(f.passageId, f.passageHash))
     ).resolves.toEqual(completed?.value);
     expect(callbackCalls).toBe(1);
+  });
+
+  it('resumes an exact unresolved header only for the runtime recovery configuration', async () => {
+    const f = fixture();
+    const db = fakePool(f, { fail: 'commit' });
+    const executionId = randomUUID();
+    const request = {
+      attemptId: randomUUID(),
+      derivationAttemptId: f.attemptId,
+      factRevisionId: f.revisionId,
+    };
+    const initial = repository(f, db, () => new Date(f.startMs), { executionId });
+    const reviewer = () => passingOutput(f.passageId, f.passageHash);
+    await expect(initial.repository.review(request, reviewer)).rejects.toMatchObject({
+      code: 'storage_unknown_outcome',
+    });
+
+    const resumed = repository(f, db, () => new Date(f.startMs), {
+      executionId,
+      resumeUnresolved: true,
+    });
+    await expect(resumed.repository.review(request, reviewer)).resolves.toMatchObject({
+      status: 'reviewed',
+      verdict: 'pass',
+    });
+    await expect(resumed.repository.review(request, reviewer)).resolves.toMatchObject({
+      status: 'reviewed',
+      verdict: 'pass',
+    });
   });
 
   it('validates against a private snapshot when the callback mutates its defensive input copy', async () => {

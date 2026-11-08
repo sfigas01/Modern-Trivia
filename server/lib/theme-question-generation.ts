@@ -94,6 +94,7 @@ const writerIdentitySchema = z.discriminatedUnion('kind', [
 
 export type ThemeQuestionGenerationConfig = {
   executionId: string;
+  resumeUnresolved?: boolean;
   writer: ThemeQuestionGenerationWriterIdentity;
   generationPolicy: ThemeQuestionGenerationPolicy;
   promptVersion: string;
@@ -222,7 +223,7 @@ function storedJson(value: unknown): Record<string, any> {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value;
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
     throw new ThemeQuestionGenerationError('ineligible');
-  return parsed as Record<string, any>;
+  return structuredClone(parsed) as Record<string, any>;
 }
 
 async function lockRepairParent(
@@ -1115,7 +1116,9 @@ export function createPostgresThemeQuestionGenerationRepository(
       if (prior) {
         if (!sameRequestAndConfig(prior, request, config))
           throw new ThemeQuestionGenerationError('attempt_conflict');
-        return storageSafe(() => replay(pool, request));
+        const outcome = await storageSafe(() => readOutcome(pool, request.attemptId));
+        if (outcome) return storageSafe(() => replay(pool, request));
+        if (!config.resumeUnresolved) throw new ThemeQuestionGenerationError('attempt_unresolved');
       }
 
       const evaluatedAt = now();
@@ -1146,8 +1149,25 @@ export function createPostgresThemeQuestionGenerationRepository(
           if (!stableHeaderMatches(existing.rows[0] as Record<string, any>, optimistic.header))
             throw new ThemeQuestionGenerationError('attempt_conflict');
           const existingOutcome = await readOutcome(client, request.attemptId);
-          if (!existingOutcome) throw new ThemeQuestionGenerationError('attempt_unresolved');
-          return { kind: 'replay' as const };
+          if (existingOutcome) return { kind: 'replay' as const };
+          if (!config.resumeUnresolved)
+            throw new ThemeQuestionGenerationError('attempt_unresolved');
+          const resumedAt = now();
+          if (!(resumedAt instanceof Date) || !Number.isFinite(resumedAt.valueOf()))
+            throw new ThemeQuestionGenerationError('invalid_request');
+          const resumed = await loadGenerationContext(client, request, config, resumedAt);
+          if (
+            !resumed.eligibility.eligible ||
+            resumed.eligibility.attemptId !== request.factReviewAttemptId ||
+            resumed.selectedReview.outcome?.outputHash !== request.factReviewOutputHash ||
+            !stableHeaderMatches(existing.rows[0] as Record<string, any>, resumed.header)
+          )
+            throw new ThemeQuestionGenerationError('ineligible');
+          return {
+            kind: 'dispatch' as const,
+            header: resumed.header,
+            writerInput: resumed.writerInput,
+          };
         }
         const lockedEvaluatedAt = now();
         if (!(lockedEvaluatedAt instanceof Date) || !Number.isFinite(lockedEvaluatedAt.valueOf()))

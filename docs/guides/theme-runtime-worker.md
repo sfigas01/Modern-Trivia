@@ -1,4 +1,4 @@
-# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12B-3)
+# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12B-4C)
 
 S11B defines the bounded worker and spend-admission seam between durable themed-game admission and the existing source-first repositories. S11C assembles those repositories and maps the source registry, retrieval, extraction, fact derivation, independent fact review, question generation, independent question review, complete approval QA, one eligible repair and final roster reservation into that worker. The composition registers no route, scheduler, provider credential or production flag.
 
@@ -106,11 +106,25 @@ claim policy. Canonical fact identity is a versioned hash of the complete
 normalized scope only. Page IDs, passage IDs, answers, job IDs and slot ordinals
 remain outside that identity.
 
-This does not install the slots in the worker. S12B-4C must map one durable source
-capture to its slots, add immutable slot context to each proposal request, consume
-the stored proposal through a recoverable local fact-write seam and exercise the
-full scheduler-to-approval fixture recovery path. Until that proof is complete,
-production and preview startup do not construct a live provider runtime.
+S12B-4C installs proposal slots in the dormant pipeline boundary. Slots that pin
+the same Wikipedia article share one retrieved and persisted source capture, while
+proposal, fact-review, generation and evidence-review identities remain unique to
+the slot. A validated proposal outcome is persisted before fact creation and is
+then consumed through a local, revalidating fact-write seam. A withheld proposal,
+duplicate scoped fact or existing global fact with the same canonical scope is
+withheld without replacement; the worker fails with inventory shortfall rather
+than weakening review.
+
+Runtime-created stage repositories allow an exact unresolved header to resume only
+after reloading and revalidating its current inputs. The provider call still passes
+through durable result replay, so a successful settlement is loaded instead of
+called again. Unknown provider outcomes remain terminal. The older general-purpose
+repository factories retain their fail-closed `attempt_unresolved` behavior.
+
+This slice does not register a scheduler, route, credential, provider adapter or
+production flag. Preview and production startup still do not construct a live
+provider runtime. Paid E1 evaluation and any activation remain separate owner
+decisions.
 
 Migration `0018_theme_runtime_budget.sql` adds account and policy identity to allocations, request fingerprints to attempts, preserves financial history when lifecycle rows are cleaned up, permits conservative `unknown` accounting and honest cost-overrun recording, and protects durable accounting identity fields from mutation.
 
