@@ -524,5 +524,23 @@ export function createThemeProposalSlotRepository(pool: Pool, options: { now?: (
       );
       return stored.rows[0] ? readStoredOutcome(stored.rows[0], true) : null;
     },
+
+    async canonicalOwner(input: { jobId: string; canonicalFactKey: string }) {
+      if (
+        !uuidSchema.safeParse(input.jobId).success ||
+        !input.canonicalFactKey.trim() ||
+        input.canonicalFactKey.length > 255
+      )
+        throw new ThemeProposalSlotError('invalid_proposal');
+      const result = await pool.query<{ slot_key: string }>(
+        `SELECT o.slot_key
+           FROM theme_proposal_slot_outcomes o
+           JOIN theme_proposal_slots s ON s.job_id=o.job_id AND s.slot_key=o.slot_key
+          WHERE o.job_id=$1 AND o.status='proposed' AND o.canonical_fact_key=$2
+          ORDER BY s.slot_ordinal LIMIT 1`,
+        [input.jobId, input.canonicalFactKey]
+      );
+      return result.rows[0]?.slot_key ?? null;
+    },
   };
 }

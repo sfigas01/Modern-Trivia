@@ -359,9 +359,32 @@ reapplication, exact restart loading, conflicting replay, pinned-source and
 passage-hash rejection, temporal failure, duplicate-scope convergence, strict SQL
 null handling and append-only enforcement. It uses local fixtures only.
 
-S12B-4C still must map source capture to slots, include immutable slot context in
-proposal requests, consume durable proposals through a recoverable local fact
-writer and run the full scheduler-to-approval fixture recovery path. The existing
-legacy derivation attempt's unresolved-crash behavior is intentionally unchanged
-until that integration. No scheduler startup, credential, route, flag or paid call
-was added. Production remains dormant, and E1 still requires the owner checkpoint.
+## S12B-4C dormant worker integration checkpoint
+
+S12B-4C maps the v2 proposal manifest into the existing bounded pipeline. Slots
+over the same pinned article share one source retrieval and capture. Proposal and
+all later model-stage identities are derived from the slot key, so their durable
+attempt and execution IDs do not collide. The proposal request is dispatched under
+the slot identity, and its validated terminal outcome is stored before the local
+fact write.
+
+The local fact writer revalidates the stored normalized proposal against current
+durable evidence and resumes an exact unresolved local attempt without another
+provider call. Runtime-specific fact review, generation and evidence-review
+repositories can also complete an exact unresolved header after reloading and
+revalidating the locked inputs. Their provider callbacks are protected by the
+existing settled-result replay boundary. General-purpose repository construction
+keeps the prior fail-closed behavior.
+
+Withheld proposals and duplicate canonical scopes are skipped without replacement.
+An incompatible plan whose slot ordinals exceed the job candidate ceiling fails
+preflight. Unknown outcomes, changed inputs and conflicting replay remain terminal.
+The zero-cost E0 evidence combines the v2 pipeline recovery fixture, the bounded
+worker fixture, the disposable PostgreSQL proposal/fact/review/generation/
+evidence-review suites and the PostgreSQL budget replay/disable/unknown-outcome
+proof. These deterministic fixtures prove the covered wiring and recovery
+boundaries; they do not establish factual quality or a complete live scheduler run.
+
+No scheduler startup, credential, route, Railway variable, production flag or paid
+call is added. Production remains dormant, and E1 still requires the owner
+checkpoint before a key is connected or any provider request is made.

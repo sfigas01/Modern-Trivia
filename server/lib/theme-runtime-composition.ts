@@ -31,6 +31,7 @@ import { createPostgresThemeQuestionApprovalRepository } from './theme-question-
 import { createPostgresThemeQuestionEvidenceReviewRepository } from './theme-question-evidence-review';
 import { createPostgresThemeQuestionGenerationRepository } from './theme-question-generation';
 import { createPostgresThemeQuestionRepairOrchestrator } from './theme-question-repair';
+import { createThemeProposalSlotRepository } from './theme-proposal-slots';
 import type { ThemeQuestionQaDependencies } from './theme-question-qa';
 import { createPostgresThemeRuntimeRepository } from './theme-runtime-repository';
 import type { ThemeRuntimeBudgetConfig } from './theme-runtime-config';
@@ -62,34 +63,87 @@ export function createPostgresThemeSourceFirstRepositories(
 ) {
   const evidencePersistence = createPostgresThemeEvidencePersistenceRepository(pool);
   const factDerivation = createPostgresThemeFactDerivationRepository(pool, now);
-  const factReview = createPostgresThemeFactReviewRepository(pool, config.factReview, now);
-  const questionGeneration = createPostgresThemeQuestionGenerationRepository(
-    pool,
-    config.questionGeneration,
-    now
-  );
-  const evidenceReview = createPostgresThemeQuestionEvidenceReviewRepository(
-    pool,
-    config.evidenceReview,
-    now
-  );
-  const questionApproval = createPostgresThemeQuestionApprovalRepository(pool, config.approval);
-  const questionRepair = createPostgresThemeQuestionRepairOrchestrator(pool, {
-    generation: questionGeneration,
-    evidenceReview,
-    loadParentContext: (request) => evidenceReview.qaContext(request),
-    qa: config.repairQa,
-  });
+  const buildStages = (executionIds?: {
+    factReview: string;
+    questionGeneration: string;
+    evidenceReview: string;
+    repairGeneration: string;
+    repairEvidenceReview: string;
+  }) => {
+    const factReviewConfig = {
+      ...config.factReview,
+      executionId: executionIds?.factReview ?? config.factReview.executionId,
+      resumeUnresolved: executionIds ? true : config.factReview.resumeUnresolved,
+    };
+    const questionGenerationConfig = {
+      ...config.questionGeneration,
+      executionId: executionIds?.questionGeneration ?? config.questionGeneration.executionId,
+      resumeUnresolved: executionIds ? true : config.questionGeneration.resumeUnresolved,
+    };
+    const evidenceReviewConfig = {
+      ...config.evidenceReview,
+      executionId: executionIds?.evidenceReview ?? config.evidenceReview.executionId,
+      resumeUnresolved: executionIds ? true : config.evidenceReview.resumeUnresolved,
+    };
+    const approvalConfig = {
+      ...config.approval,
+      evidence: {
+        ...config.approval.evidence,
+        executionId: executionIds?.evidenceReview ?? config.approval.evidence.executionId,
+        resumeUnresolved: executionIds ? true : config.approval.evidence.resumeUnresolved,
+      },
+    };
+    const factReview = createPostgresThemeFactReviewRepository(pool, factReviewConfig, now);
+    const questionGeneration = createPostgresThemeQuestionGenerationRepository(
+      pool,
+      questionGenerationConfig,
+      now
+    );
+    const evidenceReview = createPostgresThemeQuestionEvidenceReviewRepository(
+      pool,
+      evidenceReviewConfig,
+      now
+    );
+    const repairGeneration = createPostgresThemeQuestionGenerationRepository(
+      pool,
+      {
+        ...questionGenerationConfig,
+        executionId: executionIds?.repairGeneration ?? questionGenerationConfig.executionId,
+      },
+      now
+    );
+    const repairEvidenceReview = createPostgresThemeQuestionEvidenceReviewRepository(
+      pool,
+      {
+        ...evidenceReviewConfig,
+        executionId: executionIds?.repairEvidenceReview ?? evidenceReviewConfig.executionId,
+      },
+      now
+    );
+    const questionApproval = createPostgresThemeQuestionApprovalRepository(pool, approvalConfig);
+    const questionRepair = createPostgresThemeQuestionRepairOrchestrator(pool, {
+      generation: repairGeneration,
+      evidenceReview: repairEvidenceReview,
+      loadParentContext: (request) => evidenceReview.qaContext(request),
+      qa: config.repairQa,
+    });
+    return Object.freeze({
+      factReview,
+      questionGeneration,
+      evidenceReview,
+      questionRepair,
+      questionApproval,
+    });
+  };
+  const stages = buildStages();
 
   return Object.freeze({
     sourceRegistry: createPostgresThemeSourceRegistryRepository(pool),
+    proposalSlots: createThemeProposalSlotRepository(pool, { now }),
     evidencePersistence,
     factDerivation,
-    factReview,
-    questionGeneration,
-    evidenceReview,
-    questionRepair,
-    questionApproval,
+    ...stages,
+    forExecution: buildStages,
   });
 }
 

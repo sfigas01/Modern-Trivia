@@ -866,6 +866,35 @@ describe('theme question generation safety', () => {
     expect(writer).not.toHaveBeenCalled();
   });
 
+  it('resumes an exact unresolved header only when the runtime enables durable result recovery', async () => {
+    const f = repositoryFixture();
+    f.state.commitUnknown = true;
+    const writer = vi.fn(() => ({
+      status: 'candidate' as const,
+      question: 'In which year did the event occur?',
+      explanation: 'The record states the year.',
+    }));
+    await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
+      code: 'storage_unknown_outcome',
+    });
+
+    const resumable = createPostgresThemeQuestionGenerationRepository(
+      f.pool,
+      { ...f.config, resumeUnresolved: true },
+      () => new Date(f.state.nowMs)
+    );
+    await expect(resumable.generate(f.request, writer)).resolves.toMatchObject({
+      status: 'persisted',
+      candidateId: f.request.candidateId,
+    });
+    expect(writer).toHaveBeenCalledOnce();
+    await expect(resumable.generate(f.request, writer)).resolves.toMatchObject({
+      status: 'persisted',
+      candidateId: f.request.candidateId,
+    });
+    expect(writer).toHaveBeenCalledOnce();
+  });
+
   it('rejects generation source policy mismatch before invoking the writer', async () => {
     const f = repositoryFixture();
     const mismatched = createPostgresThemeQuestionGenerationRepository(

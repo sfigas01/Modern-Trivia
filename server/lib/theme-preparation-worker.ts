@@ -9,6 +9,9 @@ import {
 
 export type ThemePreparationWorkItem = Readonly<{ key: string }>;
 export type ThemeGeneratedCandidate = Readonly<{ itemKey: string; candidateId: string }>;
+export type ThemeGenerationDecision =
+  | Readonly<{ status: 'generated'; candidate: ThemeGeneratedCandidate }>
+  | Readonly<{ status: 'withheld' }>;
 export type ThemeReviewedCandidate = Readonly<{
   itemKey: string;
   candidateId: string;
@@ -68,7 +71,10 @@ export interface ThemePreparationWorkerDependencies {
   retrieve(job: ThemeJobRecord, work: readonly ThemePreparationWorkItem[]): Promise<void>;
   /** Extracts usable facts from the retrieved source material. */
   extract(job: ThemeJobRecord, work: readonly ThemePreparationWorkItem[]): Promise<void>;
-  generate(job: ThemeJobRecord, item: ThemePreparationWorkItem): Promise<ThemeGeneratedCandidate>;
+  generate(
+    job: ThemeJobRecord,
+    item: ThemePreparationWorkItem
+  ): Promise<ThemeGenerationDecision | ThemeGeneratedCandidate>;
   review(job: ThemeJobRecord, candidate: ThemeGeneratedCandidate): Promise<ThemeReviewedCandidate>;
   /** S10 owns the complete QA and semantic checks before approval. */
   approve(job: ThemeJobRecord, candidate: ThemeReviewedCandidate): Promise<ThemeApprovalDecision>;
@@ -252,7 +258,9 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         for (const item of preflight.work) {
           job = await renew(job, claim);
           assertContinuing();
-          generated.push(await dependencies.generate(job, item));
+          const decision = await dependencies.generate(job, item);
+          if (!('status' in decision)) generated.push(decision);
+          else if (decision.status === 'generated') generated.push(decision.candidate);
           await dependencies.assertDispatchesSettled(job.id);
         }
 

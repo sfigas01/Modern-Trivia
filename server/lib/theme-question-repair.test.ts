@@ -7,6 +7,7 @@ import { emptyDuplicateCounts } from '@shared/models/quality-sweep';
 import type { ThemeQuestionWriterInput } from '@shared/models/theme-question-generation';
 import { hashQuestionSnapshot } from './theme-evidence-eligibility';
 import type { ThemeQuestionQaContext } from './theme-question-evidence-review';
+import { ThemeQuestionGenerationError } from './theme-question-generation';
 import {
   createPostgresThemeQuestionRepairOrchestrator,
   ThemeQuestionRepairError,
@@ -137,13 +138,10 @@ function fixture() {
     ],
   };
   let stored: Record<string, unknown> | null = null;
-  let generationAttemptExists = false;
   const pool = {
     query: vi.fn(async (sql: string, values: unknown[] = []) => {
       if (sql.includes('FROM theme_question_repair_outcomes'))
         return result(stored ? [stored] : []);
-      if (sql.includes('SELECT id FROM theme_question_generation_attempts'))
-        return result(generationAttemptExists ? [{ id: ids.generation }] : []);
       if (sql.includes('INSERT INTO theme_question_repair_outcomes')) {
         stored = {
           generation_attempt_id: values[0],
@@ -169,7 +167,6 @@ function fixture() {
   } as unknown as Pool;
   const generationRepository = {
     generate: vi.fn(async (_request, writer) => {
-      generationAttemptExists = true;
       if (!stored) await writer(structuredClone(writerInput));
       return {
         status: 'persisted' as const,
@@ -229,9 +226,6 @@ function fixture() {
     review,
     loadParentContext,
     childContext,
-    setGenerationAttemptExists: (value: boolean) => {
-      generationAttemptExists = value;
-    },
   };
 }
 
@@ -321,7 +315,7 @@ describe('bounded theme question repair', () => {
     expect(f.dependencies.qa.checkQuality).not.toHaveBeenCalled();
   });
 
-  it('does not dispatch review or QA when generation was replayed without a repair outcome', async () => {
+  it('continues review and QA when generation replays without a repair outcome', async () => {
     const f = fixture();
     f.generationRepository.generate.mockResolvedValueOnce({
       status: 'persisted',
@@ -341,10 +335,10 @@ describe('bounded theme question repair', () => {
         repairer,
         reviewer
       )
-    ).rejects.toMatchObject<Partial<ThemeQuestionRepairError>>({ code: 'attempt_unresolved' });
+    ).resolves.toMatchObject({ status: 'passed', stage: 'qa' });
     expect(repairer).not.toHaveBeenCalled();
-    expect(f.review).not.toHaveBeenCalled();
-    expect(f.dependencies.qa.checkQuality).not.toHaveBeenCalled();
+    expect(f.review).toHaveBeenCalledOnce();
+    expect(f.dependencies.qa.checkQuality).toHaveBeenCalledOnce();
   });
 
   it('rejects non-repairable requests and unresolved registered attempts', async () => {
@@ -361,7 +355,9 @@ describe('bounded theme question repair', () => {
       )
     ).rejects.toMatchObject<Partial<ThemeQuestionRepairError>>({ code: 'invalid_request' });
 
-    f.setGenerationAttemptExists(true);
+    f.generationRepository.generate.mockRejectedValueOnce(
+      new ThemeQuestionGenerationError('attempt_unresolved')
+    );
     await expect(
       repository.repair(
         { generation: f.generation, parentQaDecision: f.parentQaDecision },
