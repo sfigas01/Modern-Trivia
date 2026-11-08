@@ -290,9 +290,10 @@ S12B-3 implements the third item without credentials or paid requests:
 - an answer-redacted evaluator for explicit job IDs; and
 - fixture tests plus an opt-in disposable-PostgreSQL migration test.
 
-The application does not yet install this scheduler during ordinary startup. The concrete live pipeline still refuses live QA mode because its QA and semantic transports have not been fully mapped into the runtime composition. This keeps production dormant and prevents the new scheduler boundary from implying that a provider-backed run is ready.
-
-The next engineering slice completes that live pipeline mapping and E0 integration proof. E0 remains incomplete until the disposable PostgreSQL suite exercises the full scheduler/runtime recovery path. After E0 passes, stop at the existing owner checkpoint before adding a preview credential or making any paid E1 request.
+The application does not install this scheduler during ordinary startup. The
+concrete pipeline and its nested QA transports are available only through
+explicit dependency injection, so production remains dormant and the scheduler
+boundary does not imply that a provider-backed run is enabled.
 
 ## S12B-4A nested QA and E0 accounting checkpoint
 
@@ -388,3 +389,26 @@ boundaries; they do not establish factual quality or a complete live scheduler r
 No scheduler startup, credential, route, Railway variable, production flag or paid
 call is added. Production remains dormant, and E1 still requires the owner
 checkpoint before a key is connected or any provider request is made.
+
+## S12B-4D preview runtime composition and E0 checkpoint
+
+S12B-4D adds one callable preview bootstrap that joins the existing durable
+scheduler, runtime control, recovery scan, immutable per-job plan loader and
+PostgreSQL preparation runtime. The scheduler must pass the Railway-preview,
+feature, budget and database-control gates before the source-first repositories
+or injected pipeline can be constructed. Every recovered job reloads and
+hash-verifies its own stored plan before runtime composition.
+
+The zero-cost E0 proof now covers the complete deterministic boundary in two
+parts: the concrete worker/pipeline fixture proves proposal through approval and
+reservation, while the disposable PostgreSQL suite proves that the real control,
+recovery scan and plan repository select a stored job and invoke that same runtime
+composition seam. The remaining PostgreSQL suites continue to prove the durable
+stage, budget, replay, disable and unknown-outcome records. No provider network
+request or credential is used. This is an integration and recovery gate; it does
+not claim factual quality or release readiness.
+
+Ordinary application startup still does not install the preview runtime, and no
+concrete OpenAI transport reads a key. The next checkpoint is the separately
+approved E1 preview connection and calibration slice. Connecting a preview key or
+executing even one paid request still requires the owner's explicit approval.

@@ -1,4 +1,4 @@
-# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12B-4C)
+# Themed runtime worker and composition (STE-25 / STE-167 S11B-S12B-4D)
 
 S11B defines the bounded worker and spend-admission seam between durable themed-game admission and the existing source-first repositories. S11C assembles those repositories and maps the source registry, retrieval, extraction, fact derivation, independent fact review, question generation, independent question review, complete approval QA, one eligible repair and final roster reservation into that worker. The composition registers no route, scheduler, provider credential or production flag.
 
@@ -75,7 +75,22 @@ and ordinary application startup does not instantiate themed generation.
 
 Both `VITE_THEME_ROUNDS=true` and `THEME_LIVE_GENERATION=true` are required, together with every explicit budget variable documented in `.env.example`. There are no default caps. `THEME_BUDGET_POLICY_VERSION` and the configured limits form a durable policy fingerprint for each allocation. Missing or inconsistent configuration fails closed. Scheduler bootstrap additionally requires Railway's environment name to be exactly `preview`, every `THEME_PREVIEW_*` value to be a positive bounded integer and the worker lease to exceed both the configured callback cap and the runtime's declared worst-case callback duration, including composite QA. Keep all scheduler variables unset in production.
 
-The next checkpoint is completing the live pipeline mapping under the design and spend gates in `docs/guides/theme-provider-evaluation-plan.md`, then running E0 with a disposable PostgreSQL database. That work must preserve signed-in host ownership and requires explicit approval before any credential is connected or any paid call is executed. Production flags remain unset until evaluation and the separate gameplay release decision pass.
+S12B-4D adds `server/lib/theme-preview-runtime.ts`, the callable composition
+boundary between the preview scheduler and the PostgreSQL preparation runtime.
+It reloads each job's immutable stored plan before building its pipeline and
+preserves every static and durable runtime gate. Its disposable PostgreSQL test
+uses the real runtime-control, recovery-scan and plan repositories; the existing
+deterministic pipeline proof covers the connected worker through approval and
+reservation. Together these close the zero-cost E0 integration gate without a
+credential or provider request.
+
+Ordinary application startup still does not install this preview runtime, and
+production flags remain unset. The next checkpoint is the owner-gated E1 preview
+connection and calibration work in
+`docs/guides/theme-provider-evaluation-plan.md`. A concrete transport may be
+implemented without making a request, but connecting a credential or executing a
+paid call requires explicit owner approval. E2 and the separate S13 gameplay
+release decision remain later gates.
 
 S12B-4A adds migration `0021_theme_provider_result_replay.sql`. It stores the
 bounded parsed result of a successful provider attempt in the same settlement
