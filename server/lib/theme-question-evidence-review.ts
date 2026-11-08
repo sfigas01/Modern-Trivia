@@ -935,8 +935,15 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
           const resumedAt = now();
           if (!Number.isFinite(resumedAt.valueOf()))
             throw new ThemeQuestionEvidenceReviewError('invalid_request');
-          const resumed = await loadContext(db, request, config, resumedAt);
-          if (resumed.fingerprint !== optimistic.fingerprint)
+          const current = await loadContext(db, request, config, resumedAt);
+          if (
+            current.fingerprint !== optimistic.fingerprint ||
+            current.fingerprint !== existing.rows[0].input_fingerprint
+          )
+            throw new ThemeQuestionEvidenceReviewError('ineligible');
+          const originalAt = new Date(iso(existing.rows[0].evaluated_at));
+          const resumed = await loadContext(db, request, config, originalAt);
+          if (resumed.fingerprint !== current.fingerprint)
             throw new ThemeQuestionEvidenceReviewError('ineligible');
           return { kind: 'dispatch' as const, context: resumed };
         }

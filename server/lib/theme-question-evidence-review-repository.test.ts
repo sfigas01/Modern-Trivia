@@ -549,10 +549,11 @@ describe('S8a repository question review', () => {
   it('resumes an exact unresolved header only for the runtime recovery configuration', async () => {
     const f = fixture();
     const db = fakePool(f);
+    let currentAt = at;
     const initial = createPostgresThemeQuestionEvidenceReviewRepository(
       db.pool,
       f.config,
-      () => at
+      () => currentAt
     );
     const output = () => ({
       dimensionResults: EVIDENCE_DIMENSIONS.map((dimension) => ({
@@ -566,12 +567,16 @@ describe('S8a repository question review', () => {
     db.state.outcome = null;
     db.state.review = null;
     db.state.reviewCount = 0;
+    currentAt = new Date(at.valueOf() + 60 * 60_000);
 
-    const callback = vi.fn(output);
+    const callback = vi.fn((input) => {
+      expect(input.evaluatedAt).toBe(at.toISOString());
+      return output();
+    });
     const resumed = createPostgresThemeQuestionEvidenceReviewRepository(
       db.pool,
       { ...f.config, resumeUnresolved: true },
-      () => at
+      () => currentAt
     );
     await expect(resumed.review(f.request, callback)).resolves.toMatchObject({
       status: 'reviewed',
