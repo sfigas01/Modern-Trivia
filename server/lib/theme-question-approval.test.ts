@@ -64,6 +64,7 @@ function setup(
     repairStatus?: string;
     originalClaim?: boolean;
     failRevisionInsert?: boolean;
+    corpusOverflow?: boolean;
   } = {}
 ) {
   let approval: Record<string, unknown> | null = null;
@@ -101,8 +102,14 @@ function setup(
     if (text.startsWith('SELECT * FROM questions')) {
       corpusReads++;
       return {
-        rows:
-          options.corpusChange && corpusReads === 3
+        rows: options.corpusOverflow
+          ? Array.from({ length: 513 }, (_, index) => ({
+              id: `question-${index}`,
+              question: `Question ${index}?`,
+              answer: `Answer ${index}`,
+              status: 'approved',
+            }))
+          : options.corpusChange && corpusReads === 3
             ? [
                 {
                   id: 'other',
@@ -341,5 +348,16 @@ describe('final theme question approval', () => {
     await expect(repo.approve(request)).rejects.toBeInstanceOf(ThemeQuestionApprovalError);
     expect(commands).not.toContain(expect.stringContaining('UPDATE theme_candidates'));
     expect(commands.at(-1)).toBe('ROLLBACK');
+  });
+
+  it('withholds when the duplicate corpus exceeds the bounded paid-QA envelope', async () => {
+    const { repo, semantic, commands } = setup({ corpusOverflow: true });
+
+    await expect(repo.approve(request)).resolves.toMatchObject({
+      status: 'withheld',
+      qa: { stage: 'semantic', reason: 'dependency_failure' },
+    });
+    expect(semantic).not.toHaveBeenCalled();
+    expect(commands).not.toContain(expect.stringContaining('INSERT INTO questions'));
   });
 });

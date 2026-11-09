@@ -7,6 +7,7 @@ import { runMigrations } from './lib/migrate';
 import { seedQuestions } from './seed';
 import { registerHealthRoute } from './health';
 import { pool } from './db';
+import { bootstrapThemeE1ApplicationRuntime } from './lib/theme-e1-application-runtime';
 
 const app = express();
 const httpServer = createServer(app);
@@ -73,7 +74,13 @@ app.use((req, res, next) => {
 (async () => {
   await runMigrations();
   await seedQuestions();
-  await registerRoutes(httpServer, app);
+  const themeRuntime = await bootstrapThemeE1ApplicationRuntime({
+    pool,
+    reportCode: (code) => log(`theme preview runtime: ${code}`),
+  });
+  await registerRoutes(httpServer, app, {
+    themePreparationScheduler: themeRuntime.started ? themeRuntime : undefined,
+  });
   // Registered after migrations and routes so Railway only sees healthy once
   // the app can actually serve requests.
   registerHealthRoute(app, pool);
@@ -103,6 +110,24 @@ app.use((req, res, next) => {
   httpServer.keepAliveTimeout = 10 * 60 * 1000;
 
   const port = parseInt(process.env.PORT || '5000', 10);
+  let shuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log(`received ${signal}; stopping`);
+    if (themeRuntime.started) await themeRuntime.stop();
+    await new Promise<void>((resolve, reject) =>
+      httpServer.close((error) => (error ? reject(error) : resolve()))
+    );
+    await pool.end();
+  };
+  for (const signal of ['SIGTERM', 'SIGINT'] as const)
+    process.once(signal, () => {
+      void shutdown(signal).catch((error) => {
+        console.error('Graceful shutdown failed:', error);
+        process.exitCode = 1;
+      });
+    });
   httpServer.listen(
     {
       port,

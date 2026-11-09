@@ -67,7 +67,7 @@ const reviewerSchema = z.discriminatedUnion('kind', [
     })
     .strict(),
 ]);
-const outputSchema = z
+export const themeQuestionEvidenceReviewOutputSchema = z
   .object({
     dimensionResults: z.array(evidenceDimensionResultSchema).length(EVIDENCE_DIMENSIONS.length),
   })
@@ -843,7 +843,7 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
           [decision.attemptId, decision.reviewId]
         )
       );
-      const dimensions = outputSchema.safeParse({
+      const dimensions = themeQuestionEvidenceReviewOutputSchema.safeParse({
         dimensionResults: storedDimensions.rows[0]?.dimension_results,
       });
       if (!dimensions.success || storedDimensions.rows.length !== 1)
@@ -1001,7 +1001,9 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
       let status: 'reviewed' | 'invalid_output' | 'failed' | 'ineligible' = 'reviewed';
       let dimensions: EvidenceDimensionResult[] | null = null;
       try {
-        const output = outputSchema.safeParse(await callback(structuredClone(registered.input)));
+        const output = themeQuestionEvidenceReviewOutputSchema.safeParse(
+          await callback(structuredClone(registered.input))
+        );
         if (
           !output.success ||
           output.data.dimensionResults.some((dimension) =>

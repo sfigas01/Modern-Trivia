@@ -200,6 +200,10 @@ export type ThemeRuntimePipelineOptions = Readonly<{
     planHash: string;
     plan: ThemeLiveRuntimePlanV2;
     proposer: Provider<ThemeProposalSlotProviderInput, ThemeFactProposerOutput>;
+    selectPassages?(
+      item: ThemeRuntimeSourceItem,
+      passages: readonly ThemeFactProposalPassage[]
+    ): readonly ThemeFactProposalPassage[];
     provenance(
       item: ThemeRuntimeSourceItem,
       outcome: ThemeProposalSlotOutcome
@@ -435,6 +439,22 @@ export function createThemeRuntimePipeline(
         const slotProposer = providers.slotProposer;
         if (!slot || !item.sourceKey || !slotProposer)
           throw new ThemePreparationWorkerError('runtime_unavailable', false);
+        const selectedPassages = options.proposalSlots.selectPassages
+          ? options.proposalSlots.selectPassages(item, passages)
+          : passages;
+        const available = new Map(passages.map((passage) => [passage.passageId, passage]));
+        if (
+          selectedPassages.length < 1 ||
+          selectedPassages.length > 12 ||
+          new Set(selectedPassages.map((passage) => passage.passageId)).size !==
+            selectedPassages.length ||
+          selectedPassages.some(
+            (passage) =>
+              available.get(passage.passageId)?.contentHash !== passage.contentHash ||
+              available.get(passage.passageId)?.text !== passage.text
+          )
+        )
+          throw new ThemePreparationWorkerError('runtime_unavailable', false);
         const raw = await dispatch(job, item, 'proposal', 'extract_fact', slotProposer, {
           contractVersion: 'theme-proposal-slot-request-v1',
           planHash: options.proposalSlots.planHash,
@@ -452,7 +472,7 @@ export function createThemeRuntimePipeline(
             title: item.title,
             language: item.language,
           },
-          passages: passages.map((passage) => ({
+          passages: selectedPassages.map((passage) => ({
             passageId: passage.passageId,
             text: passage.text,
             contentHash: passage.contentHash,
@@ -503,7 +523,9 @@ export function createThemeRuntimePipeline(
       canonicalKey: canonicalFactKey,
       revisionId: id(job, item, 'fact-revision'),
       expectedLatestRevision: expectedLatestFactRevision,
-      passageIds: [...passageIds],
+      passageIds: persistedProposal
+        ? persistedProposal.citations.map((citation) => citation.passageId)
+        : [...passageIds],
       provenance: {
         ...derivation.provenance,
         attemptId: derivationAttemptId,

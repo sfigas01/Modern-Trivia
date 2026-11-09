@@ -109,7 +109,7 @@ const citationSchema = z
   })
   .strict();
 
-const proposerOutputSchema = z.discriminatedUnion('status', [
+export const themeFactProposerOutputSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('insufficient_evidence') }).strict(),
   z.object({ status: z.literal('conflicted') }).strict(),
   z
@@ -125,7 +125,7 @@ const proposerOutputSchema = z.discriminatedUnion('status', [
     .strict(),
 ]);
 
-export type ThemeFactProposerOutput = z.input<typeof proposerOutputSchema>;
+export type ThemeFactProposerOutput = z.input<typeof themeFactProposerOutputSchema>;
 export interface ThemeFactProposalPassage {
   passageId: string;
   text: string;
@@ -137,7 +137,7 @@ export type ThemeFactProposer = (
 export type ThemeFactDerivationRequest = z.input<typeof requestSchema>;
 
 type Citation = z.infer<typeof citationSchema>;
-type Proposed = Extract<z.infer<typeof proposerOutputSchema>, { status: 'proposed' }>;
+type Proposed = Extract<z.infer<typeof themeFactProposerOutputSchema>, { status: 'proposed' }>;
 type ValidatedEvidence = {
   passageId: string;
   text: string;
@@ -419,7 +419,7 @@ function prepareProposal(
   revisionId: string,
   expectedLatestRevision: number
 ): ThemeFactDerivationResult {
-  const parsed = proposerOutputSchema.safeParse(raw);
+  const parsed = themeFactProposerOutputSchema.safeParse(raw);
   if (!parsed.success || !allTextSafe(parsed.data))
     throw new ThemeFactDerivationError('invalid_proposal');
   if (parsed.data.status !== 'proposed') return { status: parsed.data.status };

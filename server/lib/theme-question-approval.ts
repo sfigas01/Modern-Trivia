@@ -20,6 +20,7 @@ import {
 } from './theme-question-qa';
 
 export const THEME_QUESTION_APPROVAL_VERSION = 'theme-question-approval-v1' as const;
+export const MAX_THEME_QA_CORPUS_QUESTIONS = 512;
 const uuid = z
   .string()
   .uuid()
@@ -87,8 +88,11 @@ async function loadCorpus(db: Pool | PoolClient) {
   // The caller never supplies comparison rows. Include every ordinary approved or
   // pending question, including player_ai rows, in both the QA and final recheck.
   const rows = await db.query(
-    `SELECT * FROM questions WHERE status IN ('approved', 'pending') ORDER BY id`
+    `SELECT * FROM questions WHERE status IN ('approved', 'pending') ORDER BY id LIMIT $1`,
+    [MAX_THEME_QA_CORPUS_QUESTIONS + 1]
   );
+  if (rows.rows.length > MAX_THEME_QA_CORPUS_QUESTIONS)
+    throw new ThemeQuestionApprovalError('invalid_configuration');
   const questions = rows.rows.map((row: Record<string, unknown>) => ({
     id: String(row.id),
     question: String(row.question),

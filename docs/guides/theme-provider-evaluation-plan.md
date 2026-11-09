@@ -453,10 +453,11 @@ engineering work:
    directly as `AI_INTEGRATIONS_OPENAI_API_KEY` in Railway preview; never paste it
    into chat, source, Linear, GitHub, logs or a shell command. Keep
    `AI_INTEGRATIONS_OPENAI_BASE_URL` unset for the official OpenAI endpoint.
-4. In a focused reviewed change, supply that credential to
-   `createThemeOpenAIClient()`, install the approved provider/pipeline bundle in
-   application startup, and register the returned scheduler `stop()` in graceful
-   shutdown. Production must still instantiate no themed provider runtime.
+4. Confirm the reviewed frozen provider/pipeline bundle is installed in
+   application startup and its scheduler `stop()` is registered in graceful
+   shutdown. The installed callback reads the Railway-preview credential lazily
+   only after the runtime gates and a stored plan pass; production must still
+   instantiate no themed provider runtime.
 5. Deploy the reviewed branch to Railway preview, enable only the preview feature,
    scheduler and database-control gates, and first verify a zero-candidate startup
    and shutdown before authorizing the capped E1 requests.
@@ -464,3 +465,54 @@ engineering work:
 The checkpoint is reached when the plumbing PR is reviewed and merged. A key by
 itself cannot activate this code, and no agent may infer permission to connect or
 test it from the presence of the variable.
+
+## E1 frozen preview bundle and application wiring
+
+The zero-cost configuration checkpoint freezes
+`theme-e1-openai-2026-11-08-v1` as the first plan-bound E1 bundle. It uses Luna
+with low reasoning for fact proposal, question writing and the single eligible
+repair; Sol with medium reasoning for independent fact review, question evidence
+review and coherence/obviousness QA; Sol with low reasoning for at most four
+semantic adjudications; and `text-embedding-3-small` with 512 dimensions for the
+candidate screen. Every operation has its own versioned prompt, strict JSON
+schema, token ceiling, 30-second timeout and zero-retry policy.
+The stored runtime plan must use that exact bundle version as its `planVersion`
+and must match the active budget-policy fingerprint; older or mismatched plans
+fail before the credential callback is reached.
+
+The accompanying `openai-standard-2026-11-08-v1` price snapshot uses the
+published Standard output and embedding rates. For safe admission, uncached
+model input is charged at the higher 30-minute cache-write rate; cached input is
+charged at the cache-read rate. This deliberately avoids assuming a cache or a
+discount before dispatch. A price or model change requires a new immutable
+bundle version and a new regression evaluation.
+
+Application startup now installs the runtime seam, but it remains inert unless
+all of the following are true: Railway names the environment `preview`, both
+theme feature flags and the preview scheduler flag are enabled, every budget and
+scheduler limit is valid, and the durable database runtime control is enabled.
+Only a recovered or newly scheduled job with a hash-valid v2 plan can then reach
+the lazy credential callback. Production performs no runtime-control query and
+constructs no OpenAI client. A disabled database control also constructs no
+client. An empty preview queue starts and shuts down without reading a key.
+
+The duplicate corpus is capped at 512 questions for this first paid envelope.
+The approval path reads one extra row and withholds the candidate if the cap is
+exceeded; it never truncates the corpus and claims a partial duplicate check as
+complete. This bounds the composite QA callback at 540 seconds, including nine
+embedding batches, four semantic adjudications, a repair/evidence pass and
+margin. Preview must therefore configure
+`THEME_PREVIEW_MAX_CALLBACK_MS=540000` and a strictly larger worker lease (the
+initial value is `THEME_PREVIEW_WORKER_LEASE_MS=600000`).
+
+Each proposal slot receives at most 12 passages and 12,000 passage characters.
+Repeated slots over one Wikipedia article deterministically partition the
+article passages for coverage. Only passages actually cited by the accepted
+proposal are carried into fact derivation, whose existing validator rechecks
+their hashes, source binding, freshness and support.
+
+No key was read or set, no Railway variable or database control was changed, and
+no provider request was made in this checkpoint. The next action is the
+owner-attended hookup: review this bundle, enter the separately capped key in
+Railway preview, deploy with the durable control still off, prove zero-candidate
+startup/shutdown, and only then separately authorize the capped paid E1 run.
