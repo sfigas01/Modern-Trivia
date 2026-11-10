@@ -20,6 +20,7 @@ import {
 } from './theme-question-qa';
 
 export const THEME_QUESTION_APPROVAL_VERSION = 'theme-question-approval-v1' as const;
+export const MAX_THEME_QA_CORPUS_QUESTIONS = 512;
 const uuid = z
   .string()
   .uuid()
@@ -82,13 +83,16 @@ function canonical(value: unknown): string {
 function hash(value: unknown): string {
   return createHash('sha256').update(canonical(value)).digest('hex');
 }
-type Corpus = Awaited<ReturnType<typeof loadCorpus>>;
-async function loadCorpus(db: Pool | PoolClient) {
+type Corpus = Awaited<ReturnType<typeof loadThemeQuestionQaCorpus>>;
+export async function loadThemeQuestionQaCorpus(db: Pool | PoolClient) {
   // The caller never supplies comparison rows. Include every ordinary approved or
   // pending question, including player_ai rows, in both the QA and final recheck.
   const rows = await db.query(
-    `SELECT * FROM questions WHERE status IN ('approved', 'pending') ORDER BY id`
+    `SELECT * FROM questions WHERE status IN ('approved', 'pending') ORDER BY id LIMIT $1`,
+    [MAX_THEME_QA_CORPUS_QUESTIONS + 1]
   );
+  if (rows.rows.length > MAX_THEME_QA_CORPUS_QUESTIONS)
+    throw new ThemeQuestionApprovalError('invalid_configuration');
   const questions = rows.rows.map((row: Record<string, unknown>) => ({
     id: String(row.id),
     question: String(row.question),
@@ -316,7 +320,7 @@ export function createPostgresThemeQuestionApprovalRepository(
           preliminaryContext = current;
           return current;
         },
-        loadCorpus: () => loadCorpus(pool),
+        loadCorpus: () => loadThemeQuestionQaCorpus(pool),
         checkQuality: qaOverrides?.checkQuality ?? config.checkQuality,
         detectDuplicates: qaOverrides?.detectDuplicates ?? config.detectDuplicates,
         now: config.now,
@@ -368,7 +372,7 @@ export function createPostgresThemeQuestionApprovalRepository(
             await db.query('ROLLBACK');
             return { status: 'withheld', reason: 'evidence_changed' };
           }
-          const corpus: Corpus = await loadCorpus(db);
+          const corpus: Corpus = await loadThemeQuestionQaCorpus(db);
           if (
             canonical(context) !== canonical(preliminaryContext) ||
             context.evidenceAttemptId !== qa.evidenceAttemptId ||

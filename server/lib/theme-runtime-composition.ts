@@ -27,7 +27,10 @@ import {
   ThemePreparationWorkerError,
   type ThemePreparationWorkerDependencies,
 } from './theme-preparation-worker';
-import { createPostgresThemeQuestionApprovalRepository } from './theme-question-approval';
+import {
+  createPostgresThemeQuestionApprovalRepository,
+  loadThemeQuestionQaCorpus,
+} from './theme-question-approval';
 import { createPostgresThemeQuestionEvidenceReviewRepository } from './theme-question-evidence-review';
 import { createPostgresThemeQuestionGenerationRepository } from './theme-question-generation';
 import { createPostgresThemeQuestionRepairOrchestrator } from './theme-question-repair';
@@ -52,7 +55,7 @@ export type ThemeSourceFirstRepositoryConfig = Readonly<{
   questionGeneration: QuestionGenerationConfig;
   evidenceReview: EvidenceReviewConfig;
   approval: ApprovalConfig;
-  repairQa: ThemeQuestionQaDependencies;
+  repairQa: Pick<ThemeQuestionQaDependencies, 'checkQuality' | 'detectDuplicates' | 'now'>;
 }>;
 
 /** Existing S2-S10 repositories, assembled once so every stage shares one policy set. */
@@ -125,7 +128,11 @@ export function createPostgresThemeSourceFirstRepositories(
       generation: repairGeneration,
       evidenceReview: repairEvidenceReview,
       loadParentContext: (request) => evidenceReview.qaContext(request),
-      qa: config.repairQa,
+      qa: {
+        ...config.repairQa,
+        loadContext: (request) => repairEvidenceReview.qaContext(request),
+        loadCorpus: () => loadThemeQuestionQaCorpus(pool),
+      },
     });
     return Object.freeze({
       factReview,

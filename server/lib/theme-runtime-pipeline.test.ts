@@ -712,6 +712,61 @@ describe('concrete dormant theme pipeline', () => {
     });
   });
 
+  it('uses a bounded proposal passage selection and persists only the cited evidence set', async () => {
+    const f = fixture();
+    const options = slottedOptions(f, [item]);
+    const { context, repositories } = slottedContext(f);
+    const secondPassage = {
+      passageId: '44444444-4444-4444-8444-444444444444',
+      text: 'A second passage is available but not selected.',
+      contentHash: 'b'.repeat(64),
+    };
+    f.repositories.evidencePersistence.persistCapture.mockResolvedValue({
+      documentId: 'document',
+      passageIds: [proposedFact.citations[0].passageId, secondPassage.passageId],
+      created: true,
+    });
+    const selected = {
+      ...options,
+      checkpoints: {
+        ...options.checkpoints,
+        passages: async () => [
+          {
+            passageId: proposedFact.citations[0].passageId,
+            text: 'The fixture passage supports the fact.',
+            contentHash: hash,
+          },
+          secondPassage,
+        ],
+      },
+      proposalSlots: {
+        ...options.proposalSlots!,
+        selectPassages: (_item, passages) => passages.slice(0, 1),
+        proposer: {
+          ...options.proposalSlots!.proposer,
+          invoke: vi.fn(async () => ({
+            value: proposedFact,
+            outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+          })),
+        },
+      },
+    } satisfies ThemeRuntimePipelineOptions;
+    const pipeline = createThemeRuntimePipeline(context, selected);
+
+    await pipeline.retrieve(job, selected.items);
+    await pipeline.extract(job, selected.items);
+
+    expect(selected.proposalSlots.proposer.invoke).toHaveBeenCalledWith(
+      expect.objectContaining({
+        passages: [expect.objectContaining({ passageId: proposedFact.citations[0].passageId })],
+      })
+    );
+    expect(repositories.factDerivation.persistValidatedProposal).toHaveBeenCalledWith(
+      expect.objectContaining({ passageIds: [proposedFact.citations[0].passageId] }),
+      proposedFact
+    );
+  });
+
   it('reuses durable proposal outcomes after pipeline recreation without re-proposing', async () => {
     const f = fixture();
     const options = slottedOptions(f);

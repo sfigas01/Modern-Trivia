@@ -31,7 +31,9 @@ export type ThemePreviewRuntimePipelineBuilder = (
 export type PostgresThemePreviewRuntimeOptions = Readonly<{
   pool: Pool;
   env?: NodeJS.ProcessEnv;
-  repositories: ThemeRuntimeCompositionOptions['repositories'];
+  repositories:
+    | ThemeRuntimeCompositionOptions['repositories']
+    | ((loadedPlan: ThemePreviewLoadedPlan) => ThemeRuntimeCompositionOptions['repositories']);
   buildPipeline: ThemePreviewRuntimePipelineBuilder;
   /** Independently calculated worst-case duration of one pipeline callback. */
   pipelineMaxCallbackMs: number;
@@ -71,7 +73,10 @@ export async function bootstrapPostgresThemePreviewRuntime(
           createPostgresThemePreparationRuntime({
             pool: options.pool,
             budget: configuration.budget,
-            repositories: options.repositories,
+            repositories:
+              typeof options.repositories === 'function'
+                ? options.repositories(loadedPlan)
+                : options.repositories,
             buildPipeline: (context) => options.buildPipeline({ jobId, loadedPlan, context }),
             leaseDurationMs,
             shouldStop,
