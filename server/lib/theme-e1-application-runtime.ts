@@ -28,6 +28,13 @@ export type ThemeE1ApplicationRuntimeOptions = Readonly<{
   reportCode?(code: ThemePreviewSchedulerCode): void;
 }>;
 
+/** The E1 calibration key is isolated from every existing AI-powered feature. */
+export function readThemeE1ApiKey(env: NodeJS.ProcessEnv = process.env): string {
+  const apiKey = env.THEME_E1_OPENAI_API_KEY?.trim();
+  if (!apiKey) throw new TypeError('theme_e1_api_key_missing');
+  return apiKey;
+}
+
 /**
  * Application seam for Railway preview. All static scheduler and durable
  * runtime-control gates run before a plan-bound repository or OpenAI client can
@@ -61,7 +68,7 @@ export async function bootstrapThemeE1ApplicationRuntime(
     reportCode: options.reportCode,
     createClient: () =>
       createThemeOpenAIClient({
-        apiKey: env.AI_INTEGRATIONS_OPENAI_API_KEY ?? '',
+        apiKey: readThemeE1ApiKey(env),
         baseURL: env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       }),
   });

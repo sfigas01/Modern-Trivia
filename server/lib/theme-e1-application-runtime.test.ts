@@ -1,7 +1,10 @@
 import type { Pool } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 
-import { bootstrapThemeE1ApplicationRuntime } from './theme-e1-application-runtime';
+import {
+  bootstrapThemeE1ApplicationRuntime,
+  readThemeE1ApiKey,
+} from './theme-e1-application-runtime';
 
 const enabledPreview = {
   RAILWAY_ENVIRONMENT_NAME: 'preview',
@@ -21,17 +24,36 @@ const enabledPreview = {
 } satisfies NodeJS.ProcessEnv;
 
 function guardedEnv(values: NodeJS.ProcessEnv) {
-  let credentialReads = 0;
+  let e1CredentialReads = 0;
+  let existingCredentialReads = 0;
   const env = new Proxy(values, {
     get(target, property) {
-      if (property === 'AI_INTEGRATIONS_OPENAI_API_KEY') credentialReads += 1;
+      if (property === 'THEME_E1_OPENAI_API_KEY') e1CredentialReads += 1;
+      if (property === 'AI_INTEGRATIONS_OPENAI_API_KEY') existingCredentialReads += 1;
       return Reflect.get(target, property);
     },
   });
-  return { env, credentialReads: () => credentialReads };
+  return {
+    env,
+    e1CredentialReads: () => e1CredentialReads,
+    existingCredentialReads: () => existingCredentialReads,
+  };
 }
 
 describe('E1 application runtime', () => {
+  it('uses only the dedicated E1 credential and fails closed without it', () => {
+    const guarded = guardedEnv({
+      THEME_E1_OPENAI_API_KEY: ' dedicated-preview-key ',
+      AI_INTEGRATIONS_OPENAI_API_KEY: 'existing-generation-key',
+    });
+    expect(readThemeE1ApiKey(guarded.env)).toBe('dedicated-preview-key');
+    expect(guarded.e1CredentialReads()).toBe(1);
+    expect(guarded.existingCredentialReads()).toBe(0);
+    expect(() =>
+      readThemeE1ApiKey({ AI_INTEGRATIONS_OPENAI_API_KEY: 'existing-generation-key' })
+    ).toThrow('theme_e1_api_key_missing');
+  });
+
   it('is inert in production without reading a credential or querying runtime control', async () => {
     const guarded = guardedEnv({ ...enabledPreview, RAILWAY_ENVIRONMENT_NAME: 'production' });
     const query = vi.fn();
@@ -42,7 +64,8 @@ describe('E1 application runtime', () => {
 
     expect(result).toEqual({ started: false, code: 'scheduler_disabled' });
     expect(query).not.toHaveBeenCalled();
-    expect(guarded.credentialReads()).toBe(0);
+    expect(guarded.e1CredentialReads()).toBe(0);
+    expect(guarded.existingCredentialReads()).toBe(0);
   });
 
   it('stops at the durable control gate without reading a credential', async () => {
@@ -55,7 +78,8 @@ describe('E1 application runtime', () => {
 
     expect(result).toEqual({ started: false, code: 'runtime_control_disabled' });
     expect(query).toHaveBeenCalledOnce();
-    expect(guarded.credentialReads()).toBe(0);
+    expect(guarded.e1CredentialReads()).toBe(0);
+    expect(guarded.existingCredentialReads()).toBe(0);
   });
 
   it('starts and stops an empty preview queue without requiring a credential', async () => {
@@ -73,6 +97,7 @@ describe('E1 application runtime', () => {
 
     expect(result.started).toBe(true);
     if (result.started) await result.stop();
-    expect(guarded.credentialReads()).toBe(0);
+    expect(guarded.e1CredentialReads()).toBe(0);
+    expect(guarded.existingCredentialReads()).toBe(0);
   });
 });

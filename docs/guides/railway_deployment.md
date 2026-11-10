@@ -38,7 +38,9 @@ Recommended in the dashboard for `production`: **Settings → Source → Wait fo
 
 ## Variables
 
-Set on the `modern-trivia` service in **each** environment. Names only here; values live in Railway. Never paste values into chat, PRs, issues or logs.
+Set on the `modern-trivia` service in each applicable environment; preview-only
+exceptions are identified below. Names only here; values live in Railway. Never
+paste values into chat, PRs, issues or logs.
 
 | Variable                         | Secret | Value / source                                                       |
 | -------------------------------- | ------ | -------------------------------------------------------------------- |
@@ -50,13 +52,14 @@ Set on the `modern-trivia` service in **each** environment. Names only here; val
 | `GOOGLE_CLIENT_ID`               | yes    | Google OAuth web client                                              |
 | `GOOGLE_CLIENT_SECRET`           | yes    | Google OAuth web client                                              |
 | `AI_INTEGRATIONS_OPENAI_API_KEY` | yes    | Direct OpenAI project key                                            |
+| `THEME_E1_OPENAI_API_KEY`        | yes    | Preview only; separately capped E1 service-account key               |
 | `ADMIN_API_KEY`                  | yes    | Optional; scripted admin access (`openssl rand -hex 32`)             |
 | `ADMIN_API_KEY_USER_ID`          | —      | Optional; the admin's `users.id`                                     |
 | `VITE_MULTIPLAYER`               | —      | `true` (build-time flag)                                             |
 | `VITE_THEME_ROUNDS`              | —      | Unset (off), as on Replit (build-time flag)                          |
 | `THEME_LIVE_GENERATION`          | —      | Unset (off), as on Replit                                            |
 
-`AI_INTEGRATIONS_OPENAI_BASE_URL` stays **unset** so the OpenAI SDK uses its default endpoint. Replit secrets deliberately not carried over: `AI_INTEGRATIONS_OPENAI_BASE_URL` (Replit's OpenAI proxy), `OPENAI_EMBEDDINGS_API_KEY` (no longer read by the code; the direct key covers embeddings) and `GITHUB_PAT` (Replit's Git sync only; revoke it when Replit is decommissioned). Preview and production use separate OpenAI keys in the same budget-capped project. `VITE_*` variables are read when the client is built, so change them and redeploy.
+`AI_INTEGRATIONS_OPENAI_BASE_URL` stays **unset** so the OpenAI SDK uses its default endpoint. Replit secrets deliberately not carried over: `AI_INTEGRATIONS_OPENAI_BASE_URL` (Replit's OpenAI proxy), `OPENAI_EMBEDDINGS_API_KEY` (no longer read by the code; the direct key covers embeddings) and `GITHUB_PAT` (Replit's Git sync only; revoke it when Replit is decommissioned). Existing AI-powered features continue to use `AI_INTEGRATIONS_OPENAI_API_KEY`. The source-first E1 runtime reads only `THEME_E1_OPENAI_API_KEY`, which is set only in preview and belongs to its separately capped evaluation project. `VITE_*` variables are read when the client is built, so change them and redeploy.
 
 ## Sign-in
 
