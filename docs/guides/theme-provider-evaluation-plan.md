@@ -449,9 +449,10 @@ engineering work:
    bundle for every paid operation.
 2. Confirm the E1 limits remain at most 12 candidate attempts and $2.00, and set
    the preview database budget caps and evaluator stop at or below that amount.
-3. Create or select the separately capped Railway-preview OpenAI key. Enter it
-   directly as `AI_INTEGRATIONS_OPENAI_API_KEY` in Railway preview; never paste it
-   into chat, source, Linear, GitHub, logs or a shell command. Keep
+3. Create or select the separately capped Railway-preview OpenAI service-account
+   key. Enter it directly as `THEME_E1_OPENAI_API_KEY` in Railway preview; never
+   paste it into chat, source, Linear, GitHub, logs or a shell command. Existing
+   generation keeps its separate `AI_INTEGRATIONS_OPENAI_API_KEY`. Keep
    `AI_INTEGRATIONS_OPENAI_BASE_URL` unset for the official OpenAI endpoint.
 4. Confirm the reviewed frozen provider/pipeline bundle is installed in
    application startup and its scheduler `stop()` is registered in graceful
