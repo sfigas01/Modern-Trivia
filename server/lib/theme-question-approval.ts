@@ -83,8 +83,8 @@ function canonical(value: unknown): string {
 function hash(value: unknown): string {
   return createHash('sha256').update(canonical(value)).digest('hex');
 }
-type Corpus = Awaited<ReturnType<typeof loadCorpus>>;
-async function loadCorpus(db: Pool | PoolClient) {
+type Corpus = Awaited<ReturnType<typeof loadThemeQuestionQaCorpus>>;
+export async function loadThemeQuestionQaCorpus(db: Pool | PoolClient) {
   // The caller never supplies comparison rows. Include every ordinary approved or
   // pending question, including player_ai rows, in both the QA and final recheck.
   const rows = await db.query(
@@ -320,7 +320,7 @@ export function createPostgresThemeQuestionApprovalRepository(
           preliminaryContext = current;
           return current;
         },
-        loadCorpus: () => loadCorpus(pool),
+        loadCorpus: () => loadThemeQuestionQaCorpus(pool),
         checkQuality: qaOverrides?.checkQuality ?? config.checkQuality,
         detectDuplicates: qaOverrides?.detectDuplicates ?? config.detectDuplicates,
         now: config.now,
@@ -372,7 +372,7 @@ export function createPostgresThemeQuestionApprovalRepository(
             await db.query('ROLLBACK');
             return { status: 'withheld', reason: 'evidence_changed' };
           }
-          const corpus: Corpus = await loadCorpus(db);
+          const corpus: Corpus = await loadThemeQuestionQaCorpus(db);
           if (
             canonical(context) !== canonical(preliminaryContext) ||
             context.evidenceAttemptId !== qa.evidenceAttemptId ||

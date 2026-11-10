@@ -14,6 +14,7 @@ import {
 import {
   createThemeE1PreviewPipelineBuilder,
   createThemeE1RepositoryConfig,
+  loadThemeE1RequiredThemed,
   selectThemeE1ProposalPassages,
 } from './theme-e1-preview-pipeline';
 import { THEME_E1_BUNDLE_VERSION } from './theme-e1-provider-bundle';
@@ -147,6 +148,42 @@ describe('E1 plan-bound pipeline composition', () => {
         transports: {} as never,
       })
     ).toThrow('theme_e1_bundle_mismatch');
+  });
+
+  it('loads the durable themed target while retaining every proposal slot as replacement work', async () => {
+    const query = vi.fn(async () => ({ rows: [{ required_themed: 1 }] }));
+    const allocate = vi.fn(async () => ({ replay: false, allocated: 2 }));
+    const pool = { query } as unknown as Pool;
+    const builder = createThemeE1PreviewPipelineBuilder({
+      pool,
+      expectedBudgetPolicyFingerprint: budgetFingerprint,
+    });
+    const pipeline = builder({
+      jobId: '11111111-1111-4111-8111-111111111111',
+      loadedPlan: { planVersion, plan, holdUntil, planHash },
+      context: {
+        repositories: { proposalSlots: { allocate } } as never,
+        dispatchProvider: vi.fn(),
+        persistSemanticBatch: vi.fn(),
+      },
+      transports: {
+        responses: { create: vi.fn() },
+        embeddings: { create: vi.fn() },
+      } as never,
+    });
+
+    await expect(
+      pipeline.preflight({
+        id: '11111111-1111-4111-8111-111111111111',
+        candidateCeiling: 2,
+      } as never)
+    ).resolves.toEqual({
+      ok: true,
+      requiredThemed: 1,
+      work: [{ key: 'proposal:001' }, { key: 'proposal:002' }],
+    });
+    await expect(loadThemeE1RequiredThemed(pool, 'job-id')).resolves.toBe(1);
+    expect(allocate).toHaveBeenCalledOnce();
   });
 
   it('partitions a bounded passage set deterministically across source slots', () => {

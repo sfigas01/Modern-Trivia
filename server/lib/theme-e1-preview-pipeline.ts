@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
+import type { Pool } from 'pg';
 
 import { THEME_SOURCE_EXTRACTOR_VERSION } from './theme-source-extraction';
 import { createPinnedHttpsTransport } from './theme-source-https';
@@ -145,12 +146,6 @@ export function createThemeE1RepositoryConfig(
       detectDuplicates: unavailableDuplicates,
     },
     repairQa: {
-      loadContext: async () => {
-        throw new TypeError('theme_e1_repair_context_required');
-      },
-      loadCorpus: async () => {
-        throw new TypeError('theme_e1_repair_corpus_required');
-      },
       checkQuality: unavailableQuality,
       detectDuplicates: unavailableDuplicates,
     },
@@ -202,6 +197,20 @@ export type ThemeE1PipelineFactoryOptions = Readonly<{
   expectedBudgetPolicyFingerprint: string;
 }>;
 
+export async function loadThemeE1RequiredThemed(pool: Pick<Pool, 'query'>, jobId: string) {
+  const result = await pool.query<{ required_themed: number }>(
+    `SELECT COALESCE(game.accepted_themed_target, game.themed_question_target)::integer
+            AS required_themed
+       FROM theme_preparation_jobs job
+       JOIN theme_game_sessions game ON game.id = job.game_id
+      WHERE job.id = $1`,
+    [jobId]
+  );
+  const required = Number(result.rows[0]?.required_themed);
+  if (!Number.isInteger(required) || required < 1) throw new TypeError('theme_e1_target_missing');
+  return required;
+}
+
 /** Builds the paid pipeline only after the preview scheduler has loaded a plan. */
 export function createThemeE1PreviewPipelineBuilder(
   options: ThemeE1PipelineFactoryOptions
@@ -220,11 +229,16 @@ export function createThemeE1PreviewPipelineBuilder(
       planVersion: loadedPlan.planVersion,
       holdExpiresAt: loadedPlan.holdUntil,
       items,
-      preflight: async () => ({
-        ok: true,
-        requiredThemed: items.length,
-        work: items.map(({ key }) => ({ key })),
-      }),
+      preflight: async (job) => {
+        const requiredThemed = await loadThemeE1RequiredThemed(options.pool, job.id);
+        return requiredThemed <= items.length && requiredThemed <= job.candidateCeiling
+          ? {
+              ok: true,
+              requiredThemed,
+              work: items.map(({ key }) => ({ key })),
+            }
+          : { ok: false, code: 'runtime_unavailable' };
+      },
       checkpoints: createPostgresThemeRuntimeCheckpoints(options.pool),
       derivation: {
         policy: derivation,

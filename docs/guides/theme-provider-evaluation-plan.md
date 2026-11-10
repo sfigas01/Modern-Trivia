@@ -511,6 +511,14 @@ article passages for coverage. Only passages actually cited by the accepted
 proposal are carried into fact derivation, whose existing validator rechecks
 their hashes, source binding, freshness and support.
 
+The worker's completion target comes from the durable game mix
+(`accepted_themed_target` when present, otherwise `themed_question_target`),
+not from the number of proposal slots. All planned slots remain available as
+bounded replacement attempts, while reservation still requires exactly the
+game's target. An eligible repair also reloads the repaired candidate's evidence
+context and the complete bounded PostgreSQL comparison corpus before rerunning
+QA; it cannot reuse the original candidate's context or bypass duplicate checks.
+
 No key was read or set, no Railway variable or database control was changed, and
 no provider request was made in this checkpoint. The next action is the
 owner-attended hookup: review this bundle, enter the separately capped key in
