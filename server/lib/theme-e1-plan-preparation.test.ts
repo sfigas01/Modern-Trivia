@@ -17,6 +17,7 @@ import {
   type ThemeE1PlanPreparationRepository,
   type ThemeE1PreparationJob,
 } from './theme-e1-plan-preparation';
+import { THEME_E1_BUNDLE_VERSION } from './theme-e1-provider-bundle';
 import { createThemeLiveRuntimePlanWithProposalSlots } from './theme-runtime-plan';
 import { buildWikipediaDiscoveryRequestUrl } from './theme-wikipedia-discovery';
 
@@ -25,8 +26,19 @@ const jobIds = [
   '00000000-0000-4000-8000-000000000002',
   '00000000-0000-4000-8000-000000000003',
 ] as const;
+const gameIds = [
+  '10000000-0000-4000-8000-000000000001',
+  '10000000-0000-4000-8000-000000000002',
+  '10000000-0000-4000-8000-000000000003',
+] as const;
+const roomIds = [
+  '20000000-0000-4000-8000-000000000001',
+  '20000000-0000-4000-8000-000000000002',
+  '20000000-0000-4000-8000-000000000003',
+] as const;
 const now = new Date('2026-11-11T02:00:00.000Z');
-const expiresAt = new Date('2026-11-12T04:00:00.000Z');
+const expiresAt = new Date('2026-11-11T04:00:00.000Z');
+const expectedHoldUntil = new Date(now.getTime() + THEME_E1_MINIMUM_HOLD_MS);
 const budget = {
   currency: 'USD' as const,
   policyVersion: 'e1-preview-usd-2-2026-11-10-v1',
@@ -38,16 +50,22 @@ const budget = {
 function job(jobId: string, index: number): ThemeE1PreparationJob {
   return {
     jobId,
+    gameId: gameIds[index],
+    roomId: roomIds[index],
     status: 'waiting',
     gameStatus: 'waiting',
+    roomStatus: 'lobby',
+    roomPhase: 'LOBBY',
     theme: `SECRET_THEME_${index}`,
     generationOwnerUserId: `account-${index}`,
     candidateCeiling: 50,
     candidatesUsed: 0,
     leaseOwner: null,
     leaseExpiresAt: null,
-    expiresAt,
+    gameExpiresAt: expiresAt,
+    roomExpiresAt: expiresAt,
     planVersion: null,
+    planHoldUntil: null,
   };
 }
 
@@ -147,6 +165,9 @@ describe('E1 plan preparation', () => {
     });
     expect(report.jobs).toHaveLength(3);
     expect(report.jobs.every((entry) => entry.proposalSlots === 4)).toBe(true);
+    expect(report.jobs.every((entry) => entry.holdUntil === expectedHoldUntil.toISOString())).toBe(
+      true
+    );
     expect(repo.apply).not.toHaveBeenCalled();
     expect(discover).toHaveBeenCalledTimes(3);
     expect(JSON.stringify(report)).not.toContain('SECRET_THEME');
@@ -155,16 +176,22 @@ describe('E1 plan preparation', () => {
   it('reads control, selected jobs and queue state in one read-only snapshot', async () => {
     const rows = jobIds.map((jobId, index) => ({
       job_id: jobId,
+      game_id: gameIds[index],
+      room_id: roomIds[index],
       status: 'waiting',
       game_status: 'waiting',
+      room_status: 'lobby',
+      room_phase: 'LOBBY',
       theme: `SECRET_THEME_${index}`,
       generation_owner_user_id: `account-${index}`,
       candidate_ceiling: 50,
       candidates_used: 0,
       lease_owner: null,
       lease_expires_at: null,
-      expires_at: expiresAt,
+      game_expires_at: expiresAt,
+      room_expires_at: expiresAt,
       plan_version: null,
+      plan_hold_until: null,
     }));
     const query = vi.fn(async (sql: string) => {
       if (sql.includes('FROM theme_runtime_control')) return { rows: [{ enabled: false }] };
@@ -193,16 +220,22 @@ describe('E1 plan preparation', () => {
   it('rejects an admitted job whose durable candidate ceiling cannot hold four slots', async () => {
     const rows = jobIds.map((jobId, index) => ({
       job_id: jobId,
+      game_id: gameIds[index],
+      room_id: roomIds[index],
       status: 'waiting',
       game_status: 'waiting',
+      room_status: 'lobby',
+      room_phase: 'LOBBY',
       theme: `SECRET_THEME_${index}`,
       generation_owner_user_id: `account-${index}`,
       candidate_ceiling: index === 1 ? 3 : 50,
       candidates_used: 0,
       lease_owner: null,
       lease_expires_at: null,
-      expires_at: expiresAt,
+      game_expires_at: expiresAt,
+      room_expires_at: expiresAt,
       plan_version: null,
+      plan_hold_until: null,
     }));
     const query = vi.fn(async (sql: string) => {
       if (sql.includes('FROM theme_runtime_control')) return { rows: [{ enabled: false }] };
@@ -254,6 +287,158 @@ describe('E1 plan preparation', () => {
     expect(report.jobs.map((entry) => entry.replay)).toEqual([false, true, false]);
     expect(repo.apply).toHaveBeenCalledOnce();
     expect(repo.apply.mock.calls[0][0]).toHaveLength(3);
+    expect(
+      repo.apply.mock.calls[0][0].every(
+        (plan) => plan.holdUntil.getTime() === expectedHoldUntil.getTime()
+      )
+    ).toBe(true);
+  });
+
+  it('reuses the immutable shared hold deadline when replaying all three plans', async () => {
+    const repo = repository();
+    const originalHold = new Date('2026-11-11T08:00:00.000Z');
+    repo.load.mockResolvedValueOnce({
+      jobs: jobIds.map((jobId, index) => ({
+        ...job(jobId, index),
+        planVersion: THEME_E1_BUNDLE_VERSION,
+        planHoldUntil: originalHold,
+      })),
+      queue: { recoverablePlannedJobs: 3, eligibleUnplannedJobs: 0 },
+    });
+    repo.apply.mockResolvedValueOnce([true, true, true]);
+
+    const report = await prepareThemeE1Plans({
+      repository: repo.value,
+      jobIds,
+      budget,
+      now,
+      apply: true,
+      discover: discover as never,
+    });
+
+    expect(report.jobs.every((entry) => entry.holdUntil === originalHold.toISOString())).toBe(true);
+    expect(
+      repo.apply.mock.calls[0][0].every(
+        (prepared) => prepared.holdUntil.getTime() === originalHold.getTime()
+      )
+    ).toBe(true);
+  });
+
+  it('extends the three locked lobby rooms and games before attaching plans atomically', async () => {
+    const capture = repository();
+    await prepareThemeE1Plans({
+      repository: capture.value,
+      jobIds,
+      budget,
+      now,
+      apply: true,
+      discover: discover as never,
+    });
+    const prepared = capture.apply.mock.calls[0][0];
+    const rows = jobIds.map((jobId, index) => ({
+      job_id: jobId,
+      game_id: gameIds[index],
+      room_id: roomIds[index],
+      status: 'waiting',
+      game_status: 'waiting',
+      room_status: 'lobby',
+      room_phase: 'LOBBY',
+      theme: `SECRET_THEME_${index}`,
+      generation_owner_user_id: `account-${index}`,
+      candidate_ceiling: 50,
+      candidates_used: 0,
+      lease_owner: null,
+      lease_expires_at: null,
+      game_expires_at: expiresAt,
+      room_expires_at: expiresAt,
+      plan_version: null,
+      plan_hold_until: null,
+    }));
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      if (sql.includes('FROM theme_runtime_control')) return { rows: [{ enabled: false }] };
+      if (sql.includes('SELECT job.id AS job_id')) return { rows };
+      if (sql.includes('UPDATE rooms')) return { rows: roomIds.map((id) => ({ id })), rowCount: 3 };
+      if (sql.includes('UPDATE theme_game_sessions'))
+        return { rows: gameIds.map((id) => ({ id })), rowCount: 3 };
+      if (sql.includes('INSERT INTO theme_source_registry_versions'))
+        return {
+          rows: [
+            {
+              source_policy_version: params?.[0],
+              contract_version: params?.[1],
+              manifest: JSON.parse(params?.[2] as string),
+              manifest_hash: params?.[3],
+              created_at: now,
+            },
+          ],
+          rowCount: 1,
+        };
+      if (sql.includes('UPDATE theme_preparation_jobs'))
+        return {
+          rows: [
+            {
+              plan_version: params?.[1],
+              plan_hash: params?.[2],
+              plan_json: params?.[3],
+              plan_hold_until: params?.[4],
+            },
+          ],
+          rowCount: 1,
+        };
+      return { rows: [], rowCount: 0 };
+    });
+    const release = vi.fn();
+    const postgres = createPostgresThemeE1PlanPreparationRepository({
+      connect: async () => ({ query, release }),
+    } as never);
+
+    await expect(postgres.apply(prepared, now)).resolves.toEqual([false, false, false]);
+
+    const calls = query.mock.calls.map(([sql]) => sql);
+    const roomUpdate = calls.findIndex((sql) => sql.includes('UPDATE rooms'));
+    const gameUpdate = calls.findIndex((sql) => sql.includes('UPDATE theme_game_sessions'));
+    const firstPlanUpdate = calls.findIndex((sql) => sql.includes('UPDATE theme_preparation_jobs'));
+    expect(roomUpdate).toBeGreaterThan(-1);
+    expect(gameUpdate).toBeGreaterThan(roomUpdate);
+    expect(firstPlanUpdate).toBeGreaterThan(gameUpdate);
+    expect(query.mock.calls[roomUpdate][1]).toEqual([roomIds, expectedHoldUntil]);
+    expect(query.mock.calls[gameUpdate][1]).toEqual([gameIds, expectedHoldUntil]);
+    expect(calls.at(-1)).toBe('COMMIT');
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a selected game whose linked room is no longer in the lobby', async () => {
+    const rows = jobIds.map((jobId, index) => ({
+      job_id: jobId,
+      game_id: gameIds[index],
+      room_id: roomIds[index],
+      status: 'waiting',
+      game_status: 'waiting',
+      room_status: index === 1 ? 'active' : 'lobby',
+      room_phase: index === 1 ? 'QUESTION' : 'LOBBY',
+      theme: `SECRET_THEME_${index}`,
+      generation_owner_user_id: `account-${index}`,
+      candidate_ceiling: 50,
+      candidates_used: 0,
+      lease_owner: null,
+      lease_expires_at: null,
+      game_expires_at: expiresAt,
+      room_expires_at: expiresAt,
+      plan_version: null,
+      plan_hold_until: null,
+    }));
+    const query = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM theme_runtime_control')) return { rows: [{ enabled: false }] };
+      if (sql.includes('SELECT job.id AS job_id')) return { rows };
+      return { rows: [] };
+    });
+    const release = vi.fn();
+    const postgres = createPostgresThemeE1PlanPreparationRepository({
+      connect: async () => ({ query, release }),
+    } as never);
+
+    await expect(postgres.load(jobIds, now)).rejects.toMatchObject({ code: 'job_ineligible' });
+    expect(query.mock.calls.at(-1)?.[0]).toBe('ROLLBACK');
   });
 
   it('rejects anything other than three distinct explicit job IDs before database access', async () => {

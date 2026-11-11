@@ -48,16 +48,22 @@ export class ThemeE1PlanPreparationError extends Error {
 
 export type ThemeE1PreparationJob = Readonly<{
   jobId: string;
+  gameId: string;
+  roomId: string;
   status: string;
   gameStatus: string;
+  roomStatus: string;
+  roomPhase: string;
   theme: string;
   generationOwnerUserId: string | null;
   candidateCeiling: number;
   candidatesUsed: number;
   leaseOwner: string | null;
   leaseExpiresAt: Date | null;
-  expiresAt: Date;
+  gameExpiresAt: Date;
+  roomExpiresAt: Date;
   planVersion: string | null;
+  planHoldUntil: Date | null;
 }>;
 
 export type ThemeE1PreparationQueue = Readonly<{
@@ -98,6 +104,7 @@ export type ThemeE1PlanPreparationReport = Readonly<{
     jobId: string;
     sourceCount: number;
     proposalSlots: typeof THEME_E1_SLOTS_PER_JOB;
+    holdUntil: string;
     planHash: string;
     replay: boolean;
   }>[];
@@ -105,16 +112,22 @@ export type ThemeE1PlanPreparationReport = Readonly<{
 
 type JobRow = QueryResultRow & {
   job_id: string;
+  game_id: string;
+  room_id: string;
   status: string;
   game_status: string;
+  room_status: string;
+  room_phase: string;
   theme: string;
   generation_owner_user_id: string | null;
   candidate_ceiling: number;
   candidates_used: number;
   lease_owner: string | null;
   lease_expires_at: Date | null;
-  expires_at: Date;
+  game_expires_at: Date;
+  room_expires_at: Date;
   plan_version: string | null;
+  plan_hold_until: Date | null;
 };
 
 function parseJobIds(jobIds: readonly string[]): string[] {
@@ -131,16 +144,22 @@ function parseJobIds(jobIds: readonly string[]): string[] {
 function mapJob(row: JobRow): ThemeE1PreparationJob {
   return {
     jobId: row.job_id,
+    gameId: row.game_id,
+    roomId: row.room_id,
     status: row.status,
     gameStatus: row.game_status,
+    roomStatus: row.room_status,
+    roomPhase: row.room_phase,
     theme: row.theme,
     generationOwnerUserId: row.generation_owner_user_id,
     candidateCeiling: row.candidate_ceiling,
     candidatesUsed: row.candidates_used,
     leaseOwner: row.lease_owner,
     leaseExpiresAt: row.lease_expires_at,
-    expiresAt: row.expires_at,
+    gameExpiresAt: row.game_expires_at,
+    roomExpiresAt: row.room_expires_at,
     planVersion: row.plan_version,
+    planHoldUntil: row.plan_hold_until,
   };
 }
 
@@ -158,31 +177,50 @@ function validateJobs(
         !job.generationOwnerUserId ||
         !ELIGIBLE_JOB_STATUSES.has(job.status) ||
         job.gameStatus !== 'waiting' ||
+        job.roomStatus !== 'lobby' ||
+        job.roomPhase !== 'LOBBY' ||
         job.candidateCeiling < THEME_E1_SLOTS_PER_JOB ||
         job.candidatesUsed !== 0 ||
         job.leaseOwner !== null ||
         job.leaseExpiresAt !== null ||
-        job.expiresAt.getTime() < now.getTime() + THEME_E1_MINIMUM_HOLD_MS ||
+        job.gameExpiresAt.getTime() <= now.getTime() ||
+        job.roomExpiresAt.getTime() <= now.getTime() ||
+        (job.planVersion === null) !== (job.planHoldUntil === null) ||
+        (job.planHoldUntil !== null && job.planHoldUntil.getTime() <= now.getTime()) ||
         (job.planVersion !== null && job.planVersion !== THEME_E1_BUNDLE_VERSION)
     )
   )
     throw new ThemeE1PlanPreparationError('job_ineligible');
-  return jobs as ThemeE1PreparationJob[];
+  const validated = jobs as ThemeE1PreparationJob[];
+  const planned = validated.filter((job) => job.planVersion !== null);
+  if (
+    (planned.length !== 0 && planned.length !== THEME_E1_JOB_COUNT) ||
+    (planned.length === THEME_E1_JOB_COUNT &&
+      planned.some((job) => job.planHoldUntil?.getTime() !== planned[0]?.planHoldUntil?.getTime()))
+  )
+    throw new ThemeE1PlanPreparationError('job_ineligible');
+  return validated;
 }
 
 function sameJob(left: ThemeE1PreparationJob, right: ThemeE1PreparationJob): boolean {
   return (
     left.jobId === right.jobId &&
+    left.gameId === right.gameId &&
+    left.roomId === right.roomId &&
     left.status === right.status &&
     left.gameStatus === right.gameStatus &&
+    left.roomStatus === right.roomStatus &&
+    left.roomPhase === right.roomPhase &&
     left.theme === right.theme &&
     left.generationOwnerUserId === right.generationOwnerUserId &&
     left.candidateCeiling === right.candidateCeiling &&
     left.candidatesUsed === right.candidatesUsed &&
     left.leaseOwner === right.leaseOwner &&
     left.leaseExpiresAt?.getTime() === right.leaseExpiresAt?.getTime() &&
-    left.expiresAt.getTime() === right.expiresAt.getTime() &&
-    left.planVersion === right.planVersion
+    left.gameExpiresAt.getTime() === right.gameExpiresAt.getTime() &&
+    left.roomExpiresAt.getTime() === right.roomExpiresAt.getTime() &&
+    left.planVersion === right.planVersion &&
+    left.planHoldUntil?.getTime() === right.planHoldUntil?.getTime()
   );
 }
 
@@ -201,14 +239,17 @@ async function selectJobs(
   lock: boolean
 ): Promise<JobRow[]> {
   const result = await db.query<JobRow>(
-    `SELECT job.id AS job_id,job.status,game.status AS game_status,game.theme,
+    `SELECT job.id AS job_id,game.id AS game_id,room.id AS room_id,
+            job.status,game.status AS game_status,room.status AS room_status,room.phase AS room_phase,game.theme,
             game.generation_owner_user_id,
-            job.candidate_ceiling,job.candidates_used,job.lease_owner,job.lease_expires_at,game.expires_at,
-            job.plan_version
+            job.candidate_ceiling,job.candidates_used,job.lease_owner,job.lease_expires_at,
+            game.expires_at AS game_expires_at,room.expires_at AS room_expires_at,
+            job.plan_version,job.plan_hold_until
        FROM theme_preparation_jobs job
        JOIN theme_game_sessions game ON game.id=job.game_id
+       JOIN rooms room ON room.id=game.room_id AND room.theme_preparation_game_id=game.id
       WHERE job.id=ANY($1::uuid[])
-      ORDER BY job.id${lock ? ' FOR UPDATE OF job,game' : ''}`,
+      ORDER BY job.id${lock ? ' FOR UPDATE OF job,game,room' : ''}`,
     [jobIds]
   );
   return result.rows;
@@ -229,8 +270,10 @@ async function selectQueue(db: Pick<PoolClient, 'query'>): Promise<ThemeE1Prepar
          AS eligible_unplanned_jobs
      FROM theme_preparation_jobs job
      JOIN theme_game_sessions game ON game.id=job.game_id
+     JOIN rooms room ON room.id=game.room_id AND room.theme_preparation_game_id=game.id
      WHERE game.status NOT IN ('completed','failed','abandoned','expired')
-       AND game.expires_at > clock_timestamp()`
+       AND game.expires_at > clock_timestamp()
+       AND room.status='lobby' AND room.phase='LOBBY' AND room.expires_at > clock_timestamp()`
   );
   const row = result.rows[0];
   return {
@@ -270,6 +313,34 @@ export function createPostgresThemeE1PlanPreparationRepository(
         await assertControlDisabled(db, true);
         const current = validateJobs(ids, await selectJobs(db, ids, true), now);
         if (current.some((job, index) => !sameJob(job, plans[index].job)))
+          throw new ThemeE1PlanPreparationError('job_state_changed');
+
+        const holdUntil = plans[0]?.holdUntil;
+        if (
+          !holdUntil ||
+          plans.some((prepared) => prepared.holdUntil.getTime() !== holdUntil.getTime())
+        )
+          throw new ThemeE1PlanPreparationError('job_state_changed');
+        const roomExtension = await db.query<{ id: string }>(
+          `UPDATE rooms
+              SET expires_at=GREATEST(expires_at,$2),updated_at=clock_timestamp()
+            WHERE id=ANY($1::uuid[])
+              AND status='lobby' AND phase='LOBBY' AND expires_at>clock_timestamp()
+            RETURNING id`,
+          [current.map((job) => job.roomId), holdUntil]
+        );
+        const gameExtension = await db.query<{ id: string }>(
+          `UPDATE theme_game_sessions
+              SET expires_at=GREATEST(expires_at,$2),updated_at=clock_timestamp()
+            WHERE id=ANY($1::uuid[])
+              AND status='waiting' AND expires_at>clock_timestamp()
+            RETURNING id`,
+          [current.map((job) => job.gameId), holdUntil]
+        );
+        if (
+          roomExtension.rowCount !== THEME_E1_JOB_COUNT ||
+          gameExtension.rowCount !== THEME_E1_JOB_COUNT
+        )
           throw new ThemeE1PlanPreparationError('job_state_changed');
 
         const transactionalPool = db as unknown as Pool;
@@ -316,7 +387,7 @@ export async function prepareThemeE1Plans(input: {
   const snapshot = await input.repository.load(jobIds, now);
   const budgetPolicyFingerprint = themeRuntimeBudgetPolicyFingerprint(input.budget);
   const discover = input.discover ?? discoverWikipediaSources;
-  const prepared: ThemeE1PreparedPlan[] = [];
+  const discovered: Pick<ThemeE1PreparedPlan, 'job' | 'plan'>[] = [];
 
   for (const job of snapshot.jobs) {
     let discovery: WikipediaDiscoveryResult;
@@ -343,22 +414,24 @@ export async function prepareThemeE1Plans(input: {
         maximumSlotsPerSource: THEME_E1_SLOTS_PER_JOB,
       })
     );
-    const holdUntil = new Date(job.expiresAt);
-    prepared.push({
-      job,
-      plan,
-      holdUntil,
-      planHash: hashThemeRuntimePlan({
-        planVersion: THEME_E1_BUNDLE_VERSION,
-        plan,
-        holdUntil,
-      }),
-    });
+    discovered.push({ job, plan });
   }
 
-  // Discovery can take time. Recheck eligibility against the current clock at
-  // the write boundary instead of reusing the earlier read-snapshot time.
+  // Discovery can take time, so the full evaluation hold starts at the
+  // preparation boundary rather than at the earlier read snapshot.
   const applyNow = input.now ?? new Date();
+  const holdUntil =
+    snapshot.jobs[0]?.planHoldUntil ?? new Date(applyNow.getTime() + THEME_E1_MINIMUM_HOLD_MS);
+  const prepared: ThemeE1PreparedPlan[] = discovered.map(({ job, plan }) => ({
+    job,
+    plan,
+    holdUntil,
+    planHash: hashThemeRuntimePlan({
+      planVersion: THEME_E1_BUNDLE_VERSION,
+      plan,
+      holdUntil,
+    }),
+  }));
   const replays = input.apply
     ? await input.repository.apply(prepared, applyNow)
     : prepared.map(() => false);
@@ -377,6 +450,7 @@ export async function prepareThemeE1Plans(input: {
       jobId: value.job.jobId,
       sourceCount: value.plan.sources.length,
       proposalSlots: THEME_E1_SLOTS_PER_JOB,
+      holdUntil: value.holdUntil.toISOString(),
       planHash: value.planHash,
       replay: replays[index] ?? false,
     })),
