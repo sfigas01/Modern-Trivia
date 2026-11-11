@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   THEME_E1_CLAIM_EVIDENCE_POLICY,
   THEME_E1_DISCOVERY_POLICY,
+  THEME_E1_MAX_CALLBACKS_PER_SLOT,
+  THEME_E1_MAX_PIPELINE_CALLBACK_MS,
+  THEME_E1_MINIMUM_HOLD_MS,
+  THEME_E1_OPERATOR_MARGIN_MS,
   THEME_E1_SLOTS_PER_JOB,
   assertThemeE1PlanPolicy,
 } from './theme-e1-plan-policy';
@@ -22,7 +26,7 @@ const jobIds = [
   '00000000-0000-4000-8000-000000000003',
 ] as const;
 const now = new Date('2026-11-11T02:00:00.000Z');
-const expiresAt = new Date('2026-11-11T04:00:00.000Z');
+const expiresAt = new Date('2026-11-12T04:00:00.000Z');
 const budget = {
   currency: 'USD' as const,
   policyVersion: 'e1-preview-usd-2-2026-11-10-v1',
@@ -79,6 +83,14 @@ const discover = vi.fn(async ({ theme }: { theme: string }) => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('E1 frozen plan policy', () => {
+  it('sizes the hold for every callback across the complete serialized 3x4 run', () => {
+    expect(THEME_E1_MAX_CALLBACKS_PER_SLOT).toBe(8);
+    expect(THEME_E1_MINIMUM_HOLD_MS).toBe(
+      3 * 4 * 8 * THEME_E1_MAX_PIPELINE_CALLBACK_MS + THEME_E1_OPERATOR_MARGIN_MS
+    );
+    expect(THEME_E1_MINIMUM_HOLD_MS).toBe(14 * 60 * 60 * 1000 + 32 * 60 * 1000);
+  });
+
   it('accepts the exact four-slot policy and rejects an outer version with changed policy', () => {
     const discovery = {
       contractVersion: 'theme-wikipedia-discovery-v1' as const,

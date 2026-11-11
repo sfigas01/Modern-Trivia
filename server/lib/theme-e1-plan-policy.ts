@@ -14,8 +14,18 @@ export const THEME_E1_CLAIM_POLICY_VERSION = 'theme-e1-claim-evidence-2026-11-08
 export const THEME_E1_SLOTS_PER_JOB = 4 as const;
 export const THEME_E1_JOB_COUNT = 3 as const;
 export const THEME_E1_TOTAL_SLOTS = THEME_E1_SLOTS_PER_JOB * THEME_E1_JOB_COUNT;
-/** Three serialized 540-second callbacks plus an eight-minute operator margin. */
-export const THEME_E1_MINIMUM_HOLD_MS = 35 * 60 * 1000;
+/** Independently calculated upper bound for any one pipeline callback. */
+export const THEME_E1_MAX_PIPELINE_CALLBACK_MS = 540_000;
+/** Research, retrieve, extract, generate, review, approve, repair and reapprove. */
+export const THEME_E1_MAX_CALLBACKS_PER_SLOT = 8 as const;
+export const THEME_E1_OPERATOR_MARGIN_MS = 8 * 60 * 1000;
+/** Three serial jobs x four slots x eight callbacks, plus operator margin. */
+export const THEME_E1_MINIMUM_HOLD_MS =
+  THEME_E1_JOB_COUNT *
+    THEME_E1_SLOTS_PER_JOB *
+    THEME_E1_MAX_CALLBACKS_PER_SLOT *
+    THEME_E1_MAX_PIPELINE_CALLBACK_MS +
+  THEME_E1_OPERATOR_MARGIN_MS;
 
 export const THEME_E1_SOURCE_REGISTRY = createWikipediaSourceRegistry(
   THEME_E1_SOURCE_POLICY_VERSION

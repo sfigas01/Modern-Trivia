@@ -541,8 +541,11 @@ accepts exactly three distinct job IDs created through the signed-in-host
 admission flow, verifies the durable runtime control is disabled, and refuses
 jobs that have started candidate work, hold a lease, expired, or already use a
 different plan version. Each selected game must remain in its waiting state with
-at least 35 minutes before expiry, covering three serialized worst-case callbacks
-plus an operator margin.
+at least 14 hours 32 minutes before expiry. That conservative window covers all
+96 callbacks in the complete serialized path: three jobs, four slots per job,
+and research, retrieval, extraction, generation, review, approval, repair and
+reapproval per slot at the 540-second callback bound, plus an eight-minute
+operator margin.
 
 Preparation performs one bounded deterministic Wikipedia discovery per job,
 freezes four proposal slots per theme (12 total), appends the immutable source

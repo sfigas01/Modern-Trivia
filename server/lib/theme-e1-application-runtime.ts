@@ -15,13 +15,7 @@ import {
   createThemeE1RepositoryConfig,
 } from './theme-e1-preview-pipeline';
 import { THEME_E1_BUNDLE_VERSION } from './theme-e1-provider-bundle';
-import { assertThemeE1PlanPolicy } from './theme-e1-plan-policy';
-
-/**
- * Quality + at most nine bounded embedding batches + four semantic reviews +
- * one repair/evidence pass, each with a 30-second provider timeout, plus margin.
- */
-export const THEME_E1_MAX_PIPELINE_CALLBACK_MS = 540_000;
+import { THEME_E1_MAX_PIPELINE_CALLBACK_MS, assertThemeE1PlanPolicy } from './theme-e1-plan-policy';
 
 export type ThemeE1ApplicationRuntimeOptions = Readonly<{
   pool: Pool;
