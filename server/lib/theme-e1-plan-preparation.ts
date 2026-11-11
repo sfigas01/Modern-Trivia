@@ -64,6 +64,8 @@ export type ThemeE1PreparationJob = Readonly<{
   roomExpiresAt: Date;
   planVersion: string | null;
   planHoldUntil: Date | null;
+  lastFailureCode: string | null;
+  activeReservationCount: number;
 }>;
 
 export type ThemeE1PreparationQueue = Readonly<{
@@ -107,6 +109,7 @@ export type ThemeE1PlanPreparationReport = Readonly<{
     holdUntil: string;
     planHash: string;
     replay: boolean;
+    promotedFromShortfall: boolean;
   }>[];
 }>;
 
@@ -128,6 +131,8 @@ type JobRow = QueryResultRow & {
   room_expires_at: Date;
   plan_version: string | null;
   plan_hold_until: Date | null;
+  last_failure_code: string | null;
+  active_reservation_count: string | number;
 };
 
 function parseJobIds(jobIds: readonly string[]): string[] {
@@ -160,7 +165,20 @@ function mapJob(row: JobRow): ThemeE1PreparationJob {
     roomExpiresAt: row.room_expires_at,
     planVersion: row.plan_version,
     planHoldUntil: row.plan_hold_until,
+    lastFailureCode: row.last_failure_code ?? null,
+    activeReservationCount: Number(row.active_reservation_count ?? 0),
   };
+}
+
+function isEligibleJobStatus(job: ThemeE1PreparationJob): boolean {
+  if (ELIGIBLE_JOB_STATUSES.has(job.status)) return true;
+  return (
+    job.status === 'shortfall' &&
+    job.planVersion === null &&
+    job.planHoldUntil === null &&
+    job.lastFailureCode === 'inventory_shortfall' &&
+    job.activeReservationCount === 0
+  );
 }
 
 function validateJobs(
@@ -175,7 +193,7 @@ function validateJobs(
       (job) =>
         !job ||
         !job.generationOwnerUserId ||
-        !ELIGIBLE_JOB_STATUSES.has(job.status) ||
+        !isEligibleJobStatus(job) ||
         job.gameStatus !== 'waiting' ||
         job.roomStatus !== 'lobby' ||
         job.roomPhase !== 'LOBBY' ||
@@ -220,7 +238,9 @@ function sameJob(left: ThemeE1PreparationJob, right: ThemeE1PreparationJob): boo
     left.gameExpiresAt.getTime() === right.gameExpiresAt.getTime() &&
     left.roomExpiresAt.getTime() === right.roomExpiresAt.getTime() &&
     left.planVersion === right.planVersion &&
-    left.planHoldUntil?.getTime() === right.planHoldUntil?.getTime()
+    left.planHoldUntil?.getTime() === right.planHoldUntil?.getTime() &&
+    left.lastFailureCode === right.lastFailureCode &&
+    left.activeReservationCount === right.activeReservationCount
   );
 }
 
@@ -244,7 +264,10 @@ async function selectJobs(
             game.generation_owner_user_id,
             job.candidate_ceiling,job.candidates_used,job.lease_owner,job.lease_expires_at,
             game.expires_at AS game_expires_at,room.expires_at AS room_expires_at,
-            job.plan_version,job.plan_hold_until
+            job.plan_version,job.plan_hold_until,job.last_failure->>'code' AS last_failure_code,
+            (SELECT count(*) FROM theme_question_reservations reservation
+              WHERE reservation.game_id=game.id
+                AND reservation.status IN ('held','selected','displayed')) AS active_reservation_count
        FROM theme_preparation_jobs job
        JOIN theme_game_sessions game ON game.id=job.game_id
        JOIN rooms room ON room.id=game.room_id AND room.theme_preparation_game_id=game.id
@@ -264,7 +287,13 @@ async function selectQueue(db: Pick<PoolClient, 'query'>): Promise<ThemeE1Prepar
        count(*) FILTER (WHERE job.status IN ('queued','waiting') AND job.plan_json IS NOT NULL
          AND (job.lease_owner IS NULL OR job.lease_expires_at <= clock_timestamp()))
          AS recoverable_planned_jobs,
-       count(*) FILTER (WHERE job.status IN ('queued','waiting') AND job.plan_json IS NULL
+       count(*) FILTER (WHERE
+         (job.status IN ('queued','waiting') OR
+           (job.status='shortfall' AND job.last_failure->>'code'='inventory_shortfall'
+             AND NOT EXISTS (SELECT 1 FROM theme_question_reservations reservation
+               WHERE reservation.game_id=game.id
+                 AND reservation.status IN ('held','selected','displayed'))))
+         AND job.plan_json IS NULL
          AND job.candidates_used=0 AND job.lease_owner IS NULL
          AND game.status='waiting' AND game.generation_owner_user_id IS NOT NULL)
          AS eligible_unplanned_jobs
@@ -342,6 +371,30 @@ export function createPostgresThemeE1PlanPreparationRepository(
           gameExtension.rowCount !== THEME_E1_JOB_COUNT
         )
           throw new ThemeE1PlanPreparationError('job_state_changed');
+
+        const shortfallIds = current
+          .filter((job) => job.status === 'shortfall')
+          .map((job) => job.jobId);
+        if (shortfallIds.length) {
+          const promotion = await db.query<{ id: string }>(
+            `UPDATE theme_preparation_jobs AS job
+                SET status='waiting',public_stage='paused',last_failure=NULL,
+                    updated_at=clock_timestamp()
+              WHERE job.id=ANY($1::uuid[]) AND job.status='shortfall'
+                AND job.candidates_used=0 AND job.lease_owner IS NULL
+                AND job.lease_expires_at IS NULL AND job.plan_version IS NULL
+                AND job.plan_hash IS NULL AND job.plan_json IS NULL
+                AND job.plan_hold_until IS NULL
+                AND job.last_failure->>'code'='inventory_shortfall'
+                AND NOT EXISTS (SELECT 1 FROM theme_question_reservations reservation
+                  WHERE reservation.game_id=job.game_id
+                    AND reservation.status IN ('held','selected','displayed'))
+              RETURNING job.id`,
+            [shortfallIds]
+          );
+          if (promotion.rowCount !== shortfallIds.length)
+            throw new ThemeE1PlanPreparationError('job_state_changed');
+        }
 
         const transactionalPool = db as unknown as Pool;
         await createPostgresThemeSourceRegistryRepository(transactionalPool).append(
@@ -453,6 +506,7 @@ export async function prepareThemeE1Plans(input: {
       holdUntil: value.holdUntil.toISOString(),
       planHash: value.planHash,
       replay: replays[index] ?? false,
+      promotedFromShortfall: value.job.status === 'shortfall',
     })),
   };
 }
