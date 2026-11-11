@@ -230,11 +230,13 @@ export function createThemeE1PreviewPipelineBuilder(
       holdExpiresAt: loadedPlan.holdUntil,
       items,
       preflight: async (job) => {
-        const requiredThemed = await loadThemeE1RequiredThemed(options.pool, job.id);
-        return requiredThemed <= items.length && requiredThemed <= job.candidateCeiling
+        await loadThemeE1RequiredThemed(options.pool, job.id);
+        const requiredThemed = items.length;
+        return requiredThemed <= job.candidateCeiling
           ? {
               ok: true,
               requiredThemed,
+              executionMode: 'evaluation',
               work: items.map(({ key }) => ({ key })),
             }
           : { ok: false, code: 'runtime_unavailable' };

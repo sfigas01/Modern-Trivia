@@ -42,6 +42,7 @@ export type ThemePreparationFailureCode =
 
 export type ThemePreparationWorkerResult =
   | Readonly<{ status: 'ready'; jobId: string; approved: number }>
+  | Readonly<{ status: 'completed'; jobId: string; approved: number }>
   | Readonly<{ status: 'paused'; jobId: string; code: ThemePreparationFailureCode }>
   | Readonly<{ status: 'ignored'; jobId: string; reason: 'not_runnable' | 'lease_unavailable' }>;
 
@@ -59,10 +60,13 @@ export class ThemePreparationWorkerError extends Error {
 export interface ThemePreparationWorkerDependencies {
   lifecycle: ThemeLifecycleRepository;
   /** Validates complete S11A backups plus authoritative runtime policy. */
-  preflight(
-    job: ThemeJobRecord
-  ): Promise<
-    | Readonly<{ ok: true; requiredThemed: number; work: readonly ThemePreparationWorkItem[] }>
+  preflight(job: ThemeJobRecord): Promise<
+    | Readonly<{
+        ok: true;
+        requiredThemed: number;
+        work: readonly ThemePreparationWorkItem[];
+        executionMode?: 'gameplay' | 'evaluation';
+      }>
     | Readonly<{ ok: false; code: 'runtime_unavailable' | 'inventory_shortfall' }>
   >;
   /** Runs source research after recovery has resolved any earlier dispatch. */
@@ -221,7 +225,12 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         }
         const preflight = await dependencies.preflight(job);
         if (!preflight.ok) throw new ThemePreparationWorkerError(preflight.code, false);
-        if (preflight.requiredThemed < 1 || preflight.work.length < preflight.requiredThemed)
+        const evaluation = preflight.executionMode === 'evaluation';
+        if (
+          preflight.requiredThemed < 1 ||
+          preflight.work.length < preflight.requiredThemed ||
+          (evaluation && preflight.work.length !== preflight.requiredThemed)
+        )
           throw new ThemePreparationWorkerError('inventory_shortfall', false);
 
         // Recovery must resolve or reconcile an earlier physical dispatch
@@ -294,10 +303,27 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
             }
           }
           if (decision.status === 'approved') approved.push(decision.approval);
-          if (approved.length === preflight.requiredThemed) break;
+          if (!evaluation && approved.length === preflight.requiredThemed) break;
         }
 
         job = await transition(job, claim, 'semantic_check');
+        if (evaluation) {
+          const completed = await dependencies.lifecycle.terminalizeJob({
+            jobId: job.id,
+            expectedStatus: job.status,
+            status: 'completed',
+            publicStage: publicStageForThemeJob('completed'),
+            now: now(),
+            claimToken: claim,
+          });
+          if (!completed)
+            throw new ThemePreparationWorkerError(
+              'preparation_failed',
+              false,
+              'Evaluation completion lost its fenced state'
+            );
+          return { status: 'completed', jobId, approved: approved.length };
+        }
         if (approved.length < preflight.requiredThemed)
           throw new ThemePreparationWorkerError('inventory_shortfall', false);
         job = await transition(job, claim, 'reserving');

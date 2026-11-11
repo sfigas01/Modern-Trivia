@@ -555,3 +555,12 @@ a prerequisite; discovery failures withhold the entire apply operation.
 The runtime independently rechecks the frozen E1 source registry, discovery,
 claim-evidence and four-slot policies. Merely labeling a changed plan with the
 E1 bundle version cannot bypass that check.
+
+E1 plans execute in an explicit evaluation mode. The worker processes every
+proposal slot and preserves pass, fail and withhold outcomes even when fewer
+than four questions pass review. It then terminalizes the evaluation job as
+completed without creating gameplay reservations. The enclosing admitted game
+therefore remains unstartable; a four-slot calibration can never be mistaken for
+a prepared 30-, 45- or 60-question game. Plan preparation also verifies each
+job's durable candidate ceiling can hold all four evaluation slots before a plan
+is attached.

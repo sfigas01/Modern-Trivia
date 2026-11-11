@@ -177,6 +177,8 @@ export interface ThemeLifecycleRepository {
     status: ThemeTerminalJobStatus;
     publicStage: ThemePublicStage;
     now: Date;
+    /** Optional worker fence; service-level terminalization remains owner-controlled. */
+    claimToken?: string;
   }): Promise<ThemeJobRecord | null>;
 }
 
@@ -212,7 +214,15 @@ const LEGAL_JOB_TRANSITIONS: Readonly<Record<ThemeJobStatus, readonly ThemeJobSt
   writing: ['reviewing', 'waiting', 'failed', 'canceled', 'expired'],
   reviewing: ['qa', 'waiting', 'failed', 'canceled', 'expired'],
   qa: ['semantic_check', 'waiting', 'failed', 'canceled', 'expired'],
-  semantic_check: ['reserving', 'shortfall', 'waiting', 'failed', 'canceled', 'expired'],
+  semantic_check: [
+    'reserving',
+    'shortfall',
+    'waiting',
+    'completed',
+    'failed',
+    'canceled',
+    'expired',
+  ],
   reserving: ['ready', 'shortfall', 'waiting', 'failed', 'canceled', 'expired'],
   ready: ['waiting', 'completed', 'failed', 'canceled', 'expired'],
   shortfall: ['reserving', 'waiting', 'failed', 'canceled', 'expired'],
@@ -1017,6 +1027,8 @@ export function createPostgresThemeLifecycleRepository(
                   lease_owner = NULL, lease_expires_at = NULL, updated_at = clock_timestamp()
             WHERE job.id = $1 AND job.status = $4
               AND job.status <> ALL($5::varchar[])
+              AND ($6::varchar IS NULL OR
+                   (job.lease_owner = $6 AND job.lease_expires_at > clock_timestamp()))
           RETURNING job.*`,
           [
             input.jobId,
@@ -1024,6 +1036,7 @@ export function createPostgresThemeLifecycleRepository(
             input.publicStage,
             input.expectedStatus,
             THEME_TERMINAL_JOB_STATUSES,
+            input.claimToken ?? null,
           ]
         );
         return result.rows[0] ? mapJob(result.rows[0]) : null;

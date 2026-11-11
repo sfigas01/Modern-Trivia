@@ -38,6 +38,7 @@ function job(jobId: string, index: number): ThemeE1PreparationJob {
     gameStatus: 'waiting',
     theme: `SECRET_THEME_${index}`,
     generationOwnerUserId: `account-${index}`,
+    candidateCeiling: 50,
     candidatesUsed: 0,
     leaseOwner: null,
     leaseExpiresAt: null,
@@ -146,6 +147,7 @@ describe('E1 plan preparation', () => {
       game_status: 'waiting',
       theme: `SECRET_THEME_${index}`,
       generation_owner_user_id: `account-${index}`,
+      candidate_ceiling: 50,
       candidates_used: 0,
       lease_owner: null,
       lease_expires_at: null,
@@ -173,6 +175,35 @@ describe('E1 plan preparation', () => {
     expect(query.mock.calls.map(([sql]) => sql).join('\n')).not.toMatch(
       /INSERT|UPDATE|DELETE|THEME_E1_OPENAI_API_KEY/i
     );
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it('rejects an admitted job whose durable candidate ceiling cannot hold four slots', async () => {
+    const rows = jobIds.map((jobId, index) => ({
+      job_id: jobId,
+      status: 'waiting',
+      game_status: 'waiting',
+      theme: `SECRET_THEME_${index}`,
+      generation_owner_user_id: `account-${index}`,
+      candidate_ceiling: index === 1 ? 3 : 50,
+      candidates_used: 0,
+      lease_owner: null,
+      lease_expires_at: null,
+      expires_at: expiresAt,
+      plan_version: null,
+    }));
+    const query = vi.fn(async (sql: string) => {
+      if (sql.includes('FROM theme_runtime_control')) return { rows: [{ enabled: false }] };
+      if (sql.includes('SELECT job.id AS job_id')) return { rows };
+      return { rows: [] };
+    });
+    const release = vi.fn();
+    const postgres = createPostgresThemeE1PlanPreparationRepository({
+      connect: async () => ({ query, release }),
+    } as never);
+
+    await expect(postgres.load(jobIds, now)).rejects.toMatchObject({ code: 'job_ineligible' });
+    expect(query.mock.calls.at(-1)?.[0]).toBe('ROLLBACK');
     expect(release).toHaveBeenCalledOnce();
   });
 

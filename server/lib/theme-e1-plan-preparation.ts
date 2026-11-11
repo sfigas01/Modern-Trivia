@@ -52,6 +52,7 @@ export type ThemeE1PreparationJob = Readonly<{
   gameStatus: string;
   theme: string;
   generationOwnerUserId: string | null;
+  candidateCeiling: number;
   candidatesUsed: number;
   leaseOwner: string | null;
   leaseExpiresAt: Date | null;
@@ -108,6 +109,7 @@ type JobRow = QueryResultRow & {
   game_status: string;
   theme: string;
   generation_owner_user_id: string | null;
+  candidate_ceiling: number;
   candidates_used: number;
   lease_owner: string | null;
   lease_expires_at: Date | null;
@@ -133,6 +135,7 @@ function mapJob(row: JobRow): ThemeE1PreparationJob {
     gameStatus: row.game_status,
     theme: row.theme,
     generationOwnerUserId: row.generation_owner_user_id,
+    candidateCeiling: row.candidate_ceiling,
     candidatesUsed: row.candidates_used,
     leaseOwner: row.lease_owner,
     leaseExpiresAt: row.lease_expires_at,
@@ -155,6 +158,7 @@ function validateJobs(
         !job.generationOwnerUserId ||
         !ELIGIBLE_JOB_STATUSES.has(job.status) ||
         job.gameStatus !== 'waiting' ||
+        job.candidateCeiling < THEME_E1_SLOTS_PER_JOB ||
         job.candidatesUsed !== 0 ||
         job.leaseOwner !== null ||
         job.leaseExpiresAt !== null ||
@@ -173,6 +177,7 @@ function sameJob(left: ThemeE1PreparationJob, right: ThemeE1PreparationJob): boo
     left.gameStatus === right.gameStatus &&
     left.theme === right.theme &&
     left.generationOwnerUserId === right.generationOwnerUserId &&
+    left.candidateCeiling === right.candidateCeiling &&
     left.candidatesUsed === right.candidatesUsed &&
     left.leaseOwner === right.leaseOwner &&
     left.leaseExpiresAt?.getTime() === right.leaseExpiresAt?.getTime() &&
@@ -198,7 +203,7 @@ async function selectJobs(
   const result = await db.query<JobRow>(
     `SELECT job.id AS job_id,job.status,game.status AS game_status,game.theme,
             game.generation_owner_user_id,
-            job.candidates_used,job.lease_owner,job.lease_expires_at,game.expires_at,
+            job.candidate_ceiling,job.candidates_used,job.lease_owner,job.lease_expires_at,game.expires_at,
             job.plan_version
        FROM theme_preparation_jobs job
        JOIN theme_game_sessions game ON game.id=job.game_id
