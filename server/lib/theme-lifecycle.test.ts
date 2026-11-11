@@ -227,6 +227,10 @@ class MemoryRepository implements ThemeLifecycleRepository {
       !this.job ||
       this.job.id !== input.jobId ||
       this.job.status !== input.expectedStatus ||
+      (input.claimToken !== undefined &&
+        (this.job.leaseOwner !== input.claimToken ||
+          !this.job.leaseExpiresAt ||
+          this.job.leaseExpiresAt <= input.now)) ||
       ['completed', 'failed', 'canceled', 'expired'].includes(this.job.status)
     ) {
       return null;
@@ -424,6 +428,7 @@ describe('theme job state policy and public projection', () => {
     await service.acquireLease(JOB_ID, 10_000);
 
     expect(canTransitionThemeJob('queued', 'researching')).toBe(true);
+    expect(canTransitionThemeJob('semantic_check', 'completed')).toBe(true);
     expect(publicStageForThemeJob('researching')).toBe('researching');
     expect((await service.transitionJob(JOB_ID, 'claim-a', 'researching')).status).toBe(
       'researching'

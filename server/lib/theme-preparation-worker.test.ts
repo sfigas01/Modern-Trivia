@@ -53,7 +53,19 @@ function harness(
       current = { ...current, status: input.status, publicStage: input.publicStage };
       return current;
     }),
-    terminalizeJob: vi.fn(),
+    terminalizeJob: vi.fn(async (input) => {
+      if (current.status !== input.expectedStatus) return null;
+      transitions.push(input.status);
+      current = {
+        ...current,
+        status: input.status,
+        publicStage: input.publicStage,
+        completedAt: input.now,
+        leaseOwner: null,
+        leaseExpiresAt: null,
+      };
+      return current;
+    }),
   };
   const calls: string[] = [];
   const dependencies: ThemePreparationWorkerDependencies = {
@@ -145,6 +157,49 @@ describe('theme preparation worker', () => {
       'reserving',
       'ready',
     ]);
+  });
+
+  it('completes every evaluation item without creating gameplay reservations', async () => {
+    const approve = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'withheld', repairEligible: false })
+      .mockResolvedValueOnce({
+        status: 'approved',
+        approval: { itemKey: 'fact-2', candidateId: 'candidate-fact-2', questionId: 'question-2' },
+      });
+    const h = harness({
+      preflight: vi.fn(async () => ({
+        ok: true,
+        requiredThemed: 2,
+        executionMode: 'evaluation' as const,
+        work: [{ key: 'fact-1' }, { key: 'fact-2' }],
+      })),
+      generate: vi.fn(async (_job, item) => ({
+        itemKey: item.key,
+        candidateId: `candidate-${item.key}`,
+      })),
+      approve,
+    });
+
+    await expect(h.worker.run(JOB_ID)).resolves.toEqual({
+      status: 'completed',
+      jobId: JOB_ID,
+      approved: 1,
+    });
+    expect(h.dependencies.generate).toHaveBeenCalledTimes(2);
+    expect(h.dependencies.review).toHaveBeenCalledTimes(2);
+    expect(approve).toHaveBeenCalledTimes(2);
+    expect(h.dependencies.reserveApproved).not.toHaveBeenCalled();
+    expect(h.lifecycle.terminalizeJob).toHaveBeenCalledWith({
+      jobId: JOB_ID,
+      expectedStatus: 'semantic_check',
+      status: 'completed',
+      publicStage: 'ready',
+      now: NOW,
+      claimToken: 'claim',
+    });
+    expect(h.transitions).not.toContain('reserving');
+    expect(h.transitions.at(-1)).toBe('completed');
   });
 
   it('makes no paid-stage call when backups or runtime policy fail preflight', async () => {

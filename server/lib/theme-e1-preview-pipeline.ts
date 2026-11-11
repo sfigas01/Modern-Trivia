@@ -229,9 +229,11 @@ export function createThemeE1PreviewPipelineBuilder(
       planVersion: loadedPlan.planVersion,
       holdExpiresAt: loadedPlan.holdUntil,
       items,
+      executionMode: 'evaluation',
       preflight: async (job) => {
-        const requiredThemed = await loadThemeE1RequiredThemed(options.pool, job.id);
-        return requiredThemed <= items.length && requiredThemed <= job.candidateCeiling
+        await loadThemeE1RequiredThemed(options.pool, job.id);
+        const requiredThemed = items.length;
+        return requiredThemed <= job.candidateCeiling
           ? {
               ok: true,
               requiredThemed,

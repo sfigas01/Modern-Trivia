@@ -150,8 +150,8 @@ describe('E1 plan-bound pipeline composition', () => {
     ).toThrow('theme_e1_bundle_mismatch');
   });
 
-  it('loads the durable themed target while retaining every proposal slot as replacement work', async () => {
-    const query = vi.fn(async () => ({ rows: [{ required_themed: 1 }] }));
+  it('runs every proposal slot as evaluation work without claiming gameplay readiness', async () => {
+    const query = vi.fn(async () => ({ rows: [{ required_themed: 30 }] }));
     const allocate = vi.fn(async () => ({ replay: false, allocated: 2 }));
     const pool = { query } as unknown as Pool;
     const builder = createThemeE1PreviewPipelineBuilder({
@@ -179,10 +179,11 @@ describe('E1 plan-bound pipeline composition', () => {
       } as never)
     ).resolves.toEqual({
       ok: true,
-      requiredThemed: 1,
+      requiredThemed: 2,
+      executionMode: 'evaluation',
       work: [{ key: 'proposal:001' }, { key: 'proposal:002' }],
     });
-    await expect(loadThemeE1RequiredThemed(pool, 'job-id')).resolves.toBe(1);
+    await expect(loadThemeE1RequiredThemed(pool, 'job-id')).resolves.toBe(30);
     expect(allocate).toHaveBeenCalledOnce();
   });
 

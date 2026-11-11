@@ -525,3 +525,49 @@ no provider request was made in this checkpoint. The next action is the
 owner-attended hookup: review this bundle, enter the separately capped key in
 Railway preview, deploy with the durable control still off, prove zero-candidate
 startup/shutdown, and only then separately authorize the capped paid E1 run.
+
+## E1 preview plan preparation
+
+The operator command `npm run theme:e1:prepare -- --job <uuid> --job <uuid>
+--job <uuid>` is the only supported path for attaching the three E1 plans. It is
+dry-run by default. Add `--apply` only after the dry-run report is reviewed and
+the owner explicitly authorizes the preview database write.
+
+The command requires `THEME_EVALUATION_ENVIRONMENT=preview` and
+`THEME_EVALUATION_DATABASE_URL`; it never falls back to the application's
+`DATABASE_URL`. Supply the same non-secret USD budget configuration used by the
+preview deployment so the immutable plan records the expected fingerprint. It
+accepts exactly three distinct job IDs created through the signed-in-host
+admission flow, verifies the durable runtime control is disabled, and refuses
+jobs that have started candidate work, hold a lease, expired, or already use a
+different plan version. Each selected game must remain in its waiting state with
+its linked room still in the lobby. Dry-run reports the intended shared hold
+deadline without writing it. Apply locks the three jobs, games, and rooms, then
+extends both game and room expiry to at least 14 hours 32 minutes from the
+post-discovery preparation boundary; `GREATEST` preserves any later existing
+expiry. That conservative window covers all 96 callbacks in the complete
+serialized path: three jobs, four slots per job, and research, retrieval,
+extraction, generation, review, approval, repair and reapproval per slot at the
+540-second callback bound, plus an eight-minute operator margin.
+
+Preparation performs one bounded deterministic Wikipedia discovery per job,
+freezes four proposal slots per theme (12 total), appends the immutable source
+registry, extends the selected preview lobby/game lifetimes, and attaches all
+three plans in one database transaction. Its output is answer-redacted and
+contains only job IDs, counts, the shared hold deadline, plan hashes and policy
+identifiers. It does not import the E1 credential, construct an OpenAI client,
+enable the scheduler or authorize a provider request. Wikipedia availability is
+a prerequisite; discovery failures withhold the entire apply operation.
+
+The runtime independently rechecks the frozen E1 source registry, discovery,
+claim-evidence and four-slot policies. Merely labeling a changed plan with the
+E1 bundle version cannot bypass that check.
+
+E1 plans execute in an explicit evaluation mode. The worker processes every
+proposal slot and preserves pass, fail and withhold outcomes even when fewer
+than four questions pass review. It then terminalizes the evaluation job as
+completed without creating gameplay reservations. The enclosing admitted game
+therefore remains unstartable; a four-slot calibration can never be mistaken for
+a prepared 30-, 45- or 60-question game. Plan preparation also verifies each
+job's durable candidate ceiling can hold all four evaluation slots before a plan
+is attached.
