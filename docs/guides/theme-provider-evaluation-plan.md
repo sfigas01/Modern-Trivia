@@ -525,3 +525,33 @@ no provider request was made in this checkpoint. The next action is the
 owner-attended hookup: review this bundle, enter the separately capped key in
 Railway preview, deploy with the durable control still off, prove zero-candidate
 startup/shutdown, and only then separately authorize the capped paid E1 run.
+
+## E1 preview plan preparation
+
+The operator command `npm run theme:e1:prepare -- --job <uuid> --job <uuid>
+--job <uuid>` is the only supported path for attaching the three E1 plans. It is
+dry-run by default. Add `--apply` only after the dry-run report is reviewed and
+the owner explicitly authorizes the preview database write.
+
+The command requires `THEME_EVALUATION_ENVIRONMENT=preview` and
+`THEME_EVALUATION_DATABASE_URL`; it never falls back to the application's
+`DATABASE_URL`. Supply the same non-secret USD budget configuration used by the
+preview deployment so the immutable plan records the expected fingerprint. It
+accepts exactly three distinct job IDs created through the signed-in-host
+admission flow, verifies the durable runtime control is disabled, and refuses
+jobs that have started candidate work, hold a lease, expired, or already use a
+different plan version. Each selected game must remain in its waiting state with
+at least 35 minutes before expiry, covering three serialized worst-case callbacks
+plus an operator margin.
+
+Preparation performs one bounded deterministic Wikipedia discovery per job,
+freezes four proposal slots per theme (12 total), appends the immutable source
+registry, and attaches all three plans in one database transaction. Its output
+is answer-redacted and contains only job IDs, counts, plan hashes and policy
+identifiers. It does not import the E1 credential, construct an OpenAI client,
+enable the scheduler or authorize a provider request. Wikipedia availability is
+a prerequisite; discovery failures withhold the entire apply operation.
+
+The runtime independently rechecks the frozen E1 source registry, discovery,
+claim-evidence and four-slot policies. Merely labeling a changed plan with the
+E1 bundle version cannot bypass that check.

@@ -17,6 +17,7 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx script/migrate.ts",
     "db:seed": "tsx script/seed-questions.ts",
+    "theme:e1:prepare": "tsx script/theme-e1-prepare.ts",
     "audit:questions": "node --import tsx script/question-quality-audit.ts",
     "audit:questions:strict": "node --import tsx script/question-quality-audit.ts --fail-on-high",
     "sweep:questions": "node --import tsx script/quality-sweep.ts",

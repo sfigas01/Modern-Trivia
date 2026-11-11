@@ -15,6 +15,7 @@ import {
   createThemeE1RepositoryConfig,
 } from './theme-e1-preview-pipeline';
 import { THEME_E1_BUNDLE_VERSION } from './theme-e1-provider-bundle';
+import { assertThemeE1PlanPolicy } from './theme-e1-plan-policy';
 
 /**
  * Quality + at most nine bounded embedding batches + four semantic reviews +
@@ -53,7 +54,7 @@ export async function bootstrapThemeE1ApplicationRuntime(
     pool: options.pool,
     env,
     repositories: (loadedPlan) => {
-      const plan = themeLiveRuntimePlanV2Schema.parse(loadedPlan.plan);
+      const plan = assertThemeE1PlanPolicy(themeLiveRuntimePlanV2Schema.parse(loadedPlan.plan));
       if (loadedPlan.planVersion !== THEME_E1_BUNDLE_VERSION)
         throw new TypeError('theme_e1_bundle_mismatch');
       if (plan.budgetPolicyFingerprint !== expectedBudgetPolicyFingerprint)
