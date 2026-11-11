@@ -798,6 +798,42 @@ describe('concrete dormant theme pipeline', () => {
     expect(proposalSlots.loadOutcome).toHaveBeenCalledTimes(7);
   });
 
+  it('withholds an adverse evaluation fact review and continues later slots', async () => {
+    const f = fixture();
+    const options = { ...slottedOptions(f), executionMode: 'evaluation' as const };
+    const { context, repositories } = slottedContext(f, (slotKey) => `fact-${slotKey}`);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const factReviewOutcomes = new Map<string, 'fail' | 'pass'>();
+    repositories.factReview.review.mockImplementation(async (request) => {
+      const prior = factReviewOutcomes.get(request.attemptId);
+      const verdict = prior ?? (factReviewOutcomes.size === 0 ? 'fail' : 'pass');
+      factReviewOutcomes.set(request.attemptId, verdict);
+      return { status: 'reviewed', verdict };
+    });
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    });
+
+    await pipeline.retrieve(job, options.items);
+    await expect(pipeline.extract(job, options.items)).resolves.toBeUndefined();
+    await expect(pipeline.generate(job, options.items[0])).resolves.toEqual({
+      status: 'withheld',
+    });
+    await expect(pipeline.generate(job, options.items[1])).resolves.toMatchObject({
+      status: 'generated',
+      candidate: { itemKey: 'proposal:002' },
+    });
+    expect(repositories.factReview.review).toHaveBeenCalledTimes(4);
+    expect(f.repositories.questionGeneration.generate).toHaveBeenCalledOnce();
+  });
+
   it('withholds a later slot that proposes a duplicate canonical scope', async () => {
     const f = fixture();
     const options = slottedOptions(f);

@@ -229,6 +229,7 @@ export function createThemeE1PreviewPipelineBuilder(
       planVersion: loadedPlan.planVersion,
       holdExpiresAt: loadedPlan.holdUntil,
       items,
+      executionMode: 'evaluation',
       preflight: async (job) => {
         await loadThemeE1RequiredThemed(options.pool, job.id);
         const requiredThemed = items.length;
@@ -236,7 +237,6 @@ export function createThemeE1PreviewPipelineBuilder(
           ? {
               ok: true,
               requiredThemed,
-              executionMode: 'evaluation',
               work: items.map(({ key }) => ({ key })),
             }
           : { ok: false, code: 'runtime_unavailable' };

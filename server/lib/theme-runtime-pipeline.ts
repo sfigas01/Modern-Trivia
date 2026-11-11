@@ -165,6 +165,8 @@ export type ThemeRuntimePipelineOptions = Readonly<{
   /** Durable plan deadline used in every budget replay; never derive this from process time. */
   holdExpiresAt: Date;
   items: readonly ThemeRuntimeSourceItem[];
+  /** Evaluation exhausts every bounded item and never creates gameplay readiness. */
+  executionMode?: 'gameplay' | 'evaluation';
   preflight: ThemePreparationWorkerDependencies['preflight'];
   checkpoints: ThemeRuntimeCheckpoints;
   derivation: Omit<
@@ -572,6 +574,12 @@ export function createThemeRuntimePipeline(
         ),
       (input) => dispatch(job, item, 'fact-review', 'review', providers.factReviewer, input)
     );
+    if (
+      options.executionMode === 'evaluation' &&
+      review.status === 'reviewed' &&
+      review.verdict !== 'pass'
+    )
+      return null;
     if (review.status !== 'reviewed' || review.verdict !== 'pass')
       throw new ThemePreparationWorkerError('source_ineligible', false);
     const reviewHash = await options.checkpoints.factReviewHash(reviewAttemptId);
@@ -650,7 +658,9 @@ export function createThemeRuntimePipeline(
         result.work.some((item) => !items.some((entry) => entry.key === item.key))
       )
         return { ok: false, code: 'runtime_unavailable' };
-      return result;
+      return options.executionMode === 'evaluation'
+        ? { ...result, executionMode: 'evaluation' as const }
+        : result;
     },
     async research(job, work) {
       const registry = await repos.sourceRegistry.get(derivation.policy.sourcePolicyVersion);
