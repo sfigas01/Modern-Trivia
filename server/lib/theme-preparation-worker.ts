@@ -38,6 +38,7 @@ export type ThemePreparationFailureCode =
   | 'provider_outcome_unknown'
   | 'candidate_ceiling'
   | 'source_ineligible'
+  | 'source_extraction_failed'
   | 'preparation_failed';
 
 export type ThemePreparationWorkerResult =

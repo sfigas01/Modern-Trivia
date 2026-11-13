@@ -409,7 +409,12 @@ export function createThemeRuntimePipeline(
     const source = retrieved.get(documentId);
     if (!source) throw new ThemePreparationWorkerError('source_ineligible', false);
     const extraction = extractThemeSource(source);
-    if (!extraction.ok) throw new ThemePreparationWorkerError('source_ineligible', false);
+    if (!extraction.ok)
+      throw new ThemePreparationWorkerError(
+        'source_extraction_failed',
+        false,
+        `source_extraction_failed:${extraction.failure.code}`
+      );
     const result = await repos.evidencePersistence.persistCapture({
       documentId,
       source,

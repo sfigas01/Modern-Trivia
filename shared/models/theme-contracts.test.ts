@@ -269,5 +269,16 @@ describe('theme-reliability-v1 game and public contracts', () => {
         candidateOrdinal: 8,
       }).success
     ).toBe(true);
+    expect(
+      internalThemeFailureSchema.safeParse({
+        contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,
+        code: 'source_extraction_failed',
+        retryable: false,
+        operation: 'extract_fact',
+        provider: null,
+        httpStatus: null,
+        candidateOrdinal: null,
+      }).success
+    ).toBe(true);
   });
 });

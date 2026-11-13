@@ -74,6 +74,7 @@ export const THEME_INTERNAL_FAILURE_CODES = [
   'invalid_theme',
   'unsupported_theme',
   'source_unavailable',
+  'source_extraction_failed',
   'unsafe_source',
   'source_stale',
   'evidence_insufficient',

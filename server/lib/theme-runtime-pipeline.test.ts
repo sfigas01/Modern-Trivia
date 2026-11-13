@@ -4,6 +4,7 @@ import type { ThemeJobRecord } from './theme-lifecycle';
 import { ThemePreparationWorkerError } from './theme-preparation-worker';
 import { createThemeBudgetGateway } from './theme-budget';
 import type { ThemeLifecycleRepository } from './theme-lifecycle';
+import { extractThemeSource } from './theme-source-extraction';
 import {
   createThemePreparationRuntime,
   type ThemeRuntimeCompositionContext,
@@ -419,6 +420,21 @@ describe('concrete dormant theme pipeline', () => {
       0, 0, 1, 0,
     ]);
     expect(f.physical).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps extraction failures distinct from source retrieval failures', async () => {
+    const f = fixture();
+    vi.mocked(extractThemeSource).mockReturnValueOnce({
+      ok: false,
+      failure: { extractorVersion: 'theme-source-extractor-v1', code: 'no_passages' },
+    });
+    const pipeline = createThemeRuntimePipeline(f.context, f.options);
+
+    await pipeline.retrieve(job, [item]);
+    await expect(pipeline.extract(job, [item])).rejects.toMatchObject({
+      code: 'source_extraction_failed',
+      message: 'source_extraction_failed:no_passages',
+    });
   });
 
   it('maps nested quality, embeddings and bounded semantic QA through the budget seam', async () => {

@@ -70,6 +70,30 @@ describe('deterministic theme source extraction', () => {
     }
   });
 
+  it('accepts the current Wikipedia page-level TOC feature flag without admitting TOC chrome', () => {
+    const result = extractThemeSource(
+      source(`
+      <html class="client-nojs vector-feature-toc-pinned-clientpref-1 vector-toc-available">
+        <body class="mediawiki skin-vector-2022">
+          <div class="mw-table-of-contents-container vector-toc-landmark">
+            <p>Contents navigation</p>
+          </div>
+          <main id="content" class="mw-body">
+            <h1>Article title</h1>
+            <div id="mw-content-text" class="mw-body-content">
+              <div class="mw-parser-output">
+                <p>The article contains a supported fact.</p>
+                <div class="vector-toc-pinned-container"><p>Pinned contents</p></div>
+              </div>
+            </div>
+          </main>
+        </body>
+      </html>`)
+    );
+
+    expect(texts(result)).toEqual(['Article title', 'The article contains a supported fact.']);
+  });
+
   it('selects generic main, then article, then body without publisher-specific rules', () => {
     expect(
       texts(

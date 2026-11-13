@@ -27,6 +27,7 @@ const FAILURE_CODES: Record<
   provider_outcome_unknown: 'provider_unknown_outcome',
   candidate_ceiling: 'candidate_limit_exhausted',
   source_ineligible: 'source_unavailable',
+  source_extraction_failed: 'source_extraction_failed',
   preparation_failed: 'internal_error',
 };
 
@@ -123,7 +124,7 @@ export function createPostgresThemeRuntimeRepository(
         contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,
         code: FAILURE_CODES[input.code],
         retryable: input.retryable,
-        operation: null,
+        operation: input.code === 'source_extraction_failed' ? 'extract_fact' : null,
         provider: null,
         httpStatus: null,
         candidateOrdinal: null,
