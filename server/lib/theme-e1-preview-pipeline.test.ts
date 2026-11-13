@@ -1,6 +1,22 @@
 import type { Pool } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 
+const { createPinnedHttpsTransportSpy, pinnedTransport } = vi.hoisted(() => ({
+  createPinnedHttpsTransportSpy: vi.fn(),
+  pinnedTransport: vi.fn(),
+}));
+
+vi.mock('./theme-source-https', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./theme-source-https')>();
+  return {
+    ...actual,
+    createPinnedHttpsTransport: (...args: unknown[]) => {
+      createPinnedHttpsTransportSpy(...args);
+      return pinnedTransport;
+    },
+  };
+});
+
 import { hashThemeSourceRegistry } from './theme-source-registry';
 import {
   createThemeLiveRuntimePlanWithProposalSlots,
@@ -115,6 +131,9 @@ describe('E1 plan-bound pipeline composition', () => {
       retrieve: expect.any(Function),
       approve: expect.any(Function),
       repair: expect.any(Function),
+    });
+    expect(createPinnedHttpsTransportSpy).toHaveBeenCalledWith(undefined, {
+      userAgent: 'Modern-Trivia-E1/1.0 (+https://superquestly.up.railway.app)',
     });
     expect(responseCreate).not.toHaveBeenCalled();
     expect(embeddingCreate).not.toHaveBeenCalled();

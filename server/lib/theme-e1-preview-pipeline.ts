@@ -26,6 +26,8 @@ const SOURCE_MAX_AGE_MS = 7 * DAY_MS;
 const REVIEW_VALID_FOR_MS = DAY_MS;
 const MAX_PROPOSAL_PASSAGES = 12;
 const MAX_PROPOSAL_PASSAGE_CHARACTERS = 12_000;
+const THEME_E1_WIKIPEDIA_USER_AGENT =
+  'Modern-Trivia-E1/1.0 (+https://superquestly.up.railway.app)' as const;
 
 function sha256(value: string): string {
   return createHash('sha256').update(value, 'utf8').digest('hex');
@@ -271,7 +273,9 @@ export function createThemeE1PreviewPipelineBuilder(
       } as ThemeRuntimePipelineOptions['qaProviders'],
       retrieval: {
         lookup: lookup as SourceLookup,
-        transport: createPinnedHttpsTransport(),
+        transport: createPinnedHttpsTransport(undefined, {
+          userAgent: THEME_E1_WIKIPEDIA_USER_AGENT,
+        }),
       },
       proposalSlots: {
         planHash: loadedPlan.planHash,
