@@ -86,6 +86,10 @@ const CHROME_TOKENS = new Set([
   'mw-editsection',
   'mw-jump-link',
   'mw-ref',
+  'vector-toc',
+  'vector-toc-landmark',
+  'vector-toc-pinned-container',
+  'vector-toc-unpinned-container',
   'site-header',
   'site-footer',
   'page-header',
@@ -107,7 +111,6 @@ const CHROME_TOKENS = new Set([
 const CHROME_PREFIXES = [
   'toc-',
   'mw-toc-',
-  'vector-toc-',
   'navbox-',
   'infobox-',
   'sidebar-',

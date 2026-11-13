@@ -68,6 +68,13 @@ The preview source registry should begin with English Wikipedia plus only the
 small number of first-party domains needed by the frozen evaluation themes.
 Adding a domain requires a new immutable source-policy version.
 
+Wikipedia layout compatibility is covered by extractor regression fixtures. Page-level
+Vector feature-state classes such as `vector-toc-available` must not hide the article;
+only explicit table-of-contents containers are excluded. Retrieval and extraction
+failures remain distinct in durable internal diagnostics while sharing the same
+spoiler-safe public preparation failure. A terminal failure must also release its
+worker lease immediately rather than waiting for lease expiry.
+
 ## Provider and model routing
 
 Use the OpenAI Responses API with strict Structured Outputs. Every adapter has a

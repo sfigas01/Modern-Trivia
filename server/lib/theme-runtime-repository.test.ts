@@ -128,6 +128,30 @@ describe('PostgreSQL theme runtime repository', () => {
     });
   });
 
+  it('persists extraction failures distinctly without exposing source content', async () => {
+    const { pool, statements } = fakePool((sql) =>
+      sql.startsWith('UPDATE theme_preparation_jobs') ? result([{ id: ID }]) : result([])
+    );
+    const recorded = await createPostgresThemeRuntimeRepository(pool).recordPause({
+      jobId: ID,
+      claimToken: 'claim',
+      expectedStatus: 'extracting',
+      code: 'source_extraction_failed',
+      retryable: false,
+    });
+
+    expect(recorded).toBe(true);
+    expect(JSON.parse(statements[0].args[3] as string)).toEqual({
+      contractVersion: 'theme-reliability-v1',
+      code: 'source_extraction_failed',
+      retryable: false,
+      operation: 'extract_fact',
+      provider: null,
+      httpStatus: null,
+      candidateOrdinal: null,
+    });
+  });
+
   it('rolls back before any reservation when the roster is unlocked', async () => {
     const { pool, statements } = fakePool((sql) => {
       if (sql.includes('FROM theme_preparation_jobs job'))

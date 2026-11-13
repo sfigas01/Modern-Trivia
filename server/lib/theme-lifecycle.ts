@@ -978,9 +978,8 @@ export function createPostgresThemeLifecycleRepository(
               SET lease_owner = NULL, lease_expires_at = NULL, updated_at = clock_timestamp()
             WHERE job.id = $1 AND job.lease_owner = $2
               AND job.lease_expires_at > clock_timestamp()
-              AND job.status <> ALL($3::varchar[])
           RETURNING job.*`,
-          [input.jobId, input.claimToken, THEME_TERMINAL_JOB_STATUSES]
+          [input.jobId, input.claimToken]
         );
         return result.rows[0] ? mapJob(result.rows[0]) : null;
       } finally {

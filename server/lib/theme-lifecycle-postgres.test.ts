@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 import pg from 'pg';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { THEME_RELIABILITY_CONTRACT_VERSION } from '@shared/models/theme-evidence';
 
@@ -18,6 +18,29 @@ const migrationUrl = new URL(
   import.meta.url
 );
 const { Client, Pool } = pg;
+
+describe('theme lifecycle PostgreSQL lease release', () => {
+  it('allows the owning worker to clear an unexpired terminal-job lease', async () => {
+    const query = vi.fn(async () => ({ rows: [], rowCount: 0 }));
+    const release = vi.fn();
+    const repository = createPostgresThemeLifecycleRepository({
+      connect: async () => ({ query, release }),
+    } as unknown as pg.Pool);
+
+    await expect(
+      repository.releaseLease({
+        jobId: randomUUID(),
+        claimToken: 'terminal-owner',
+        now: new Date(),
+      })
+    ).resolves.toBeNull();
+
+    expect(query).toHaveBeenCalledOnce();
+    expect(query.mock.calls[0][0]).not.toContain('job.status');
+    expect(query.mock.calls[0][1]).toEqual([expect.any(String), 'terminal-owner']);
+    expect(release).toHaveBeenCalledOnce();
+  });
+});
 
 describe.runIf(Boolean(databaseUrl))('theme lifecycle PostgreSQL concurrency', () => {
   it('enforces idempotency, rollback, database-time leases, parent state, and CAS', async () => {
@@ -152,6 +175,18 @@ describe.runIf(Boolean(databaseUrl))('theme lifecycle PostgreSQL concurrency', (
         }),
       ]);
       expect(casResults.filter(Boolean)).toHaveLength(1);
+
+      await pool.query("UPDATE theme_preparation_jobs SET status = 'failed' WHERE id = $1", [
+        jobId,
+      ]);
+      const terminalRelease = await repository.releaseLease({
+        jobId,
+        claimToken: token,
+        now: serviceNow,
+      });
+      expect(terminalRelease?.status).toBe('failed');
+      expect(terminalRelease?.leaseOwner).toBeNull();
+      expect(terminalRelease?.leaseExpiresAt).toBeNull();
 
       await pool.query(
         `UPDATE theme_preparation_jobs
