@@ -137,7 +137,7 @@ export function createPostgresThemeRuntimeCheckpoints(pool: Pool): ThemeRuntimeC
     },
     async passages(passageIds) {
       const result = await pool.query<{ id: string; text: string; content_hash: string }>(
-        `SELECT id,text,content_hash FROM theme_evidence_passages
+        `SELECT id,passage_text AS text,content_hash FROM theme_evidence_passages
          WHERE id=ANY($1::uuid[]) ORDER BY array_position($1::uuid[],id)`,
         [passageIds]
       );
