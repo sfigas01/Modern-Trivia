@@ -450,7 +450,18 @@ describe('createStructuredResponseProvider', () => {
         output_text: JSON.stringify({ answer: 42 }),
         usage: { input_tokens: 10, output_tokens: 10 },
       },
-      'invalid_output',
+      'invalid_output_contract_mismatch',
+    ],
+    [
+      'malformed JSON',
+      {
+        id: 'resp_malformed',
+        model: policy.model,
+        status: 'completed',
+        output_text: '{"answer":',
+        usage: { input_tokens: 10, output_tokens: 3 },
+      },
+      'invalid_output_malformed_json',
     ],
   ])('fails closed for %s', async (_name, response, failureCode) => {
     const provider = createStructuredResponseProvider({
@@ -466,6 +477,7 @@ describe('createStructuredResponseProvider', () => {
     const result = await provider.invoke({ evidence: 'fixture' });
     expect(result.outcome).toMatchObject({ status: 'failed', failureCode });
     expect(result.value).toBeUndefined();
+    if (response.output_text) expect(JSON.stringify(result)).not.toContain(response.output_text);
   });
 
   it.each([

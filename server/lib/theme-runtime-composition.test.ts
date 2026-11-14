@@ -46,6 +46,7 @@ function record(overrides: Record<string, unknown> = {}) {
     status: 'succeeded' as const,
     reservedCostMicros: 100,
     actualCostMicros: 75,
+    failureCode: null,
     overrun: false,
     replay: false,
     ...overrides,
@@ -235,14 +236,43 @@ describe('theme runtime composition', () => {
   it('treats a settled provider failure as terminal for its durable attempt', async () => {
     const gateway = {
       dispatch: vi.fn(async () => ({
-        record: record({ status: 'failed', actualCostMicros: 0 }),
+        record: record({
+          status: 'failed',
+          actualCostMicros: 0,
+          failureCode: 'invalid_output_contract_mismatch',
+        }),
         value: { answer: 42 },
       })),
     } as unknown as ReturnType<typeof createThemeBudgetGateway>;
 
     await expect(
       createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request())
-    ).rejects.toMatchObject({ code: 'preparation_failed', retryable: false });
+    ).rejects.toMatchObject({
+      code: 'preparation_failed',
+      retryable: false,
+      providerFailureCode: 'invalid_output_contract_mismatch',
+    });
+  });
+
+  it('preserves a completed provider diagnostic on replay without redispatch', async () => {
+    const invoke = vi.fn();
+    const gateway = {
+      dispatch: vi.fn(async () => ({
+        record: record({
+          replay: true,
+          status: 'failed',
+          failureCode: 'invalid_output_malformed_json',
+        }),
+      })),
+    } as unknown as ReturnType<typeof createThemeBudgetGateway>;
+
+    await expect(
+      createBudgetedThemeProvider(gateway, budget, discardProviderMetadata)(request(invoke))
+    ).rejects.toMatchObject({
+      code: 'preparation_failed',
+      providerFailureCode: 'invalid_output_malformed_json',
+    });
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it('does not relabel a settled failure with no provider value as unknown', async () => {

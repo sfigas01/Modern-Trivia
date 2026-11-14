@@ -488,6 +488,15 @@ The stored runtime plan must use that exact bundle version as its `planVersion`
 and must match the active budget-policy fingerprint; older or mismatched plans
 fail before the credential callback is reached.
 
+Completed structured-response failures retain only an answer-redacted diagnostic:
+`invalid_output_malformed_json` when the response is not JSON, or
+`invalid_output_contract_mismatch` when parsed JSON fails the strict output or
+semantic contract. During evaluation only, either failure durably withholds that
+proposal slot as `invalid_output` and evaluation continues with later independent
+slots. Recreating the pipeline replays the withheld slot without another provider
+request. Gameplay remains fail-closed, and no factual, evidence, or QA gate is
+relaxed.
+
 The accompanying `openai-standard-2026-11-08-v1` price snapshot uses the
 published Standard output and embedding rates. For safe admission, uncached
 model input is charged at the higher 30-minute cache-write rate; cached input is

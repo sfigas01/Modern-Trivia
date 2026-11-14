@@ -58,6 +58,8 @@ export interface ThemeBudgetRecord {
   status: 'dispatched' | 'succeeded' | 'failed' | 'unknown';
   reservedCostMicros: number;
   actualCostMicros: number;
+  /** Safe machine code from a completed failed attempt; never raw provider output. */
+  failureCode: string | null;
   overrun: boolean;
   replay: boolean;
 }
@@ -219,6 +221,7 @@ function replay(input: ThemeBudgetDispatch, row: AttemptRow): ThemeBudgetRecord 
     status: row.status,
     reservedCostMicros: row.reserved_cost_micros,
     actualCostMicros: row.actual_cost_micros,
+    failureCode: row.failure?.code ?? null,
     overrun: row.actual_cost_micros > row.reserved_cost_micros,
     replay: true,
   };
@@ -395,6 +398,7 @@ export function createThemeBudgetGateway(
         status: 'dispatched' as const,
         reservedCostMicros: input.reservedCostMicros,
         actualCostMicros: 0,
+        failureCode: null,
         overrun: false,
         replay: false,
       };
@@ -455,6 +459,7 @@ export function createThemeBudgetGateway(
         ...current,
         status: outcome.status,
         actualCostMicros: outcome.actualCostMicros,
+        failureCode: outcome.failureCode ?? null,
         overrun: outcome.actualCostMicros > row.reserved_cost_micros,
         replay: false,
       };

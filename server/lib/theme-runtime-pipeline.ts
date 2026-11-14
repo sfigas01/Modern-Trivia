@@ -462,30 +462,41 @@ export function createThemeRuntimePipeline(
           )
         )
           throw new ThemePreparationWorkerError('runtime_unavailable', false);
-        const raw = await dispatch(job, item, 'proposal', 'extract_fact', slotProposer, {
-          contractVersion: 'theme-proposal-slot-request-v1',
-          planHash: options.proposalSlots.planHash,
-          normalizedTheme: options.proposalSlots.plan.normalizedTheme,
-          allocation: {
-            version: options.proposalSlots.plan.proposalSlotPolicy.allocationVersion,
-            totalSlots: options.proposalSlots.plan.proposalSlotPolicy.totalSlots,
-            maximumSlotsPerSource:
-              options.proposalSlots.plan.proposalSlotPolicy.maximumSlotsPerSource,
-          },
-          slot: { key: slot.key, ordinal: slot.ordinal, sourceKey: slot.sourceKey },
-          source: {
-            key: item.sourceKey,
-            url: item.requestedUrl,
-            title: item.title,
-            language: item.language,
-          },
-          passages: selectedPassages.map((passage) => ({
-            passageId: passage.passageId,
-            text: passage.text,
-            contentHash: passage.contentHash,
-          })),
-        });
-        const outcome = proposalSlotOutcome(raw);
+        let outcome: ThemeProposalSlotOutcome;
+        try {
+          const raw = await dispatch(job, item, 'proposal', 'extract_fact', slotProposer, {
+            contractVersion: 'theme-proposal-slot-request-v1',
+            planHash: options.proposalSlots.planHash,
+            normalizedTheme: options.proposalSlots.plan.normalizedTheme,
+            allocation: {
+              version: options.proposalSlots.plan.proposalSlotPolicy.allocationVersion,
+              totalSlots: options.proposalSlots.plan.proposalSlotPolicy.totalSlots,
+              maximumSlotsPerSource:
+                options.proposalSlots.plan.proposalSlotPolicy.maximumSlotsPerSource,
+            },
+            slot: { key: slot.key, ordinal: slot.ordinal, sourceKey: slot.sourceKey },
+            source: {
+              key: item.sourceKey,
+              url: item.requestedUrl,
+              title: item.title,
+              language: item.language,
+            },
+            passages: selectedPassages.map((passage) => ({
+              passageId: passage.passageId,
+              text: passage.text,
+              contentHash: passage.contentHash,
+            })),
+          });
+          outcome = proposalSlotOutcome(raw);
+        } catch (error) {
+          const completedInvalidOutput =
+            error instanceof ThemePreparationWorkerError &&
+            error.code === 'preparation_failed' &&
+            (error.providerFailureCode === 'invalid_output_malformed_json' ||
+              error.providerFailureCode === 'invalid_output_contract_mismatch');
+          if (options.executionMode !== 'evaluation' || !completedInvalidOutput) throw error;
+          outcome = { status: 'withheld', reason: 'invalid_output' };
+        }
         await repos.proposalSlots.recordOutcome({
           jobId: job.id,
           slotKey: item.key,
