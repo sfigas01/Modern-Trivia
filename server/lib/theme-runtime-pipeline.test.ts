@@ -349,6 +349,7 @@ describe('concrete dormant theme pipeline', () => {
         status: 'succeeded' as const,
         reservedCostMicros: 1,
         actualCostMicros: 1,
+        failureCode: null,
         overrun: false,
         replay: false,
       },
@@ -848,6 +849,77 @@ describe('concrete dormant theme pipeline', () => {
     });
     expect(repositories.factReview.review).toHaveBeenCalledTimes(4);
     expect(f.repositories.questionGeneration.generate).toHaveBeenCalledOnce();
+  });
+
+  it('records completed invalid proposal output in evaluation and continues later slots', async () => {
+    const f = fixture();
+    const options = { ...slottedOptions(f), executionMode: 'evaluation' as const };
+    const { context, proposalSlots } = slottedContext(f, (slotKey) => `fact-${slotKey}`);
+    const dispatchProvider = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new ThemePreparationWorkerError(
+          'preparation_failed',
+          false,
+          undefined,
+          'invalid_output_contract_mismatch'
+        )
+      )
+      .mockImplementation(async (request) => (await request.invoke()).value);
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: proposedFact,
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const pipeline = createThemeRuntimePipeline(
+      { ...context, dispatchProvider } as ThemeRuntimeCompositionContext,
+      { ...options, proposalSlots: { ...options.proposalSlots!, proposer } }
+    );
+
+    await pipeline.retrieve(job, options.items);
+    await expect(pipeline.extract(job, options.items)).resolves.toBeUndefined();
+
+    expect(proposalSlots.recordOutcome).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        slotKey: 'proposal:001',
+        outcome: { status: 'withheld', reason: 'invalid_output' },
+      })
+    );
+    expect(proposalSlots.recordOutcome).toHaveBeenCalledTimes(2);
+    expect(proposer.invoke).toHaveBeenCalledOnce();
+    expect(dispatchProvider).toHaveBeenCalledTimes(3);
+
+    await expect(pipeline.extract(job, options.items)).resolves.toBeUndefined();
+    expect(dispatchProvider).toHaveBeenCalledTimes(3);
+    expect(proposalSlots.recordOutcome).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails gameplay closed on completed invalid proposal output', async () => {
+    const f = fixture();
+    const options = slottedOptions(f, [item]);
+    const { context, proposalSlots } = slottedContext(f);
+    const failure = new ThemePreparationWorkerError(
+      'preparation_failed',
+      false,
+      undefined,
+      'invalid_output_malformed_json'
+    );
+    const pipeline = createThemeRuntimePipeline(
+      {
+        ...context,
+        dispatchProvider: vi.fn(async () => {
+          throw failure;
+        }),
+      } as ThemeRuntimeCompositionContext,
+      options
+    );
+
+    await pipeline.retrieve(job, options.items);
+    await expect(pipeline.extract(job, options.items)).rejects.toBe(failure);
+    expect(proposalSlots.recordOutcome).not.toHaveBeenCalled();
   });
 
   it('withholds a later slot that proposes a duplicate canonical scope', async () => {

@@ -411,10 +411,11 @@ export function createStructuredResponseProvider<Input, Output>(options: {
         try {
           decoded = JSON.parse(response.output_text ?? '');
         } catch {
-          return failed('invalid_output', base, response, started, now);
+          return failed('invalid_output_malformed_json', base, response, started, now);
         }
         const parsed = outputSchema.safeParse(decoded);
-        if (!parsed.success) return failed('invalid_output', base, response, started, now);
+        if (!parsed.success)
+          return failed('invalid_output_contract_mismatch', base, response, started, now);
         return {
           value: parsed.data,
           outcome: { status: 'succeeded', ...base },

@@ -51,7 +51,9 @@ export class ThemePreparationWorkerError extends Error {
   constructor(
     public readonly code: ThemePreparationFailureCode,
     public readonly retryable: boolean,
-    message: string = code
+    message: string = code,
+    /** Answer-redacted provider diagnostic for a completed failed dispatch. */
+    public readonly providerFailureCode: string | null = null
   ) {
     super(message);
     this.name = 'ThemePreparationWorkerError';

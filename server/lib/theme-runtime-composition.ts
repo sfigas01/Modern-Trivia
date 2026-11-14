@@ -269,7 +269,9 @@ export function createBudgetedThemeProvider(
         if (result.record.status !== 'succeeded')
           throw new ThemePreparationWorkerError(
             result.record.status === 'failed' ? 'preparation_failed' : 'provider_outcome_unknown',
-            false
+            false,
+            undefined,
+            result.record.failureCode
           );
         const replay = await providerResults?.load(result.record);
         if (replay === null || replay === undefined)
@@ -280,7 +282,12 @@ export function createBudgetedThemeProvider(
         // The stage repository has already persisted this terminal outcome
         // under a stable attempt identity. Re-running the worker would only
         // replay the same failure and can never make progress.
-        throw new ThemePreparationWorkerError('preparation_failed', false);
+        throw new ThemePreparationWorkerError(
+          'preparation_failed',
+          false,
+          undefined,
+          result.record.failureCode
+        );
       if (result.value === undefined)
         throw new ThemePreparationWorkerError('provider_outcome_unknown', false);
       return result.value;
