@@ -137,6 +137,12 @@ When reviewing trivia content, act as a **trivia content QA specialist**. Your r
 3. Note source in explanation field when making corrections
 4. If uncertain, flag for human review instead of correcting
 
+For the preview-only themed generation pipeline, stable claims use the exact
+retrieved Wikipedia passage as the required proof. A second website is not
+required merely to establish source independence. The final written Q&A must
+still pass the post-write evidence review; ambiguity or unsupported wording is
+never excused by the Wikipedia-only source rule.
+
 **Source citation format for explanations:**
 
 ```

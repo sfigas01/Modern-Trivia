@@ -483,10 +483,31 @@ The zero-cost configuration checkpoint froze
 `theme-e1-openai-2026-11-08-v1` as the first plan-bound E1 bundle. The first
 paid calibration found that its proposer and writer schemas allowed a nullable
 superset at the provider boundary, then applied stricter status-dependent checks
-locally. Version `theme-e1-openai-2026-11-15-v2` replaces those two wire shapes
+locally. Version `theme-e1-openai-2026-11-15-v2` replaced those two wire shapes
 with a root object containing a nested discriminated result branch, so OpenAI
 and the application enforce the same contract. The earlier bundle remains an
 immutable calibration artifact and must not be reused for a new plan.
+
+Version `theme-e1-openai-2026-11-15-v3` is the owner-evaluation bundle. It keeps
+the existing provenance and fail-closed gates, but changes their editorial
+instructions and writer contract:
+
+- the proposer prefers stable, general-audience facts that can become fair
+  medium-difficulty trivia and declines obscure or contentious material;
+- for stable themed trivia, one approved Wikipedia origin satisfies the source
+  policy. The fact reviewer uses `approved_single_source` and must not flag a
+  claim solely because a second independent website is absent;
+- the writer returns the complete Q&A package: exact canonical answer, accepted
+  alternatives, hint, difficulty, predicted correct rate and explanation, or a
+  concrete decline reason;
+- the post-write evidence review remains the factual gate, while static and
+  model quality review remain the player-quality gate. Neither gate can approve
+  the other's failure.
+
+The pre-write fact review is intentionally retained as a cheap provenance and
+answer-uniqueness screen; it is not a substitute for reviewing the written Q&A.
+This avoids a database rewrite while still ensuring that every playable item is
+fact-checked after its final wording exists.
 
 The active E1 bundle uses Luna
 with low reasoning for fact proposal, question writing and the single eligible
@@ -557,6 +578,33 @@ bounded replacement attempts, while reservation still requires exactly the
 game's target. An eligible repair also reloads the repaired candidate's evidence
 context and the complete bounded PostgreSQL comparison corpus before rerunning
 QA; it cannot reuse the original candidate's context or bypass duplicate checks.
+
+### Owner Q&A checkpoint
+
+Before changing prompts or approving another calibration, generate a private
+owner report for the exact preview job IDs:
+
+```sh
+THEME_EVALUATION_ENVIRONMENT=preview \
+THEME_EVALUATION_DATABASE_URL=<preview database URL> \
+npx tsx script/theme-human-evaluation.ts \
+  --job <job UUID> --include-answers --owner-review
+```
+
+The command is read-only and refuses non-preview mode. It writes a mode-0600
+file under the gitignored `reports/` directory and prints only counts and the
+local path. Unlike routine operational reports, this deliberately includes
+answers. Do not paste it into Linear, GitHub, deploy logs, public gameplay or a
+shared artifact.
+
+For every proposal slot it shows the actual Q&A (or proposal/writer decline),
+canonical fact, exact Wikipedia passages and URLs, fact-review dimensions,
+post-write evidence-review dimensions, player-quality decision and reason,
+static findings, any bounded rewrite, approval state, and a machine
+recommendation. The owner records one of `approve`, `repair`, `reject`, or
+`investigate` plus notes. Those judgments become prompt/policy changes and
+regression fixtures after explicit review; they do not automatically train or
+update a model.
 
 No key was read or set, no Railway variable or database control was changed, and
 no provider request was made in this checkpoint. The next action is the
