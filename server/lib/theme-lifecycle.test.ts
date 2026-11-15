@@ -613,4 +613,35 @@ describe('theme job state policy and public projection', () => {
     });
     expect(JSON.stringify(projected)).not.toContain('secret-provider');
   });
+
+  it('never exposes an internal inventory shortfall as a host-facing question error', async () => {
+    const repository = new MemoryRepository();
+    const service = createThemeLifecycleService({ repository, now: () => NOW, hash: sha256 });
+    const { game, job } = await service.createGame(createInput());
+    const projected = projectPublicThemeJob(
+      game,
+      {
+        ...job,
+        status: 'failed',
+        publicStage: 'failed',
+        lastFailure: {
+          contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,
+          code: 'inventory_shortfall',
+          retryable: false,
+          operation: null,
+          provider: null,
+          httpStatus: null,
+          candidateOrdinal: null,
+        },
+      },
+      NOW
+    );
+
+    expect(projected.progress.failure).toEqual({
+      code: 'preparation_failed',
+      retryable: false,
+      message: 'Theme preparation could not be completed.',
+    });
+    expect(JSON.stringify(projected)).not.toContain('verified related questions');
+  });
 });

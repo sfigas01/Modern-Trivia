@@ -557,14 +557,15 @@ accepts exactly three distinct job IDs created through the signed-in-host
 admission flow, verifies the durable runtime control is disabled, and refuses
 jobs that have started candidate work, hold a lease, expired, or already use a
 different plan version. Each selected game must remain in its waiting state with
-its linked room still in the lobby. For this evaluation path only, a selected job
-may be in `shortfall` when it has the admission `inventory_shortfall` marker, zero
-candidate work, no lease, no prior plan and no active gameplay reservation. This
-does not relax gameplay admission: dry-run reports that the selected job would be
-promoted, and only the atomic `--apply` changes it to `waiting` while attaching the
-evaluation-mode plan and clearing that obsolete admission marker. The evaluation
-still terminalizes without gameplay reservations and never claims the room has a
-playable question set.
+its linked room still in the lobby. New admission jobs remain `waiting` even when
+they have zero reusable inventory. For backward compatibility, this evaluation
+path may also select an older job in `shortfall` when it has the admission
+`inventory_shortfall` marker, zero candidate work, no lease, no prior plan and no
+active gameplay reservation. This does not relax gameplay readiness: dry-run
+reports whether an older job would be promoted, and only the atomic `--apply`
+changes that older state to `waiting` while attaching the evaluation-mode plan and
+clearing the obsolete marker. The evaluation still terminalizes without gameplay
+reservations and never claims the room has a playable question set.
 
 Dry-run reports the intended shared hold deadline without writing it. Apply locks
 the three jobs, games, and rooms, then extends both game and room expiry to at

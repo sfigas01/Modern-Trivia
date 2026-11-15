@@ -159,6 +159,42 @@ describe('theme preparation worker', () => {
     ]);
   });
 
+  it('fills themed and related deficits without treating missing inventory as admission failure', async () => {
+    const h = harness({
+      preflight: vi.fn(async () => ({
+        ok: true,
+        requiredThemed: 1,
+        requiredRelated: 1,
+        work: [
+          { key: 'theme-1', role: 'theme' as const },
+          { key: 'related-1', role: 'related_backup' as const },
+        ],
+      })),
+      generate: vi.fn(async (_job, item) => ({
+        itemKey: item.key,
+        candidateId: `candidate-${item.key}`,
+      })),
+      review: vi.fn(async (_job, candidate) => ({ ...candidate, verdict: 'pass' as const })),
+      approve: vi.fn(async (_job, candidate) => ({
+        status: 'approved' as const,
+        approval: { ...candidate, questionId: `question-${candidate.itemKey}` },
+      })),
+    });
+
+    await expect(h.worker.run(JOB_ID)).resolves.toEqual({
+      status: 'ready',
+      jobId: JOB_ID,
+      approved: 2,
+    });
+    expect(h.dependencies.reserveApproved).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'reserving' }),
+      [
+        expect.objectContaining({ itemKey: 'theme-1', role: 'theme' }),
+        expect.objectContaining({ itemKey: 'related-1', role: 'related_backup' }),
+      ]
+    );
+  });
+
   it('completes every evaluation item without creating gameplay reservations', async () => {
     const approve = vi
       .fn()

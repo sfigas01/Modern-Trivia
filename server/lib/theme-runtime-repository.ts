@@ -195,7 +195,7 @@ export function createPostgresThemeRuntimeRepository(
           !current.roster_locked_at
         )
           shortfall();
-        if (approved.length !== current.themed_target || approved.length < 1) shortfall();
+        if (approved.length < 1) shortfall();
 
         const roster = await db.query<{ identity_id: string }>(
           `SELECT identity_id FROM theme_game_participants
@@ -243,10 +243,31 @@ export function createPostgresThemeRuntimeRepository(
         const backups = await db.query<{ count: string }>(
           `SELECT count(*)::text AS count FROM theme_question_reservations
             WHERE game_id = $1 AND job_id = $2 AND role = 'related_backup'
-              AND status = 'held' AND released_at IS NULL AND expires_at > $3`,
+              AND status = 'held' AND released_at IS NULL AND expires_at > $3
+              AND NOT EXISTS (
+                SELECT 1 FROM theme_question_approvals approval
+                JOIN theme_candidates candidate ON candidate.id = approval.candidate_id
+                WHERE approval.library_question_id = theme_question_reservations.question_id
+                  AND candidate.job_id = $2
+              )`,
           [job.gameId, job.id, at]
         );
-        if (Number(backups.rows[0]?.count) !== current.related_target) shortfall();
+        const reusableRelated = Number(backups.rows[0]?.count ?? 0);
+        if (
+          !Number.isInteger(reusableRelated) ||
+          reusableRelated < 0 ||
+          reusableRelated > current.related_target
+        )
+          shortfall();
+        const requiredRelated = current.related_target - reusableRelated;
+        const roleFor = (item: (typeof approved)[number]) => item.role ?? 'theme';
+        if (
+          approved.filter((item) => roleFor(item) === 'theme').length !== current.themed_target ||
+          approved.filter((item) => roleFor(item) === 'related_backup').length !==
+            requiredRelated ||
+          approved.length !== current.themed_target + requiredRelated
+        )
+          shortfall();
 
         const existing = await db.query<{
           id: string;
@@ -258,14 +279,16 @@ export function createPostgresThemeRuntimeRepository(
           corpus_revision: number;
           history_revision: number;
           status: string;
+          role: 'theme' | 'related_backup';
           released_at: Date | null;
           expires_at: Date;
         }>(
           `SELECT * FROM theme_question_reservations
-            WHERE game_id = $1 AND role = 'theme' ORDER BY question_id FOR UPDATE`,
-          [job.gameId]
+            WHERE game_id = $1 AND job_id = $2 AND role IN ('theme','related_backup')
+              AND status = 'held' AND released_at IS NULL AND expires_at > $3
+            ORDER BY role,question_id FOR UPDATE`,
+          [job.gameId, job.id, at]
         );
-        if (existing.rows.length !== 0 && existing.rows.length !== approved.length) shortfall();
         if (
           new Set(approved.map((item) => item.itemKey)).size !== approved.length ||
           new Set(approved.map((item) => item.candidateId)).size !== approved.length ||
@@ -411,13 +434,14 @@ export function createPostgresThemeRuntimeRepository(
           }
           selectedFacts.add(row.fact_id);
           const replay = expected.get(item.questionId);
-          if (existing.rows.length) {
+          const role = roleFor(item);
+          if (replay) {
             if (
-              !replay ||
               replay.job_id !== job.id ||
               replay.question_revision_id !== row.library_revision_id ||
               replay.fact_id !== row.fact_id ||
               replay.fact_revision_id !== row.fact_revision_id ||
+              replay.role !== role ||
               replay.status !== 'held' ||
               replay.released_at !== null ||
               replay.expires_at <= eligibilityAt ||
@@ -459,7 +483,7 @@ export function createPostgresThemeRuntimeRepository(
               `INSERT INTO theme_question_reservations
                  (game_id,job_id,question_id,question_revision_id,fact_id,fact_revision_id,
                   role,corpus_revision,history_revision,expires_at)
-               VALUES ($1,$2,$3,$4,$5,$6,'theme',$7,$8,$9) RETURNING id`,
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
               [
                 job.gameId,
                 job.id,
@@ -467,6 +491,7 @@ export function createPostgresThemeRuntimeRepository(
                 row.library_revision_id,
                 row.fact_id,
                 row.fact_revision_id,
+                role,
                 current.corpus_revision,
                 current.history_revision,
                 current.game_expires_at,
@@ -481,34 +506,41 @@ export function createPostgresThemeRuntimeRepository(
               );
           }
         }
-        if (existing.rows.length) {
-          const coverage = await db.query<{
-            reservation_id: string;
-            identity_id: string;
-            fact_id: string;
-          }>(
-            `SELECT participant.reservation_id, participant.identity_id, participant.fact_id
-               FROM theme_reservation_participants participant
-               JOIN theme_question_reservations reservation ON reservation.id = participant.reservation_id
-              WHERE reservation.game_id = $1 AND reservation.role = 'theme'
-                AND participant.released_at IS NULL`,
-            [job.gameId]
-          );
-          const expectedCoverage = new Set(
-            existing.rows.flatMap((reservation) =>
-              subjects.map((identityId) => `${reservation.id}:${identityId}:${reservation.fact_id}`)
-            )
-          );
-          if (
-            coverage.rows.length !== expectedCoverage.size ||
-            coverage.rows.some(
-              (row) =>
-                !expectedCoverage.delete(`${row.reservation_id}:${row.identity_id}:${row.fact_id}`)
-            ) ||
-            expectedCoverage.size
+        const finalReservations = await db.query<{ id: string; fact_id: string }>(
+          `SELECT id,fact_id FROM theme_question_reservations
+            WHERE game_id = $1 AND job_id = $2 AND role IN ('theme','related_backup')
+              AND status = 'held' AND released_at IS NULL AND expires_at > $3
+            ORDER BY role,question_id FOR UPDATE`,
+          [job.gameId, job.id, at]
+        );
+        const coverage = await db.query<{
+          reservation_id: string;
+          identity_id: string;
+          fact_id: string;
+        }>(
+          `SELECT participant.reservation_id, participant.identity_id, participant.fact_id
+             FROM theme_reservation_participants participant
+             JOIN theme_question_reservations reservation ON reservation.id = participant.reservation_id
+            WHERE reservation.game_id = $1 AND reservation.job_id = $2
+              AND reservation.role IN ('theme','related_backup')
+              AND reservation.status = 'held' AND reservation.released_at IS NULL
+              AND reservation.expires_at > $3 AND participant.released_at IS NULL`,
+          [job.gameId, job.id, at]
+        );
+        const expectedCoverage = new Set(
+          finalReservations.rows.flatMap((reservation) =>
+            subjects.map((identityId) => `${reservation.id}:${identityId}:${reservation.fact_id}`)
           )
-            shortfall();
-        }
+        );
+        if (
+          coverage.rows.length !== expectedCoverage.size ||
+          coverage.rows.some(
+            (row) =>
+              !expectedCoverage.delete(`${row.reservation_id}:${row.identity_id}:${row.fact_id}`)
+          ) ||
+          expectedCoverage.size
+        )
+          shortfall();
         const commitAt = (await db.query<{ at: Date }>('SELECT clock_timestamp() AS at')).rows[0]
           ?.at;
         if (

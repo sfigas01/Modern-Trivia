@@ -82,7 +82,7 @@ function player(id: string, nickname: string, isHost: boolean, joinOrder: number
 async function installThemeFixtures(
   context: BrowserContext,
   state: { phase: 'LOBBY' | 'QUESTION'; createBody?: Record<string, unknown> },
-  outcome: 'ready' | 'shortfall' = 'ready'
+  inventory: 'mixed' | 'cold' = 'mixed'
 ) {
   // Deterministic question catalog for the host setup screen.
   await context.route('**/api/questions**', async (route) => {
@@ -120,21 +120,6 @@ async function installThemeFixtures(
 
   let progressPolls = 0;
   await context.route(new RegExp(`/api/rooms/${CODE}/theme-start(?:\\?.*)?$`), async (route) => {
-    if (outcome === 'shortfall') {
-      await route.fulfill({
-        status: 409,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'error',
-          ready: 0,
-          total: 40,
-          reused: 0,
-          generated: 0,
-          error: 'Not enough verified related questions.',
-        }),
-      });
-      return;
-    }
     await route.fulfill({
       status: 202,
       contentType: 'application/json',
@@ -162,8 +147,8 @@ async function installThemeFixtures(
           status: 'ready',
           ready: 40,
           total: 40,
-          reused: 16,
-          generated: 24,
+          reused: inventory === 'cold' ? 0 : 16,
+          generated: inventory === 'cold' ? 40 : 24,
           error: null,
         }),
       });
@@ -176,8 +161,8 @@ async function installThemeFixtures(
         status: 'preparing',
         ready: 12,
         total: 40,
-        reused: 8,
-        generated: 4,
+        reused: inventory === 'cold' ? 0 : 8,
+        generated: inventory === 'cold' ? 12 : 4,
         error: null,
       }),
     });
@@ -232,12 +217,12 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
     );
   });
 
-  test('a non-retryable inventory shortfall stays in the lobby without a retry action', async ({
+  test('zero reusable inventory generates the complete set instead of showing an error', async ({
     page,
     context,
   }) => {
     const state: { phase: 'LOBBY' | 'QUESTION' } = { phase: 'LOBBY' };
-    await installThemeFixtures(context, state, 'shortfall');
+    await installThemeFixtures(context, state, 'cold');
 
     await page.goto('/host');
     await page.getByTestId('input-theme').fill('baseball');
@@ -247,13 +232,13 @@ test.describe('Themed games (VITE_THEME_ROUNDS)', () => {
 
     await page.getByTestId('button-start-themed-game').click();
 
-    await expect(page.getByTestId('text-theme-error')).toContainText(
-      'Not enough verified related questions.',
+    await expect(page.getByTestId('text-theme-error')).toHaveCount(0);
+    await expect(page.getByTestId('text-theme-progress')).toContainText('of 40 ready', {
+      timeout: 15000,
+    });
+    await expect(page.getByText('Which team won the very first World Series in 1903?')).toBeVisible(
       { timeout: 15000 }
     );
-    await expect(page.getByRole('button', { name: 'Try again' })).toHaveCount(0);
-    await expect(page.getByTestId('button-start-themed-game')).toBeDisabled();
-    await expect(page).toHaveURL(new RegExp(`/room/${CODE}$`));
-    expect(state.phase).toBe('LOBBY');
+    expect(state.phase).toBe('QUESTION');
   });
 });
