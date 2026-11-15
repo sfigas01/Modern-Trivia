@@ -35,6 +35,7 @@ export type PostgresThemePreviewRuntimeOptions = Readonly<{
     | ThemeRuntimeCompositionOptions['repositories']
     | ((loadedPlan: ThemePreviewLoadedPlan) => ThemeRuntimeCompositionOptions['repositories']);
   buildPipeline: ThemePreviewRuntimePipelineBuilder;
+  preparePlan?(jobId: string): Promise<unknown>;
   /** Independently calculated worst-case duration of one pipeline callback. */
   pipelineMaxCallbackMs: number;
   reportCode?(code: ThemePreviewSchedulerCode): void;
@@ -68,6 +69,7 @@ export async function bootstrapPostgresThemePreviewRuntime(
       if (!configuration.enabled) throw new TypeError('invalid_theme_preview_runtime_config');
       return createThemePreviewPlannedWorker({
         maxCallbackMs: options.pipelineMaxCallbackMs,
+        preparePlan: options.preparePlan,
         loadPlan: (jobId) => plans.load(jobId),
         createRuntime: ({ jobId, loadedPlan }) =>
           createPostgresThemePreparationRuntime({

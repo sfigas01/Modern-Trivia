@@ -37,7 +37,11 @@ import {
 import { z } from 'zod';
 import { aiLimiter } from './middleware/rateLimiter';
 import type { AuthenticatedRequest } from './types';
-import { registerRoomRoutes, type ThemePreparationScheduler } from './routes.rooms';
+import {
+  registerRoomRoutes,
+  type ThemePreparationPlanner,
+  type ThemePreparationScheduler,
+} from './routes.rooms';
 import { themeSuggestRequestSchema, themeSuggestResponseSchema } from '@shared/schema';
 import { isThemeRoundsEnabled, fallbackThemeCategories } from './lib/theme-game';
 import { requireThemePlayerSignIn } from './lib/theme-player-auth';
@@ -196,7 +200,10 @@ function extractSourceDomain(
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
-  options: { themePreparationScheduler?: ThemePreparationScheduler } = {}
+  options: {
+    themePreparationScheduler?: ThemePreparationScheduler;
+    themePreparationPlanner?: ThemePreparationPlanner;
+  } = {}
 ): Promise<Server> {
   // Setup authentication (MUST be before other routes)
   await setupAuth(app);

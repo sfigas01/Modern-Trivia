@@ -271,6 +271,27 @@ describe('durable theme-start route', () => {
       .expect(202);
     expect(scheduler.run).toHaveBeenCalledWith(job().jobId);
   });
+  it('attaches the automatic gameplay plan before scheduling paid-capable work', async () => {
+    admissionMock.start.mockResolvedValueOnce(job());
+    const planner = { prepare: vi.fn(async () => undefined) };
+    const scheduler = { run: vi.fn(async () => undefined) };
+    await request(
+      await buildTestApp({
+        themePreparationPlanner: planner,
+        themePreparationScheduler: scheduler,
+      })
+    )
+      .post('/api/rooms/ABCD2/theme-start')
+      .set('X-Test-Session', 'host-account')
+      .set('X-Player-Token', 'host-secret')
+      .send({})
+      .expect(202);
+    expect(planner.prepare).toHaveBeenCalledWith(job().jobId);
+    expect(scheduler.run).toHaveBeenCalledWith(job().jobId);
+    expect(planner.prepare.mock.invocationCallOrder[0]).toBeLessThan(
+      scheduler.run.mock.invocationCallOrder[0]
+    );
+  });
   it('reports a terminal preparation failure without exposing inventory internals', async () => {
     admissionMock.start.mockResolvedValueOnce(job(true));
     const scheduler = { run: vi.fn(async () => undefined) };

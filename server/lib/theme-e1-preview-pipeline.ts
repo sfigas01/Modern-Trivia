@@ -15,6 +15,7 @@ import type { ThemeFactProposalPassage } from './theme-fact-derivation';
 import type { ThemeLiveRuntimePlanV2 } from './theme-runtime-plan';
 import type { ThemeSourceFirstRepositoryConfig } from './theme-runtime-composition';
 import type { OpenAIThemePreviewPipelineBuilder } from './theme-openai-preview-runtime';
+import { assertThemeGameplayPlanPolicy, THEME_GAMEPLAY_PLAN_VERSION } from './theme-gameplay-plan';
 import {
   createThemeE1Providers,
   THEME_E1_BUNDLE_VERSION,
@@ -154,7 +155,7 @@ export function createThemeE1RepositoryConfig(
   };
 }
 
-function runtimeItems(plan: ThemeLiveRuntimePlanV2): ThemeRuntimeSourceItem[] {
+export function runtimeItems(plan: ThemeLiveRuntimePlanV2): ThemeRuntimeSourceItem[] {
   return plan.proposalSlots.map((slot) => {
     const source = plan.sources.find((candidate) => candidate.key === slot.sourceKey);
     if (!source) throw new TypeError('theme_e1_plan_source_missing');
@@ -213,14 +214,59 @@ export async function loadThemeE1RequiredThemed(pool: Pick<Pool, 'query'>, jobId
   return required;
 }
 
+export async function loadThemeGameplayRequirements(pool: Pick<Pool, 'query'>, jobId: string) {
+  const result = await pool.query<{
+    required_themed: number;
+    required_related: number;
+  }>(
+    `SELECT COALESCE(game.accepted_themed_target,game.themed_question_target)::integer
+              AS required_themed,
+            (COALESCE(game.accepted_related_target,game.related_question_target)
+              - job.related_ready_count)::integer AS required_related
+       FROM theme_preparation_jobs job
+       JOIN theme_game_sessions game ON game.id=job.game_id
+      WHERE job.id=$1`,
+    [jobId]
+  );
+  const requiredThemed = Number(result.rows[0]?.required_themed);
+  const requiredRelated = Number(result.rows[0]?.required_related);
+  if (
+    !Number.isInteger(requiredThemed) ||
+    requiredThemed < 1 ||
+    !Number.isInteger(requiredRelated) ||
+    requiredRelated < 0
+  )
+    throw new TypeError('theme_gameplay_targets_missing');
+  return { requiredThemed, requiredRelated };
+}
+
 /** Builds the paid pipeline only after the preview scheduler has loaded a plan. */
 export function createThemeE1PreviewPipelineBuilder(
   options: ThemeE1PipelineFactoryOptions
 ): OpenAIThemePreviewPipelineBuilder {
+  return createPreviewPipelineBuilder(options, 'evaluation');
+}
+
+export function createThemeGameplayPreviewPipelineBuilder(
+  options: ThemeE1PipelineFactoryOptions
+): OpenAIThemePreviewPipelineBuilder {
+  return createPreviewPipelineBuilder(options, 'gameplay');
+}
+
+function createPreviewPipelineBuilder(
+  options: ThemeE1PipelineFactoryOptions,
+  executionMode: 'evaluation' | 'gameplay'
+): OpenAIThemePreviewPipelineBuilder {
   return ({ loadedPlan, context, transports }) => {
     const plan = livePlan(loadedPlan.plan);
-    if (loadedPlan.planVersion !== THEME_E1_BUNDLE_VERSION)
-      throw new TypeError('theme_e1_bundle_mismatch');
+    if (executionMode === 'evaluation') {
+      if (loadedPlan.planVersion !== THEME_E1_BUNDLE_VERSION)
+        throw new TypeError('theme_e1_bundle_mismatch');
+    } else {
+      if (loadedPlan.planVersion !== THEME_GAMEPLAY_PLAN_VERSION)
+        throw new TypeError('theme_gameplay_bundle_mismatch');
+      assertThemeGameplayPlanPolicy(plan);
+    }
     if (plan.budgetPolicyFingerprint !== options.expectedBudgetPolicyFingerprint)
       throw new TypeError('theme_e1_budget_policy_mismatch');
     const providers = createThemeE1Providers(transports);
@@ -231,15 +277,34 @@ export function createThemeE1PreviewPipelineBuilder(
       planVersion: loadedPlan.planVersion,
       holdExpiresAt: loadedPlan.holdUntil,
       items,
-      executionMode: 'evaluation',
+      executionMode,
       preflight: async (job) => {
-        await loadThemeE1RequiredThemed(options.pool, job.id);
-        const requiredThemed = items.length;
-        return requiredThemed <= job.candidateCeiling
+        if (executionMode === 'evaluation') {
+          await loadThemeE1RequiredThemed(options.pool, job.id);
+          const requiredThemed = items.length;
+          return requiredThemed <= job.candidateCeiling
+            ? {
+                ok: true,
+                requiredThemed,
+                work: items.map(({ key }) => ({ key })),
+              }
+            : { ok: false, code: 'runtime_unavailable' };
+        }
+        const { requiredThemed, requiredRelated } = await loadThemeGameplayRequirements(
+          options.pool,
+          job.id
+        );
+        const work = items.map(({ key }) => {
+          const slot = plan.proposalSlots.find((candidate) => candidate.key === key);
+          if (!slot?.role) throw new TypeError('theme_gameplay_slot_role_missing');
+          return { key, role: slot.role };
+        });
+        return requiredThemed + requiredRelated <= job.candidateCeiling
           ? {
               ok: true,
               requiredThemed,
-              work: items.map(({ key }) => ({ key })),
+              requiredRelated,
+              work,
             }
           : { ok: false, code: 'runtime_unavailable' };
       },

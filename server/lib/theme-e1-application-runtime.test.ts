@@ -76,7 +76,8 @@ describe('E1 application runtime', () => {
       env: guarded.env,
     });
 
-    expect(result).toEqual({ started: false, code: 'runtime_control_disabled' });
+    expect(result).toMatchObject({ started: false, code: 'runtime_control_disabled' });
+    expect(result.planner).toBeDefined();
     expect(query).toHaveBeenCalledOnce();
     expect(guarded.e1CredentialReads()).toBe(0);
     expect(guarded.existingCredentialReads()).toBe(0);

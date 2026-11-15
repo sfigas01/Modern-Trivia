@@ -34,10 +34,11 @@ external queue for the first preview evaluation.
 - Shutdown stops accepting work and waits only for the current bounded callback;
   the expired lease and immutable attempt identities handle recovery.
 
-The scheduler must refuse to start unless all preview configuration is valid,
-the database runtime control is enabled and the environment is explicitly
-`preview`. Ordinary production startup must continue to instantiate no themed
-provider runtime.
+The scheduler must refuse paid execution unless all preview configuration is
+valid, the database runtime control is enabled and the environment is explicitly
+`preview`. Free gameplay-plan creation may run while durable control remains
+disabled so the integration can be rehearsed without provider calls. Ordinary
+production startup must continue to instantiate no themed provider runtime.
 
 ## Source discovery
 
@@ -61,8 +62,10 @@ Source policy:
   source is unavailable, withhold the candidate.
 - Search snippets, model memory and agreement between two model calls are not
   evidence.
-- Unsupported or poorly sourced themes return a clear inventory shortfall. The
-  runtime does not silently broaden the theme.
+- Unsupported or poorly sourced themes consume only the bounded pinned candidate
+  plan and then report a generic preparation-capacity failure. Missing inventory
+  at Start is never itself an error, and the runtime does not silently broaden
+  the theme or weaken factual review.
 
 The preview source registry should begin with English Wikipedia plus only the
 small number of first-party domains needed by the frozen evaluation themes.

@@ -51,6 +51,7 @@ export type ThemePreviewLoadedPlan = Readonly<{
  */
 export function createThemePreviewPlannedWorker(options: {
   maxCallbackMs: number;
+  preparePlan?(jobId: string): Promise<unknown>;
   loadPlan(jobId: string): Promise<ThemePreviewLoadedPlan>;
   createRuntime(input: { jobId: string; loadedPlan: ThemePreviewLoadedPlan }): {
     run(jobId: string): Promise<unknown>;
@@ -66,6 +67,7 @@ export function createThemePreviewPlannedWorker(options: {
   return Object.freeze({
     maxCallbackMs: options.maxCallbackMs,
     async run(jobId: string) {
+      await options.preparePlan?.(jobId);
       const loadedPlan = await options.loadPlan(jobId);
       if (
         !loadedPlan ||
@@ -114,7 +116,6 @@ export function createPostgresThemePreviewRecoveryRepository(
           WHERE job.status = ANY($2::varchar[])
             AND game.status <> ALL($3::varchar[])
             AND game.expires_at > clock_timestamp()
-            AND job.plan_json IS NOT NULL
             AND (job.last_failure IS NULL OR job.last_failure->>'retryable' = 'true')
             AND (job.lease_owner IS NULL OR job.lease_expires_at <= clock_timestamp())
           ORDER BY job.created_at, job.id

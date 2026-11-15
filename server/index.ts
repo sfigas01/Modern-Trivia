@@ -80,6 +80,7 @@ app.use((req, res, next) => {
   });
   await registerRoutes(httpServer, app, {
     themePreparationScheduler: themeRuntime.started ? themeRuntime : undefined,
+    themePreparationPlanner: themeRuntime.planner,
   });
   // Registered after migrations and routes so Railway only sees healthy once
   // the app can actually serve requests.

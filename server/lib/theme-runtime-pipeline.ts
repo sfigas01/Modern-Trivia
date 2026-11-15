@@ -467,7 +467,7 @@ export function createThemeRuntimePipeline(
           const raw = await dispatch(job, item, 'proposal', 'extract_fact', slotProposer, {
             contractVersion: 'theme-proposal-slot-request-v1',
             planHash: options.proposalSlots.planHash,
-            normalizedTheme: options.proposalSlots.plan.normalizedTheme,
+            normalizedTheme: slot.topic ?? options.proposalSlots.plan.normalizedTheme,
             allocation: {
               version: options.proposalSlots.plan.proposalSlotPolicy.allocationVersion,
               totalSlots: options.proposalSlots.plan.proposalSlotPolicy.totalSlots,
