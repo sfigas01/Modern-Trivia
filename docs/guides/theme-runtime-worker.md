@@ -24,11 +24,11 @@ The control row is intentionally seeded disabled by migration `0019_theme_previe
 
 ## Worker behavior
 
-The worker advances one leased job through the lifecycle stages. Its immutable work items identify whether each candidate fills a themed or related-backup deficit; older frozen evaluation plans omit the role and therefore remain themed-only. The worker checks for unresolved monetary dispatches before the first paid callback and after every stage item, and it renews the lease between source items and provider calls. Nonretryable failures are durable terminal failures; retryable failures remain paused. Pause metadata is fenced by the claim token and expected job state so a stale worker cannot overwrite a reclaimed job. S10 performs complete QA before approval. S9 is invoked at most once and only when S10 returns an explicitly repairable result. Rejected candidates do not count toward either target. Exhausting the bounded candidate plan is a capacity failure, not an inventory-admission failure.
+The worker advances one leased job through the lifecycle stages. Its immutable work items identify whether each candidate fills a themed or related-backup deficit; older frozen evaluation plans omit the role and therefore remain themed-only. Gameplay plans allocate the whole existing 50/75/100 candidate ceiling across the two deficits, including the 25% replacement margin, and interleave the roles so one is not deferred until the end. Existing reusable related reservations reduce only the related deficit. The worker stops accepting candidates for a role once that role's exact target is full. It checks for unresolved monetary dispatches before the first paid callback and after every stage item, and it renews the lease between source items and provider calls. Nonretryable failures are durable terminal failures; retryable failures remain paused. Pause metadata is fenced by the claim token and expected job state so a stale worker cannot overwrite a reclaimed job. S10 performs complete QA before approval. S9 is invoked at most once and only when S10 returns an explicitly repairable result. Rejected candidates do not count toward either target. Exhausting every pinned candidate without filling the exact mix is an honest capacity failure, not an inventory-admission failure; the runtime never weakens review to make the count.
 
 Final reservation preserves any exact reusable related questions captured at admission and atomically adds the approved themed questions plus the generated related deficit. It revalidates evidence, participant history, fact uniqueness and complete participant coverage for both roles before updating ready counts. The complete 30/10, 45/15 or 60/20 mix is still mandatory; partial work never activates gameplay or records exposure.
 
-The room route accepts an injected scheduler. A committed waiting job is scheduled after Start and may be rescheduled by Progress; the database lease and the source-first repositories’ durable attempt records make those retries idempotent. S12B-3 supplies a concurrency-one, bounded, deduplicating scheduler that scans on startup and periodically for recoverable job IDs. It checks the Railway `preview` environment, all live-generation and budget configuration, and the database runtime control before constructing the runtime, before enqueueing, and again when queued work is about to start. Shutdown rejects new work, drops queued work and signals the worker to settle its active bounded callback, pause durably and release its lease before returning. Production injects no scheduler, model adapter, prices, source policy, prompts, or reviewer identities, so the feature remains dormant.
+The room route accepts an injected planner and scheduler. A committed waiting job is planned and scheduled after Start and may be retried by Progress; the database lease, immutable plan and source-first repositories' durable attempt records make those retries idempotent. Startup and periodic recovery scans include eligible unplanned jobs, so a restart between admission and plan attachment does not strand the game. S12B-3 supplies a concurrency-one, bounded, deduplicating scheduler. It checks the Railway `preview` environment, all live-generation and budget configuration, and the database runtime control before constructing the paid runtime, before enqueueing, and again when queued work is about to start. Shutdown rejects new work, drops queued work and signals the worker to settle its active bounded callback, pause durably and release its lease before returning. Production injects no planner, scheduler, model adapter, prices, source policy, prompts, or reviewer identities, so the feature remains dormant.
 
 ## Provider recovery records
 
@@ -69,9 +69,12 @@ hold deadline or a corrupted stored hash fails closed. Loading an attached live
 plan never reruns discovery.
 
 These plans are not provider configurations. They store no credential, raw model
-response or secret. A live-plan schema does not enable execution: the runtime
-pipeline still accepts only offline QA, no scheduler/bootstrap hook was added,
-and ordinary application startup does not instantiate themed generation.
+response or secret. The gameplay plan extends the live plan with a pinned
+`theme` or `related_backup` role and normalized requested topic per proposal
+slot. Related slots use the same deterministically discovered theme article set
+and ask for adjacent facts in the room's canonical related categories; factual
+support must still come from the pinned article passage and pass the same
+independent evidence and QA gates. A plan by itself does not enable execution.
 
 ## Configuration
 
@@ -88,13 +91,15 @@ deterministic pipeline proof covers the connected worker through approval and
 reservation. Together these close the zero-cost E0 integration gate without a
 credential or provider request.
 
-Ordinary application startup still does not install this preview runtime, and
-production flags remain unset. The next checkpoint is the owner-gated E1 preview
-connection and calibration work in
-`docs/guides/theme-provider-evaluation-plan.md`. A concrete transport may be
-implemented without making a request, but connecting a credential or executing a
-paid call requires explicit owner approval. E2 and the separate S13 gameplay
-release decision remain later gates.
+Application startup installs this runtime only when Railway reports the
+`preview` environment, `THEME_LIVE_GENERATION=true`, and all required budget and
+scheduler configuration is valid. That startup path can create free plans for
+new gameplay jobs, but paid work remains blocked until the database runtime
+control is explicitly enabled. Production flags remain unset. The next
+checkpoint is a zero-call preview rehearsal followed by the owner-gated paid
+calibration work in `docs/guides/theme-provider-evaluation-plan.md`. Enabling
+durable runtime control or executing a paid call still requires explicit owner
+approval. E2 and the separate S13 gameplay release decision remain later gates.
 
 S12B-4A adds migration `0021_theme_provider_result_replay.sql`. It stores the
 bounded parsed result of a successful provider attempt in the same settlement

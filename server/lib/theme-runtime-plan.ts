@@ -64,7 +64,7 @@ export const themeProposalSlotPolicySchema = z
     contractVersion: z.literal('theme-proposal-slot-policy-v1'),
     allocationVersion: z.literal('theme-proposal-slot-round-robin-v1'),
     totalSlots: z.number().int().min(1).max(100),
-    maximumSlotsPerSource: z.number().int().min(1).max(20),
+    maximumSlotsPerSource: z.number().int().min(1).max(100),
   })
   .strict();
 
@@ -73,6 +73,8 @@ const proposalSlotSchema = z
     key: z.string().regex(/^proposal:[0-9]{3}$/),
     ordinal: z.number().int().positive().max(100),
     sourceKey: z.string().trim().min(1).max(255),
+    role: z.enum(['theme', 'related_backup']).optional(),
+    topic: z.string().trim().min(1).max(160).optional(),
   })
   .strict();
 
@@ -229,6 +231,12 @@ export const themeLiveRuntimePlanV2Schema = z
           path: ['proposalSlots', index, 'sourceKey'],
           message: 'Proposal slot must reference a pinned source',
         });
+      if ((slot.role === undefined) !== (slot.topic === undefined))
+        context.addIssue({
+          code: 'custom',
+          path: ['proposalSlots', index],
+          message: 'Gameplay slot role and topic must be pinned together',
+        });
       perSource.set(slot.sourceKey, (perSource.get(slot.sourceKey) ?? 0) + 1);
     }
     if (
@@ -298,6 +306,42 @@ export function createThemeLiveRuntimePlanWithProposalSlots(input: {
       key: `proposal:${String(index + 1).padStart(3, '0')}`,
       ordinal: index + 1,
       sourceKey: base.sources[index % base.sources.length].key,
+    })),
+  });
+}
+
+/**
+ * Gameplay plans pin the role and requested topic of every bounded attempt.
+ * Evaluation plans intentionally omit both fields and retain their frozen E1
+ * semantics.
+ */
+export function createThemeLiveRuntimeGameplayPlan(input: {
+  discovery: Extract<WikipediaDiscoveryResult, { ok: true }>['value'];
+  claimEvidencePolicy: ThemeClaimEvidencePolicy;
+  budgetPolicyFingerprint: string;
+  slots: readonly Readonly<{
+    role: 'theme' | 'related_backup';
+    topic: string;
+  }>[];
+  maximumSlotsPerSource: number;
+}): ThemeLiveRuntimePlanV2 {
+  const base = createThemeLiveRuntimePlan(input);
+  const proposalSlotPolicy = themeProposalSlotPolicySchema.parse({
+    contractVersion: 'theme-proposal-slot-policy-v1',
+    allocationVersion: 'theme-proposal-slot-round-robin-v1',
+    totalSlots: input.slots.length,
+    maximumSlotsPerSource: input.maximumSlotsPerSource,
+  });
+  return themeLiveRuntimePlanV2Schema.parse({
+    ...base,
+    contractVersion: 'theme-live-runtime-plan-v2',
+    proposalSlotPolicy,
+    proposalSlots: input.slots.map((slot, index) => ({
+      key: `proposal:${String(index + 1).padStart(3, '0')}`,
+      ordinal: index + 1,
+      sourceKey: base.sources[index % base.sources.length].key,
+      role: slot.role,
+      topic: normalizeWikipediaTheme(slot.topic),
     })),
   });
 }

@@ -77,7 +77,8 @@ export function assertThemeE1PlanPolicy(input: unknown): ThemeLiveRuntimePlanV2 
     !same(plan.discoveryPolicy, THEME_E1_DISCOVERY_POLICY) ||
     !same(plan.claimEvidencePolicy, THEME_E1_CLAIM_EVIDENCE_POLICY) ||
     plan.proposalSlotPolicy.totalSlots !== THEME_E1_SLOTS_PER_JOB ||
-    plan.proposalSlotPolicy.maximumSlotsPerSource !== THEME_E1_SLOTS_PER_JOB
+    plan.proposalSlotPolicy.maximumSlotsPerSource !== THEME_E1_SLOTS_PER_JOB ||
+    plan.proposalSlots.some((slot) => slot.role !== undefined || slot.topic !== undefined)
   )
     throw new TypeError('theme_e1_plan_policy_mismatch');
   return plan;

@@ -12,10 +12,16 @@ import {
 import type { ThemePreviewSchedulerCode } from './theme-preview-scheduler';
 import {
   createThemeE1PreviewPipelineBuilder,
+  createThemeGameplayPreviewPipelineBuilder,
   createThemeE1RepositoryConfig,
 } from './theme-e1-preview-pipeline';
 import { THEME_E1_BUNDLE_VERSION } from './theme-e1-provider-bundle';
 import { THEME_E1_MAX_PIPELINE_CALLBACK_MS, assertThemeE1PlanPolicy } from './theme-e1-plan-policy';
+import {
+  assertThemeGameplayPlanPolicy,
+  createPostgresThemeGameplayPlanner,
+  THEME_GAMEPLAY_PLAN_VERSION,
+} from './theme-gameplay-plan';
 
 export type ThemeE1ApplicationRuntimeOptions = Readonly<{
   pool: Pool;
@@ -44,22 +50,49 @@ export async function bootstrapThemeE1ApplicationRuntime(
   const expectedBudgetPolicyFingerprint = runtime.enabled
     ? themeRuntimeBudgetPolicyFingerprint(runtime.budget)
     : 'disabled';
-  return bootstrapOpenAIThemePreviewRuntime({
+  const planner =
+    env.RAILWAY_ENVIRONMENT_NAME === 'preview' &&
+    env.THEME_LIVE_GENERATION === 'true' &&
+    runtime.enabled
+      ? createPostgresThemeGameplayPlanner(options.pool, {
+          budgetPolicyFingerprint: expectedBudgetPolicyFingerprint,
+        })
+      : undefined;
+  const preparePlan = planner
+    ? async (jobId: string) => {
+        const result = await options.pool.query<{ plan_version: string | null }>(
+          'SELECT plan_version FROM theme_preparation_jobs WHERE id=$1',
+          [jobId]
+        );
+        if (result.rows[0]?.plan_version === null) await planner.prepare(jobId);
+      }
+    : undefined;
+  const scheduler = await bootstrapOpenAIThemePreviewRuntime({
     pool: options.pool,
     env,
     repositories: (loadedPlan) => {
-      const plan = assertThemeE1PlanPolicy(themeLiveRuntimePlanV2Schema.parse(loadedPlan.plan));
-      if (loadedPlan.planVersion !== THEME_E1_BUNDLE_VERSION)
-        throw new TypeError('theme_e1_bundle_mismatch');
+      const parsed = themeLiveRuntimePlanV2Schema.parse(loadedPlan.plan);
+      const plan =
+        loadedPlan.planVersion === THEME_E1_BUNDLE_VERSION
+          ? assertThemeE1PlanPolicy(parsed)
+          : loadedPlan.planVersion === THEME_GAMEPLAY_PLAN_VERSION
+            ? assertThemeGameplayPlanPolicy(parsed)
+            : (() => {
+                throw new TypeError('theme_runtime_bundle_mismatch');
+              })();
       if (plan.budgetPolicyFingerprint !== expectedBudgetPolicyFingerprint)
         throw new TypeError('theme_e1_budget_policy_mismatch');
       return createThemeE1RepositoryConfig(plan);
     },
-    buildPipeline: createThemeE1PreviewPipelineBuilder({
-      pool: options.pool,
-      expectedBudgetPolicyFingerprint,
-    }),
+    buildPipeline: (input) =>
+      (input.loadedPlan.planVersion === THEME_GAMEPLAY_PLAN_VERSION
+        ? createThemeGameplayPreviewPipelineBuilder
+        : createThemeE1PreviewPipelineBuilder)({
+        pool: options.pool,
+        expectedBudgetPolicyFingerprint,
+      })(input),
     pipelineMaxCallbackMs: THEME_E1_MAX_PIPELINE_CALLBACK_MS,
+    preparePlan,
     reportCode: options.reportCode,
     createClient: () =>
       createThemeOpenAIClient({
@@ -67,4 +100,5 @@ export async function bootstrapThemeE1ApplicationRuntime(
         baseURL: env.AI_INTEGRATIONS_OPENAI_BASE_URL,
       }),
   });
+  return { ...scheduler, planner: preparePlan ? { prepare: preparePlan } : undefined };
 }

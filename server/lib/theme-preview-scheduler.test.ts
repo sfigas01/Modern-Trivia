@@ -56,23 +56,29 @@ describe('planned preview worker', () => {
       plan: { contractVersion: 'theme-preview-runtime-plan-v1', mode: 'offline_fixture' },
     } as never;
     const loadPlan = vi.fn(async () => loadedPlan);
+    const preparePlan = vi.fn(async () => undefined);
     const run = vi.fn(async () => 'ready');
     const createRuntime = vi.fn(() => ({ run }));
     const worker = createThemePreviewPlannedWorker({
       maxCallbackMs: 120_000,
+      preparePlan,
       loadPlan,
       createRuntime,
     });
 
     await expect(worker.run('job-a')).resolves.toBe('ready');
+    expect(preparePlan).toHaveBeenCalledWith('job-a');
     expect(loadPlan).toHaveBeenCalledWith('job-a');
+    expect(preparePlan.mock.invocationCallOrder[0]).toBeLessThan(
+      loadPlan.mock.invocationCallOrder[0]
+    );
     expect(createRuntime).toHaveBeenCalledWith({ jobId: 'job-a', loadedPlan });
     expect(run).toHaveBeenCalledWith('job-a');
   });
 });
 
 describe('theme preview scheduler bootstrap', () => {
-  it('scans only durable runnable preview jobs in stable order', async () => {
+  it('scans planned and unplanned durable jobs so automatic planning survives restart', async () => {
     const query = vi.fn(async () => ({ rows: [{ id: 'job-a' }, { id: 'job-b' }] }));
     const repository = createPostgresThemePreviewRecoveryRepository({ query } as never);
     await expect(repository.scanRecoverableJobIds({ limit: 4 })).resolves.toEqual([
@@ -82,7 +88,7 @@ describe('theme preview scheduler bootstrap', () => {
     const [sql, parameters] = query.mock.calls[0];
     expect(sql).toContain("job.last_failure->>'retryable' = 'true'");
     expect(sql).toContain('job.lease_expires_at <= clock_timestamp()');
-    expect(sql).toContain('job.plan_json IS NOT NULL');
+    expect(sql).not.toContain('job.plan_json IS NOT NULL');
     expect(sql).toContain('ORDER BY job.created_at, job.id');
     expect(parameters[0]).toBe(4);
     await expect(repository.scanRecoverableJobIds({ limit: 0 })).rejects.toThrow(

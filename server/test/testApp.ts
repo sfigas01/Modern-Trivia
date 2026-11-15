@@ -1,9 +1,12 @@
 import express, { type Express } from 'express';
 import { createServer } from 'http';
-import type { ThemePreparationScheduler } from '../routes.rooms';
+import type { ThemePreparationPlanner, ThemePreparationScheduler } from '../routes.rooms';
 
 export async function buildTestApp(
-  options: { themePreparationScheduler?: ThemePreparationScheduler } = {}
+  options: {
+    themePreparationScheduler?: ThemePreparationScheduler;
+    themePreparationPlanner?: ThemePreparationPlanner;
+  } = {}
 ): Promise<Express> {
   const app = express();
   app.use(express.json());
