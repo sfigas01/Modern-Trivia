@@ -10,11 +10,15 @@ const NOW = new Date('2026-10-12T12:00:00Z');
 const ID = '00000000-0000-4000-8000-000000000001';
 const GAME = '00000000-0000-4000-8000-000000000002';
 const CANDIDATE = '00000000-0000-4000-8000-000000000003';
+const RELATED_CANDIDATE = '00000000-0000-4000-8000-000000000008';
 const FACT = '00000000-0000-4000-8000-000000000004';
+const RELATED_FACT = '00000000-0000-4000-8000-000000000009';
 const REVISION = '00000000-0000-4000-8000-000000000005';
+const RELATED_REVISION = '00000000-0000-4000-8000-000000000010';
 const IDENTITY = '00000000-0000-4000-8000-000000000006';
 const OTHER_IDENTITY = '00000000-0000-4000-8000-000000000007';
 const QUESTION = 'question-1';
+const RELATED_QUESTION = 'question-2';
 
 function result<T>(rows: T[]) {
   return { rows, rowCount: rows.length };
@@ -234,6 +238,169 @@ describe('PostgreSQL theme runtime repository', () => {
     ).toBe(false);
   });
 
+  it.each([false, true])(
+    'atomically fills a missing related slot alongside the themed target (replay=%s)',
+    async (replay) => {
+      const snapshot = (answer: string) => ({
+        themeSlug: 'trees',
+        category: 'Nature',
+        difficulty: 'Easy' as const,
+        question: `Which tree is ${answer}?`,
+        answer,
+        acceptableAnswers: [],
+        explanation: `The answer is ${answer}.`,
+        pillar: 'nature',
+        tags: [],
+      });
+      const themed = snapshot('Oak');
+      const related = snapshot('Maple');
+      const { pool, statements } = fakePool((sql, args) => {
+        if (sql.includes('FROM theme_preparation_jobs job'))
+          return result([
+            {
+              job_id: ID,
+              game_id: GAME,
+              job_status: 'reserving',
+              lease_owner: 'claim',
+              lease_expires_at: new Date(NOW.getTime() + 60_000),
+              game_status: 'waiting',
+              game_expires_at: new Date(NOW.getTime() + 60_000),
+              roster_locked_at: NOW,
+              player_count: 2,
+              themed_target: 1,
+              related_target: 1,
+              corpus_revision: 1,
+              history_revision: 1,
+            },
+          ]);
+        if (sql.includes('FROM theme_game_participants'))
+          return result([{ identity_id: IDENTITY }, { identity_id: OTHER_IDENTITY }]);
+        if (sql.includes('WITH RECURSIVE subjects'))
+          return result([{ id: IDENTITY }, { id: OTHER_IDENTITY }]);
+        if (sql.startsWith('SELECT count(*)::text AS count')) return result([{ count: '0' }]);
+        if (sql.startsWith('SELECT * FROM theme_question_reservations'))
+          return result(
+            replay
+              ? [
+                  {
+                    id: CANDIDATE,
+                    job_id: ID,
+                    question_id: QUESTION,
+                    question_revision_id: REVISION,
+                    fact_id: FACT,
+                    fact_revision_id: REVISION,
+                    role: 'theme',
+                    corpus_revision: 1,
+                    history_revision: 1,
+                    status: 'held',
+                    released_at: null,
+                    expires_at: new Date(NOW.getTime() + 60_000),
+                  },
+                  {
+                    id: RELATED_CANDIDATE,
+                    job_id: ID,
+                    question_id: RELATED_QUESTION,
+                    question_revision_id: RELATED_REVISION,
+                    fact_id: RELATED_FACT,
+                    fact_revision_id: RELATED_REVISION,
+                    role: 'related_backup',
+                    corpus_revision: 1,
+                    history_revision: 1,
+                    status: 'held',
+                    released_at: null,
+                    expires_at: new Date(NOW.getTime() + 60_000),
+                  },
+                ]
+              : []
+          );
+        if (sql.includes('SELECT fact_id,fact_revision_id FROM theme_candidates')) {
+          const isRelated = args[0] === RELATED_CANDIDATE;
+          return result([
+            {
+              fact_id: isRelated ? RELATED_FACT : FACT,
+              fact_revision_id: isRelated ? RELATED_REVISION : REVISION,
+            },
+          ]);
+        }
+        if (sql.includes('FROM theme_question_approvals approval')) {
+          const isRelated = args[0] === RELATED_CANDIDATE;
+          const content = isRelated ? related : themed;
+          return result([
+            {
+              fact_id: isRelated ? RELATED_FACT : FACT,
+              fact_revision_id: isRelated ? RELATED_REVISION : REVISION,
+              library_revision_id: isRelated ? RELATED_REVISION : REVISION,
+              question_id: isRelated ? RELATED_QUESTION : QUESTION,
+              question_content_hash: hashQuestionSnapshot(content),
+              question_revision_id: isRelated ? RELATED_REVISION : REVISION,
+              ...evidenceBinding(),
+              evidence_attempt_id: 'evidence-attempt',
+              evidence_review_id: 'evidence-review',
+              evidence_fingerprint: 'evidence-fingerprint',
+              content: { themeSlug: content.themeSlug },
+              category: content.category,
+              difficulty: content.difficulty,
+              question: content.question,
+              answer: content.answer,
+              acceptable_answers: content.acceptableAnswers,
+              explanation: content.explanation,
+              pillar: content.pillar,
+              tags: content.tags,
+            },
+          ]);
+        }
+        if (sql.includes('WITH last_games AS')) return result([]);
+        if (sql.includes('INSERT INTO theme_question_reservations'))
+          return result([{ id: args[6] === 'related_backup' ? RELATED_CANDIDATE : CANDIDATE }]);
+        if (sql.startsWith('SELECT id,fact_id FROM theme_question_reservations'))
+          return result([
+            { id: CANDIDATE, fact_id: FACT },
+            { id: RELATED_CANDIDATE, fact_id: RELATED_FACT },
+          ]);
+        if (sql.includes('SELECT participant.reservation_id'))
+          return result([
+            { reservation_id: CANDIDATE, identity_id: IDENTITY, fact_id: FACT },
+            { reservation_id: CANDIDATE, identity_id: OTHER_IDENTITY, fact_id: FACT },
+            {
+              reservation_id: RELATED_CANDIDATE,
+              identity_id: IDENTITY,
+              fact_id: RELATED_FACT,
+            },
+            {
+              reservation_id: RELATED_CANDIDATE,
+              identity_id: OTHER_IDENTITY,
+              fact_id: RELATED_FACT,
+            },
+          ]);
+        if (sql.includes('count(*) FILTER')) return result([{ themed: '1', related: '1' }]);
+        if (sql.startsWith('UPDATE theme_preparation_jobs')) return result([{ id: ID }]);
+        return result([]);
+      });
+
+      await expect(
+        runtime(pool).reserveApproved(job(), [
+          { itemKey: 'theme', candidateId: CANDIDATE, questionId: QUESTION, role: 'theme' },
+          {
+            itemKey: 'related',
+            candidateId: RELATED_CANDIDATE,
+            questionId: RELATED_QUESTION,
+            role: 'related_backup',
+          },
+        ])
+      ).resolves.toEqual({ ready: true });
+
+      expect(
+        statements
+          .filter(({ sql }) => sql.includes('INSERT INTO theme_question_reservations'))
+          .map(({ args }) => args[6])
+      ).toEqual(replay ? [] : ['theme', 'related_backup']);
+      expect(
+        statements.find(({ sql }) => sql.startsWith('SELECT count(*)::text AS count'))?.sql
+      ).toContain('candidate.job_id = $2');
+      expect(statements.at(-1)?.sql).toBe('COMMIT');
+    }
+  );
+
   it.each([
     { replayMismatch: false, staleEvidence: false },
     { replayMismatch: true, staleEvidence: false },
@@ -280,7 +447,7 @@ describe('PostgreSQL theme runtime repository', () => {
             return result([{ id: IDENTITY }, { id: OTHER_IDENTITY }]);
           if (sql.includes('count(*) FILTER')) return result([{ themed: '1', related: '1' }]);
           if (sql.includes("role = 'related_backup'")) return result([{ count: '1' }]);
-          if (sql.includes("role = 'theme' ORDER BY"))
+          if (sql.startsWith('SELECT * FROM theme_question_reservations'))
             return result(
               replayMismatch
                 ? [
@@ -291,6 +458,7 @@ describe('PostgreSQL theme runtime repository', () => {
                       question_revision_id: 'wrong-revision',
                       fact_id: FACT,
                       fact_revision_id: REVISION,
+                      role: 'theme',
                       status: 'held',
                       released_at: null,
                       expires_at: new Date(NOW.getTime() + 60_000),
@@ -300,6 +468,13 @@ describe('PostgreSQL theme runtime repository', () => {
                   ]
                 : []
             );
+          if (sql.startsWith('SELECT id,fact_id FROM theme_question_reservations'))
+            return result([{ id: ID, fact_id: FACT }]);
+          if (sql.includes('SELECT participant.reservation_id'))
+            return result([
+              { reservation_id: ID, identity_id: IDENTITY, fact_id: FACT },
+              { reservation_id: ID, identity_id: OTHER_IDENTITY, fact_id: FACT },
+            ]);
           if (sql.includes('SELECT fact_id,fact_revision_id FROM theme_candidates'))
             return result([{ fact_id: FACT, fact_revision_id: REVISION }]);
           if (sql.includes('FROM theme_question_approvals approval'))
@@ -358,7 +533,7 @@ describe('PostgreSQL theme runtime repository', () => {
         ).toBeLessThan(sql.indexOf('SELECT id FROM theme_candidates WHERE id = $1 FOR UPDATE'));
         expect(
           sql.indexOf('SELECT id FROM theme_candidates WHERE id = $1 FOR UPDATE')
-        ).toBeLessThan(sql.findIndex((entry) => entry.includes('FROM theme_question_approvals')));
+        ).toBeLessThan(sql.findIndex((entry) => entry.includes('approval.library_revision_id')));
         const releaseExpired = sql.findIndex((entry) =>
           entry.includes('UPDATE theme_reservation_participants participant SET released_at=$2')
         );

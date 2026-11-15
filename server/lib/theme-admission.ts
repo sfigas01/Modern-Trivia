@@ -194,6 +194,25 @@ export function createThemeAdmission(
           if (prior?.generation_owner_user_id !== input.userId)
             throw new ThemeAdmissionError(403, 'Theme preparation belongs to another account');
           gameId = room.theme_preparation_game_id;
+          // Jobs admitted under the superseded full-backup prerequisite may be
+          // retried safely when no candidate work or reservation ever started.
+          // Promote only that exact legacy state; every other failure remains
+          // immutable and visible to operators.
+          await db.query(
+            `UPDATE theme_preparation_jobs AS job
+                SET status='waiting',public_stage='paused',last_failure=NULL,
+                    updated_at=clock_timestamp()
+              WHERE job.game_id=$1 AND job.status='shortfall'
+                AND job.last_failure->>'code'='inventory_shortfall'
+                AND job.candidates_used=0 AND job.lease_owner IS NULL
+                AND job.lease_expires_at IS NULL
+                AND NOT EXISTS (
+                  SELECT 1 FROM theme_question_reservations reservation
+                  WHERE reservation.game_id=$1
+                    AND reservation.status IN ('held','selected','displayed')
+                )`,
+            [gameId]
+          );
         } else {
           if (room.status !== 'lobby' || room.phase !== 'LOBBY')
             throw new ThemeAdmissionError(409, 'Game has already started');
@@ -349,56 +368,42 @@ export function createThemeAdmission(
             }
             chosen.push(row);
             facts.add(row.fact_id);
-            if (chosen.length === bundle.game.questionCount) break;
+            if (chosen.length === bundle.game.relatedQuestionTarget) break;
           }
-          if (chosen.length < bundle.game.questionCount) {
-            await db.query(`UPDATE theme_game_sessions SET status='waiting' WHERE id=$1`, [gameId]);
-            await db.query(
-              `UPDATE theme_preparation_jobs SET status='shortfall',public_stage='paused',last_failure=$2,updated_at=clock_timestamp() WHERE id=$1`,
-              [
-                bundle.job.id,
-                JSON.stringify({
-                  contractVersion: THEME_RELIABILITY_CONTRACT_VERSION,
-                  code: 'inventory_shortfall',
-                  retryable: false,
-                  operation: null,
-                  provider: null,
-                  httpStatus: null,
-                  candidateOrdinal: null,
-                }),
-              ]
-            );
-          } else {
-            for (const row of chosen) {
-              const reservation = (
-                await db.query(
-                  `INSERT INTO theme_question_reservations
+          for (const row of chosen) {
+            const reservation = (
+              await db.query(
+                `INSERT INTO theme_question_reservations
               (game_id,job_id,question_id,question_revision_id,fact_id,fact_revision_id,role,corpus_revision,history_revision,expires_at)
               VALUES ($1,$2,$3,$4,$5,$6,'related_backup',1,1,$7) RETURNING id`,
-                  [
-                    gameId,
-                    bundle.job.id,
-                    row.id,
-                    row.library_revision_id,
-                    row.fact_id,
-                    row.fact_revision_id,
-                    room.expires_at,
-                  ]
-                )
-              ).rows[0];
-              for (const identityId of subjects)
-                await db.query(
-                  `INSERT INTO theme_reservation_participants(reservation_id,identity_id,fact_id) VALUES($1,$2,$3)`,
-                  [reservation.id, identityId, row.fact_id]
-                );
-            }
-            // Dormant until S11B: no queued job can be picked up for paid work.
-            await db.query(`UPDATE theme_game_sessions SET status='waiting' WHERE id=$1`, [gameId]);
-            await db.query(
-              `UPDATE theme_preparation_jobs SET status='waiting',public_stage='paused' WHERE id=$1`,
-              [bundle.job.id]
-            );
+                [
+                  gameId,
+                  bundle.job.id,
+                  row.id,
+                  row.library_revision_id,
+                  row.fact_id,
+                  row.fact_revision_id,
+                  room.expires_at,
+                ]
+              )
+            ).rows[0];
+            for (const identityId of subjects)
+              await db.query(
+                `INSERT INTO theme_reservation_participants(reservation_id,identity_id,fact_id) VALUES($1,$2,$3)`,
+                [reservation.id, identityId, row.fact_id]
+              );
           }
+          // Existing verified inventory is an optimization, never an admission
+          // prerequisite. Persist the exact reusable portion and let the durable
+          // worker fill every remaining themed/related slot before readiness.
+          await db.query(`UPDATE theme_game_sessions SET status='waiting' WHERE id=$1`, [gameId]);
+          await db.query(
+            `UPDATE theme_preparation_jobs
+                SET status='waiting',public_stage='paused',last_failure=NULL,
+                    related_ready_count=$2,ready_count=$2,updated_at=clock_timestamp()
+              WHERE id=$1`,
+            [bundle.job.id, chosen.length]
+          );
         }
         await db.query('COMMIT');
       } catch (error) {

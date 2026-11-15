@@ -383,7 +383,7 @@ describe('concrete dormant theme pipeline', () => {
     expect(dispatch).toHaveBeenCalledTimes(4);
     expect(f.physical).toHaveBeenCalledTimes(4);
     expect(reserveApproved).toHaveBeenCalledWith(expect.objectContaining({ status: 'reserving' }), [
-      expect.objectContaining({ itemKey: item.key }),
+      expect.objectContaining({ itemKey: item.key, role: 'theme' }),
     ]);
     expect(current.status).toBe('ready');
   });

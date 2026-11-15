@@ -165,17 +165,17 @@ afterAll(() => {
   else process.env.VITE_THEME_ROUNDS = ORIGINAL_FLAG;
 });
 
-function job(shortfall = false) {
+function job(failed = false) {
   return {
     gameId: '11111111-1111-4111-8111-111111111111',
     jobId: '44444444-4444-4444-8444-444444444444',
     progress: {
-      status: shortfall ? 'shortfall' : 'waiting',
+      status: failed ? 'shortfall' : 'waiting',
       readyCount: 0,
       requiredCount: 40,
       canStart: false,
-      failure: shortfall
-        ? { code: 'related_inventory_shortfall', message: 'Not enough verified related questions.' }
+      failure: failed
+        ? { code: 'preparation_failed', message: 'Theme preparation could not be completed.' }
         : null,
     },
   };
@@ -271,7 +271,7 @@ describe('durable theme-start route', () => {
       .expect(202);
     expect(scheduler.run).toHaveBeenCalledWith(job().jobId);
   });
-  it('reports an explicit inventory shortfall', async () => {
+  it('reports a terminal preparation failure without exposing inventory internals', async () => {
     admissionMock.start.mockResolvedValueOnce(job(true));
     const scheduler = { run: vi.fn(async () => undefined) };
     const res = await request(await buildTestApp({ themePreparationScheduler: scheduler }))
@@ -280,7 +280,8 @@ describe('durable theme-start route', () => {
       .set('X-Player-Token', 'host-secret')
       .send({})
       .expect(409);
-    expect(res.body.job.progress.failure.code).toBe('related_inventory_shortfall');
+    expect(res.body.job.progress.failure.code).toBe('preparation_failed');
+    expect(JSON.stringify(res.body)).not.toContain('verified related questions');
     expect(scheduler.run).not.toHaveBeenCalled();
     expect(runThemedGamePreparation).not.toHaveBeenCalled();
   });

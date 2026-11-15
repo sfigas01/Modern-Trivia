@@ -102,9 +102,11 @@ describe.runIf(Boolean(databaseUrl))('S11A PostgreSQL admission and history', ()
       expect(starts[0].gameId).toBe(starts[1].gameId);
       expect(starts[0].jobId).toBe(starts[1].jobId);
       expect(starts[0].progress).toMatchObject({
-        status: 'shortfall',
+        status: 'waiting',
         canStart: false,
-        failure: { code: 'related_inventory_shortfall' },
+        readyCount: 0,
+        relatedReadyCount: 0,
+        failure: null,
       });
       // A retry must release its room-lock transaction client before projection.
       // With the original early-return branch, this one-connection pool timed out.

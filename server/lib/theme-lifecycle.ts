@@ -376,9 +376,9 @@ function publicFailureFor(job: ThemeJobRecord): PublicThemeFailure | null {
       };
     case 'inventory_shortfall':
       return {
-        code: 'related_inventory_shortfall',
-        retryable: false,
-        message: 'There are not enough verified related questions for this roster.',
+        code: 'preparation_failed',
+        retryable: job.lastFailure.retryable,
+        message: 'Theme preparation could not be completed.',
       };
     case 'budget_unavailable':
       return {

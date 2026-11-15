@@ -7,7 +7,12 @@ import {
   type ThemeLifecycleRepository,
 } from './theme-lifecycle';
 
-export type ThemePreparationWorkItem = Readonly<{ key: string }>;
+export type ThemePreparationRole = 'theme' | 'related_backup';
+export type ThemePreparationWorkItem = Readonly<{
+  key: string;
+  /** Older frozen evaluation plans contain themed slots only. */
+  role?: ThemePreparationRole;
+}>;
 export type ThemeGeneratedCandidate = Readonly<{ itemKey: string; candidateId: string }>;
 export type ThemeGenerationDecision =
   | Readonly<{ status: 'generated'; candidate: ThemeGeneratedCandidate }>
@@ -21,6 +26,8 @@ export type ThemeApprovedCandidate = Readonly<{
   itemKey: string;
   candidateId: string;
   questionId: string;
+  /** Assigned from the immutable work item by the worker, never the model. */
+  role?: ThemePreparationRole;
 }>;
 
 export type ThemeApprovalDecision =
@@ -67,6 +74,7 @@ export interface ThemePreparationWorkerDependencies {
     | Readonly<{
         ok: true;
         requiredThemed: number;
+        requiredRelated?: number;
         work: readonly ThemePreparationWorkItem[];
         executionMode?: 'gameplay' | 'evaluation';
       }>
@@ -121,6 +129,8 @@ const RUNNABLE = new Set<ThemeJobStatus>([
   'semantic_check',
   'reserving',
 ]);
+
+const roleFor = (item: ThemePreparationWorkItem): ThemePreparationRole => item.role ?? 'theme';
 
 export function createThemePreparationWorker(dependencies: ThemePreparationWorkerDependencies) {
   const leaseDurationMs = dependencies.leaseDurationMs ?? 30_000;
@@ -229,12 +239,23 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
         const preflight = await dependencies.preflight(job);
         if (!preflight.ok) throw new ThemePreparationWorkerError(preflight.code, false);
         const evaluation = preflight.executionMode === 'evaluation';
+        const requiredRelated = preflight.requiredRelated ?? 0;
+        const requiredTotal = preflight.requiredThemed + requiredRelated;
+        const workByKey = new Map(preflight.work.map((item) => [item.key, item]));
+        const availableThemed = preflight.work.filter((item) => roleFor(item) === 'theme').length;
+        const availableRelated = preflight.work.filter(
+          (item) => roleFor(item) === 'related_backup'
+        ).length;
         if (
           preflight.requiredThemed < 1 ||
-          preflight.work.length < preflight.requiredThemed ||
-          (evaluation && preflight.work.length !== preflight.requiredThemed)
+          requiredRelated < 0 ||
+          preflight.work.length < requiredTotal ||
+          availableThemed < preflight.requiredThemed ||
+          availableRelated < requiredRelated ||
+          workByKey.size !== preflight.work.length ||
+          (evaluation && (requiredRelated !== 0 || preflight.work.length !== requiredTotal))
         )
-          throw new ThemePreparationWorkerError('inventory_shortfall', false);
+          throw new ThemePreparationWorkerError('runtime_unavailable', false);
 
         // Recovery must resolve or reconcile an earlier physical dispatch
         // before another paid operation may begin.
@@ -288,6 +309,8 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
 
         job = await transition(job, claim, 'qa');
         const approved: ThemeApprovedCandidate[] = [];
+        let approvedThemed = 0;
+        let approvedRelated = 0;
         for (const candidate of reviewed) {
           job = await renew(job, claim);
           assertContinuing();
@@ -305,8 +328,25 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
               await dependencies.assertDispatchesSettled(job.id);
             }
           }
-          if (decision.status === 'approved') approved.push(decision.approval);
-          if (!evaluation && approved.length === preflight.requiredThemed) break;
+          if (decision.status === 'approved') {
+            const item = workByKey.get(decision.approval.itemKey);
+            if (!item) throw new ThemePreparationWorkerError('preparation_failed', false);
+            const role = roleFor(item);
+            if (
+              (role === 'theme' && approvedThemed < preflight.requiredThemed) ||
+              (role === 'related_backup' && approvedRelated < requiredRelated)
+            ) {
+              approved.push({ ...decision.approval, role });
+              if (role === 'theme') approvedThemed += 1;
+              else approvedRelated += 1;
+            }
+          }
+          if (
+            !evaluation &&
+            approvedThemed === preflight.requiredThemed &&
+            approvedRelated === requiredRelated
+          )
+            break;
         }
 
         job = await transition(job, claim, 'semantic_check');
@@ -327,8 +367,8 @@ export function createThemePreparationWorker(dependencies: ThemePreparationWorke
             );
           return { status: 'completed', jobId, approved: approved.length };
         }
-        if (approved.length < preflight.requiredThemed)
-          throw new ThemePreparationWorkerError('inventory_shortfall', false);
+        if (approvedThemed < preflight.requiredThemed || approvedRelated < requiredRelated)
+          throw new ThemePreparationWorkerError('candidate_ceiling', false);
         job = await transition(job, claim, 'reserving');
         job = await renew(job, claim);
         assertContinuing();

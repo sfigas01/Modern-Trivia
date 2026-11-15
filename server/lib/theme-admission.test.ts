@@ -189,8 +189,19 @@ function setup(
       return result([]);
     }
     if (text.startsWith('UPDATE theme_preparation_jobs SET status=')) {
-      job!.status = text.includes("'shortfall'") ? 'shortfall' : 'waiting';
-      job!.last_failure = values[1] ? JSON.parse(String(values[1])) : null;
+      job!.status = 'waiting';
+      job!.last_failure = null;
+      job!.related_ready_count = Number(values[1]);
+      job!.ready_count = Number(values[1]);
+      return result([]);
+    }
+    if (text.startsWith('UPDATE theme_preparation_jobs AS job')) {
+      if (job?.status === 'shortfall') {
+        job.status = 'waiting';
+        job.public_stage = 'paused';
+        job.last_failure = null;
+        return result([{ id: jobId }]);
+      }
       return result([]);
     }
     if (text.startsWith('SELECT q.*')) return result(rows);
@@ -233,23 +244,33 @@ function setup(
     query,
     commands,
     reservations,
+    markLegacyShortfall: () => {
+      if (!job) throw new Error('job missing');
+      job.status = 'shortfall';
+      job.last_failure = {
+        contractVersion: 'theme-reliability-v1',
+        code: 'inventory_shortfall',
+        retryable: false,
+      };
+    },
   };
 }
 const input = { code: 'ABCD2', playerToken: 'host-token', userId: 'host-account' };
 beforeEach(() => vi.clearAllMocks());
 describe('dormant atomic theme admission', () => {
-  it('reserves the full 40-question backup set, freezes once, and records no exposure', async () => {
+  it('reuses only the 10-question related target, freezes once, and records no exposure', async () => {
     const test = setup();
     const first = await test.admission.start(input),
       second = await test.admission.start(input);
     expect(first.gameId).toBe(second.gameId);
     expect(first.progress).toMatchObject({
       status: 'waiting',
-      readyCount: 0,
+      readyCount: 10,
+      relatedReadyCount: 10,
       canStart: false,
       candidatesUsed: 0,
     });
-    expect(test.reservations).toHaveLength(40);
+    expect(test.reservations).toHaveLength(10);
     expect(
       test.commands.filter((c) => c.text.startsWith('INSERT INTO theme_game_sessions'))
     ).toHaveLength(1);
@@ -258,11 +279,11 @@ describe('dormant atomic theme admission', () => {
     ).toHaveLength(2);
     expect(
       test.commands.filter((c) => c.text.startsWith('INSERT INTO theme_reservation_participants'))
-    ).toHaveLength(80);
+    ).toHaveLength(20);
     expect(
       test.commands.some((c) => c.text.startsWith('INSERT INTO theme_question_exposures'))
     ).toBe(false);
-    expect(evidence.qaContext).toHaveBeenCalledTimes(40);
+    expect(evidence.qaContext).toHaveBeenCalledTimes(10);
     expect(
       test.commands.find((c) =>
         c.text.startsWith('UPDATE theme_game_sessions SET generation_owner_user_id')
@@ -276,6 +297,21 @@ describe('dormant atomic theme admission', () => {
     expect(retry.gameId).toBe(first.gameId);
     expect(test.pool.connect).toHaveBeenCalledTimes(6);
     expect(test.commands.filter((command) => command.text === 'COMMIT')).toHaveLength(2);
+  });
+  it('promotes an untouched legacy admission shortfall on host retry', async () => {
+    const test = setup({ count: 0 });
+    const first = await test.admission.start(input);
+    test.markLegacyShortfall();
+
+    const retry = await test.admission.start(input);
+
+    expect(first.progress.status).toBe('waiting');
+    expect(retry.progress).toMatchObject({ status: 'waiting', failure: null });
+    expect(
+      test.commands.find((command) =>
+        command.text.startsWith('UPDATE theme_preparation_jobs AS job')
+      )?.text
+    ).toContain("job.last_failure->>'code'='inventory_shortfall'");
   });
   it('uses persisted subjects without rewriting account identities during admission', async () => {
     const test = setup();
@@ -312,20 +348,27 @@ describe('dormant atomic theme admission', () => {
     ).toBe(false);
     expect(test.commands.at(-1)?.text).toBe('ROLLBACK');
   });
-  it('persists explicit shortfall and reserves nothing when any backup is missing', async () => {
-    const test = setup({ count: 39 });
+  it('keeps preparing and preserves partial verified inventory for the worker to fill', async () => {
+    const test = setup({ count: 9 });
     const result = await test.admission.start(input);
     expect(result.progress).toMatchObject({
-      status: 'shortfall',
+      status: 'waiting',
       canStart: false,
-      failure: { code: 'related_inventory_shortfall' },
+      relatedReadyCount: 9,
+      readyCount: 9,
+      failure: null,
     });
-    expect(test.reservations).toHaveLength(0);
+    expect(test.reservations).toHaveLength(9);
   });
-  it('ignores ordinary approved questions without runtime evidence policy', async () => {
+  it('starts preparation with zero reusable inventory when no evidence policy is configured', async () => {
     const test = setup();
     const result = await createThemeAdmission(test.pool).start(input);
-    expect(result.progress.status).toBe('shortfall');
+    expect(result.progress).toMatchObject({
+      status: 'waiting',
+      readyCount: 0,
+      relatedReadyCount: 0,
+      failure: null,
+    });
     expect(evidence.qaContext).not.toHaveBeenCalled();
     expect(test.reservations).toHaveLength(0);
   });
@@ -339,7 +382,7 @@ describe('dormant atomic theme admission', () => {
         : original(text, values)
     );
     await test.admission.start(input);
-    expect(test.reservations).toHaveLength(40);
+    expect(test.reservations).toHaveLength(10);
     expect(test.reservations).not.toEqual(expect.arrayContaining(['q-0', 'q-1', 'q-2']));
   });
   it.each([{ actorUser: 'other-account' }, { rounds: 10 }, { duplicateIdentity: true }])(
