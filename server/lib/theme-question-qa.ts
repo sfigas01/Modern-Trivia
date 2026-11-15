@@ -88,6 +88,10 @@ export type ThemeQuestionQaDecision = Readonly<{
   evaluatedAt: string;
   stage: ThemeQuestionQaStage;
   reason: ThemeQuestionQaReason;
+  reviewDetails: Readonly<{
+    staticFindings?: unknown;
+    quality?: FactCheckReport['results'][number];
+  }> | null;
 }>;
 
 export class ThemeQuestionQaError extends Error {
@@ -181,6 +185,7 @@ export async function runThemeQuestionQa(
     corpusHash: null,
     policyVersion: THEME_QUESTION_QA_POLICY_VERSION,
     evaluatedAt: evaluatedAt.toISOString(),
+    reviewDetails: null,
   } as const;
   const withheld = (
     stage: ThemeQuestionQaStage,
@@ -213,7 +218,11 @@ export async function runThemeQuestionQa(
 
   const question = asQuestion(context, evaluatedAt);
   const audit = auditQuestionQuality([structuredClone(question)]);
-  if (audit.findings.length > 0) return withheld('static', 'static_finding', evidence);
+  if (audit.findings.length > 0)
+    return withheld('static', 'static_finding', {
+      ...evidence,
+      reviewDetails: { staticFindings: audit.findings },
+    });
 
   let quality: FactCheckReport;
   try {
@@ -228,7 +237,10 @@ export async function runThemeQuestionQa(
     return withheld('quality', 'quality_incomplete', evidence);
   const verdict = matching[0];
   if (verdict.verdict !== 'pass' || verdict.coherence !== 'pass' || verdict.obviousness !== 'pass')
-    return withheld('quality', 'quality_adverse', evidence);
+    return withheld('quality', 'quality_adverse', {
+      ...evidence,
+      reviewDetails: { quality: verdict },
+    });
 
   let corpus: z.infer<typeof corpusSchema>;
   try {
@@ -354,6 +366,7 @@ export async function runThemeQuestionQa(
     ...base,
     ...evidence,
     ...corpusValues,
+    reviewDetails: { quality: verdict },
     status: 'passed',
     stage: 'recheck',
     reason: 'passed',

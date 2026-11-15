@@ -37,6 +37,7 @@ const repairableParentDecisionSchema = z
     evaluatedAt: z.string().datetime(),
     stage: z.enum(['static', 'quality']),
     reason: z.enum(['static_finding', 'quality_adverse']),
+    reviewDetails: z.record(z.string(), z.unknown()).nullable().optional(),
   })
   .strict()
   .refine(
@@ -309,7 +310,11 @@ export function createPostgresThemeQuestionRepairOrchestrator(
         let dispatched = false;
         const replay = await dependencies.generation.generate(request.generation, async () => {
           dispatched = true;
-          return { status: 'declined' };
+          return {
+            status: 'declined',
+            reason: 'other_quality_issue',
+            explanation: 'Replay callback must never be dispatched.',
+          };
         });
         if (dispatched) throw new ThemeQuestionRepairError('attempt_conflict');
         if (
@@ -327,7 +332,7 @@ export function createPostgresThemeQuestionRepairOrchestrator(
         questionRevisionId: repair.parentQuestionRevisionId,
         questionContentHash: repair.parentQuestionContentHash,
       });
-      if (!validateParentDecision(request.parentQaDecision, repair, parent))
+      if (!validateParentDecision(rawRequest.parentQaDecision, repair, parent))
         throw new ThemeQuestionRepairError('parent_not_repairable');
 
       const generated = await dependencies.generation.generate(

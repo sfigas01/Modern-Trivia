@@ -958,6 +958,7 @@ export const themeCandidates = pgTable(
     contentHash: varchar('content_hash', { length: 64 }).notNull(),
     content: jsonb('content').$type<QuestionContentSnapshot>().notNull(),
     rejectionReasons: jsonb('rejection_reasons').$type<string[]>().notNull().default([]),
+    qaReview: jsonb('qa_review').$type<Record<string, unknown>>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -992,6 +993,10 @@ export const themeCandidates = pgTable(
     check(
       'theme_candidates_rejections_array',
       sql`jsonb_typeof(${table.rejectionReasons}) = 'array'`
+    ),
+    check(
+      'theme_candidates_qa_review_object',
+      sql`${table.qaReview} IS NULL OR jsonb_typeof(${table.qaReview}) = 'object'`
     ),
   ]
 );
@@ -1243,6 +1248,7 @@ export const themeQuestionGenerationOutcomes = pgTable(
     status: varchar('status', { length: 24 }).notNull(),
     questionContentHash: varchar('question_content_hash', { length: 64 }),
     failureCode: varchar('failure_code', { length: 64 }),
+    writerOutput: jsonb('writer_output').$type<Record<string, unknown>>(),
     completedAt: timestamp('completed_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -1322,6 +1328,10 @@ export const themeQuestionGenerationOutcomes = pgTable(
     check(
       'theme_question_generation_outcome_question_hash',
       sql`${table.questionContentHash} IS NULL OR ${table.questionContentHash} ~ '^[a-f0-9]{64}$'`
+    ),
+    check(
+      'theme_question_generation_outcome_writer_output',
+      sql`${table.writerOutput} IS NULL OR jsonb_typeof(${table.writerOutput}) = 'object'`
     ),
   ]
 );

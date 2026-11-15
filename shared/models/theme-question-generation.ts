@@ -100,10 +100,28 @@ export const themeQuestionWriterOutputSchema = z.discriminatedUnion('status', [
     .object({
       status: z.literal('candidate'),
       question: z.string().trim().min(1).max(4_000),
+      answer: z.string().trim().min(1).max(1_000),
+      acceptedAlternatives: z.array(z.string().trim().min(1).max(1_000)).max(50),
+      hint: z.string().trim().min(1).max(2_000),
+      difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+      predictedCorrectRate: z.number().int().min(0).max(100),
       explanation: z.string().trim().min(1).max(8_000),
     })
     .strict(),
-  z.object({ status: z.literal('declined') }).strict(),
+  z
+    .object({
+      status: z.literal('declined'),
+      reason: z.enum([
+        'answer_not_unique',
+        'fact_too_obscure',
+        'fact_too_easy',
+        'question_requires_unsupported_context',
+        'unsafe_or_contentious',
+        'other_quality_issue',
+      ]),
+      explanation: z.string().trim().min(1).max(2_000),
+    })
+    .strict(),
 ]);
 export type ThemeQuestionWriterOutput = z.infer<typeof themeQuestionWriterOutputSchema>;
 export type QuestionContentSnapshotType = QuestionContentSnapshot;

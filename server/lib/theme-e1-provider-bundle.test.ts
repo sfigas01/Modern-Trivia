@@ -36,7 +36,7 @@ function transports(
 
 describe('E1 OpenAI provider bundle', () => {
   it('freezes the approved models, reasoning, ceilings and conservative Standard prices', () => {
-    expect(THEME_E1_POLICY_SNAPSHOT.bundleVersion).toBe('theme-e1-openai-2026-11-15-v2');
+    expect(THEME_E1_POLICY_SNAPSHOT.bundleVersion).toBe('theme-e1-openai-2026-11-15-v3');
     expect(THEME_E1_PRICING).toMatchObject({
       version: 'openai-standard-2026-11-08-v1',
       models: {
@@ -176,15 +176,21 @@ describe('E1 OpenAI provider bundle', () => {
   });
 
   it('gives writer and repair the same branch-exact root envelope', async () => {
-    const fixture = transports({ result: { status: 'declined' } });
+    const fixture = transports({
+      result: {
+        status: 'declined',
+        reason: 'answer_not_unique',
+        explanation: 'More than one answer would be reasonable.',
+      },
+    });
     const providers = createThemeE1Providers(fixture.value);
 
     await expect(providers.writer.invoke({} as never)).resolves.toMatchObject({
-      value: { status: 'declined' },
+      value: { status: 'declined', reason: 'answer_not_unique' },
       outcome: { status: 'succeeded' },
     });
     await expect(providers.repairer.invoke({} as never)).resolves.toMatchObject({
-      value: { status: 'declined' },
+      value: { status: 'declined', reason: 'answer_not_unique' },
       outcome: { status: 'succeeded' },
     });
 

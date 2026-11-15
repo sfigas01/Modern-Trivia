@@ -303,6 +303,9 @@ describe('final theme question approval', () => {
     expect(commands.some((item) => item.startsWith('INSERT INTO theme_question_revisions'))).toBe(
       true
     );
+    expect(commands.some((item) => item.startsWith('UPDATE theme_candidates SET qa_review'))).toBe(
+      true
+    );
     expect(commands.some((item) => item.startsWith('UPDATE theme_candidates'))).toBe(true);
     expect(commands.at(-1)).toBe('COMMIT');
     const replay = await repo.approve(request);
