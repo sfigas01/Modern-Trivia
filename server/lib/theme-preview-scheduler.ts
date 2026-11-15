@@ -1,6 +1,9 @@
 import type { Pool } from 'pg';
 
-import { readThemeRuntimeConfiguration } from './theme-runtime-config';
+import {
+  readThemeRuntimeConfiguration,
+  themeRuntimeBudgetPolicyFingerprint,
+} from './theme-runtime-config';
 import type { ThemeRuntimePlan } from './theme-runtime-plan';
 
 /**
@@ -84,7 +87,9 @@ export function createThemePreviewPlannedWorker(options: {
 
 export interface ThemePreviewRecoveryRepository {
   /** Return at most `limit` IDs in a stable order, without claiming their leases. */
-  scanRecoverableJobIds(input: Readonly<{ limit: number }>): Promise<readonly string[]>;
+  scanRecoverableJobIds(
+    input: Readonly<{ limit: number; budgetPolicyFingerprint: string }>
+  ): Promise<readonly string[]>;
 }
 
 const RECOVERABLE_JOB_STATUSES = [
@@ -106,9 +111,14 @@ export function createPostgresThemePreviewRecoveryRepository(
   pool: Pick<Pool, 'query'>
 ): ThemePreviewRecoveryRepository {
   return Object.freeze({
-    async scanRecoverableJobIds({ limit }: Readonly<{ limit: number }>) {
+    async scanRecoverableJobIds({
+      limit,
+      budgetPolicyFingerprint,
+    }: Readonly<{ limit: number; budgetPolicyFingerprint: string }>) {
       if (!Number.isInteger(limit) || limit < 1 || limit > MAX_SCAN_LIMIT)
         throw new TypeError('invalid_theme_preview_recovery_limit');
+      if (!/^[a-f0-9]{64}$/.test(budgetPolicyFingerprint))
+        throw new TypeError('invalid_theme_preview_recovery_budget_policy');
       const result = await pool.query<{ id: string }>(
         `SELECT job.id
            FROM theme_preparation_jobs job
@@ -118,9 +128,11 @@ export function createPostgresThemePreviewRecoveryRepository(
             AND game.expires_at > clock_timestamp()
             AND (job.last_failure IS NULL OR job.last_failure->>'retryable' = 'true')
             AND (job.lease_owner IS NULL OR job.lease_expires_at <= clock_timestamp())
+            AND (job.plan_json IS NULL
+              OR job.plan_json->>'budgetPolicyFingerprint' = $4)
           ORDER BY job.created_at, job.id
           LIMIT $1`,
-        [limit, RECOVERABLE_JOB_STATUSES, TERMINAL_GAME_STATUSES]
+        [limit, RECOVERABLE_JOB_STATUSES, TERMINAL_GAME_STATUSES, budgetPolicyFingerprint]
       );
       return result.rows.map((row) => row.id);
     },
@@ -204,10 +216,12 @@ export async function bootstrapThemePreviewScheduler(
   }
 
   const config = readConfig(env);
-  if (!config || !readThemeRuntimeConfiguration(env).enabled) {
+  const runtimeConfiguration = readThemeRuntimeConfiguration(env);
+  if (!config || !runtimeConfiguration.enabled) {
     reportCode('scheduler_invalid_config');
     return { started: false, code: 'scheduler_invalid_config' };
   }
+  const budgetPolicyFingerprint = themeRuntimeBudgetPolicyFingerprint(runtimeConfiguration.budget);
 
   let control: Readonly<{ enabled: boolean }>;
   try {
@@ -316,6 +330,7 @@ export async function bootstrapThemePreviewScheduler(
         }
         const scanned = await dependencies.recoveryRepository.scanRecoverableJobIds({
           limit: config.scanLimit,
+          budgetPolicyFingerprint,
         });
         if (stopping || stopped) return;
         // Sorting and deduplication make scheduling stable even if an injected

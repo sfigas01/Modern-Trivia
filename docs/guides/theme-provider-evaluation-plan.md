@@ -527,6 +527,14 @@ the lazy credential callback. Production performs no runtime-control query and
 constructs no OpenAI client. A disabled database control also constructs no
 client. An empty preview queue starts and shuts down without reading a key.
 
+Recovery applies the active budget-policy fingerprint before its stable ordering
+and scan limit. Unplanned jobs remain eligible so automatic gameplay planning can
+attach a current plan, but an already planned job is recoverable only when its
+immutable plan fingerprint matches the active runtime. Historical plans from a
+different budget policy remain unchanged and dormant instead of occupying the
+bounded queue or repeatedly failing a worker before a current job can run. The
+worker's independent fingerprint check remains the final fail-closed boundary.
+
 The duplicate corpus is capped at 512 questions for this first paid envelope.
 The approval path reads one extra row and withholds the candidate if the cap is
 exceeded; it never truncates the corpus and claims a partial duplicate check as
