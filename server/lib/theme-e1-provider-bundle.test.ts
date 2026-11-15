@@ -7,20 +7,16 @@ import {
 } from './theme-e1-provider-bundle';
 import type { ThemeOpenAITransports } from './theme-openai-preview-runtime';
 
-function transports() {
+function transports(
+  output: unknown = {
+    result: { status: 'insufficient_evidence' },
+  }
+) {
   const responses = vi.fn(async (request) => ({
     id: 'response-1',
     model: request.model,
     status: 'completed' as const,
-    output_text: JSON.stringify({
-      status: 'insufficient_evidence',
-      statement: null,
-      scope: null,
-      canonicalAnswer: null,
-      supportedAliases: null,
-      timeSensitive: null,
-      citations: null,
-    }),
+    output_text: JSON.stringify(output),
     usage: {
       input_tokens: 100,
       input_tokens_details: { cached_tokens: 0 },
@@ -40,6 +36,7 @@ function transports() {
 
 describe('E1 OpenAI provider bundle', () => {
   it('freezes the approved models, reasoning, ceilings and conservative Standard prices', () => {
+    expect(THEME_E1_POLICY_SNAPSHOT.bundleVersion).toBe('theme-e1-openai-2026-11-15-v2');
     expect(THEME_E1_PRICING).toMatchObject({
       version: 'openai-standard-2026-11-08-v1',
       models: {
@@ -96,7 +93,109 @@ describe('E1 OpenAI provider bundle', () => {
       model: 'gpt-6-luna',
       service_tier: 'default',
       reasoning: { effort: 'low' },
-      text: { format: { type: 'json_schema', strict: true, name: 'theme_e1_proposer' } },
+      text: {
+        format: {
+          type: 'json_schema',
+          strict: true,
+          name: 'theme_e1_proposer',
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['result'],
+            properties: { result: { anyOf: expect.any(Array) } },
+          },
+        },
+      },
     });
+    expect(JSON.stringify(fixture.responses.mock.calls[0][0].text.format.schema)).not.toContain(
+      '"oneOf"'
+    );
+  });
+
+  it('accepts a proposed fact through the same discriminated branch sent to OpenAI', async () => {
+    const fixture = transports({
+      result: {
+        status: 'proposed',
+        statement: 'Mount Etna is on the island of Sicily.',
+        scope: {
+          entity: 'Mount Etna',
+          relation: 'location',
+          time: null,
+          geography: 'Sicily, Italy',
+          competitionOrDomain: 'volcanology',
+          qualifiers: [],
+          asOf: null,
+        },
+        canonicalAnswer: 'Sicily',
+        supportedAliases: [],
+        timeSensitive: false,
+        citations: [
+          {
+            passageId: '11111111-1111-4111-8111-111111111111',
+            passageContentHash: 'a'.repeat(64),
+            supportKind: 'supports',
+          },
+        ],
+      },
+    });
+
+    const result = await createThemeE1Providers(fixture.value).proposer.invoke([
+      {
+        passageId: '11111111-1111-4111-8111-111111111111',
+        text: 'Mount Etna is on the island of Sicily.',
+        contentHash: 'a'.repeat(64),
+      },
+    ]);
+
+    expect(result).toMatchObject({
+      value: { status: 'proposed', canonicalAnswer: 'Sicily' },
+      outcome: { status: 'succeeded' },
+    });
+  });
+
+  it('rejects the superseded flat nullable response instead of interpreting it', async () => {
+    const fixture = transports({
+      status: 'insufficient_evidence',
+      statement: null,
+      scope: null,
+      canonicalAnswer: null,
+      supportedAliases: null,
+      timeSensitive: null,
+      citations: null,
+    });
+
+    const result = await createThemeE1Providers(fixture.value).proposer.invoke([]);
+
+    expect(result).toMatchObject({
+      outcome: {
+        status: 'failed',
+        failureCode: 'invalid_output_contract_mismatch',
+      },
+    });
+    expect(result.value).toBeUndefined();
+  });
+
+  it('gives writer and repair the same branch-exact root envelope', async () => {
+    const fixture = transports({ result: { status: 'declined' } });
+    const providers = createThemeE1Providers(fixture.value);
+
+    await expect(providers.writer.invoke({} as never)).resolves.toMatchObject({
+      value: { status: 'declined' },
+      outcome: { status: 'succeeded' },
+    });
+    await expect(providers.repairer.invoke({} as never)).resolves.toMatchObject({
+      value: { status: 'declined' },
+      outcome: { status: 'succeeded' },
+    });
+
+    for (const request of fixture.responses.mock.calls.map(([request]) => request)) {
+      expect(request.text.format.schema).toMatchObject({
+        type: 'object',
+        additionalProperties: false,
+        required: ['result'],
+        properties: { result: { anyOf: expect.any(Array) } },
+      });
+      expect(JSON.stringify(request.text.format.schema)).not.toContain('"oneOf"');
+    }
   });
 });

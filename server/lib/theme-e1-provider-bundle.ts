@@ -26,7 +26,7 @@ import {
 import type { ThemeOpenAITransports } from './theme-openai-preview-runtime';
 import type { FactCheckReport } from './verifier';
 
-export const THEME_E1_BUNDLE_VERSION = 'theme-e1-openai-2026-11-08-v1' as const;
+export const THEME_E1_BUNDLE_VERSION = 'theme-e1-openai-2026-11-15-v2' as const;
 export const THEME_E1_PRICING_VERSION = 'openai-standard-2026-11-08-v1' as const;
 export const THEME_E1_INPUT_ESTIMATOR_VERSION = 'utf8-bytes-div-3-v1' as const;
 
@@ -55,79 +55,20 @@ export const THEME_E1_PRICING = themeProviderPricingSchema.parse({
   },
 });
 
+/*
+ * Responses Structured Outputs require an object at the root. Keep that root
+ * stable while placing the status-discriminated union below `result`, so the
+ * provider and the application validate the exact same branch contract.
+ */
 const proposerWireSchema = z
-  .object({
-    status: z.enum(['proposed', 'insufficient_evidence', 'conflicted']),
-    statement: z.string().trim().min(1).max(4_000).nullable(),
-    scope: z
-      .object({
-        entity: z.string().trim().min(1).max(500),
-        relation: z.string().trim().min(1).max(500),
-        time: z.string().trim().min(1).max(500).nullable(),
-        geography: z.string().trim().min(1).max(500).nullable(),
-        competitionOrDomain: z.string().trim().min(1).max(500).nullable(),
-        qualifiers: z.array(z.string().trim().min(1).max(500)).max(20),
-        asOf: z.string().datetime().nullable(),
-      })
-      .strict()
-      .nullable(),
-    canonicalAnswer: z.string().trim().min(1).max(1_000).nullable(),
-    supportedAliases: z.array(z.string().trim().min(1).max(1_000)).max(50).nullable(),
-    timeSensitive: z.boolean().nullable(),
-    citations: z
-      .array(
-        z
-          .object({
-            passageId: z.string().uuid(),
-            passageContentHash: z.string().regex(/^[a-f0-9]{64}$/),
-            supportKind: z.enum(['supports', 'conflicts', 'context']),
-          })
-          .strict()
-      )
-      .max(12)
-      .nullable(),
-  })
+  .object({ result: z.union(themeFactProposerOutputSchema.options) })
   .strict()
-  .transform((value, context): ThemeFactProposerOutput => {
-    const candidate =
-      value.status === 'proposed'
-        ? {
-            status: value.status,
-            statement: value.statement,
-            scope: value.scope,
-            canonicalAnswer: value.canonicalAnswer,
-            supportedAliases: value.supportedAliases,
-            timeSensitive: value.timeSensitive,
-            citations: value.citations,
-          }
-        : { status: value.status };
-    const parsed = themeFactProposerOutputSchema.safeParse(candidate);
-    if (!parsed.success) {
-      context.addIssue({ code: 'custom', message: 'invalid proposal fields' });
-      return z.NEVER;
-    }
-    return parsed.data;
-  });
+  .transform(({ result }): ThemeFactProposerOutput => result);
 
 const writerWireSchema = z
-  .object({
-    status: z.enum(['candidate', 'declined']),
-    question: z.string().trim().min(1).max(4_000).nullable(),
-    explanation: z.string().trim().min(1).max(8_000).nullable(),
-  })
+  .object({ result: z.union(themeQuestionWriterOutputSchema.options) })
   .strict()
-  .transform((value, context): ThemeQuestionWriterOutput => {
-    const candidate =
-      value.status === 'candidate'
-        ? { status: value.status, question: value.question, explanation: value.explanation }
-        : { status: value.status };
-    const parsed = themeQuestionWriterOutputSchema.safeParse(candidate);
-    if (!parsed.success) {
-      context.addIssue({ code: 'custom', message: 'invalid writer fields' });
-      return z.NEVER;
-    }
-    return parsed.data;
-  });
+  .transform(({ result }): ThemeQuestionWriterOutput => result);
 
 const qualitySchema = z
   .object({
@@ -157,11 +98,11 @@ const semanticSchema = z
   .strict();
 
 const PROMPTS = Object.freeze({
-  proposer: `Extract exactly one stable trivia fact about the requested theme from the supplied passages. Use only the passages, copy passage IDs and hashes exactly, and cite at least one supporting passage. Do not use model memory. Reject disputed, superlative, current, changing, ambiguous, or weakly supported claims. Return null for every fact field when status is not proposed.`,
+  proposer: `Extract exactly one stable trivia fact about the requested theme from the supplied passages. Use only the passages, copy passage IDs and hashes exactly, and cite at least one supporting passage. Do not use model memory. Reject disputed, superlative, current, changing, ambiguous, or weakly supported claims. Return one top-level object containing only result. Inside result, use exactly one schema branch: proposed with every required fact field, insufficient_evidence with only status, or conflicted with only status.`,
   factReview: `Act as an independent, skeptical evidence reviewer. Evaluate every required dimension using only the supplied fact and passages. A pass requires direct entailment, exact scope and qualifiers, a uniquely supported canonical answer, supported aliases, no unresolved conflict, and the required source independence. Do not repair or infer missing facts.`,
-  writer: `Write one concise trivia question whose unique answer is the supplied canonical answer. Use only the supplied fact and evidence. Include all qualifiers needed to avoid ambiguity, never reveal the answer in the question, and make the explanation evidence-bound. Decline if a fair unambiguous question cannot be written.`,
+  writer: `Write one concise trivia question whose unique answer is the supplied canonical answer. Use only the supplied fact and evidence. Include all qualifiers needed to avoid ambiguity, never reveal the answer in the question, and make the explanation evidence-bound. Decline if a fair unambiguous question cannot be written. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
   evidenceReview: `Review the question, answer, aliases, explanation, scope and freshness only against the supplied fact and passages. Return exactly one result for every required dimension. Pass only when the evidence directly supports the full wording and a unique answer; otherwise flag or fail with the applicable reason code and exact passage IDs.`,
-  repair: `Make one bounded repair to the supplied parent question for the stated static or quality failure. Preserve the evidence-backed canonical answer and scope, do not add facts, and return a complete revised question and explanation. Decline if the problem cannot be fixed without unsupported information.`,
+  repair: `Make one bounded repair to the supplied parent question for the stated static or quality failure. Preserve the evidence-backed canonical answer and scope, do not add facts, and return a complete revised question and explanation. Decline if the problem cannot be fixed without unsupported information. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
   quality: `Perform an adversarial trivia quality review. Check whether the premise and requested answer type are coherent, whether the answer is exposed or trivially constrained by the wording, and whether the stated difficulty is credible. Return one result with the exact supplied question ID. Any uncertainty must be flag, not pass.`,
   semantic: `Compare the two question-answer pairs. Classify them as equivalent, conflicting answers to substantially the same question, distinct, or uncertain. Use uncertain whenever equivalence or conflict is not clear.`,
 });

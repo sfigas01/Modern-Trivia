@@ -479,14 +479,25 @@ test it from the presence of the variable.
 
 ## E1 frozen preview bundle and application wiring
 
-The zero-cost configuration checkpoint freezes
-`theme-e1-openai-2026-11-08-v1` as the first plan-bound E1 bundle. It uses Luna
+The zero-cost configuration checkpoint froze
+`theme-e1-openai-2026-11-08-v1` as the first plan-bound E1 bundle. The first
+paid calibration found that its proposer and writer schemas allowed a nullable
+superset at the provider boundary, then applied stricter status-dependent checks
+locally. Version `theme-e1-openai-2026-11-15-v2` replaces those two wire shapes
+with a root object containing a nested discriminated result branch, so OpenAI
+and the application enforce the same contract. The earlier bundle remains an
+immutable calibration artifact and must not be reused for a new plan.
+
+The active E1 bundle uses Luna
 with low reasoning for fact proposal, question writing and the single eligible
 repair; Sol with medium reasoning for independent fact review, question evidence
 review and coherence/obviousness QA; Sol with low reasoning for at most four
 semantic adjudications; and `text-embedding-3-small` with 512 dimensions for the
 candidate screen. Every operation has its own versioned prompt, strict JSON
-schema, token ceiling, 30-second timeout and zero-retry policy.
+schema, token ceiling, 30-second timeout and zero-retry policy. Proposer,
+writer and repair responses use the branch-exact `result` envelope; a proposed
+fact cannot satisfy the provider schema with missing or nullable required fact
+fields.
 The stored runtime plan must use that exact bundle version as its `planVersion`
 and must match the active budget-policy fingerprint; older or mismatched plans
 fail before the credential callback is reached.
