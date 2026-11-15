@@ -23,15 +23,23 @@ vi.mock('./theme-runtime-composition', async (importOriginal) => {
 
 import { hashThemeRuntimePlan, type ThemePreviewRuntimePlan } from './theme-runtime-plan';
 import { bootstrapPostgresThemePreviewRuntime } from './theme-preview-runtime';
+import { themeRuntimeBudgetPolicyFingerprint } from './theme-runtime-config';
 
 const jobId = '00000000-0000-4000-8000-000000000001';
 const holdUntil = new Date('2026-11-08T18:00:00.000Z');
+const runtimeBudget = {
+  currency: 'USD' as const,
+  policyVersion: 'e0-v1',
+  accountDailyMicros: 1_000_000,
+  accountRollingSevenDayMicros: 2_000_000,
+  globalDailyMicros: 3_000_000,
+};
 const plan: ThemePreviewRuntimePlan = {
   contractVersion: 'theme-preview-runtime-plan-v1',
   mode: 'offline_fixture',
   fixtureVersion: 'e0-v1',
   sourcePolicyVersion: 'sources-v1',
-  budgetPolicyFingerprint: 'a'.repeat(64),
+  budgetPolicyFingerprint: themeRuntimeBudgetPolicyFingerprint(runtimeBudget),
   items: [
     {
       key: 'item-1',

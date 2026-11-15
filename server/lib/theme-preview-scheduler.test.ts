@@ -6,6 +6,7 @@ import {
   createThemePreviewPlannedWorker,
   type ThemePreviewSchedulerDependencies,
 } from './theme-preview-scheduler';
+import { themeRuntimeBudgetPolicyFingerprint } from './theme-runtime-config';
 
 const previewEnv = {
   NODE_ENV: 'production',
@@ -24,6 +25,14 @@ const previewEnv = {
   THEME_ACCOUNT_ROLLING_7D_BUDGET_MICROS: '2000',
   THEME_GLOBAL_DAILY_BUDGET_MICROS: '3000',
 };
+
+const previewBudgetPolicyFingerprint = themeRuntimeBudgetPolicyFingerprint({
+  currency: 'USD',
+  policyVersion: 'test-v1',
+  accountDailyMicros: 1000,
+  accountRollingSevenDayMicros: 2000,
+  globalDailyMicros: 3000,
+});
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -81,19 +90,29 @@ describe('theme preview scheduler bootstrap', () => {
   it('scans planned and unplanned durable jobs so automatic planning survives restart', async () => {
     const query = vi.fn(async () => ({ rows: [{ id: 'job-a' }, { id: 'job-b' }] }));
     const repository = createPostgresThemePreviewRecoveryRepository({ query } as never);
-    await expect(repository.scanRecoverableJobIds({ limit: 4 })).resolves.toEqual([
-      'job-a',
-      'job-b',
-    ]);
+    await expect(
+      repository.scanRecoverableJobIds({
+        limit: 4,
+        budgetPolicyFingerprint: previewBudgetPolicyFingerprint,
+      })
+    ).resolves.toEqual(['job-a', 'job-b']);
     const [sql, parameters] = query.mock.calls[0];
     expect(sql).toContain("job.last_failure->>'retryable' = 'true'");
     expect(sql).toContain('job.lease_expires_at <= clock_timestamp()');
-    expect(sql).not.toContain('job.plan_json IS NOT NULL');
+    expect(sql).toContain('job.plan_json IS NULL');
+    expect(sql).toContain("job.plan_json->>'budgetPolicyFingerprint' = $4");
     expect(sql).toContain('ORDER BY job.created_at, job.id');
     expect(parameters[0]).toBe(4);
-    await expect(repository.scanRecoverableJobIds({ limit: 0 })).rejects.toThrow(
-      'invalid_theme_preview_recovery_limit'
-    );
+    expect(parameters[3]).toBe(previewBudgetPolicyFingerprint);
+    await expect(
+      repository.scanRecoverableJobIds({
+        limit: 0,
+        budgetPolicyFingerprint: previewBudgetPolicyFingerprint,
+      })
+    ).rejects.toThrow('invalid_theme_preview_recovery_limit');
+    await expect(
+      repository.scanRecoverableJobIds({ limit: 4, budgetPolicyFingerprint: 'old-policy' })
+    ).rejects.toThrow('invalid_theme_preview_recovery_budget_policy');
   });
 
   it('fails closed for production, missing preview gate, and invalid limits before runtime construction', async () => {
@@ -205,6 +224,7 @@ describe('theme preview scheduler bootstrap', () => {
     const firstRun = deferred<void>();
     const reports: string[] = [];
     let scannedLimit = 0;
+    let scannedBudgetPolicyFingerprint = '';
     let timerCallback: (() => void) | undefined;
     let timerCleared = false;
 
@@ -212,8 +232,9 @@ describe('theme preview scheduler bootstrap', () => {
       dependencies({
         env: { ...previewEnv, THEME_PREVIEW_SCHEDULER_QUEUE_LIMIT: '2' },
         recoveryRepository: {
-          scanRecoverableJobIds: async ({ limit }) => {
+          scanRecoverableJobIds: async ({ limit, budgetPolicyFingerprint }) => {
             scannedLimit = limit;
+            scannedBudgetPolicyFingerprint = budgetPolicyFingerprint;
             return ['job-b', 'job-a', 'job-a', 'job-c'];
           },
         },
@@ -242,6 +263,7 @@ describe('theme preview scheduler bootstrap', () => {
     expect(result.started).toBe(true);
     if (!result.started) return;
     expect(scannedLimit).toBe(4);
+    expect(scannedBudgetPolicyFingerprint).toBe(previewBudgetPolicyFingerprint);
     expect(started).toEqual(['job-a']);
     await result.run('job-a');
     await result.run('job-c');
