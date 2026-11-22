@@ -35,6 +35,8 @@ import {
   cleanWikipediaExtract,
   computeReport,
   extractUsage,
+  failedPairs,
+  mergeRetriedGeneration,
   normalizeGeneratedQuestion,
   parseJudgeResponse,
   parseRatingsCsv,
@@ -126,12 +128,20 @@ function installSpendTracking(tracker: SpendTracker): void {
 }
 
 async function wikipediaJson(url: string): Promise<unknown> {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  // Wikipedia rate-limits unauthenticated clients, sometimes for a minute or more when the
+  // outbound address is shared. Back off patiently (about 90 seconds worst case) and honour
+  // Retry-After when it is sent.
+  for (let attempt = 0; attempt < 6; attempt++) {
     const response = await fetch(url, {
       headers: { 'User-Agent': WIKIPEDIA_USER_AGENT, Accept: 'application/json' },
     });
     if (response.status === 429 || response.status >= 500) {
-      await new Promise((r) => setTimeout(r, 1_500 * 2 ** attempt));
+      const retryAfterSeconds = Number(response.headers.get('retry-after'));
+      const waitMs =
+        Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+          ? Math.min(retryAfterSeconds * 1_000, 60_000)
+          : 3_000 * 2 ** attempt;
+      await new Promise((r) => setTimeout(r, waitMs));
       continue;
     }
     if (!response.ok) throw new Error(`Wikipedia returned HTTP ${response.status}`);
@@ -399,18 +409,58 @@ async function commandGenerate(
   const tracker = new SpendTracker(maxUsd);
   installSpendTracking(tracker);
   const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, maxRetries: 1 });
+  const deps = {
+    generateArmA,
+    generateArmB: createArmB(openai),
+    now: Date.now,
+    log: (m: string) => console.log(m),
+  };
+
+  if (flags.get('retry-failed')) {
+    const runDir = await resolveRunDir(flags);
+    const previous = JSON.parse(
+      await readFile(path.join(runDir, 'candidates.json'), 'utf8')
+    ) as CandidatesFile;
+    if (existsSync(path.join(runDir, 'ratings.csv'))) {
+      throw new Error('This run already has ratings.csv; retrying would reshuffle a rated sheet.');
+    }
+    const failed = failedPairs(previous);
+    if (failed.length === 0) {
+      console.log('No failed arm/theme pairs to retry.');
+      return;
+    }
+    console.log(`Retrying ${failed.map((f) => `${f.arm}:${f.themeId}`).join(', ')} in ${runDir}`);
+    const retried = await runGeneration(
+      previous.themes,
+      previous.questionsPerThemePerArm,
+      deps,
+      tracker,
+      (arm, themeId) => failed.some((f) => f.arm === arm && f.themeId === themeId)
+    );
+    const merged = mergeRetriedGeneration(previous, retried);
+    // Same seed as the original run, so the sheet is reproducible from the run ID.
+    const sheet = buildBlindSheet(merged.candidates, seedFromString(merged.runId));
+    await writePrivate(path.join(runDir, 'candidates.json'), JSON.stringify(merged, null, 2));
+    await writePrivate(path.join(runDir, 'key.json'), JSON.stringify(sheet.key, null, 2));
+    await writePrivate(path.join(runDir, 'review-sheet.csv'), sheet.csv);
+    const stillFailed = failedPairs(merged);
+    console.log(`\nSpent this retry: $${tracker.totalUsd.toFixed(4)}`);
+    console.log(
+      `Review sheet now has ${Object.keys(sheet.key).length} items.` +
+        (stillFailed.length > 0
+          ? ` Still failed: ${stillFailed.map((f) => `${f.arm}:${f.themeId}`).join(', ')}`
+          : ' No failed pairs remain.')
+    );
+    return;
+  }
+
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const runDir = path.join(REPORTS_ROOT, runId);
   await mkdir(runDir, { recursive: true });
 
   let generated: Awaited<ReturnType<typeof runGeneration>>;
   try {
-    generated = await runGeneration(
-      config.themes,
-      count,
-      { generateArmA, generateArmB: createArmB(openai), now: Date.now, log: (m) => console.log(m) },
-      tracker
-    );
+    generated = await runGeneration(config.themes, count, deps, tracker);
   } catch (error) {
     if (error instanceof SpendLimitError) console.error(error.message);
     throw error;

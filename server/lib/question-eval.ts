@@ -207,7 +207,9 @@ export async function runGeneration(
   themes: EvalTheme[],
   count: number,
   deps: GenerationDeps,
-  tracker: SpendTracker
+  tracker: SpendTracker,
+  /** Optional filter, used to retry only the arm/theme pairs that failed in an earlier run. */
+  only?: (arm: EvalArm, themeId: string) => boolean
 ): Promise<Pick<CandidatesFile, 'candidates' | 'stats' | 'grounding'>> {
   const candidates: Candidate[] = [];
   const stats: ArmRunStats[] = [];
@@ -215,6 +217,7 @@ export async function runGeneration(
 
   for (const theme of themes) {
     for (const arm of ['A', 'B'] as const) {
+      if (only && !only(arm, theme.id)) continue;
       const before = tracker.snapshot();
       const startedAt = deps.now();
       let output: ArmOutput | null = null;
@@ -258,6 +261,41 @@ export async function runGeneration(
     }
   }
   return { candidates, stats, grounding };
+}
+
+/** Arm/theme pairs whose generation failed outright (not ones that merely delivered fewer). */
+export function failedPairs(file: CandidatesFile): Array<{ arm: EvalArm; themeId: string }> {
+  return file.stats.filter((s) => s.error).map((s) => ({ arm: s.arm, themeId: s.themeId }));
+}
+
+/**
+ * Replaces the retried pairs' stats and candidates in an earlier run with the new attempt.
+ * The earlier failed attempt's cost is added to the retry's cost so total spend stays honest.
+ */
+export function mergeRetriedGeneration(
+  previous: CandidatesFile,
+  retried: Pick<CandidatesFile, 'candidates' | 'stats' | 'grounding'>
+): CandidatesFile {
+  const retriedKeys = new Set(retried.stats.map((s) => `${s.arm}:${s.themeId}`));
+  const isRetried = (arm: string, themeId: string | null) =>
+    themeId !== null && retriedKeys.has(`${arm}:${themeId}`);
+  const stats = [
+    ...previous.stats.filter((s) => !isRetried(s.arm, s.themeId)),
+    ...retried.stats.map((s) => {
+      const old = previous.stats.find((p) => p.arm === s.arm && p.themeId === s.themeId);
+      // Fold the failed attempt's spend into the retry so cost per arm includes it.
+      return old ? { ...s, costUsd: s.costUsd + old.costUsd } : s;
+    }),
+  ];
+  return {
+    ...previous,
+    candidates: [
+      ...previous.candidates.filter((c) => !isRetried(c.group, c.themeId)),
+      ...retried.candidates,
+    ],
+    stats,
+    grounding: { ...previous.grounding, ...retried.grounding },
+  };
 }
 
 // ---------------------------------------------------------------------------

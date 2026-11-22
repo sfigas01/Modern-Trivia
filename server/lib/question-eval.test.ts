@@ -12,6 +12,8 @@ import {
   cohenKappa,
   computeReport,
   extractUsage,
+  failedPairs,
+  mergeRetriedGeneration,
   normalizeGeneratedQuestion,
   parseCsv,
   parseJudgeResponse,
@@ -448,6 +450,49 @@ describe('stand-in run', () => {
     expect(markdown).toContain('Unrated items (1)');
     // The report must not print question text.
     expect(markdown).not.toContain('A volcanoes 0');
+  });
+
+  it('retries only failed pairs and folds their earlier cost into the retry', async () => {
+    const { candidatesFile } = await standInRun();
+    expect(failedPairs(candidatesFile)).toEqual([{ arm: 'B', themeId: 'raves' }]);
+    const tracker = new SpendTracker(5);
+    const calls: string[] = [];
+    const arm =
+      (name: 'A' | 'B') =>
+      async (theme: EvalTheme, count: number): Promise<ArmOutput> => {
+        calls.push(`${name}:${theme.id}`);
+        tracker.record('gpt-5.4-mini', 1_000, 0);
+        return {
+          questions: Array.from({ length: count }, (_, i) => ({
+            question: makeQuestion(`retry ${i}`),
+            guardian: null,
+          })),
+          droppedByGate: 0,
+        };
+      };
+    const retried = await runGeneration(
+      THEMES,
+      3,
+      { generateArmA: arm('A'), generateArmB: arm('B'), now: () => 0 },
+      tracker,
+      (a, themeId) => a === 'B' && themeId === 'raves'
+    );
+    expect(calls).toEqual(['B:raves']);
+    const oldCost = candidatesFile.stats.find(
+      (s) => s.arm === 'B' && s.themeId === 'raves'
+    )!.costUsd;
+    const merged = mergeRetriedGeneration(candidatesFile, retried);
+    expect(failedPairs(merged)).toEqual([]);
+    expect(merged.stats).toHaveLength(4);
+    const raves = merged.stats.find((s) => s.arm === 'B' && s.themeId === 'raves')!;
+    expect(raves.delivered).toBe(3);
+    expect(raves.costUsd).toBeCloseTo(oldCost + 0.00075, 8);
+    expect(merged.candidates.filter((c) => c.group === 'B' && c.themeId === 'raves')).toHaveLength(
+      3
+    );
+    // Untouched pairs and anchors survive.
+    expect(merged.candidates.filter((c) => c.group === 'A')).toHaveLength(6);
+    expect(merged.candidates.filter((c) => c.group === 'library')).toHaveLength(1);
   });
 
   it('reports invalid rating cells instead of guessing', async () => {
