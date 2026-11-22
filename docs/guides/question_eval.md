@@ -29,13 +29,17 @@ These are deliberate, and should be kept in mind when reading results:
 ## How to run
 
 ```sh
-npm run eval:questions -- generate --dry-run   # plan and spend cap; no calls
-npm run eval:questions -- generate             # both arms + blind review sheet (cap $3)
-npm run eval:questions -- judge                # LLM judge on the same sheet (cap $2)
-npm run eval:questions -- score                # owner ratings (+ judge) -> report
+npm run eval:questions -- generate --dry-run        # plan and spend cap; no calls
+npm run eval:questions -- generate                  # every arm + blind review sheet (cap $3)
+npm run eval:questions -- generate --retry-failed   # rerun only arm/theme pairs that failed
+npm run eval:questions -- judge [--rubric v2]       # LLM judge on the same sheet (cap $2)
+npm run eval:questions -- verify                    # Wikipedia evidence check per item (cap $2)
+npm run eval:questions -- rating-page --title "…"   # owner rating page HTML for the run
+npm run eval:questions -- import-ratings --from <dir>  # rating page export -> ratings.csv
+npm run eval:questions -- score                     # ratings (+ judges, facts) -> report
 ```
 
-Use `--run reports/question-eval/<runId>` to pick a run (the default is the latest), `--max-usd <n>` to change a spend cap, and `--model <id>` to change the judge model.
+Every command takes `--config <file>` (default `test/fixtures/question-eval/config.json`, round 1; round 2 is `round-2.json`) and `--run reports/question-eval/<runId>` (default: the latest run). `--max-usd <n>` changes a spend cap and `--model <id>` changes the judge or verifier model.
 
 **Key:** set `AI_INTEGRATIONS_OPENAI_API_KEY` to a **separately capped** OpenAI project key. Do not use the production key or the E1 preview key.
 In a Claude Code cloud session where the key is saved as a network secret, set the variable to any placeholder and add `NODE_USE_ENV_PROXY=1`:
@@ -56,11 +60,19 @@ Everything goes to `reports/question-eval/<runId>/` (gitignored, files are mode 
 | `key.json`                  | Blind item ID → group                                          | No, but it unblinds the sheet: don't open it before rating |
 | `review-sheet.csv`          | The blind sheet to rate                                        | Yes                                                        |
 | `judge.json`                | Judge ratings and cost                                         | Yes, in the reasons                                        |
+| `judge-v2.json`             | Judge ratings with the round 1 owner calibration               | Yes, in the reasons                                        |
+| `verify.json`               | Evidence check: verdict, quote, source and gate decision       | Yes                                                        |
+| `facts.csv`                 | Hand-verified truth labels: `item,truth,note`                  | Yes, in the notes                                          |
+| `rating-page.html`          | The owner rating page for this run                             | Yes                                                        |
 | `report.md` / `report.json` | Results                                                        | Judge reasons may mention answers                          |
 
 **Do not commit these files or paste them into Linear, GitHub or chat.** The owner is also a player, so rating a sheet spoils those questions for the owner.
 
 ## Rating the sheet
+
+**Rating page (preferred).** `rating-page` writes `rating-page.html` from the committed template `script/question-eval-rating-page.html`. Publish it as a private artifact whose database allows owner-only reads and writes (`db` rules `[{path: "", read: "owner", write: "owner"}]`). Ratings save to `ratings/<item>` as the owner goes. Export that collection to a folder of JSON files and run `import-ratings --from <folder>`.
+
+**Spreadsheet (alternative).**
 
 1. Copy `review-sheet.csv` to `ratings.csv` in the same folder.
 2. Open it in Google Sheets or Excel. Fill in the seven rating columns using [trivia_quality_rubric.md](trivia_quality_rubric.md).
@@ -78,7 +90,9 @@ Everything goes to `reports/question-eval/<runId>/` (gitignored, files are mode 
 
 Leave a whole row blank to skip it; it is reported as unrated. Invalid cells are reported, never guessed. Rate the questions in sheet order and don't open `key.json` until scoring is done.
 
-## Decision rules (fixed before any results)
+## Round 1 decision rules (fixed before any results)
+
+Round 1 compared A with B (Wikipedia grounding). Its outcome is recorded in STE-304.
 
 These rules were written before the first run so the results can't be read to fit a preferred answer. The thresholds are judgement calls, and they are stated as such. With about 20–25 rated items per arm, only large differences are meaningful, so check the confidence intervals in the report.
 
@@ -94,6 +108,32 @@ These rules were written before the first run so the results can't be read to fi
 
 Record the outcome of each rule in STE-304 when the run is complete.
 
+## Round 2: style guide, correctness check and taste check
+
+Round 1 found that most bad questions were playability problems (ambiguity, wrong difficulty labels, explanation-style answers, too academic), and that Guardian's model-memory fact check passed both confirmed wrong answers. Round 2 (`--config test/fixtures/question-eval/round-2.json`) tests three candidate fixes on the same six themes, with 3 questions per theme per arm:
+
+| Piece                              | What it is                                                                                                                                                                    | Question it answers                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **A2**                             | Guardian with `WRITER_STYLE_GUIDE_V2` (`server/lib/trivia-style-guide.ts`), written from the owner's round 1 notes                                                            | Do prompt rules fix the playability problems?   |
+| **Evidence check** (`verify`)      | A cheap model picks Wikipedia searches; the script fetches the articles and keeps related passages; a strong model gives a verdict that must quote the passages word for word | Can an always-on check catch wrong answers?     |
+| **Judge v2** (`judge --rubric v2`) | The round 1 judge plus `JUDGE_CALIBRATION_V2`, written from where it disagreed with the owner                                                                                 | Can an automated check apply the owner's taste? |
+
+Three planted questions with known false answers are included to test the correctness checks.
+
+**Truth labels.** Correctness is not measured from owner ratings, since a quick read is not a fact check. Every item gets a hand-verified label in `facts.csv` (`correct`, `incorrect` or `unverifiable`), checked against Wikipedia or another reliable source. Labels are written **before** reading `verify.json`, so the evidence check's verdicts cannot anchor them. Planted questions are labelled `incorrect`.
+
+Order of steps: `generate` → owner rates (blind) → write `facts.csv` → `verify` → `judge` (v1 and v2) → `score`.
+
+### Round 2 decision rules (fixed before any results)
+
+1. **Style guide (A2 vs A).** A2 replaces the default prompt if its owner keep rate is at least **15 points** higher than A's, **or** its ambiguity rate is at most half of A's with no explanation-style answers, provided its mean fun is no more than **0.3** lower and it has no more wrong answers (by truth label) than A. Otherwise, revise the guide from the new notes and rerun.
+2. **Difficulty labels.** If A2's labels match the owner's rating for at least **60%** of questions (round 1: 38%), prompt calibration is enough. If not, difficulty needs another mechanism, such as the judge's estimate or real player correct rates.
+3. **Correctness check.** The evidence check becomes the always-on correctness gate if it passes **zero** wrong answers (truth `incorrect`, planted ones included) and holds or rejects at most **25%** of correct ones. If it passes any wrong answer, find out why before adopting it. Compare it with Guardian's fact check on the same items.
+4. **Taste check (judge v2).** Judge v2 can act as an automated content-strategy filter that sends questions for review (not one that makes final decisions) if it matches the owner's keep-vs-reject decision on at least **75%** of items with kappa of at least **0.4**. Otherwise the owner, or real player signals, stay the taste check.
+5. **Cost.** Report the cost per kept question with the evidence check included. The gate must not raise it by more than **3x** for an on-demand round to stay cheap.
+
+Record the outcome of each rule in STE-304.
+
 ## Code
 
 | File                                                 | Purpose                                                                                                  |
@@ -101,5 +141,8 @@ Record the outcome of each rule in STE-304 when the run is complete.
 | `server/lib/question-eval.ts`                        | Pure logic: spend tracking, prompts, blind sheet, CSV, rating parsing, judge parsing, statistics, report |
 | `server/lib/question-eval.test.ts`                   | Unit tests and a full stand-in run with fake generators (no network)                                     |
 | `script/question-eval.ts`                            | CLI: OpenAI, Wikipedia and file I/O                                                                      |
-| `test/fixtures/question-eval/config.json`            | Themes, anchors, models                                                                                  |
+| `test/fixtures/question-eval/config.json`            | Round 1: themes, arms, anchors, models                                                                   |
+| `test/fixtures/question-eval/round-2.json`           | Round 2: arms A and A2, planted false questions, verifier model                                          |
+| `server/lib/trivia-style-guide.ts`                   | Writer style guide v2 and judge calibration v2, written from round 1 owner notes                         |
+| `script/question-eval-rating-page.html`              | Owner rating page template (no data; `rating-page` fills it per run)                                     |
 | [trivia_quality_rubric.md](trivia_quality_rubric.md) | The definition of a good question                                                                        |

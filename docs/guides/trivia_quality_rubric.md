@@ -74,6 +74,29 @@ An `n` on either gate means the verdict cannot be `keep`.
 
 **why:** one short line. These lines are the most useful input for improving prompts, so a few words are better than none.
 
+## What round 1 taught us (style guide v2)
+
+The owner's ratings and notes from the first eval round (run `2026-11-22T02-21-45-379Z`) refined this rubric. The same points are written as prompt text in `server/lib/trivia-style-guide.ts`: `WRITER_STYLE_GUIDE_V2` guides question writing, and `JUDGE_CALIBRATION_V2` calibrates the judge.
+
+| Pattern in round 1                                                             | Rule it became                                                                                          |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| "Requires too much explanation"; "too open"                                    | The answer is 1–5 words, never a sentence or definition.                                                |
+| A second valid answer (another show, a second Hollywood, a likelier celebrity) | Rule out other answers with a qualifier, or accept them.                                                |
+| "Too academic", "like a university question", "study aid"                      | Party trivia, not a study aid: no textbook definitions or named theories.                               |
+| "The hints worked", "guessable from knowing a few facts"                       | Medium and Hard questions carry a clue to reason from. Harder means a weaker clue, not an obscure fact. |
+| Labels were too easy for about 6 in 10 generated questions                     | Calibrate for a mixed room of adults; when unsure, label one level harder.                              |
+| "If it's the topic you chose, this is a good question"                         | Rate fit and fun relative to the chosen theme.                                                          |
+| A hallucinated viral moment; a date outside "the past year"                    | Recent events only when certain, and inside the theme's time window.                                    |
+| "References an article but we haven't read the article"                        | Never refer to a source in the question.                                                                |
+| Duplicates within one set                                                      | Every question tests a different fact.                                                                  |
+
+Calibration notes for judging, from where the round 1 judge disagreed with the owner:
+
+- Plain but fair, guessable questions are **keep**, not drop.
+- A wrong difficulty label alone is not a reason to **fix**. Record the real difficulty and judge the rest.
+- An explanation-style answer, or a reference to an unseen source, is **drop**.
+- Owner ratings are a taste signal, not a fact check. In round 1 the owner kept two planted questions with false answers without checking them. Correctness needs its own check against a source.
+
 ## Known tensions in the content strategy
 
 These came up while writing the rubric. They are worth resolving with evidence rather than by assertion:
