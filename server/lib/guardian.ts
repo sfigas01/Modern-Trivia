@@ -360,12 +360,27 @@ async function runQaOnSingle(
   return { ...q, status: 'pending' as const, aiAnalysis: { qaFindings, factCheck } };
 }
 
+/** Optional extra guidance appended to the generation and repair prompts. */
+export interface GenerateQuestionsOptions {
+  /**
+   * Extra writing rules, e.g. WRITER_STYLE_GUIDE_V2 from trivia-style-guide.ts. Omitted, the
+   * prompts are unchanged. Used by the offline eval (STE-304) to test prompt changes before
+   * any production route opts in.
+   */
+  styleGuide?: string;
+}
+
+function buildStyleGuideBlock(styleGuide: string | undefined): string {
+  return styleGuide?.trim() ? `\n${styleGuide.trim()}\n` : '';
+}
+
 async function repairQuestion(
   original: PendingQuestion,
   topic: string,
   pillar: string,
   failureReasons: string[],
-  existingExamples: ExistingExample[] = []
+  existingExamples: ExistingExample[] = [],
+  options: GenerateQuestionsOptions = {}
 ): Promise<PendingQuestion | null> {
   const originalJson = JSON.stringify(
     {
@@ -399,7 +414,7 @@ Return valid JSON for exactly ONE question using this schema:
 ${QUESTION_JSON_SCHEMA(pillar)}
 
 ${QUESTION_RULES(pillar)}
-${buildNegativeExamplesBlock(existingExamples)}`;
+${buildNegativeExamplesBlock(existingExamples)}${buildStyleGuideBlock(options.styleGuide)}`;
 
   try {
     const response = await getOpenAI().chat.completions.create({
@@ -445,7 +460,8 @@ export async function generateQuestions(
   topic: string,
   count: number,
   pillar: string,
-  existingExamples: ExistingExample[] = []
+  existingExamples: ExistingExample[] = [],
+  options: GenerateQuestionsOptions = {}
 ): Promise<PendingQuestion[]> {
   const normalizedCount = Math.max(1, Math.min(20, Math.floor(count || 1)));
   const startedAt = Date.now();
@@ -476,7 +492,7 @@ Return only valid JSON in this exact envelope:
 
 ${QUESTION_RULES(pillar)}
 - Return exactly ${normalizedCount} items, one per coverage cell above, in the same order.
-${buildNegativeExamplesBlock(existingExamples)}`;
+${buildNegativeExamplesBlock(existingExamples)}${buildStyleGuideBlock(options.styleGuide)}`;
 
   let content = '{}';
 
@@ -620,7 +636,9 @@ ${buildNegativeExamplesBlock(existingExamples)}`;
     });
 
     const repairResults = await Promise.all(
-      toRepair.map((q) => repairQuestion(q, topic, pillar, describeFailures(q), existingExamples))
+      toRepair.map((q) =>
+        repairQuestion(q, topic, pillar, describeFailures(q), existingExamples, options)
+      )
     );
 
     let repairedCount = 0;
