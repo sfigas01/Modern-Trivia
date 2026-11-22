@@ -1,19 +1,36 @@
 # Modern Trivia: Content Strategy
 
-> **Status:** Draft v2 (2026-11-15), proposed to replace v1. It is not yet approved.
+> **Status:** Draft v2.1 (2026-11-22): draft v2 (2026-11-15) plus the owner's audience amendment (STE-304). Proposed to replace v1. It is not yet approved as a whole; the audience amendment in sections 1 and 4 is the owner's decision.
 > **Owner:** Product owner. Changes need owner approval because they steer generation, the quality checks and question selection.
-> **Read with:** `docs/guides/question_authoring_pipeline.md`, which explains how questions get made to this strategy.
+> **Read with:** `docs/guides/trivia_quality_rubric.md` (how questions are rated) and `docs/guides/question_eval.md` (how generation is evaluated against this strategy).
 > **Code that reads this file:** `server/lib/guardian.ts` (`STRATEGY_PILLAR_TARGETS`) and `server/lib/coverage-benchmark.ts`. If you change a pillar name or a target share, change the code in the same PR.
 
 ---
 
 ## 1. What we are trying to make
 
-**Promise:** the best trivia night a mixed group of Canadians can have, without leaving the couch.
+**Promise:** the best trivia night a mixed group of friends can have, without leaving the couch.
 
-**Brand:** "Freshly Squeezed & Globally Smart." We mix Canadiana with general knowledge from around the world. US topics appear only when they matter worldwide, not by default.
+**Brand:** "Freshly Squeezed & Globally Smart." Global pop culture and general knowledge, with a Canadian flavour.
 
-**Audience:** Canadian adults aged 18 to 50, usually in a mixed group: friends, family or co-workers of different ages, playing as 2 to 6 teams in one room.
+**Audience:** Canadian adults aged 18 to 50, usually in a mixed group: friends, family or co-workers of different ages, playing as 2 to 6 teams in one room. They live in a world shaped by global and American pop culture, so that is most of what they know and enjoy.
+
+### Canadian content is a flavour, not the default
+
+About **20% of the default mix** is Canadian: Canadian people, places, food, shows, music and moments. The rest is global. Canadian content is never forced into a question that doesn't need it. Player-chosen themes (such as Harry Potter) follow the theme, not this share.
+
+### The US content test
+
+Ask: **would someone who grew up in Canada, or anywhere else, know this?**
+
+| Include (known worldwide)                                              | Leave out (you'd need to have grown up in the US)                                             |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| US film, TV, music, celebrities and sports stars                       | US history beyond world-famous moments (Civil War battles, most presidents, founding details) |
+| US brands, products and internet culture                               | US geography (states, state capitals, rivers, counties)                                       |
+| US events that mattered worldwide (the Moon landing, 9/11)             | US politics, government and civics (the Electoral College, amendments, Congress procedure)    |
+| US places famous worldwide (Hollywood, the Grand Canyon, Times Square) | Anything taught mainly in US schools                                                          |
+
+A US topic is fine when people outside the US would know it. The test is what the audience knows, not where the topic comes from.
 
 ### How we know we are failing
 
@@ -35,7 +52,7 @@ A good question makes the room **lean in**. Someone thinks they know it, a teamm
 
 These rank in this order. When two conflict, the higher one wins.
 
-1. **Correct beats everything.** One answer that can be defended, from at least two independent sources. We never ship a question we can't defend at the reveal.
+1. **Correct beats everything.** One answer that can be defended, backed by a quotable source (section 7). We never ship a question we can't defend at the reveal.
 2. **Knowable, not obscure.** Difficulty comes from facts people half-know, not from facts nobody knows. A question nobody gets isn't hard, it's broken.
 3. **Workable.** At Medium and Hard, the question carries at least one hint that lets a player who doesn't know the fact reason toward the answer. Players should feel they could have got it.
 4. **Not giveaway.** The hint helps someone reason, but it must not hand over the answer. A player who knows nothing about the topic should not be able to work it out from the words alone. (This is the existing Guardian obviousness check.)
@@ -72,13 +89,13 @@ Before launch, the writer and the playability check **predict** a question's cor
 
 ## 4. The four content pillars
 
-Each pillar has a **job** in the game, not only an audience. The shares stay at 30/30/25/15 because the generation planner targets them.
+Each pillar has a **job** in the game, not only an audience. The shares stay at 30/30/25/15 because the generation planner targets them. Within every pillar, about one question in five is Canadian (section 1).
 
 ### 🎬 TimeCapsule (30%): shared memories
 
 **Job:** nostalgia from the 80s, 90s and 2000s that **crosses generations**. Things that are still referenced, rerun, sampled or memed.
 
-- ✅ Heritage Minutes, Degrassi, MuchMusic, Expo 86, early internet, Y2K, songs that are still played today.
+- ✅ Friends, the Spice Girls, Pokémon, Saturday-morning cartoons, early internet, Y2K, songs that are still played today. Canadian picks such as Degrassi, MuchMusic and Heritage Minutes are part of the mix, not the default.
 - ❌ Plot details only a fan of the show at the time would know.
 - **Bridge rule:** if someone under 30 would not have lived through it, the question needs a hint they can still use. Examples: it is still quoted, it was remade, or the clue points to something they do know.
 
@@ -87,7 +104,7 @@ Each pillar has a **job** in the game, not only an audience. The shares stay at 
 **Job:** general knowledge from a world view. Geography, science, history, literature, art and international sport.
 
 - **What it is:** world capitals and landmarks, science and nature, history and culture outside the US, Nobel Prizes, the World Cup and the Olympics, and Canada's place in the world.
-- **What it avoids:** US-only history, geography and politics. For example, no Iowa geography, and no US Civil War unless the question is about Canada's link to it. A US topic qualifies only if it matters worldwide, such as the Moon landing.
+- **What it avoids:** anything that fails the US content test (section 1): US history, geography and politics that you'd only know from growing up in the US. For example, no Iowa geography and no US Civil War battles. A US topic qualifies when people outside the US know it, such as the Moon landing.
 - **Watch for:** textbook facts that are easy to look up but dull to answer, such as bare capital-city recall. Give them a hook or a clue, or leave them out.
 
 ### ⚡ FreshPrints (25%): recent culture
@@ -99,17 +116,25 @@ Each pillar has a **job** in the game, not only an audience. The shares stay at 
 - Ask about things that crossed into the mainstream. A chart-topper is fair. A niche TikTok sound is not.
 - No scandal, gossip or questions that mock private people.
 
-### 🏕️ GreatOutdoors (15%): the Canadian way of life
+### 🏕️ GreatOutdoors (15%): food, travel and lifestyle
 
-**Job:** food, travel, slang, cottage life, the outdoors and regional pride.
+**Job:** food, travel, the outdoors and everyday life. Canada first, but not Canada only.
 
-- ✅ Nanaimo bars, bunnyhugs, a "double-double", the Bluenose, the Cabot Trail, provincial and territorial quirks.
-- **Regional balance:** across the library, cover every region (BC, the Prairies, Ontario, Quebec, Atlantic Canada and the North) so it is not Toronto-centric.
-- Clue in regional facts so players from other provinces can still work them out.
+- ✅ Dishes and drinks from around the world, famous road trips and landmarks, the outdoors. Canadian picks: Nanaimo bars, a "double-double", the Cabot Trail, provincial and territorial quirks.
+- **Regional balance:** Canadian questions cover every region (BC, the Prairies, Ontario, Quebec, Atlantic Canada and the North), so they are not Toronto-centric.
+- Clue in regional facts so players from elsewhere can still work them out.
+- Slang works only when it is widely known. Hyper-local slang is too narrow (eval round 2).
 
 ### Themes on demand
 
-When a host picks a theme (STE-167), the theme questions sit outside the pillar mix but follow every other rule here, including difficulty bands, workable hints and sourcing.
+When a host picks a theme (STE-167), the theme questions sit outside the pillar mix and the Canadian share but follow every other rule here, including difficulty bands, workable hints and sourcing.
+
+The eval rounds showed that the theme itself is a big driver of question quality:
+
+- **Narrow themes** (a single local scene, hyper-local slang) run out of well-known facts fast. That leads to hard, unverifiable and repeated questions.
+- **Academic themes** (science topics such as volcanoes) drift into textbook definitions. Steer them toward famous events, places and people.
+
+How generation should handle these (widen the theme, or use more related-category questions) is being tested in eval round 3.
 
 ---
 
@@ -171,10 +196,11 @@ Right now a wrong answer loses points (−1 to −3) and a pass costs nothing. T
 
 ## 7. Sources and accuracy
 
-1. Every fact is backed by **at least two independent sources** from the source registry (`shared/models/theme-source-policy.ts`, `server/lib/theme-source-registry.ts`). Wikipedia counts as one source at most.
-2. A fact that depends on time stores its `asOf` date and an expiry.
-3. Any conflict between sources holds the question back. Rewrite it with the date stated, or leave it out.
-4. `sourceUrl` and `sourceName` are shown at the reveal, so they must be a page a player can check.
+1. **Stable facts:** one approved Wikipedia article is enough proof, per the owner's decision in STE-303. The proof must be a passage quoted word for word, which the eval's evidence check confirms (`docs/guides/question_eval.md`, round 2: it passed 0 of 7 wrong answers). A question with no quotable support is held for review, never passed.
+2. **Time-sensitive, disputed or "current" claims** (records, officeholders, "largest", recent events) need a first-party or specialist source as well. If none is available, leave the question out.
+3. A fact that depends on time stores its `asOf` date and an expiry.
+4. Any conflict between sources holds the question back. Rewrite it with the date stated, or leave it out.
+5. `sourceUrl` and `sourceName` are shown at the reveal, so they must be a page a player can check.
 
 ---
 
@@ -229,6 +255,17 @@ The owner plays the game too. Reports, dashboards and admin screens never show a
 | Measurement    | (Not covered)              | Results per answer, health metrics, lifecycle                  |
 | Library size   | "50-question starter bank" | Removed. Sized by repeat-free play per pillar and difficulty   |
 
+**v2.1 amendment (owner decision, 2026-11-22, STE-304):**
+
+| Area           | v2                                                           | v2.1                                                                                               |
+| -------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Audience       | "A mixed group of Canadians", Canadiana-led                  | Canadian groups; global and American pop culture is most of the mix                                |
+| Canadian share | About 45% (GreatOutdoors plus Canadian picks across pillars) | About 20% of the default mix                                                                       |
+| US content     | Only when it matters worldwide                               | The US content test: in if people outside the US know it; out if it's US school or civic knowledge |
+| GreatOutdoors  | The Canadian way of life                                     | Food, travel and lifestyle: Canada first, not Canada only                                          |
+| Sources        | Two independent sources; Wikipedia counts as one at most     | One approved Wikipedia article with a quoted passage for stable facts (STE-303)                    |
+| Themes         | Outside the pillar mix                                       | Also outside the Canadian share; narrow and academic themes flagged                                |
+
 ## 10. Open decisions for the owner
 
 1. Approve or retune the difficulty bands in section 3.
@@ -236,3 +273,5 @@ The owner plays the game too. Reports, dashboards and admin screens never show a
 3. Approve the turn shape (1 Easy, 2 Medium, 1 Hard) for question selection.
 4. Decide how passing should work (section 6).
 5. Confirm the FreshPrints window (12–24 months).
+6. Approve draft v2.1 as a whole. The audience amendment is decided; the rest of v2 is still a proposal.
+7. After eval round 3: decide how generation handles narrow and academic player themes.
