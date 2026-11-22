@@ -4,7 +4,10 @@ import type { Pool, QueryResult } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 
 import { emptyDuplicateCounts } from '@shared/models/quality-sweep';
-import type { ThemeQuestionWriterInput } from '@shared/models/theme-question-generation';
+import type {
+  ThemeQuestionWriterInput,
+  ThemeQuestionWriterOutput,
+} from '@shared/models/theme-question-generation';
 import { hashQuestionSnapshot } from './theme-evidence-eligibility';
 import type { ThemeQuestionQaContext } from './theme-question-evidence-review';
 import { ThemeQuestionGenerationError } from './theme-question-generation';
@@ -32,6 +35,27 @@ const childQuestion = {
   explanation: 'Saturn has the most extensive and visible planetary ring system.',
   tags: ['Global', 'GlobalEh', 'Science & Nature'],
 };
+
+function repairCandidateOutput(): ThemeQuestionWriterOutput {
+  return {
+    status: 'candidate',
+    question: childQuestion.question,
+    answer: childQuestion.answer,
+    acceptedAlternatives: childQuestion.acceptableAnswers,
+    hint: 'Think of the best-known ringed planet.',
+    difficulty: childQuestion.difficulty,
+    predictedCorrectRate: 70,
+    explanation: childQuestion.explanation,
+  };
+}
+
+function declinedOutput(): ThemeQuestionWriterOutput {
+  return {
+    status: 'declined',
+    reason: 'other_quality_issue',
+    explanation: 'The question cannot be repaired fairly.',
+  };
+}
 
 function result(rows: Record<string, unknown>[] = []): QueryResult {
   return { rows, rowCount: rows.length } as QueryResult;
@@ -233,11 +257,7 @@ describe('bounded theme question repair', () => {
   it('repairs once, re-runs evidence and every QA gate, then replays without callbacks', async () => {
     const f = fixture();
     const repository = createPostgresThemeQuestionRepairOrchestrator(f.pool, f.dependencies);
-    const repairer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: childQuestion.question,
-      explanation: childQuestion.explanation,
-    }));
+    const repairer = vi.fn(() => repairCandidateOutput());
     const reviewer = vi.fn(() => ({ dimensionResults: [] }));
 
     const first = await repository.repair(
@@ -273,11 +293,7 @@ describe('bounded theme question repair', () => {
     const repository = createPostgresThemeQuestionRepairOrchestrator(f.pool, f.dependencies);
     const decision = await repository.repair(
       { generation: f.generation, parentQaDecision: f.parentQaDecision },
-      () => ({
-        status: 'candidate',
-        question: childQuestion.question,
-        explanation: childQuestion.explanation,
-      }),
+      () => repairCandidateOutput(),
       () => ({ dimensionResults: [] })
     );
     expect(decision).toMatchObject({
@@ -299,11 +315,7 @@ describe('bounded theme question repair', () => {
     const repository = createPostgresThemeQuestionRepairOrchestrator(f.pool, f.dependencies);
     const decision = await repository.repair(
       { generation: f.generation, parentQaDecision: f.parentQaDecision },
-      () => ({
-        status: 'candidate',
-        question: childQuestion.question,
-        explanation: childQuestion.explanation,
-      }),
+      () => repairCandidateOutput(),
       () => ({ dimensionResults: [] })
     );
 
@@ -326,7 +338,7 @@ describe('bounded theme question repair', () => {
       content: childQuestion,
     });
     const repository = createPostgresThemeQuestionRepairOrchestrator(f.pool, f.dependencies);
-    const repairer = vi.fn(() => ({ status: 'declined' as const }));
+    const repairer = vi.fn(() => declinedOutput());
     const reviewer = vi.fn(() => ({ dimensionResults: [] }));
 
     await expect(
@@ -350,7 +362,7 @@ describe('bounded theme question repair', () => {
           generation: f.generation,
           parentQaDecision: { ...f.parentQaDecision, reason: 'quality_incomplete' },
         },
-        () => ({ status: 'declined' }),
+        () => declinedOutput(),
         () => ({ dimensionResults: [] })
       )
     ).rejects.toMatchObject<Partial<ThemeQuestionRepairError>>({ code: 'invalid_request' });
@@ -361,7 +373,7 @@ describe('bounded theme question repair', () => {
     await expect(
       repository.repair(
         { generation: f.generation, parentQaDecision: f.parentQaDecision },
-        () => ({ status: 'declined' }),
+        () => declinedOutput(),
         () => ({ dimensionResults: [] })
       )
     ).rejects.toMatchObject<Partial<ThemeQuestionRepairError>>({ code: 'attempt_unresolved' });

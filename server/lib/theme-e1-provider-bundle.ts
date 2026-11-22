@@ -3,10 +3,14 @@ import { z } from 'zod';
 import type { Question } from '@shared/models/questions';
 import { themeFactReviewOutputSchema } from '@shared/models/theme-fact-review';
 import {
+  themeQuestionCandidateOutputSchema,
   themeQuestionWriterOutputSchema,
   type ThemeQuestionWriterOutput,
 } from '@shared/models/theme-question-generation';
 import {
+  themeFactConflictedOutputSchema,
+  themeFactInsufficientEvidenceOutputSchema,
+  themeFactProposedOutputSchema,
   themeFactProposerOutputSchema,
   type ThemeFactProposalPassage,
   type ThemeFactProposerOutput,
@@ -26,7 +30,7 @@ import {
 import type { ThemeOpenAITransports } from './theme-openai-preview-runtime';
 import type { FactCheckReport } from './verifier';
 
-export const THEME_E1_BUNDLE_VERSION = 'theme-e1-openai-2026-11-15-v2' as const;
+export const THEME_E1_BUNDLE_VERSION = 'theme-e1-openai-2026-11-21-v4' as const;
 export const THEME_E1_PRICING_VERSION = 'openai-standard-2026-11-08-v1' as const;
 export const THEME_E1_INPUT_ESTIMATOR_VERSION = 'utf8-bytes-div-3-v1' as const;
 
@@ -65,6 +69,19 @@ const proposerWireSchema = z
   .strict()
   .transform(({ result }): ThemeFactProposerOutput => result);
 
+const slotProposerResultSchema = z.discriminatedUnion('status', [
+  themeFactInsufficientEvidenceOutputSchema,
+  themeFactConflictedOutputSchema,
+  themeFactProposedOutputSchema
+    .extend({ questionPackage: themeQuestionCandidateOutputSchema })
+    .strict(),
+]);
+
+const slotProposerWireSchema = z
+  .object({ result: slotProposerResultSchema })
+  .strict()
+  .transform(({ result }): ThemeFactProposerOutput => result);
+
 const writerWireSchema = z
   .object({ result: z.union(themeQuestionWriterOutputSchema.options) })
   .strict()
@@ -82,9 +99,39 @@ const qualitySchema = z
             coherence: z.enum(['pass', 'flag', 'fail']),
             obviousness: z.enum(['pass', 'flag', 'fail']),
             confidence: z.number().min(0).max(100),
+            defectCodes: z
+              .array(
+                z.enum([
+                  'multiple_reasonable_answers',
+                  'missing_hint',
+                  'giveaway_hint',
+                  'incoherent_premise',
+                  'unnatural_answer',
+                  'missing_alias',
+                  'difficulty_mismatch',
+                  'specialist_only_recall',
+                ])
+              )
+              .max(8),
+            predictedCorrectRate: z.number().int().min(0).max(100),
+            funScore: z.number().int().min(1).max(5),
+            recommendedAction: z.enum(['approve', 'rewrite', 'reject']),
             reason: z.string().trim().min(1).max(2_000),
           })
           .strict()
+          .superRefine((result, context) => {
+            const cleanPass =
+              result.verdict === 'pass' &&
+              result.coherence === 'pass' &&
+              result.obviousness === 'pass' &&
+              result.defectCodes.length === 0 &&
+              result.recommendedAction === 'approve';
+            if ((result.verdict === 'pass') !== cleanPass)
+              context.addIssue({
+                code: 'custom',
+                message: 'A player-quality pass requires no defects and an approve action',
+              });
+          })
       )
       .length(1),
   })
@@ -98,12 +145,12 @@ const semanticSchema = z
   .strict();
 
 const PROMPTS = Object.freeze({
-  proposer: `Extract exactly one stable trivia fact about the requested theme from the supplied passages. Use only the passages, copy passage IDs and hashes exactly, and cite at least one supporting passage. Do not use model memory. Reject disputed, superlative, current, changing, ambiguous, or weakly supported claims. Return one top-level object containing only result. Inside result, use exactly one schema branch: proposed with every required fact field, insufficient_evidence with only status, or conflicted with only status.`,
-  factReview: `Act as an independent, skeptical evidence reviewer. Evaluate every required dimension using only the supplied fact and passages. A pass requires direct entailment, exact scope and qualifiers, a uniquely supported canonical answer, supported aliases, no unresolved conflict, and the required source independence. Do not repair or infer missing facts.`,
-  writer: `Write one concise trivia question whose unique answer is the supplied canonical answer. Use only the supplied fact and evidence. Include all qualifiers needed to avoid ambiguity, never reveal the answer in the question, and make the explanation evidence-bound. Decline if a fair unambiguous question cannot be written. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
-  evidenceReview: `Review the question, answer, aliases, explanation, scope and freshness only against the supplied fact and passages. Return exactly one result for every required dimension. Pass only when the evidence directly supports the full wording and a unique answer; otherwise flag or fail with the applicable reason code and exact passage IDs.`,
-  repair: `Make one bounded repair to the supplied parent question for the stated static or quality failure. Preserve the evidence-backed canonical answer and scope, do not add facts, and return a complete revised question and explanation. Decline if the problem cannot be fixed without unsupported information. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
-  quality: `Perform an adversarial trivia quality review. Check whether the premise and requested answer type are coherent, whether the answer is exposed or trivially constrained by the wording, and whether the stated difficulty is credible. Return one result with the exact supplied question ID. Any uncertainty must be flag, not pass.`,
+  proposer: `Using only the supplied Wikipedia passages, select one recognizable, stable fact and write its complete general-audience trivia Q&A package in the same response. Do not use model memory. The fact must have one short answer, avoid specialist-only knowledge, approximations, disputed or changing claims, and contested first/largest wording. Copy passage IDs and hashes exactly and cite direct support. For a proposed result, include questionPackage. Follow slot.targetDifficulty: Easy targets 75-95% correct, Medium 45-75%, Hard 20-45%. Keep the underlying fact knowable at every level; create difficulty with clue strength and a useful non-giveaway hint, never with obscurity. Medium and Hard require a narrowing hint. Use a natural 12-30 word question, Canadian spelling, metric units where relevant, and a 1-3 sentence Wikipedia-supported explanation with an interesting reveal. The answer and alternatives must exactly match the supported canonical answer and aliases. Return one top-level object containing only result, using proposed, insufficient_evidence, or conflicted.`,
+  factReview: `Act as a skeptical evidence reviewer for stable trivia facts. Evaluate every required dimension using only the supplied fact and approved Wikipedia passages. A pass requires direct entailment, exact scope and qualifiers, a uniquely supported canonical answer, supported aliases, and no unresolved conflict. One approved Wikipedia origin is sufficient for a stable claim: pass source_independence with approved_single_source when there is one origin, and never flag solely because an independent second source is absent. Use independent_origins when multiple independent origins are supplied. Do not repair or infer missing facts.`,
+  writer: `Write one fair, general-audience trivia Q&A package from the supplied fact and Wikipedia evidence. Follow targetDifficulty: Easy targets 75-95% correct, Medium 45-75%, Hard 20-45%. Adjust clue and hint strength rather than choosing obscure facts. Medium and Hard require a useful narrowing hint. The answer and acceptedAlternatives must exactly copy the supplied canonical answer and supported aliases. Write a natural 12-30 word question with exactly one reasonable answer, Canadian spelling and metric units where relevant. Avoid giveaways. The 1-3 sentence explanation must be fully supported and include an interesting reveal. Decline with a concrete reason when a fair unambiguous question is not possible. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
+  evidenceReview: `Fact-check the complete question-and-answer package only against the supplied Wikipedia fact and passages. Review the question, canonical answer, accepted alternatives, explanation, scope and freshness. Return exactly one result for every required dimension. Pass only when the passages directly support the full wording and exactly one reasonable answer; otherwise flag or fail with the applicable reason code and exact passage IDs. One approved Wikipedia origin is sufficient for a stable claim.`,
+  repair: `Make one bounded repair to the supplied parent question for the stated static or quality failure. Preserve the evidence-backed canonical answer and scope, do not add facts, and return the complete Q&A package required by the candidate schema. The answer must exactly copy the supplied canonical answer. Accepted alternatives may only be retained or removed from the supplied supported aliases; never add one. Difficulty may change only when the stated quality failure requires reclassification. Revise wording, hint or explanation as needed, but never change the underlying fact or canonical answer. Decline with a concrete reason if the problem cannot be fixed without unsupported information. Return one top-level object containing only result, using exactly the candidate or declined schema branch.`,
+  quality: `Review the completed Q&A as a general-audience trivia editor, not as a fact checker. Use only these defects: multiple reasonable answers, missing Medium/Hard hint, giveaway hint, incoherent premise, unnatural answer, missing common alias, predicted correct rate outside Easy 75-95 / Medium 45-75 / Hard 20-45, or specialist-only recall. Do not reject merely because the answer is unfamiliar. Return the reviewer predicted correct rate, a 1-5 fun score, explicit defect codes, and approve/rewrite/reject with a concrete reason. Pass only when defectCodes is empty and recommendedAction is approve.`,
   semantic: `Compare the two question-answer pairs. Classify them as equivalent, conflicting answers to substantially the same question, distinct, or uncertain. Use uncertain whenever equivalence or conflict is not clear.`,
 });
 
@@ -181,7 +228,7 @@ export function createThemeE1Providers(transports: ThemeOpenAITransports) {
   const slotProposer = structured<ThemeProposalSlotProviderInput, ThemeFactProposerOutput>(
     transports,
     'proposer',
-    proposerWireSchema,
+    slotProposerWireSchema,
     (input) => input
   );
   return Object.freeze({

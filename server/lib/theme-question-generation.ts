@@ -176,7 +176,8 @@ export function projectThemeQuestionWriterOutput(
   raw: unknown,
   input: ThemeQuestionWriterInput,
   policy: ThemeQuestionGenerationPolicy,
-  themeSlug: string
+  themeSlug: string,
+  allowPresentationRepair = false
 ):
   | { status: 'candidate'; content: QuestionContentSnapshot }
   | { status: 'declined' }
@@ -185,13 +186,26 @@ export function projectThemeQuestionWriterOutput(
   if (!parsedOutput.success || !safeTextTree(parsedOutput.data))
     return { status: 'invalid_output' };
   if (parsedOutput.data.status === 'declined') return { status: 'declined' };
+  const supportedAliases = new Set(input.fact.supportedAliases);
+  const alternativesValid = allowPresentationRepair
+    ? new Set(parsedOutput.data.acceptedAlternatives).size ===
+        parsedOutput.data.acceptedAlternatives.length &&
+      parsedOutput.data.acceptedAlternatives.every((alias) => supportedAliases.has(alias))
+    : eq(parsedOutput.data.acceptedAlternatives, input.fact.supportedAliases);
+  if (
+    parsedOutput.data.answer !== input.fact.canonicalAnswer ||
+    !alternativesValid ||
+    (!allowPresentationRepair &&
+      parsedOutput.data.difficulty !== (input.targetDifficulty ?? policy.difficulty))
+  )
+    return { status: 'invalid_output' };
   const projected = questionContentSnapshotSchema.safeParse({
     question: parsedOutput.data.question,
-    answer: input.fact.canonicalAnswer,
-    acceptableAnswers: input.fact.supportedAliases,
+    answer: parsedOutput.data.answer,
+    acceptableAnswers: parsedOutput.data.acceptedAlternatives,
     explanation: parsedOutput.data.explanation,
     category: policy.category,
-    difficulty: policy.difficulty,
+    difficulty: parsedOutput.data.difficulty,
     pillar: policy.pillar,
     tags: policy.tags,
     themeSlug,
@@ -273,7 +287,7 @@ async function lockRepairParent(
     parsedParent.data.answer !== writerInput.fact.canonicalAnswer ||
     !eq(parsedParent.data.acceptableAnswers, writerInput.fact.supportedAliases) ||
     parsedParent.data.category !== policy.category ||
-    parsedParent.data.difficulty !== policy.difficulty ||
+    parsedParent.data.difficulty !== (writerInput.targetDifficulty ?? policy.difficulty) ||
     parsedParent.data.pillar !== policy.pillar ||
     !eq(parsedParent.data.tags, policy.tags) ||
     parsedParent.data.themeSlug !== themeSlug
@@ -775,6 +789,7 @@ export async function loadGenerationContext(
       supportedAliases: factSnapshot.supportedAliases,
     },
     evidence: writerEvidence,
+    targetDifficulty: request.targetDifficulty ?? config.generationPolicy.difficulty,
   });
   if (!writerInputParsed.success) throw new ThemeQuestionGenerationError('ineligible');
 
@@ -1262,13 +1277,18 @@ export function createPostgresThemeQuestionGenerationRepository(
         'persisted';
       let failureCode: string | null = null;
       let content: QuestionContentSnapshot | null = null;
+      let writerOutput: ThemeQuestionWriterOutput | null = null;
       try {
         const raw = await writer(structuredClone(stableInput));
+        const parsedWriterOutput = themeQuestionWriterOutputSchema.safeParse(raw);
+        if (parsedWriterOutput.success && safeTextTree(parsedWriterOutput.data))
+          writerOutput = parsedWriterOutput.data;
         const projected = projectThemeQuestionWriterOutput(
           raw,
           stableInput,
           config.generationPolicy,
-          String((attemptHeader.policy_snapshot as Record<string, unknown>).themeSlug)
+          String((attemptHeader.policy_snapshot as Record<string, unknown>).themeSlug),
+          request.repairOf !== undefined
         );
         if (projected.status === 'invalid_output') {
           status = 'invalid_output';
@@ -1397,9 +1417,9 @@ export function createPostgresThemeQuestionGenerationRepository(
             `INSERT INTO theme_question_generation_outcomes
            (attempt_id, job_id, ordinal, candidate_id, question_revision_id, fact_id,
             fact_revision_id, fact_content_hash, fact_review_attempt_id, fact_review_output_hash,
-            status, question_content_hash, failure_code)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-            outcomeValues
+            status, question_content_hash, failure_code, writer_output)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb)`,
+            [...outcomeValues, writerOutput === null ? null : JSON.stringify(writerOutput)]
           );
           return { status, questionContentHash };
         });
@@ -1426,8 +1446,8 @@ export function createPostgresThemeQuestionGenerationRepository(
             `INSERT INTO theme_question_generation_outcomes
              (attempt_id, job_id, ordinal, candidate_id, question_revision_id, fact_id,
               fact_revision_id, fact_content_hash, fact_review_attempt_id, fact_review_output_hash,
-              status, question_content_hash, failure_code)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'failed',NULL,'candidate_conflict')`,
+              status, question_content_hash, failure_code, writer_output)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'failed',NULL,'candidate_conflict',NULL)`,
             [
               request.attemptId,
               request.jobId,

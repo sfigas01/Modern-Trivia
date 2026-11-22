@@ -34,6 +34,7 @@ const reasonVerdicts = {
   },
   source_independence: {
     independent_origins: 'pass',
+    approved_single_source: 'pass',
     shared_origin: 'fail',
     independence_unclear: 'flag',
   },
@@ -45,7 +46,12 @@ const reasonCodes = {
   canonical_answer: ['answer_supported', 'answer_mismatch', 'answer_ambiguous'],
   aliases: ['aliases_supported', 'alias_unsupported', 'alias_ambiguous', 'no_aliases'],
   conflict: ['no_conflict', 'conflicting_evidence', 'conflict_unresolved'],
-  source_independence: ['independent_origins', 'shared_origin', 'independence_unclear'],
+  source_independence: [
+    'independent_origins',
+    'approved_single_source',
+    'shared_origin',
+    'independence_unclear',
+  ],
 } as const satisfies Record<ThemeFactReviewDimension, readonly [string, ...string[]]>;
 
 export const themeFactReviewPolicySchema = z

@@ -17,6 +17,7 @@ import {
   resolveThemeSourceUrl,
   themeSourceRegistrySchema,
 } from '@shared/models/theme-source-registry';
+import { themeQuestionCandidateOutputSchema } from '@shared/models/theme-question-generation';
 
 import { hashThemeSourceRegistry } from './theme-source-registry';
 
@@ -109,20 +110,29 @@ const citationSchema = z
   })
   .strict();
 
+export const themeFactInsufficientEvidenceOutputSchema = z
+  .object({ status: z.literal('insufficient_evidence') })
+  .strict();
+export const themeFactConflictedOutputSchema = z
+  .object({ status: z.literal('conflicted') })
+  .strict();
+export const themeFactProposedOutputSchema = z
+  .object({
+    status: z.literal('proposed'),
+    statement: z.string().trim().min(1).max(4_000),
+    scope: factScopeSchema,
+    canonicalAnswer: z.string().trim().min(1).max(1_000),
+    supportedAliases: z.array(z.string().trim().min(1).max(1_000)).max(50),
+    timeSensitive: z.boolean(),
+    citations: z.array(citationSchema).min(1).max(MAX_PASSAGES),
+    questionPackage: themeQuestionCandidateOutputSchema.optional(),
+  })
+  .strict();
+
 export const themeFactProposerOutputSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('insufficient_evidence') }).strict(),
-  z.object({ status: z.literal('conflicted') }).strict(),
-  z
-    .object({
-      status: z.literal('proposed'),
-      statement: z.string().trim().min(1).max(4_000),
-      scope: factScopeSchema,
-      canonicalAnswer: z.string().trim().min(1).max(1_000),
-      supportedAliases: z.array(z.string().trim().min(1).max(1_000)).max(50),
-      timeSensitive: z.boolean(),
-      citations: z.array(citationSchema).min(1).max(MAX_PASSAGES),
-    })
-    .strict(),
+  themeFactInsufficientEvidenceOutputSchema,
+  themeFactConflictedOutputSchema,
+  themeFactProposedOutputSchema,
 ]);
 
 export type ThemeFactProposerOutput = z.input<typeof themeFactProposerOutputSchema>;
@@ -258,20 +268,18 @@ async function loadEvidence(
 ): Promise<EvidenceSet> {
   const result = await db.query<EvidenceRow>(EVIDENCE_SQL, [ids]);
   if (result.rows.length !== ids.length) throw new ThemeFactDerivationError('missing_evidence');
-  const normalizedRows: EvidenceRow[] = result.rows.map(
-    (row): EvidenceRow => ({
-      ...row,
-      passage: {
-        ...row.passage,
-        id: databaseUuid(row.passage.id),
-        document_id: databaseUuid(row.passage.document_id),
-      },
-      document: { ...row.document, id: databaseUuid(row.document.id) },
-      binding: row.binding
-        ? { ...row.binding, document_id: databaseUuid(row.binding.document_id) }
-        : null,
-    })
-  );
+  const normalizedRows: EvidenceRow[] = result.rows.map((row): EvidenceRow => ({
+    ...row,
+    passage: {
+      ...row.passage,
+      id: databaseUuid(row.passage.id),
+      document_id: databaseUuid(row.passage.document_id),
+    },
+    document: { ...row.document, id: databaseUuid(row.document.id) },
+    binding: row.binding
+      ? { ...row.binding, document_id: databaseUuid(row.binding.document_id) }
+      : null,
+  }));
   const byId = new Map(normalizedRows.map((row) => [row.passage.id as string, row]));
   if (byId.size !== ids.length) throw new ThemeFactDerivationError('invalid_evidence');
   const passages: ValidatedEvidence[] = [];

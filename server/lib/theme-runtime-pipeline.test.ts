@@ -812,7 +812,51 @@ describe('concrete dormant theme pipeline', () => {
 
     expect(proposalSlots.recordOutcome).toHaveBeenCalledTimes(2);
     expect(proposer.invoke).toHaveBeenCalledTimes(2);
-    expect(proposalSlots.loadOutcome).toHaveBeenCalledTimes(7);
+    expect(proposalSlots.loadOutcome).toHaveBeenCalledTimes(8);
+  });
+
+  it('persists a proposal-slot Q&A without a second model-writing call', async () => {
+    const f = fixture();
+    const options = slottedOptions(f, [item]);
+    const { context } = slottedContext(f);
+    const questionPackage = {
+      status: 'candidate' as const,
+      question: 'What is the fixture answer?',
+      answer: 'Fixture',
+      acceptedAlternatives: [],
+      hint: 'It is named in the supporting passage.',
+      difficulty: 'Medium' as const,
+      predictedCorrectRate: 60,
+      explanation: 'The supporting passage identifies Fixture as the answer.',
+    };
+    const proposer = {
+      ...options.providers.proposer,
+      invoke: vi.fn(async () => ({
+        value: { ...proposedFact, questionPackage },
+        outcome: { status: 'succeeded' as const, actualCostMicros: 1 },
+      })),
+    };
+    const pipeline = createThemeRuntimePipeline(context, {
+      ...options,
+      proposalSlots: { ...options.proposalSlots!, proposer },
+    });
+
+    await pipeline.retrieve(job, options.items);
+    await pipeline.extract(job, options.items);
+    const physicalCallsBeforeGeneration = f.physical.mock.calls.length;
+    await expect(pipeline.generate(job, options.items[0])).resolves.toMatchObject({
+      status: 'generated',
+    });
+
+    expect(f.physical).toHaveBeenCalledTimes(physicalCallsBeforeGeneration);
+    expect(f.dispatchProvider).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        operation: 'generate',
+        provider: 'internal',
+        model: 'persisted-fact-and-question-package-v1',
+        candidateSlots: 1,
+      })
+    );
   });
 
   it('withholds an adverse evaluation fact review and continues later slots', async () => {

@@ -58,6 +58,16 @@ describe('theme fact review contract', () => {
     expect(aggregateThemeFactReviewVerdict(valid.dimensions)).toBe('fail');
   });
 
+  it('allows one approved Wikipedia origin for a stable trivia fact', () => {
+    const valid = output();
+    valid.dimensions.source_independence.reasons = ['approved_single_source'];
+
+    expect(
+      validateThemeFactReviewOutput(valid, [], new Map([[passageId, passageHash]]))
+    ).not.toBeNull();
+    expect(aggregateThemeFactReviewVerdict(valid.dimensions)).toBe('pass');
+  });
+
   it('rejects reason codes incompatible with verdicts and ungrounded dimensions', () => {
     const incompatible = output();
     incompatible.dimensions.entailment.reasons = ['unsupported'];

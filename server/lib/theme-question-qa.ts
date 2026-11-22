@@ -31,6 +31,13 @@ const sourceSchema = z
 const contextSchema = requestSchema
   .extend({
     question: questionContentSnapshotSchema,
+    editorial: z
+      .object({
+        hint: z.string().trim().min(1).max(2_000),
+        predictedCorrectRate: z.number().int().min(0).max(100),
+      })
+      .strict()
+      .optional(),
     evidenceAttemptId: z.string().uuid(),
     evidenceReviewId: z.string().uuid(),
     evidenceFingerprint: sha256Schema,
@@ -54,12 +61,7 @@ const corpusSchema = z
 
 export type ThemeQuestionQaRequest = z.infer<typeof requestSchema>;
 export type ThemeQuestionQaStage =
-  | 'input'
-  | 'evidence'
-  | 'static'
-  | 'quality'
-  | 'semantic'
-  | 'recheck';
+  'input' | 'evidence' | 'static' | 'quality' | 'semantic' | 'recheck';
 export type ThemeQuestionQaReason =
   | 'passed'
   | 'invalid_context'
@@ -88,6 +90,10 @@ export type ThemeQuestionQaDecision = Readonly<{
   evaluatedAt: string;
   stage: ThemeQuestionQaStage;
   reason: ThemeQuestionQaReason;
+  reviewDetails: Readonly<{
+    staticFindings?: unknown;
+    quality?: FactCheckReport['results'][number];
+  }> | null;
 }>;
 
 export class ThemeQuestionQaError extends Error {
@@ -143,7 +149,7 @@ function asQuestion(context: ThemeQuestionQaContext, at: Date): Question {
     sourceName: context.source.name,
     status: 'pending',
     origin: 'player_ai',
-    aiAnalysis: null,
+    aiAnalysis: context.editorial ? { themeEditorial: context.editorial } : null,
     createdAt: new Date(at),
     updatedAt: new Date(at),
   };
@@ -181,6 +187,7 @@ export async function runThemeQuestionQa(
     corpusHash: null,
     policyVersion: THEME_QUESTION_QA_POLICY_VERSION,
     evaluatedAt: evaluatedAt.toISOString(),
+    reviewDetails: null,
   } as const;
   const withheld = (
     stage: ThemeQuestionQaStage,
@@ -213,7 +220,11 @@ export async function runThemeQuestionQa(
 
   const question = asQuestion(context, evaluatedAt);
   const audit = auditQuestionQuality([structuredClone(question)]);
-  if (audit.findings.length > 0) return withheld('static', 'static_finding', evidence);
+  if (audit.findings.length > 0)
+    return withheld('static', 'static_finding', {
+      ...evidence,
+      reviewDetails: { staticFindings: audit.findings },
+    });
 
   let quality: FactCheckReport;
   try {
@@ -228,7 +239,10 @@ export async function runThemeQuestionQa(
     return withheld('quality', 'quality_incomplete', evidence);
   const verdict = matching[0];
   if (verdict.verdict !== 'pass' || verdict.coherence !== 'pass' || verdict.obviousness !== 'pass')
-    return withheld('quality', 'quality_adverse', evidence);
+    return withheld('quality', 'quality_adverse', {
+      ...evidence,
+      reviewDetails: { quality: verdict },
+    });
 
   let corpus: z.infer<typeof corpusSchema>;
   try {
@@ -354,6 +368,7 @@ export async function runThemeQuestionQa(
     ...base,
     ...evidence,
     ...corpusValues,
+    reviewDetails: { quality: verdict },
     status: 'passed',
     stage: 'recheck',
     reason: 'passed',

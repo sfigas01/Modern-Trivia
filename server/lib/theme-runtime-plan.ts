@@ -75,6 +75,7 @@ const proposalSlotSchema = z
     sourceKey: z.string().trim().min(1).max(255),
     role: z.enum(['theme', 'related_backup']).optional(),
     topic: z.string().trim().min(1).max(160).optional(),
+    targetDifficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
   })
   .strict();
 
@@ -237,6 +238,12 @@ export const themeLiveRuntimePlanV2Schema = z
           path: ['proposalSlots', index],
           message: 'Gameplay slot role and topic must be pinned together',
         });
+      if (slot.role !== undefined && slot.targetDifficulty === undefined)
+        context.addIssue({
+          code: 'custom',
+          path: ['proposalSlots', index],
+          message: 'Gameplay slots must pin a target difficulty',
+        });
       perSource.set(slot.sourceKey, (perSource.get(slot.sourceKey) ?? 0) + 1);
     }
     if (
@@ -306,6 +313,7 @@ export function createThemeLiveRuntimePlanWithProposalSlots(input: {
       key: `proposal:${String(index + 1).padStart(3, '0')}`,
       ordinal: index + 1,
       sourceKey: base.sources[index % base.sources.length].key,
+      targetDifficulty: (['Easy', 'Medium', 'Medium', 'Hard'] as const)[index % 4],
     })),
   });
 }
@@ -322,6 +330,7 @@ export function createThemeLiveRuntimeGameplayPlan(input: {
   slots: readonly Readonly<{
     role: 'theme' | 'related_backup';
     topic: string;
+    targetDifficulty?: 'Easy' | 'Medium' | 'Hard';
   }>[];
   maximumSlotsPerSource: number;
 }): ThemeLiveRuntimePlanV2 {
@@ -342,6 +351,8 @@ export function createThemeLiveRuntimeGameplayPlan(input: {
       sourceKey: base.sources[index % base.sources.length].key,
       role: slot.role,
       topic: normalizeWikipediaTheme(slot.topic),
+      targetDifficulty:
+        slot.targetDifficulty ?? (['Easy', 'Medium', 'Medium', 'Hard'] as const)[index % 4],
     })),
   });
 }

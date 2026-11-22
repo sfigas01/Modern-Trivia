@@ -14,6 +14,7 @@ import { hashQuestionSnapshot } from './theme-evidence-eligibility';
 import { hashThemeFactSnapshot } from './theme-fact-derivation';
 import { hashThemeSourceRegistry } from './theme-source-registry';
 import type { ThemeSourceRegistry } from '@shared/models/theme-source-registry';
+import type { ThemeQuestionWriterOutput } from '@shared/models/theme-question-generation';
 
 const policy = {
   generationPolicyVersion: 'writer-v1',
@@ -50,6 +51,32 @@ const writerInput = {
     },
   ],
 };
+
+function candidateOutput(
+  question = 'In which year did the event occur?',
+  explanation = 'The record states the year.',
+  answer = '1901',
+  acceptedAlternatives: string[] = []
+): ThemeQuestionWriterOutput {
+  return {
+    status: 'candidate',
+    question,
+    answer,
+    acceptedAlternatives,
+    hint: 'Think of the start of the twentieth century.',
+    difficulty: 'Medium',
+    predictedCorrectRate: 55,
+    explanation,
+  };
+}
+
+function declinedOutput(): ThemeQuestionWriterOutput {
+  return {
+    status: 'declined',
+    reason: 'other_quality_issue',
+    explanation: 'A fair question could not be written.',
+  };
+}
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -645,11 +672,7 @@ describe('theme question generation safety', () => {
       const f = repositoryFixture();
       if (target === 'candidate') f.state.existingCandidateIds.add(f.request.candidateId);
       else f.state.existingQuestionRevisionIds.add(f.request.questionRevisionId);
-      const writer = vi.fn(() => ({
-        status: 'candidate' as const,
-        question: 'In which year did the event occur?',
-        explanation: 'The record states the year.',
-      }));
+      const writer = vi.fn(() => candidateOutput());
 
       await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
         code: 'candidate_conflict',
@@ -673,19 +696,11 @@ describe('theme question generation safety', () => {
     const firstWriter = vi.fn(async () => {
       signalWriterEntered();
       await blocked;
-      return {
-        status: 'candidate' as const,
-        question: 'In which year did the event occur?',
-        explanation: 'The record states the year.',
-      };
+      return candidateOutput();
     });
     const first = f.repository.generate(f.request, firstWriter);
     await entered;
-    const secondWriter = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const secondWriter = vi.fn(() => candidateOutput());
     const secondRequest = {
       ...f.request,
       attemptId: randomUUID(),
@@ -704,11 +719,7 @@ describe('theme question generation safety', () => {
     const f = repositoryFixture();
     const writer = vi.fn(() => {
       f.state.candidateInsertConflict = true;
-      return {
-        status: 'candidate' as const,
-        question: 'In which year did the event occur?',
-        explanation: 'The record states the year.',
-      };
+      return candidateOutput();
     });
     const first = await f.repository.generate(f.request, writer);
     expect(first).toMatchObject({ status: 'failed', failureCode: 'candidate_conflict' });
@@ -719,11 +730,9 @@ describe('theme question generation safety', () => {
 
   it('stores an unchanged repair as a terminal failure without creating a child candidate', async () => {
     const f = repairFixture();
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: f.parentContent.question,
-      explanation: f.parentContent.explanation,
-    }));
+    const writer = vi.fn(() =>
+      candidateOutput(f.parentContent.question, f.parentContent.explanation)
+    );
 
     const first = await f.repository.generate(f.request, writer);
     expect(first).toMatchObject({ status: 'failed', failureCode: 'repair_unchanged' });
@@ -738,11 +747,12 @@ describe('theme question generation safety', () => {
 
   it('persists a changed repair as one linked child while preserving trusted answer fields', async () => {
     const f = repairFixture();
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'What year is assigned to the fictional event in the archived record?',
-      explanation: 'The archived record assigns the event to that year.',
-    }));
+    const writer = vi.fn(() =>
+      candidateOutput(
+        'What year is assigned to the fictional event in the archived record?',
+        'The archived record assigns the event to that year.'
+      )
+    );
 
     const decision = await f.repository.generate(f.request, writer);
     expect(decision).toMatchObject({ status: 'persisted' });
@@ -760,7 +770,7 @@ describe('theme question generation safety', () => {
   it('rejects a repair whose parent is already a repair child before dispatch', async () => {
     const f = repairFixture();
     f.state.repairParent!.generation_parent_candidate_id = randomUUID();
-    const writer = vi.fn(() => ({ status: 'declined' as const }));
+    const writer = vi.fn(() => declinedOutput());
 
     await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
       code: 'repair_conflict',
@@ -778,7 +788,7 @@ describe('theme question generation safety', () => {
       },
       () => new Date(f.state.nowMs)
     );
-    const writer = vi.fn(() => ({ status: 'declined' as const }));
+    const writer = vi.fn(() => declinedOutput());
 
     await expect(repository.generate(f.request, writer)).rejects.toMatchObject({
       code: 'repair_conflict',
@@ -789,11 +799,7 @@ describe('theme question generation safety', () => {
   it('persists through generate() and replays without redispatch after a candidate status change', async () => {
     const f = repositoryFixture();
     f.state.advanceOnFactLockMs = 20_000;
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const writer = vi.fn(() => candidateOutput());
     const first = await f.repository.generate(f.request, writer);
     expect(first.status).toBe('persisted');
     expect(f.state.header?.evaluated_at).toBe('2026-09-28T12:00:20.123Z');
@@ -809,11 +815,7 @@ describe('theme question generation safety', () => {
     const f = repositoryFixture();
     const writer = vi.fn(() => {
       f.state.edgeKind = 'conflicts';
-      return {
-        status: 'candidate' as const,
-        question: 'In which year did the event occur?',
-        explanation: 'The record states the year.',
-      };
+      return candidateOutput();
     });
     const first = await f.repository.generate(f.request, writer);
     expect(first).toMatchObject({ status: 'ineligible', failureCode: 'ineligible' });
@@ -838,11 +840,7 @@ describe('theme question generation safety', () => {
           valid_until: null,
           failure_code: 'reviewer_failure',
         });
-      return {
-        status: 'candidate' as const,
-        question: 'In which year did the event occur?',
-        explanation: 'The record states the year.',
-      };
+      return candidateOutput();
     });
     const result = await f.repository.generate(f.request, writer);
     expect(result).toMatchObject({ status: 'ineligible', failureCode: 'ineligible' });
@@ -852,11 +850,7 @@ describe('theme question generation safety', () => {
   it('leaves a committed header unresolved after an uncertain registration commit without redispatch', async () => {
     const f = repositoryFixture();
     f.state.commitUnknown = true;
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const writer = vi.fn(() => candidateOutput());
     await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
       code: 'storage_unknown_outcome',
     });
@@ -869,11 +863,7 @@ describe('theme question generation safety', () => {
   it('resumes an exact unresolved header only when the runtime enables durable result recovery', async () => {
     const f = repositoryFixture();
     f.state.commitUnknown = true;
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const writer = vi.fn(() => candidateOutput());
     await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
       code: 'storage_unknown_outcome',
     });
@@ -905,11 +895,7 @@ describe('theme question generation safety', () => {
       },
       () => new Date(f.state.nowMs)
     );
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const writer = vi.fn(() => candidateOutput());
     await expect(mismatched.generate(f.request, writer)).rejects.toMatchObject({
       code: 'ineligible',
     });
@@ -919,11 +905,7 @@ describe('theme question generation safety', () => {
   it('resamples eligibility after registration locks and does not consume a slot if it expired while waiting', async () => {
     const f = repositoryFixture();
     f.state.advanceOnFactLockMs = 61_000;
-    const writer = vi.fn(() => ({
-      status: 'candidate' as const,
-      question: 'In which year did the event occur?',
-      explanation: 'The record states the year.',
-    }));
+    const writer = vi.fn(() => candidateOutput());
     await expect(f.repository.generate(f.request, writer)).rejects.toMatchObject({
       code: 'ineligible',
     });
@@ -942,11 +924,12 @@ describe('theme question generation safety', () => {
     callbackInput.evidence[0]!.passageContentHash = 'd'.repeat(64);
 
     const result = projectThemeQuestionWriterOutput(
-      {
-        status: 'candidate',
-        question: 'In which city did the event occur?',
-        explanation: 'The archived record places it in Halifax.',
-      },
+      candidateOutput(
+        'In which city did the event occur?',
+        'The archived record places it in Halifax.',
+        'Halifax',
+        ['Halifax, Nova Scotia']
+      ),
       stable,
       policy,
       'halifax-history'
@@ -970,7 +953,7 @@ describe('theme question generation safety', () => {
     const input = snapshotThemeQuestionWriterInput(writerInput);
     expect(
       projectThemeQuestionWriterOutput(
-        { status: 'candidate', question: 'Bad \ud800', explanation: 'Explanation.' },
+        candidateOutput('Bad \ud800', 'Explanation.', 'Halifax', ['Halifax, Nova Scotia']),
         input,
         policy,
         'halifax-history'
@@ -978,12 +961,35 @@ describe('theme question generation safety', () => {
     ).toBe('invalid_output');
     expect(
       projectThemeQuestionWriterOutput(
-        { status: 'candidate', question: 'Good \ud83d\ude00', explanation: 'Explanation.' },
+        candidateOutput('Good \ud83d\ude00', 'Explanation.', 'Halifax', ['Halifax, Nova Scotia']),
         input,
         policy,
         'halifax-history'
       ).status
     ).toBe('candidate');
+  });
+
+  it('allows one repair to narrow supported aliases and reclassify difficulty', () => {
+    const result = projectThemeQuestionWriterOutput(
+      {
+        ...candidateOutput(
+          'Which Canadian city hosted the event?',
+          'The record places the event in Halifax.',
+          'Halifax',
+          []
+        ),
+        difficulty: 'Easy',
+      },
+      snapshotThemeQuestionWriterInput(writerInput),
+      policy,
+      'halifax-history',
+      true
+    );
+
+    expect(result).toMatchObject({
+      status: 'candidate',
+      content: { answer: 'Halifax', acceptableAnswers: [], difficulty: 'Easy' },
+    });
   });
 
   it('reports known rollback failures as storage_failure', async () => {

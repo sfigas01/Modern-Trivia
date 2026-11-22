@@ -76,6 +76,12 @@ describe('automatic gameplay plan', () => {
     });
     expect(assertThemeGameplayPlanPolicy(plan)).toEqual(plan);
     expect(plan.proposalSlots[0]).toMatchObject({ role: 'theme', topic: 'Volcanoes' });
+    expect(plan.proposalSlots.slice(0, 4).map((slot) => slot.targetDifficulty)).toEqual([
+      'Easy',
+      'Medium',
+      'Medium',
+      'Hard',
+    ]);
     expect(plan.proposalSlots.some((slot) => slot.role === 'related_backup')).toBe(true);
   });
 

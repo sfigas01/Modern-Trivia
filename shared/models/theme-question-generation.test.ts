@@ -52,11 +52,22 @@ describe('theme question generation contract', () => {
     expect(
       themeQuestionGenerationPolicySchema.safeParse({ ...policy, callerApproved: true }).success
     ).toBe(false);
-    expect(themeQuestionWriterOutputSchema.safeParse({ status: 'declined' }).success).toBe(true);
+    expect(
+      themeQuestionWriterOutputSchema.safeParse({
+        status: 'declined',
+        reason: 'fact_too_obscure',
+        explanation: 'The fact requires specialist recall.',
+      }).success
+    ).toBe(true);
     expect(
       themeQuestionWriterOutputSchema.safeParse({
         status: 'candidate',
         question: 'Which year?',
+        answer: '1901',
+        acceptedAlternatives: [],
+        hint: 'Think of the early twentieth century.',
+        difficulty: 'Medium',
+        predictedCorrectRate: 55,
         explanation: 'The supported record states the year.',
       }).success
     ).toBe(true);
@@ -64,8 +75,13 @@ describe('theme question generation contract', () => {
       themeQuestionWriterOutputSchema.safeParse({
         status: 'candidate',
         question: 'Which year?',
-        explanation: 'Explanation',
         answer: '1901',
+        acceptedAlternatives: [],
+        hint: 'Think of the early twentieth century.',
+        difficulty: 'Medium',
+        predictedCorrectRate: 55,
+        explanation: 'Explanation',
+        unsupportedField: true,
       }).success
     ).toBe(false);
   });

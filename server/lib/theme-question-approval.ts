@@ -325,6 +325,15 @@ export function createPostgresThemeQuestionApprovalRepository(
         detectDuplicates: qaOverrides?.detectDuplicates ?? config.detectDuplicates,
         now: config.now,
       });
+      try {
+        await pool.query(
+          `UPDATE theme_candidates SET qa_review = $2::jsonb
+           WHERE id = $1 AND content_hash = $3`,
+          [request.candidateId, JSON.stringify(qa), request.questionContentHash]
+        );
+      } catch {
+        throw new ThemeQuestionApprovalError('storage_failure');
+      }
       if (qa.status !== 'passed') {
         const completed = await findPrior(pool, request);
         return completed ?? { status: 'withheld', reason: qa.reason, qa };

@@ -137,6 +137,19 @@ When reviewing trivia content, act as a **trivia content QA specialist**. Your r
 3. Note source in explanation field when making corrections
 4. If uncertain, flag for human review instead of correcting
 
+For the preview-only themed generation pipeline, stable claims use the exact
+retrieved Wikipedia passage as the required proof. A second website is not
+required merely to establish source independence. The final written Q&A must
+still pass the post-write evidence review; ambiguity or unsupported wording is
+never excused by the Wikipedia-only source rule.
+
+The themed content target is 25% Easy, 50% Medium and 25% Hard, planned as a
+repeating Easy/Medium/Medium/Hard sequence. Easy targets 75-95% correct, Medium
+45-75%, and Hard 20-45%. Hard questions must use weaker clues and a useful hint,
+not specialist-only facts. The owner checkpoint must show the complete Q&A,
+Wikipedia passage, factual-review result and concrete rejection reason so human
+judgment can update prompts and regression cases.
+
 **Source citation format for explanations:**
 
 ```
