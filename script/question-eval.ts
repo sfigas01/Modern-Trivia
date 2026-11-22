@@ -625,7 +625,11 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
   const ratings = parseRatingsCsv(await readFile(ratingsPath, 'utf8'), key);
 
   // Every judge file in the run (judge.json = rubric v1, judge-v2.json = rubric v2, ...).
-  const judgeFiles = (await readdir(runDir)).filter((f) => /^judge(-v\d+)?\.json$/.test(f)).sort();
+  // Sorted by rubric version (judge.json is v1), so the newest rubric is last and is the default.
+  const rubricVersion = (f: string) => Number(/^judge-v(\d+)\.json$/.exec(f)?.[1] ?? 1);
+  const judgeFiles = (await readdir(runDir))
+    .filter((f) => /^judge(-v\d+)?\.json$/.test(f))
+    .sort((a, b) => rubricVersion(a) - rubricVersion(b));
   const judges = await Promise.all(
     judgeFiles.map(async (file) => {
       const data = JSON.parse(await readFile(path.join(runDir, file), 'utf8')) as {
