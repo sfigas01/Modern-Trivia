@@ -60,7 +60,15 @@ The eval compares this with the stated label. Later, real per-question correct r
 
 ## Fit
 
-`y` / `n`: does it fit Modern Trivia? That means Canadian-friendly or globally relevant, not US-default, suitable for a mixed adult group, and on the stated theme.
+`y` / `n`: does it fit Modern Trivia? Would a mixed group of Canadian adults know or enjoy it, and is it on the stated theme?
+
+From round 3 this follows the owner's audience decision (`CONTENT_STRATEGY.md` v2.1, section 1):
+
+- **Fits:** global and American pop culture (film, TV, music, celebrities, sports stars, brands, internet culture), and US events that mattered worldwide.
+- **Doesn't fit:** US school or civic knowledge you'd only have from growing up in the US: US history beyond world-famous moments, US geography, and US politics and government.
+- **No Canadian angle needed.** Canadian content is welcome (about 20% of the default mix), but forcing Canada into a question lowers fun.
+
+Rounds 1 and 2 used the earlier wording ("Canadian-friendly or globally relevant, not US-default"), so their fit ratings are not directly comparable with round 3. The judge's version of this rule is `AUDIENCE_RULE_V3` in `server/lib/trivia-style-guide.ts`.
 
 For a player-chosen theme, the pillar split doesn't apply. Fit means the framing works for this audience.
 

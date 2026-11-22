@@ -34,6 +34,7 @@ npm run eval:questions -- generate                  # every arm + blind review s
 npm run eval:questions -- generate --retry-failed   # rerun only arm/theme pairs that failed
 npm run eval:questions -- judge [--rubric v2]       # LLM judge on the same sheet (cap $2)
 npm run eval:questions -- verify                    # Wikipedia evidence check per item (cap $2)
+npm run eval:questions -- repeats                   # repeats across simulated games (cap $1)
 npm run eval:questions -- rating-page --title "…"   # owner rating page HTML for the run
 npm run eval:questions -- import-ratings --from <dir>  # rating page export -> ratings.csv
 npm run eval:questions -- score                     # ratings (+ judges, facts) -> report
@@ -134,6 +135,31 @@ Order of steps: `generate` → owner rates (blind) → write `facts.csv` → `ve
 
 Record the outcome of each rule in STE-304.
 
+## Round 3: theme handling and repeats
+
+Round 2 showed that the theme drives quality. Narrow themes (a local scene, hyper-local slang) produced unverifiable, hard and repeated questions, and academic themes drifted into textbook questions. Both generators also converged on the same obvious facts, which would repeat across games. Round 3 (`--config test/fixtures/question-eval/round-3.json`) uses eight themes chosen with the owner to resemble real player requests: 90s cartoons, Hockey, Harry Potter, Taylor Swift, Space, Food around the world, Movies of 2026, and Canadian road trip.
+
+| Arm   | What it is                                                                                                                                                                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** | Guardian as is, with no history.                                                                                                                                                                                                                                        |
+| **T** | A theme brief first (breadth, academic risk, a widened theme only when the theme is narrow, and 6–10 well-known subtopics), then Guardian with the brief and the theme's earlier questions as history, then a filter that drops any question reusing an earlier answer. |
+
+Each arm generates **3 simulated games** per theme, with 2 questions per game. Only **game 1** goes on the owner's sheet (32 questions, plus 3 planted false questions). `repeats` asks the strong model which game 2 and game 3 questions repeat a fact from an earlier game of the same arm and theme. The evidence check (round 2's correctness gate) and **judge v3** (round 2 calibration plus the owner's US content test, `JUDGE_CALIBRATION_V3`) run on the rated items. Truth labels are written before reading `verify.json`, as in round 2.
+
+The owner rates **fit** under the new audience rule (US pop culture fits; US school knowledge does not). The rating page also says that two sources may write the same fact and to rate each on its own merits, since repeats are measured separately.
+
+Order: `generate` → owner rates → `facts.csv` → `verify` → `repeats` → `judge --rubric v3` (and v2 for comparison) → `score`.
+
+### Round 3 decision rules (fixed before any results)
+
+1. **Theme brief.** T replaces A as the generation path if its owner keep rate is at least **10 points** higher than A's, and it has no more wrong or unverifiable answers (by truth label) than A. If T wins only on the narrow or academic themes (Harry Potter, Taylor Swift, Space), use the brief only when it rates a theme narrow or academic.
+2. **Repeats.** The history-plus-same-answer filter is adopted if T's repeat rate in games 2 and 3 is at most **half** of A's, and at most **15%** of later-game questions.
+3. **Audience rule.** Under the new fit rule, T's off-brand rate is at most **20%**.
+4. **Taste check (judge v3).** Judge v3 becomes the automated taste filter (sending questions for review, never making final decisions) if it matches the owner's keep-vs-reject decision on at least **75%** of items with kappa of at least **0.4**: the same bar as round 2. If it misses again, test jev (TypeSafe AI) as the taste check before trying a judge v4.
+5. **Correctness check (confirmation).** The evidence check passes **zero** wrong answers again. If it passes any, the gate goes back to review before it ships.
+
+Record the outcome of each rule in STE-304.
+
 ## Code
 
 | File                                                 | Purpose                                                                                                  |
@@ -143,6 +169,7 @@ Record the outcome of each rule in STE-304.
 | `script/question-eval.ts`                            | CLI: OpenAI, Wikipedia and file I/O                                                                      |
 | `test/fixtures/question-eval/config.json`            | Round 1: themes, arms, anchors, models                                                                   |
 | `test/fixtures/question-eval/round-2.json`           | Round 2: arms A and A2, planted false questions, verifier model                                          |
+| `test/fixtures/question-eval/round-3.json`           | Round 3: arms A and T (theme brief + repeat filter), 8 owner-chosen themes, 3 games per theme            |
 | `server/lib/trivia-style-guide.ts`                   | Writer style guide v2 and judge calibration v2, written from round 1 owner notes                         |
 | `script/question-eval-rating-page.html`              | Owner rating page template (no data; `rating-page` fills it per run)                                     |
 | [trivia_quality_rubric.md](trivia_quality_rubric.md) | The definition of a good question                                                                        |
