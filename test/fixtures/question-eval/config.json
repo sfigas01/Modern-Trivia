@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "question-eval-config-v1",
+  "questionsPerThemePerArm": 4,
+  "generationModel": "gpt-5.4-mini",
+  "judgeModel": "gpt-6.1-sol",
+  "themes": [
+    {
+      "id": "volcanoes",
+      "theme": "Volcanoes",
+      "pillar": "GlobalEh",
+      "kind": "standard",
+      "note": "Stable, well-sourced general knowledge. Also an E1 calibration theme."
+    },
+    {
+      "id": "ancient-egypt",
+      "theme": "Ancient Egypt",
+      "pillar": "GlobalEh",
+      "kind": "standard",
+      "note": "Popular history theme. Also an E1 calibration theme."
+    },
+    {
+      "id": "canadian-pop-90s-00s",
+      "theme": "Canadian pop culture of the 1990s and 2000s",
+      "pillar": "TimeCapsule",
+      "kind": "canadian",
+      "note": "Core nostalgia pillar for the target audience."
+    },
+    {
+      "id": "canadian-food-slang",
+      "theme": "Canadian food and slang",
+      "pillar": "GreatOutdoors",
+      "kind": "canadian",
+      "note": "Great Outdoors pillar; tests regional framing."
+    },
+    {
+      "id": "toronto-raves-90s",
+      "theme": "The 1990s Toronto rave scene",
+      "pillar": "TimeCapsule",
+      "kind": "niche",
+      "note": "Niche example taken from CONTENT_STRATEGY.md. Thin sourcing; a stress test for hallucination."
+    },
+    {
+      "id": "pop-culture-past-year",
+      "theme": "Pop culture and viral moments from the past year",
+      "pillar": "FreshPrints",
+      "kind": "fresh",
+      "note": "Time-sensitive. Tests the Fresh Prints pillar, which model memory and stable-fact sourcing both struggle with."
+    }
+  ],
+  "libraryAnchors": {
+    "source": "server/seed-data.json",
+    "note": "Existing approved library questions, two per pillar, chosen with a fixed random seed (304). They show the quality bar the current library sets.",
+    "ids": [
+      "q67",
+      "q96",
+      "q119",
+      "q140",
+      "a7f5e81f-7b21-4f32-8a77-798d9f503e1e",
+      "q52",
+      "q56",
+      "a5e8232c-6d24-42a4-82b6-b0de6a09858b"
+    ]
+  },
+  "plantedBad": {
+    "source": "test/fixtures/benchmark/cases.json",
+    "note": "Known-bad benchmark questions whose defect is visible in the question text. Both the owner and the judge should mark these fix or drop.",
+    "ids": [
+      "coherence-immigrant-song",
+      "coherence-wrong-decade",
+      "obviousness-maple-leafs",
+      "obviousness-binary-planet",
+      "subjective-wording",
+      "multi-answer-single",
+      "us-centric-globaleh",
+      "factual-error-canberra"
+    ]
+  }
+}
