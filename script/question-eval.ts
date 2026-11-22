@@ -1,10 +1,16 @@
 /**
  * Offline question-quality eval (STE-304). Development-time only; no database or production calls.
  *
- *   npm run eval:questions -- generate --dry-run       # show the plan and spend cap, no calls
- *   npm run eval:questions -- generate [--max-usd 3]   # generate both arms + blind review sheet
- *   npm run eval:questions -- judge [--run <dir>]      # LLM judge over the same blind sheet
- *   npm run eval:questions -- score [--run <dir>]      # owner ratings (+ judge) -> report.md
+ *   npm run eval:questions -- generate --dry-run        # show the plan and spend cap, no calls
+ *   npm run eval:questions -- generate [--max-usd 3]    # generate every arm + blind review sheet
+ *   npm run eval:questions -- judge [--rubric v1|v2]    # LLM judge over the same blind sheet
+ *   npm run eval:questions -- verify                    # Wikipedia evidence check per item
+ *   npm run eval:questions -- rating-page               # owner rating page HTML for the run
+ *   npm run eval:questions -- import-ratings --from <dir>  # rating page export -> ratings.csv
+ *   npm run eval:questions -- score                     # ratings (+ judge, facts) -> report.md
+ *
+ * Every command takes --config <file> (default: round 1 config) and --run <dir> (default: the
+ * latest run).
  *
  * Needs AI_INTEGRATIONS_OPENAI_API_KEY (any placeholder value in a Claude Code cloud session,
  * where the proxy injects the real key). See docs/guides/question_eval.md.
@@ -21,9 +27,23 @@ import OpenAI from 'openai';
 import { TRIVIA_AI_REQUEST_CONFIG } from '../server/lib/ai-model-config';
 import { generateQuestions } from '../server/lib/guardian';
 import { auditQuestionQuality } from '../server/lib/question-quality-audit';
+import { JUDGE_CALIBRATION_V2, WRITER_STYLE_GUIDE_V2 } from '../server/lib/trivia-style-guide';
 import { batchFactCheck } from '../server/lib/verifier';
 import {
   QUESTION_EVAL_SCHEMA_VERSION,
+  ROUND_1_ARMS,
+  RATING_COLUMNS,
+  armsOf,
+  buildEvidenceQueryPrompt,
+  buildEvidenceVerdictPrompt,
+  parseEvidenceQueries,
+  parseEvidenceVerdict,
+  parseFactsCsv,
+  selectPassages,
+  toCsv,
+  type ArmSpec,
+  type EvidenceResult,
+  type GateDecision,
   SpendLimitError,
   SpendTracker,
   WIKIPEDIA_USER_AGENT,
@@ -57,7 +77,10 @@ import {
 } from '../server/lib/question-eval';
 import type { Question } from '../shared/models/questions';
 
-const CONFIG_PATH = 'test/fixtures/question-eval/config.json';
+const DEFAULT_CONFIG_PATH = 'test/fixtures/question-eval/config.json';
+const RATING_PAGE_TEMPLATE = 'script/question-eval-rating-page.html';
+const EVIDENCE_PASSAGE_CHARS = 2_500;
+const EVIDENCE_ARTICLES = 3;
 const REPORTS_ROOT = 'reports/question-eval';
 const ARTICLES_PER_THEME = 3;
 const MAX_ARTICLE_CHARS = 6_000;
@@ -67,6 +90,10 @@ interface EvalConfig {
   questionsPerThemePerArm: number;
   generationModel: string;
   judgeModel: string;
+  /** Strong model for the evidence check's verdict; defaults to judgeModel. */
+  verifyModel?: string;
+  /** Arms for this round; round 1 configs omit it (A and B). */
+  arms?: ArmSpec[];
   themes: EvalTheme[];
   libraryAnchors: { source: string; ids: string[] };
   plantedBad: { source: string; ids: string[] };
@@ -207,9 +234,17 @@ function guardianVerdictOf(analysis: unknown): GuardianVerdict | null {
   };
 }
 
-/** Arm A: the existing staging generator, called exactly as /api/staging/generate calls it. */
-async function generateArmA(theme: EvalTheme, count: number): Promise<ArmOutput> {
-  const generated = await generateQuestions(theme.theme, count, theme.pillar);
+/**
+ * A Guardian arm: the existing staging generator, called as /api/staging/generate calls it,
+ * optionally with a style guide.
+ */
+async function generateGuardian(
+  spec: ArmSpec,
+  theme: EvalTheme,
+  count: number
+): Promise<ArmOutput> {
+  const options = spec.styleGuide === 'v2' ? { styleGuide: WRITER_STYLE_GUIDE_V2 } : {};
+  const generated = await generateQuestions(theme.theme, count, theme.pillar, [], options);
   const questions = generated.flatMap((q) => {
     const normalized = normalizeGeneratedQuestion(q, theme.pillar);
     return normalized ? [{ question: normalized, guardian: guardianVerdictOf(q.aiAnalysis) }] : [];
@@ -387,6 +422,7 @@ async function commandGenerate(
 ): Promise<void> {
   const maxUsd = Number(flagString(flags, 'max-usd') ?? '3');
   const count = config.questionsPerThemePerArm;
+  const arms = config.arms && config.arms.length > 0 ? config.arms : ROUND_1_ARMS;
   const anchors = await loadAnchors(config);
   requirePrice(config.generationModel);
   if (config.generationModel !== TRIVIA_AI_REQUEST_CONFIG.model) {
@@ -397,8 +433,9 @@ async function commandGenerate(
 
   console.log(`Themes: ${config.themes.length} | questions per theme per arm: ${count}`);
   console.log(
-    `Requested: ${config.themes.length * count * 2} generated + ${anchors.length} anchors`
+    `Requested: ${config.themes.length * count * arms.length} generated + ${anchors.length} anchors`
   );
+  console.log(`Arms: ${arms.map((a) => a.label).join(' | ')}`);
   console.log(`Generation model: ${config.generationModel} | spend cap: $${maxUsd.toFixed(2)}`);
   if (flags.get('dry-run')) {
     console.log('Dry run: no requests made.');
@@ -409,9 +446,12 @@ async function commandGenerate(
   const tracker = new SpendTracker(maxUsd);
   installSpendTracking(tracker);
   const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, maxRetries: 1 });
+  const groundedArm = createArmB(openai);
   const deps = {
-    generateArmA,
-    generateArmB: createArmB(openai),
+    generate: (spec: ArmSpec, theme: EvalTheme, n: number) =>
+      spec.generator === 'guardian-wikipedia'
+        ? groundedArm(theme, n)
+        : generateGuardian(spec, theme, n),
     now: Date.now,
     log: (m: string) => console.log(m),
   };
@@ -432,6 +472,7 @@ async function commandGenerate(
     console.log(`Retrying ${failed.map((f) => `${f.arm}:${f.themeId}`).join(', ')} in ${runDir}`);
     const retried = await runGeneration(
       previous.themes,
+      armsOf(previous),
       previous.questionsPerThemePerArm,
       deps,
       tracker,
@@ -460,7 +501,7 @@ async function commandGenerate(
 
   let generated: Awaited<ReturnType<typeof runGeneration>>;
   try {
-    generated = await runGeneration(config.themes, count, deps, tracker);
+    generated = await runGeneration(config.themes, arms, count, deps, tracker);
   } catch (error) {
     if (error instanceof SpendLimitError) console.error(error.message);
     throw error;
@@ -472,6 +513,7 @@ async function commandGenerate(
     createdAt: new Date().toISOString(),
     generationModel: config.generationModel,
     questionsPerThemePerArm: count,
+    arms,
     themes: config.themes,
     candidates: [...generated.candidates, ...anchors],
     stats: generated.stats,
@@ -495,6 +537,10 @@ async function commandJudge(config: EvalConfig, flags: Map<string, string | true
   const runDir = await resolveRunDir(flags);
   const model = flagString(flags, 'model') ?? config.judgeModel;
   const maxUsd = Number(flagString(flags, 'max-usd') ?? '2');
+  const rubric = flagString(flags, 'rubric') ?? 'v1';
+  if (rubric !== 'v1' && rubric !== 'v2') throw new Error('--rubric must be v1 or v2');
+  const calibration = rubric === 'v2' ? JUDGE_CALIBRATION_V2 : undefined;
+  const outFile = rubric === 'v1' ? 'judge.json' : `judge-${rubric}.json`;
   requirePrice(model);
   const candidatesFile = JSON.parse(
     await readFile(path.join(runDir, 'candidates.json'), 'utf8')
@@ -508,7 +554,9 @@ async function commandJudge(config: EvalConfig, flags: Map<string, string | true
     const candidate = byId.get(entry.candidateId)!;
     return { item, theme: candidate.theme, question: candidate.question };
   });
-  console.log(`Judging ${items.length} items with ${model} | spend cap: $${maxUsd.toFixed(2)}`);
+  console.log(
+    `Judging ${items.length} items with ${model}, rubric ${rubric} | spend cap: $${maxUsd.toFixed(2)}`
+  );
   if (flags.get('dry-run')) {
     console.log('Dry run: no requests made.');
     return;
@@ -525,7 +573,7 @@ async function commandJudge(config: EvalConfig, flags: Map<string, string | true
     const response = await openai.responses.create({
       model,
       reasoning: { effort: 'medium' },
-      input: buildJudgePrompt(batch),
+      input: buildJudgePrompt(batch, calibration),
       text: { format: { type: 'json_object' } },
       max_output_tokens: 8_000,
     });
@@ -540,9 +588,16 @@ async function commandJudge(config: EvalConfig, flags: Map<string, string | true
     );
   }
   await writePrivate(
-    path.join(runDir, 'judge.json'),
+    path.join(runDir, outFile),
     JSON.stringify(
-      { model, createdAt: new Date().toISOString(), costUsd: tracker.totalUsd, problems, ratings },
+      {
+        model,
+        rubric,
+        createdAt: new Date().toISOString(),
+        costUsd: tracker.totalUsd,
+        problems,
+        ratings,
+      },
       null,
       2
     )
@@ -568,34 +623,301 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
     BlindKeyEntry
   >;
   const ratings = parseRatingsCsv(await readFile(ratingsPath, 'utf8'), key);
-  const judgePath = path.join(runDir, 'judge.json');
-  let judge: { model: string; ratings: Map<string, Rating> } | null = null;
-  if (existsSync(judgePath)) {
-    const data = JSON.parse(await readFile(judgePath, 'utf8')) as {
-      model: string;
-      ratings: Record<string, Rating>;
-    };
-    judge = { model: data.model, ratings: new Map(Object.entries(data.ratings)) };
+
+  // Every judge file in the run (judge.json = rubric v1, judge-v2.json = rubric v2, ...).
+  const judgeFiles = (await readdir(runDir)).filter((f) => /^judge(-v\d+)?\.json$/.test(f)).sort();
+  const judges = await Promise.all(
+    judgeFiles.map(async (file) => {
+      const data = JSON.parse(await readFile(path.join(runDir, file), 'utf8')) as {
+        model: string;
+        rubric?: string;
+        ratings: Record<string, Rating>;
+      };
+      return {
+        file,
+        model: `${data.model}, rubric ${data.rubric ?? 'v1'}`,
+        ratings: new Map(Object.entries(data.ratings)),
+      };
+    })
+  );
+  const primaryFile = flagString(flags, 'judge') ?? judgeFiles.at(-1);
+  const primary = judges.find((j) => j.file === primaryFile) ?? null;
+
+  const factsPath = path.join(runDir, 'facts.csv');
+  const facts = existsSync(factsPath) ? parseFactsCsv(await readFile(factsPath, 'utf8')) : null;
+  const verifyPath = path.join(runDir, 'verify.json');
+  const evidence = existsSync(verifyPath)
+    ? new Map(
+        Object.entries(
+          (
+            JSON.parse(await readFile(verifyPath, 'utf8')) as {
+              results: Record<string, { decision: GateDecision }>;
+            }
+          ).results
+        ).map(([item, r]) => [item, r.decision])
+      )
+    : null;
+
+  const report = computeReport({
+    candidatesFile,
+    key,
+    ratings,
+    judge: primary,
+    facts: facts?.truth ?? null,
+    evidence,
+  });
+  let markdown = renderReportMarkdown(report);
+  if (judges.length > 1) {
+    const rows = judges.map((j) => {
+      const a = computeReport({ candidatesFile, key, ratings, judge: j }).judge!;
+      const fmt = (v: number | null, pctg = true) =>
+        v === null ? 'n/a' : pctg ? `${Math.round(v * 100)}%` : v.toFixed(2);
+      return `| ${j.model} | ${fmt(a.keepAgreement)} | ${fmt(a.keepKappa, false)} | ${fmt(a.funSpearman, false)} | ${a.plantedRejectedByJudge}/${a.plantedTotal} |`;
+    });
+    markdown += [
+      '',
+      '## Judge versions compared',
+      '',
+      '| Judge | Same keep-vs-reject as owner | Kappa | Fun Spearman | Planted rejected |',
+      '|---|---|---|---|---|',
+      ...rows,
+      '',
+    ].join('\n');
   }
-  const report = computeReport({ candidatesFile, key, ratings, judge });
   await writePrivate(path.join(runDir, 'report.json'), JSON.stringify(report, null, 2));
-  await writePrivate(path.join(runDir, 'report.md'), renderReportMarkdown(report));
+  await writePrivate(path.join(runDir, 'report.md'), markdown);
   console.log(
     `Rated ${ratings.ratings.size}/${Object.keys(key).length}; ${ratings.errors.length} sheet problems.`
   );
-  for (const error of ratings.errors) console.log(`  - ${error}`);
+  for (const error of [...ratings.errors, ...(facts?.errors ?? [])]) console.log(`  - ${error}`);
   console.log(`Report: ${path.join(runDir, 'report.md')}`);
+}
+
+/** Title of an English Wikipedia article URL, or null for any other URL. */
+function wikipediaTitleFromUrl(url: string): string | null {
+  const match = /^https?:\/\/en\.(?:m\.)?wikipedia\.org\/wiki\/([^#?]+)/.exec(url);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]).replace(/_/g, ' ');
+  } catch {
+    return null;
+  }
+}
+
+async function fetchArticleText(
+  title: string
+): Promise<{ title: string; url: string; text: string } | null> {
+  const page = (await wikipediaJson(buildWikipediaExtractUrl(title))) as {
+    query?: {
+      pages?: Array<{ title?: string; extract?: string; fullurl?: string; missing?: boolean }>;
+    };
+  };
+  const first = page.query?.pages?.[0];
+  if (!first || first.missing || !first.extract || !first.fullurl) return null;
+  return {
+    title: first.title ?? title,
+    url: first.fullurl,
+    text: cleanWikipediaExtract(first.extract, 400_000),
+  };
+}
+
+/**
+ * Evidence check for every item in the run: find Wikipedia articles for the claim, keep the
+ * related passages, and ask a strong model for a quoted verdict. Writes verify.json.
+ */
+async function commandVerify(config: EvalConfig, flags: Map<string, string | true>): Promise<void> {
+  const runDir = await resolveRunDir(flags);
+  const model = flagString(flags, 'model') ?? config.verifyModel ?? config.judgeModel;
+  const maxUsd = Number(flagString(flags, 'max-usd') ?? '2');
+  requirePrice(model);
+  requirePrice(TRIVIA_AI_REQUEST_CONFIG.model);
+  const candidatesFile = JSON.parse(
+    await readFile(path.join(runDir, 'candidates.json'), 'utf8')
+  ) as CandidatesFile;
+  const key = JSON.parse(await readFile(path.join(runDir, 'key.json'), 'utf8')) as Record<
+    string,
+    BlindKeyEntry
+  >;
+  const byId = new Map(candidatesFile.candidates.map((c) => [c.id, c]));
+  const items = Object.keys(key).sort();
+  console.log(
+    `Evidence check for ${items.length} items: queries by ${TRIVIA_AI_REQUEST_CONFIG.model}, verdicts by ${model} | spend cap: $${maxUsd.toFixed(2)}`
+  );
+  if (flags.get('dry-run')) {
+    console.log('Dry run: no requests made.');
+    return;
+  }
+  requireKeyVariable();
+
+  const tracker = new SpendTracker(maxUsd);
+  installSpendTracking(tracker);
+  const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, maxRetries: 1 });
+  const results: Record<
+    string,
+    EvidenceResult & { articles: Array<{ title: string; url: string }> }
+  > = {};
+
+  for (const item of items) {
+    const candidate = byId.get(key[item].candidateId)!;
+    const q = candidate.question;
+    try {
+      const queryResponse = await openai.chat.completions.create({
+        ...TRIVIA_AI_REQUEST_CONFIG,
+        messages: [{ role: 'user', content: buildEvidenceQueryPrompt(candidate.theme, q) }],
+        response_format: { type: 'json_object' },
+        max_completion_tokens: 300,
+      });
+      const queries = parseEvidenceQueries(queryResponse.choices[0]?.message?.content ?? '');
+      const titles: string[] = [];
+      const fromSource = wikipediaTitleFromUrl(q.sourceUrl);
+      if (fromSource) titles.push(fromSource);
+      for (const query of queries) {
+        const search = (await wikipediaJson(buildWikipediaSearchUrl(query, 2))) as {
+          query?: { search?: Array<{ title: string }> };
+        };
+        for (const r of search.query?.search ?? []) titles.push(r.title);
+      }
+      const articles: Array<{ title: string; url: string; passages: string }> = [];
+      for (const title of Array.from(new Set(titles))) {
+        if (articles.length >= EVIDENCE_ARTICLES) break;
+        const article = await fetchArticleText(title);
+        if (!article || articles.some((a) => a.url === article.url)) continue;
+        const passages = selectPassages(article.text, q, EVIDENCE_PASSAGE_CHARS);
+        if (passages) articles.push({ title: article.title, url: article.url, passages });
+      }
+      const verdictResponse = await openai.responses.create({
+        model,
+        reasoning: { effort: 'low' },
+        input: buildEvidenceVerdictPrompt(candidate.theme, q, articles),
+        text: { format: { type: 'json_object' } },
+        max_output_tokens: 2_000,
+      });
+      const parsed = parseEvidenceVerdict(
+        verdictResponse.output_text ?? '',
+        articles.map((a) => a.passages).join('\n\n')
+      );
+      results[item] = { ...parsed, articles: articles.map(({ title, url }) => ({ title, url })) };
+    } catch (error) {
+      if (error instanceof SpendLimitError) throw error;
+      results[item] = {
+        verdict: 'not_found',
+        quote: '',
+        url: '',
+        quoteVerified: false,
+        otherAnswers: [],
+        reason: `check failed: ${error instanceof Error ? error.message : String(error)}`,
+        decision: 'hold',
+        articles: [],
+      };
+    }
+    console.log(`  ${item}: ${results[item].decision} | $${tracker.totalUsd.toFixed(4)}`);
+  }
+
+  await writePrivate(
+    path.join(runDir, 'verify.json'),
+    JSON.stringify(
+      {
+        model,
+        queryModel: TRIVIA_AI_REQUEST_CONFIG.model,
+        createdAt: new Date().toISOString(),
+        costUsd: tracker.totalUsd,
+        results,
+      },
+      null,
+      2
+    )
+  );
+  const counts = Object.values(results).reduce<Record<string, number>>((acc, r) => {
+    acc[r.decision] = (acc[r.decision] ?? 0) + 1;
+    return acc;
+  }, {});
+  console.log(
+    `Evidence check done: ${counts.pass ?? 0} pass, ${counts.fail ?? 0} fail, ${counts.hold ?? 0} hold | $${tracker.totalUsd.toFixed(4)}`
+  );
+}
+
+/**
+ * Writes rating-page.html for the run: the committed template with this run's blind items
+ * injected. It holds only the blind sheet's fields (never the group or any judge output) and
+ * contains answers, so it stays in the gitignored run folder.
+ */
+async function commandRatingPage(flags: Map<string, string | true>): Promise<void> {
+  const runDir = await resolveRunDir(flags);
+  const candidatesFile = JSON.parse(
+    await readFile(path.join(runDir, 'candidates.json'), 'utf8')
+  ) as CandidatesFile;
+  const key = JSON.parse(await readFile(path.join(runDir, 'key.json'), 'utf8')) as Record<
+    string,
+    BlindKeyEntry
+  >;
+  const byId = new Map(candidatesFile.candidates.map((c) => [c.id, c]));
+  const items = Object.keys(key)
+    .sort()
+    .map((item) => {
+      const c = byId.get(key[item].candidateId)!;
+      return {
+        item,
+        theme: c.theme,
+        question: c.question.question,
+        answer: c.question.answer,
+        alsoAccept: c.question.acceptableAnswers,
+        explanation: c.question.explanation,
+        difficulty: c.question.difficulty,
+        source: c.question.sourceUrl,
+      };
+    });
+  const title = (flagString(flags, 'title') ?? 'Question Rating Session').replace(/[<>&"]/g, '');
+  const template = await readFile(RATING_PAGE_TEMPLATE, 'utf8');
+  if (template.split('__ITEMS__').length !== 2)
+    throw new Error('Template must contain __ITEMS__ once');
+  const html = template
+    .replace(/__TITLE__/g, title)
+    .replace('__ITEMS__', JSON.stringify(items).replace(/<\//g, '<\\/'));
+  const out = path.join(runDir, 'rating-page.html');
+  await writePrivate(out, html);
+  console.log(`Rating page with ${items.length} items: ${out}`);
+}
+
+/**
+ * Converts a rating page export (one JSON file per item, as saved by ArtifactData with out_dir)
+ * into the run's ratings.csv.
+ */
+async function commandImportRatings(flags: Map<string, string | true>): Promise<void> {
+  const runDir = await resolveRunDir(flags);
+  const from = flagString(flags, 'from');
+  if (!from) throw new Error('Pass --from <folder of exported rating JSON files>');
+  const target = path.join(runDir, 'ratings.csv');
+  if (existsSync(target) && !flags.get('overwrite')) {
+    throw new Error(`${target} already exists. Pass --overwrite to replace it.`);
+  }
+  const files = (await readdir(from)).filter((f) => f.endsWith('.json')).sort();
+  const rows: string[][] = [['item', ...RATING_COLUMNS]];
+  for (const file of files) {
+    const doc = JSON.parse(await readFile(path.join(from, file), 'utf8')) as {
+      id?: string;
+      data?: Record<string, unknown>;
+    };
+    const body = (doc.data ?? doc) as Record<string, unknown>;
+    const item = doc.id ?? file.replace(/\.json$/, '');
+    rows.push([item, ...RATING_COLUMNS.map((c) => String(body[c] ?? ''))]);
+  }
+  await writePrivate(target, toCsv(rows));
+  console.log(`Imported ${rows.length - 1} ratings to ${target}`);
 }
 
 async function main(): Promise<void> {
   const { command, flags } = parseArgs(process.argv.slice(2));
-  const config = JSON.parse(await readFile(CONFIG_PATH, 'utf8')) as EvalConfig;
+  const configPath = flagString(flags, 'config') ?? DEFAULT_CONFIG_PATH;
+  const config = JSON.parse(await readFile(configPath, 'utf8')) as EvalConfig;
   if (command === 'generate') await commandGenerate(config, flags);
   else if (command === 'judge') await commandJudge(config, flags);
+  else if (command === 'verify') await commandVerify(config, flags);
+  else if (command === 'rating-page') await commandRatingPage(flags);
+  else if (command === 'import-ratings') await commandImportRatings(flags);
   else if (command === 'score') await commandScore(flags);
   else {
     console.log(
-      'Usage: npm run eval:questions -- <generate|judge|score> [--dry-run] [--run <dir>] [--max-usd <n>]'
+      'Usage: npm run eval:questions -- <generate|judge|verify|rating-page|import-ratings|score> [--config <file>] [--run <dir>] [--dry-run] [--max-usd <n>]'
     );
     process.exitCode = 1;
   }

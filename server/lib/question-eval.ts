@@ -17,23 +17,48 @@ import { VALID_CATEGORIES } from '@shared/constants/categories';
 export const QUESTION_EVAL_SCHEMA_VERSION = 'question-eval-v1' as const;
 
 export type EvalPillar = 'TimeCapsule' | 'GlobalEh' | 'FreshPrints' | 'GreatOutdoors';
-export type EvalArm = 'A' | 'B';
-export type ItemGroup = EvalArm | 'library' | 'planted';
+/** An arm's id from the run config, e.g. "A", "A2", "B". */
+export type EvalArm = string;
+/** An arm id, or one of the two anchor groups. */
+export type ItemGroup = EvalArm;
+export type AnchorGroup = 'library' | 'planted';
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type YesNo = 'y' | 'n';
 export type YesNoUnsure = 'y' | 'n' | 'u';
 export type Verdict = 'keep' | 'fix' | 'drop';
 
-export const ARM_LABELS: Record<EvalArm, string> = {
-  A: 'A: Guardian as is',
-  B: 'B: Guardian + Wikipedia passages',
-};
+/** How one arm generates questions. Arms are declared per round in the run config. */
+export interface ArmSpec {
+  id: EvalArm;
+  label: string;
+  /** "guardian": generateQuestions() as is. "guardian-wikipedia": grounded generation + Guardian QA. */
+  generator: 'guardian' | 'guardian-wikipedia';
+  /** Optional style guide passed to Guardian (see trivia-style-guide.ts). */
+  styleGuide?: 'v2';
+}
 
-export const GROUP_LABELS: Record<ItemGroup, string> = {
-  ...ARM_LABELS,
+/** Round 1 files predate per-run arm specs; they always had these two arms. */
+export const ROUND_1_ARMS: ArmSpec[] = [
+  { id: 'A', label: 'A: Guardian as is', generator: 'guardian' },
+  { id: 'B', label: 'B: Guardian + Wikipedia passages', generator: 'guardian-wikipedia' },
+];
+
+const ANCHOR_LABELS: Record<AnchorGroup, string> = {
   library: 'Library anchors',
   planted: 'Planted bad',
 };
+
+export function armsOf(file: Pick<CandidatesFile, 'arms'>): ArmSpec[] {
+  return file.arms && file.arms.length > 0 ? file.arms : ROUND_1_ARMS;
+}
+
+export function groupLabel(group: ItemGroup, arms: ArmSpec[]): string {
+  return arms.find((a) => a.id === group)?.label ?? ANCHOR_LABELS[group as AnchorGroup] ?? group;
+}
+
+export function isArmGroup(group: ItemGroup, arms: ArmSpec[]): boolean {
+  return arms.some((a) => a.id === group);
+}
 
 export interface EvalTheme {
   id: string;
@@ -101,6 +126,8 @@ export interface CandidatesFile {
   createdAt: string;
   generationModel: string;
   questionsPerThemePerArm: number;
+  /** Absent in round 1 files (see ROUND_1_ARMS). */
+  arms?: ArmSpec[];
   themes: EvalTheme[];
   candidates: Candidate[];
   stats: ArmRunStats[];
@@ -193,18 +220,18 @@ export interface ArmOutput {
 }
 
 export interface GenerationDeps {
-  generateArmA(theme: EvalTheme, count: number): Promise<ArmOutput>;
-  generateArmB(theme: EvalTheme, count: number): Promise<ArmOutput>;
+  generate(arm: ArmSpec, theme: EvalTheme, count: number): Promise<ArmOutput>;
   now(): number;
   log?(message: string): void;
 }
 
 /**
- * Runs both arms for every theme, one at a time. A failure in one arm/theme is recorded and the
+ * Runs every arm for every theme, one at a time. A failure in one arm/theme is recorded and the
  * run continues; hitting the spend cap stops everything.
  */
 export async function runGeneration(
   themes: EvalTheme[],
+  arms: ArmSpec[],
   count: number,
   deps: GenerationDeps,
   tracker: SpendTracker,
@@ -216,14 +243,15 @@ export async function runGeneration(
   const grounding: Record<string, GroundingArticle[]> = {};
 
   for (const theme of themes) {
-    for (const arm of ['A', 'B'] as const) {
+    for (const spec of arms) {
+      const arm = spec.id;
       if (only && !only(arm, theme.id)) continue;
       const before = tracker.snapshot();
       const startedAt = deps.now();
       let output: ArmOutput | null = null;
       let error: string | null = null;
       try {
-        output = await (arm === 'A' ? deps.generateArmA : deps.generateArmB)(theme, count);
+        output = await deps.generate(spec, theme, count);
       } catch (caught) {
         if (caught instanceof SpendLimitError) throw caught;
         error = caught instanceof Error ? caught.message : String(caught);
@@ -254,7 +282,7 @@ export async function runGeneration(
         });
       });
       deps.log?.(
-        `${ARM_LABELS[arm]} | ${theme.theme}: ${delivered}/${count}` +
+        `${spec.label} | ${theme.theme}: ${delivered}/${count}` +
           (error ? ` (error: ${error})` : '') +
           ` | $${(after.usd - before.usd).toFixed(4)}`
       );
@@ -437,6 +465,207 @@ Rules:
 - The answer must not appear in the question.
 - Each question has one defensible answer. List common alternative spellings in acceptableAnswers.
 - sourceUrl must be one of the article URLs above.`;
+}
+
+// ---------------------------------------------------------------------------
+// Evidence check (correctness gate candidate)
+// ---------------------------------------------------------------------------
+
+/**
+ * A candidate always-on correctness check: look the claim up on Wikipedia and require a
+ * verbatim supporting quote, instead of trusting a model's memory. Steps:
+ *  1. a cheap model proposes Wikipedia search queries for the claim;
+ *  2. the script fetches the top articles and keeps the passages most related to the Q&A;
+ *  3. a strong model returns supported / contradicted / not_found with an exact quote;
+ *  4. the quote must appear in the fetched text, or the decision falls back to "hold".
+ */
+
+export type EvidenceVerdict = 'supported' | 'contradicted' | 'not_found';
+
+export interface EvidenceResult {
+  verdict: EvidenceVerdict;
+  quote: string;
+  url: string;
+  quoteVerified: boolean;
+  otherAnswers: string[];
+  reason: string;
+  decision: GateDecision;
+}
+
+const STOPWORDS = new Set(
+  'the a an and or of in on at to for from by with which what who whom whose when where why how is was were are be been this that these those its it as into about than then there their his her him she he they them one first name named called known also most more'.split(
+    ' '
+  )
+);
+
+function keywords(text: string): string[] {
+  return Array.from(
+    new Set(
+      text
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[̀-ͯ]/g, '')
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
+    )
+  );
+}
+
+/**
+ * Keeps the paragraphs most related to the question and answer, in article order, up to
+ * maxChars. A paragraph that mentions the answer itself always ranks first.
+ */
+export function selectPassages(text: string, question: EvalQuestion, maxChars: number): string {
+  const paragraphs = text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 40 && !/^=+.*=+$/.test(p));
+  const questionWords = keywords(question.question);
+  const answerWords = keywords([question.answer, ...question.acceptableAnswers].join(' '));
+  const answerPhrase = question.answer.toLowerCase();
+  const scored = paragraphs.map((p, index) => {
+    const lower = p.toLowerCase();
+    const words = new Set(keywords(p));
+    const score =
+      (lower.includes(answerPhrase) ? 10 : 0) +
+      answerWords.filter((w) => words.has(w)).length * 3 +
+      questionWords.filter((w) => words.has(w)).length;
+    return { p, index, score };
+  });
+  const chosen: typeof scored = [];
+  let used = 0;
+  for (const entry of [...scored].sort((a, b) => b.score - a.score || a.index - b.index)) {
+    if (entry.score === 0) break;
+    if (used + entry.p.length > maxChars) continue;
+    chosen.push(entry);
+    used += entry.p.length;
+  }
+  return chosen
+    .sort((a, b) => a.index - b.index)
+    .map((c) => c.p)
+    .join('\n\n');
+}
+
+function claimPayload(theme: string, q: EvalQuestion) {
+  return {
+    theme,
+    question: q.question,
+    answer: q.answer,
+    also_accept: q.acceptableAnswers,
+    explanation: q.explanation,
+  };
+}
+
+export function buildEvidenceQueryPrompt(theme: string, q: EvalQuestion): string {
+  return `A trivia question needs to be fact-checked against English Wikipedia.
+
+${JSON.stringify(claimPayload(theme, q), null, 2)}
+
+Write up to 2 short Wikipedia search queries (a few words each, like article titles) that would find the article confirming or refuting the answer. Prefer the specific subject of the question over the broad theme.
+
+Return only JSON: { "queries": ["...", "..."] }`;
+}
+
+export function parseEvidenceQueries(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as { queries?: unknown };
+    return Array.isArray(parsed.queries)
+      ? parsed.queries
+          .filter((q): q is string => typeof q === 'string' && q.trim().length > 0)
+          .map((q) => q.trim().slice(0, 120))
+          .slice(0, 2)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function buildEvidenceVerdictPrompt(
+  theme: string,
+  q: EvalQuestion,
+  articles: Array<{ title: string; url: string; passages: string }>
+): string {
+  const evidence = articles
+    .map((a, i) => `[Source ${i + 1}] ${a.title}\nURL: ${a.url}\n${a.passages}`)
+    .join('\n\n---\n\n');
+  return `You are fact-checking a trivia question for a party game. Judge it ONLY against the Wikipedia passages below, not your own memory.
+
+${JSON.stringify(claimPayload(theme, q), null, 2)}
+
+Passages:
+${evidence || '(no passages were found)'}
+
+Decide:
+- "supported": a passage states the answer to this exact question, including any premise in the question (dates, places, "first", "Canadian" and so on).
+- "contradicted": a passage shows the answer or the question's premise is wrong.
+- "not_found": the passages do not settle it either way.
+
+Quote rule: "quote" must be ONE sentence copied exactly, character for character, from the passages above. It is checked by computer; a quote that is not in the passages makes your verdict void. Use "" when the verdict is "not_found".
+
+Also list in "other_answers" any other answers the passages show would also be correct (empty if none).
+
+Return only JSON:
+{ "verdict": "supported" | "contradicted" | "not_found", "quote": "...", "url": "the URL of the quoted source", "other_answers": [], "reason": "one short sentence" }`;
+}
+
+function normalizeForQuote(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[‘’‚‛]/g, "'")
+    .replace(/[“”„‟]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Parses the strong model's verdict and checks its quote against the fetched passages. Only a
+ * quote found in the passages can pass or reject a question; anything else is "hold".
+ */
+export function parseEvidenceVerdict(raw: string, passagesText: string): EvidenceResult {
+  const hold = (reason: string): EvidenceResult => ({
+    verdict: 'not_found',
+    quote: '',
+    url: '',
+    quoteVerified: false,
+    otherAnswers: [],
+    reason,
+    decision: 'hold',
+  });
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(
+      raw
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+    );
+  } catch {
+    return hold('evidence response was not valid JSON');
+  }
+  const verdictText = String(parsed.verdict ?? '');
+  const verdict: EvidenceVerdict =
+    verdictText === 'supported' || verdictText === 'contradicted' ? verdictText : 'not_found';
+  const quote = typeof parsed.quote === 'string' ? parsed.quote.trim() : '';
+  const quoteVerified =
+    quote.length >= 12 && normalizeForQuote(passagesText).includes(normalizeForQuote(quote));
+  const decision: GateDecision =
+    verdict === 'supported' && quoteVerified
+      ? 'pass'
+      : verdict === 'contradicted' && quoteVerified
+        ? 'fail'
+        : 'hold';
+  return {
+    verdict,
+    quote,
+    url: typeof parsed.url === 'string' ? parsed.url : '',
+    quoteVerified,
+    otherAnswers: Array.isArray(parsed.other_answers)
+      ? parsed.other_answers.filter((a): a is string => typeof a === 'string')
+      : [],
+    reason: typeof parsed.reason === 'string' ? parsed.reason : '',
+    decision,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -746,7 +975,11 @@ export interface JudgeItem {
   question: EvalQuestion;
 }
 
-export function buildJudgePrompt(items: JudgeItem[]): string {
+/** Judge rubric versions: v1 is JUDGE_RUBRIC alone; v2 adds the owner calibration from round 1. */
+export type JudgeRubricVersion = 'v1' | 'v2';
+
+export function buildJudgePrompt(items: JudgeItem[], calibration?: string): string {
+  const rubric = calibration?.trim() ? `${JUDGE_RUBRIC}\n\n${calibration.trim()}` : JUDGE_RUBRIC;
   const payload = items.map(({ item, theme, question }) => ({
     item,
     theme,
@@ -757,7 +990,7 @@ export function buildJudgePrompt(items: JudgeItem[]): string {
     stated_difficulty: question.difficulty,
     source: question.sourceUrl,
   }));
-  return `${JUDGE_RUBRIC}
+  return `${rubric}
 
 Rate every question below. Rate each one on its own merits; they come from several unrelated sources.
 
@@ -942,8 +1175,103 @@ export interface EvalReport {
   }>;
   guardianMisses: { passedButOwnerIncorrect: number; ratedGenerated: number };
   judge: JudgeAgreement | null;
+  /** Present when facts.csv (hand-verified truth labels) exists for the run. */
+  factChecks: FactCheckerScore[] | null;
+  armSpecs: ArmSpec[];
   unrated: string[];
   ratingErrors: string[];
+}
+
+/** Hand-verified truth for one item, from facts.csv. */
+export type FactTruth = 'correct' | 'incorrect' | 'unverifiable';
+
+/** What one correctness signal said about an item, collapsed to a gate decision. */
+export type GateDecision = 'pass' | 'fail' | 'hold';
+
+export interface FactCheckerScore {
+  checker: string;
+  /** Items with a truth label of correct or incorrect that this checker gave a decision on. */
+  scored: number;
+  incorrect: number;
+  incorrectFailed: number;
+  incorrectHeld: number;
+  incorrectPassed: number;
+  correct: number;
+  correctFailed: number;
+  correctHeld: number;
+  correctPassed: number;
+}
+
+/** Scores each correctness signal against the truth labels. Unverifiable truth labels are skipped. */
+export function scoreFactCheckers(
+  truth: Map<string, FactTruth>,
+  checkers: Array<{ name: string; decisions: Map<string, GateDecision> }>
+): FactCheckerScore[] {
+  return checkers.map(({ name, decisions }) => {
+    const score: FactCheckerScore = {
+      checker: name,
+      scored: 0,
+      incorrect: 0,
+      incorrectFailed: 0,
+      incorrectHeld: 0,
+      incorrectPassed: 0,
+      correct: 0,
+      correctFailed: 0,
+      correctHeld: 0,
+      correctPassed: 0,
+    };
+    truth.forEach((label, item) => {
+      const decision = decisions.get(item);
+      if (label === 'unverifiable' || !decision) return;
+      score.scored += 1;
+      if (label === 'incorrect') {
+        score.incorrect += 1;
+        if (decision === 'fail') score.incorrectFailed += 1;
+        else if (decision === 'hold') score.incorrectHeld += 1;
+        else score.incorrectPassed += 1;
+      } else {
+        score.correct += 1;
+        if (decision === 'fail') score.correctFailed += 1;
+        else if (decision === 'hold') score.correctHeld += 1;
+        else score.correctPassed += 1;
+      }
+    });
+    return score;
+  });
+}
+
+/** Reads facts.csv: columns item, truth (correct | incorrect | unverifiable), note. */
+export function parseFactsCsv(text: string): { truth: Map<string, FactTruth>; errors: string[] } {
+  const rows = parseCsv(text);
+  const truth = new Map<string, FactTruth>();
+  const errors: string[] = [];
+  if (rows.length === 0) return { truth, errors: ['facts sheet is empty'] };
+  const header = rows[0].map((h) => h.trim().toLowerCase());
+  const itemIndex = header.indexOf('item');
+  const truthIndex = header.indexOf('truth');
+  if (itemIndex < 0 || truthIndex < 0)
+    return { truth, errors: ['facts sheet needs item and truth columns'] };
+  for (const row of rows.slice(1)) {
+    const item = (row[itemIndex] ?? '').trim();
+    const value = (row[truthIndex] ?? '').trim().toLowerCase();
+    if (!item) continue;
+    if (value === 'correct' || value === 'incorrect' || value === 'unverifiable')
+      truth.set(item, value);
+    else if (value) errors.push(`${item}: truth must be correct, incorrect or unverifiable`);
+  }
+  return { truth, errors };
+}
+
+/** Guardian's verdict as a gate: its pipeline drops "fail", so "flag" is the closest to a hold. */
+export function guardianDecision(verdict: GuardianVerdict | null): GateDecision | null {
+  if (!verdict) return null;
+  if (verdict.verdict === 'pass') return 'pass';
+  if (verdict.verdict === 'fail') return 'fail';
+  return 'hold';
+}
+
+export function ratingDecision(correct: YesNoUnsure): GateDecision {
+  return correct === 'y' ? 'pass' : correct === 'n' ? 'fail' : 'hold';
 }
 
 function mean(values: number[]): number | null {
@@ -957,8 +1285,12 @@ export function computeReport(input: {
   key: Record<string, BlindKeyEntry>;
   ratings: ParsedRatings;
   judge?: { model: string; ratings: Map<string, Rating> } | null;
+  facts?: Map<string, FactTruth> | null;
+  /** Evidence checker decisions keyed by blind item, from verify.json. */
+  evidence?: Map<string, GateDecision> | null;
 }): EvalReport {
   const { candidatesFile, key, ratings } = input;
+  const armSpecs = armsOf(candidatesFile);
   const byCandidateId = new Map(candidatesFile.candidates.map((c) => [c.id, c]));
   const items = Object.entries(key).map(([item, entry]) => ({
     item,
@@ -967,7 +1299,13 @@ export function computeReport(input: {
     rating: ratings.ratings.get(item) ?? null,
   }));
 
-  const groups: GroupSummary[] = (['A', 'B', 'library', 'planted'] as const).map((group) => {
+  const groupIds = [
+    ...armSpecs.map((a) => a.id),
+    ...(['library', 'planted'] as const).filter((g) =>
+      Object.values(key).some((e) => e.group === g)
+    ),
+  ];
+  const groups: GroupSummary[] = groupIds.map((group) => {
     const inGroup = items.filter((i) => i.entry.group === group);
     const rated = inGroup.filter((i) => i.rating).map((i) => ({ ...i, rating: i.rating! }));
     const keep = rated.filter((i) => i.rating.verdict === 'keep').length;
@@ -990,7 +1328,7 @@ export function computeReport(input: {
     };
   });
 
-  const arms: ArmOperations[] = (['A', 'B'] as const).map((arm) => {
+  const arms: ArmOperations[] = armSpecs.map(({ id: arm }) => {
     const stats = candidatesFile.stats.filter((s) => s.arm === arm);
     const kept = groups.find((g) => g.group === arm)!.keep;
     const costUsd = stats.reduce((sum, s) => sum + s.costUsd, 0);
@@ -1011,7 +1349,7 @@ export function computeReport(input: {
   });
 
   const byTheme = candidatesFile.themes.flatMap((theme) =>
-    (['A', 'B'] as const).map((arm) => {
+    armSpecs.map(({ id: arm }) => {
       const rated = items.filter(
         (i) => i.entry.group === arm && i.entry.themeId === theme.id && i.rating
       );
@@ -1026,9 +1364,7 @@ export function computeReport(input: {
     })
   );
 
-  const ratedGenerated = items.filter(
-    (i) => (i.entry.group === 'A' || i.entry.group === 'B') && i.rating
-  );
+  const ratedGenerated = items.filter((i) => isArmGroup(i.entry.group, armSpecs) && i.rating);
   const guardianMisses = {
     ratedGenerated: ratedGenerated.length,
     passedButOwnerIncorrect: ratedGenerated.filter(
@@ -1085,6 +1421,42 @@ export function computeReport(input: {
     };
   }
 
+  let factChecks: FactCheckerScore[] | null = null;
+  if (input.facts && input.facts.size > 0) {
+    const decisions = (pick: (i: (typeof items)[number]) => GateDecision | null) =>
+      new Map(
+        items.flatMap((i) => {
+          const d = pick(i);
+          return d ? [[i.item, d] as [string, GateDecision]] : [];
+        })
+      );
+    const checkers = [
+      {
+        name: "Guardian's fact check (model memory)",
+        decisions: decisions((i) => guardianDecision(i.candidate?.guardian ?? null)),
+      },
+      ...(input.evidence
+        ? [{ name: 'Evidence check (Wikipedia quote)', decisions: input.evidence }]
+        : []),
+      ...(input.judge
+        ? [
+            {
+              name: `Judge (${input.judge.model})`,
+              decisions: decisions((i) => {
+                const r = input.judge!.ratings.get(i.item);
+                return r ? ratingDecision(r.correct) : null;
+              }),
+            },
+          ]
+        : []),
+      {
+        name: 'Owner rating',
+        decisions: decisions((i) => (i.rating ? ratingDecision(i.rating.correct) : null)),
+      },
+    ];
+    factChecks = scoreFactCheckers(input.facts, checkers);
+  }
+
   return {
     runId: candidatesFile.runId,
     generationModel: candidatesFile.generationModel,
@@ -1093,6 +1465,8 @@ export function computeReport(input: {
     arms,
     byTheme,
     guardianMisses,
+    factChecks,
+    armSpecs,
     judge,
     unrated: ratings.unrated,
     ratingErrors: ratings.errors,
@@ -1131,7 +1505,7 @@ export function renderReportMarkdown(report: EvalReport): string {
   for (const g of report.groups) {
     const ci = g.keepInterval ? ` (${pct(g.keepInterval.low)}–${pct(g.keepInterval.high)})` : '';
     lines.push(
-      `| ${GROUP_LABELS[g.group]} | ${g.rated}/${g.total} | ${frac(g.keep, g.rated)}${ci} | ${g.fix} | ${g.drop} | ${frac(g.incorrect, g.rated)} | ${g.unsure} | ${frac(g.ambiguous, g.rated)} | ${frac(g.notFitting, g.rated)} | ${num(g.funMean)} | ${frac(g.difficultyMatches, g.rated)} |`
+      `| ${groupLabel(g.group, report.armSpecs)} | ${g.rated}/${g.total} | ${frac(g.keep, g.rated)}${ci} | ${g.fix} | ${g.drop} | ${frac(g.incorrect, g.rated)} | ${g.unsure} | ${frac(g.ambiguous, g.rated)} | ${frac(g.notFitting, g.rated)} | ${num(g.funMean)} | ${frac(g.difficultyMatches, g.rated)} |`
     );
   }
   lines.push('');
@@ -1143,23 +1517,43 @@ export function renderReportMarkdown(report: EvalReport): string {
   lines.push('|---|---|---|---|---|---|---|---|');
   for (const a of report.arms) {
     lines.push(
-      `| ${ARM_LABELS[a.arm]} | ${frac(a.delivered, a.requested)} | ${a.droppedByGate ?? 'not visible'} | ${a.errors} | $${a.costUsd.toFixed(4)} | ${(a.latencyMs / 1000).toFixed(0)}s | ${a.kept} | ${a.costPerKeptUsd === null ? 'n/a' : `$${a.costPerKeptUsd.toFixed(4)}`} |`
+      `| ${groupLabel(a.arm, report.armSpecs)} | ${frac(a.delivered, a.requested)} | ${a.droppedByGate ?? 'not visible'} | ${a.errors} | $${a.costUsd.toFixed(4)} | ${(a.latencyMs / 1000).toFixed(0)}s | ${a.kept} | ${a.costPerKeptUsd === null ? 'n/a' : `$${a.costPerKeptUsd.toFixed(4)}`} |`
     );
   }
   lines.push('');
 
   lines.push('## Keep rate by theme', '');
-  lines.push('| Theme | A kept | A fun | B kept | B fun |');
-  lines.push('|---|---|---|---|---|');
+  const armIds = report.armSpecs.map((a) => a.id);
+  lines.push(`| Theme | ${armIds.map((id) => `${id} kept | ${id} fun`).join(' | ')} |`);
+  lines.push(`|---|${armIds.map(() => '---|---|').join('')}`);
   const themeIds = Array.from(new Set(report.byTheme.map((t) => t.themeId)));
   for (const id of themeIds) {
-    const a = report.byTheme.find((t) => t.themeId === id && t.arm === 'A')!;
-    const b = report.byTheme.find((t) => t.themeId === id && t.arm === 'B')!;
-    lines.push(
-      `| ${a.theme} | ${frac(a.keep, a.rated)} | ${num(a.funMean)} | ${frac(b.keep, b.rated)} | ${num(b.funMean)} |`
-    );
+    const cells = armIds.map((arm) => {
+      const t = report.byTheme.find((x) => x.themeId === id && x.arm === arm);
+      return t ? `${frac(t.keep, t.rated)} | ${num(t.funMean)}` : 'n/a | n/a';
+    });
+    const theme = report.byTheme.find((t) => t.themeId === id)!.theme;
+    lines.push(`| ${theme} | ${cells.join(' | ')} |`);
   }
   lines.push('');
+
+  if (report.factChecks) {
+    lines.push('## Correctness checks against hand-verified facts', '');
+    lines.push(
+      'Truth labels come from `facts.csv`, checked by hand against sources. "Held" means the check would send the question for review instead of passing or rejecting it.',
+      ''
+    );
+    lines.push(
+      '| Check | Wrong answers rejected | Wrong answers held | Wrong answers passed | Correct answers rejected | Correct answers held | Correct answers passed |'
+    );
+    lines.push('|---|---|---|---|---|---|---|');
+    for (const f of report.factChecks) {
+      lines.push(
+        `| ${f.checker} | ${f.incorrectFailed}/${f.incorrect} | ${f.incorrectHeld} | **${f.incorrectPassed}** | ${f.correctFailed}/${f.correct} | ${f.correctHeld} | ${f.correctPassed} |`
+      );
+    }
+    lines.push('');
+  }
 
   lines.push('## Built-in Guardian QA', '');
   lines.push(

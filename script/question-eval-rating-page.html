@@ -1,0 +1,384 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+  /* Layout: one question card at a time, phone first; sticky progress bar; item grid below for jumping. */
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --ink: #17202e;
+    --muted: #5b6778;
+    --line: #d9dfe8;
+    --accent: #2f55d4;
+    --accent-ink: #ffffff;
+    --accent-soft: #e5ebfd;
+    --keep: #1d7a46;
+    --fix: #a15c00;
+    --drop: #b3261e;
+    --keep-soft: #e2f3e9;
+    --fix-soft: #fbefdd;
+    --drop-soft: #fbe5e3;
+    --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f141c; --surface: #18202b; --ink: #e8edf5; --muted: #9aa6b8; --line: #2a3443;
+      --accent: #7f9cff; --accent-ink: #0f141c; --accent-soft: #1f2b4a;
+      --keep: #5fd08f; --fix: #f0b25a; --drop: #ff8a80;
+      --keep-soft: #16301f; --fix-soft: #33270f; --drop-soft: #3a1a18;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f141c; --surface: #18202b; --ink: #e8edf5; --muted: #9aa6b8; --line: #2a3443;
+    --accent: #7f9cff; --accent-ink: #0f141c; --accent-soft: #1f2b4a;
+    --keep: #5fd08f; --fix: #f0b25a; --drop: #ff8a80;
+    --keep-soft: #16301f; --fix-soft: #33270f; --drop-soft: #3a1a18;
+    color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+  .wrap { max-width: 680px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+  header .wrap { display: flex; flex-direction: column; gap: 8px; padding-block: 12px; }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+  .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
+  .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.3s ease; }
+  main .wrap { display: flex; flex-direction: column; gap: 16px; padding-block: 16px 48px; }
+  .notice { border-radius: 10px; padding: 10px 12px; font-size: 0.9rem; background: var(--accent-soft); color: var(--ink); }
+  .notice.warn { background: var(--drop-soft); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+  .chip.id { background: var(--ink); color: var(--surface); border-color: var(--ink); font-variant-numeric: tabular-nums; }
+  .chip.done { background: var(--keep-soft); color: var(--keep); border-color: transparent; }
+  .q { font-family: var(--font-display); font-weight: 500; font-size: 1.35rem; line-height: 1.35; margin: 0; text-wrap: pretty; overflow-wrap: anywhere; }
+  .reveal { align-self: flex-start; }
+  .answer { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; display: flex; flex-direction: column; gap: 6px; overflow-wrap: anywhere; }
+  .answer .a { font-weight: 600; font-size: 1.1rem; }
+  .answer .small { color: var(--muted); font-size: 0.9rem; }
+  .answer a { color: var(--accent); }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 14px; min-height: 40px; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible + label, textarea:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  form { display: flex; flex-direction: column; gap: 14px; }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  legend { font-weight: 600; font-size: 0.9rem; padding: 0; margin-bottom: 6px; }
+  legend .hint { font-weight: 400; color: var(--muted); }
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label { flex: 1 1 0; min-width: 56px; text-align: center; padding: 9px 8px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; user-select: none; background: var(--bg); font-variant-numeric: tabular-nums; }
+  .seg input:checked + label { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .seg input:disabled + label { opacity: 0.4; cursor: not-allowed; }
+  .seg.verdict input[value="keep"]:checked + label { background: var(--keep); border-color: var(--keep); color: var(--surface); }
+  .seg.verdict input[value="fix"]:checked + label { background: var(--fix); border-color: var(--fix); color: var(--surface); }
+  .seg.verdict input[value="drop"]:checked + label { background: var(--drop); border-color: var(--drop); color: var(--surface); }
+  .anchor { font-size: 0.85rem; color: var(--muted); min-height: 1.3em; }
+  textarea { font: inherit; width: 100%; box-sizing: border-box; min-height: 64px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; }
+  .actions { display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+  .status { font-size: 0.85rem; color: var(--muted); }
+  .status.err { color: var(--drop); }
+  details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details ul { margin: 10px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+  .grid button { padding: 6px 0; min-height: 34px; font-size: 0.85rem; font-variant-numeric: tabular-nums; background: var(--bg); }
+  .grid button.rated { background: var(--keep-soft); color: var(--keep); border-color: transparent; }
+  .grid button.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+  h2 { font-family: var(--font-display); font-size: 1rem; margin: 0 0 10px; }
+  @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>__TITLE__</h1>
+      <span class="count" id="count">0 of 0 rated</span>
+    </div>
+    <div class="bar" aria-hidden="true"><span id="bar"></span></div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="notice" id="notice">Loading your saved ratings…</div>
+
+    <section class="card" aria-live="polite">
+      <div class="meta">
+        <span class="chip id" id="itemId">Q01</span>
+        <span class="chip" id="theme">Theme</span>
+        <span class="chip" id="stated">Labelled Medium</span>
+        <span class="chip done" id="doneChip" hidden>Rated</span>
+      </div>
+      <p class="q" id="question">Question</p>
+      <button type="button" class="reveal" id="revealBtn">Reveal answer</button>
+      <div class="answer" id="answerBox" hidden>
+        <div class="a" id="answer"></div>
+        <div class="small" id="alsoAccept"></div>
+        <div id="explanation"></div>
+        <div class="small">Source: <a id="source" href="#" target="_blank" rel="noopener noreferrer"></a></div>
+      </div>
+
+      <form id="form" novalidate>
+        <fieldset>
+          <legend>Is the answer correct?</legend>
+          <div class="seg">
+            <input type="radio" name="correct" id="correct-y" value="y"><label for="correct-y">Yes</label>
+            <input type="radio" name="correct" id="correct-n" value="n"><label for="correct-n">No</label>
+            <input type="radio" name="correct" id="correct-u" value="u"><label for="correct-u">Unsure</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>One defensible answer?</legend>
+          <div class="seg">
+            <input type="radio" name="one_answer" id="one-y" value="y"><label for="one-y">Yes</label>
+            <input type="radio" name="one_answer" id="one-n" value="n"><label for="one-n">No</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Fun as party trivia</legend>
+          <div class="seg">
+            <input type="radio" name="fun" id="fun-1" value="1"><label for="fun-1">1</label>
+            <input type="radio" name="fun" id="fun-2" value="2"><label for="fun-2">2</label>
+            <input type="radio" name="fun" id="fun-3" value="3"><label for="fun-3">3</label>
+            <input type="radio" name="fun" id="fun-4" value="4"><label for="fun-4">4</label>
+            <input type="radio" name="fun" id="fun-5" value="5"><label for="fun-5">5</label>
+          </div>
+          <div class="anchor" id="funAnchor">1 is dry and nobody cares; 5 is people talk about it afterwards.</div>
+        </fieldset>
+        <fieldset>
+          <legend>How hard is it really? <span class="hint">for a typical adult in this audience</span></legend>
+          <div class="seg">
+            <input type="radio" name="difficulty" id="diff-e" value="E"><label for="diff-e">Easy</label>
+            <input type="radio" name="difficulty" id="diff-m" value="M"><label for="diff-m">Medium</label>
+            <input type="radio" name="difficulty" id="diff-h" value="H"><label for="diff-h">Hard</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Fits Modern Trivia?</legend>
+          <div class="seg">
+            <input type="radio" name="fits" id="fits-y" value="y"><label for="fits-y">Yes</label>
+            <input type="radio" name="fits" id="fits-n" value="n"><label for="fits-n">No</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Verdict</legend>
+          <div class="seg verdict">
+            <input type="radio" name="verdict" id="v-keep" value="keep"><label for="v-keep">Keep</label>
+            <input type="radio" name="verdict" id="v-fix" value="fix"><label for="v-fix">Fix</label>
+            <input type="radio" name="verdict" id="v-drop" value="drop"><label for="v-drop">Drop</label>
+          </div>
+          <div class="anchor" id="verdictNote"></div>
+        </fieldset>
+        <fieldset>
+          <legend><label for="why">Why? <span class="hint">one short line, optional</span></label></legend>
+          <textarea id="why" name="why" maxlength="500"></textarea>
+        </fieldset>
+        <div class="actions">
+          <button type="button" id="prevBtn">Previous</button>
+          <span class="status" id="status" role="status"></span>
+          <button type="submit" class="primary" id="saveBtn" disabled>Save and next</button>
+        </div>
+      </form>
+    </section>
+
+    <details>
+      <summary>Rating guide</summary>
+      <ul>
+        <li><strong>Correct</strong> and <strong>one answer</strong> are pass/fail. A "No" on either means the verdict can't be Keep. Use Unsure rather than guessing.</li>
+        <li><strong>Fun</strong>: can the room reason toward it? Is the reveal satisfying? Would this audience recognize or enjoy it? Trick wording, giveaways and textbook definitions lower it.</li>
+        <li><strong>Difficulty</strong>: Easy means most players get it, Medium about half, Hard few but still fair.</li>
+        <li><strong>Fits</strong>: Canadian-friendly or globally relevant, not US-default, on theme, right for a mixed adult group.</li>
+        <li><strong>Fix</strong> means a good fact with wording, accepted answers or a difficulty label that needs work.</li>
+        <li>Try to answer before you reveal the answer. Questions come from several sources, mixed in random order.</li>
+      </ul>
+    </details>
+
+    <section>
+      <h2>All questions</h2>
+      <div class="grid" id="grid"></div>
+    </section>
+  </div>
+</main>
+
+<script type="application/json" id="items-data">__ITEMS__</script>
+<script>
+  const ITEMS = JSON.parse(document.getElementById('items-data').textContent);
+  const FIELDS = ['correct', 'one_answer', 'fun', 'difficulty', 'fits', 'verdict'];
+  const FUN_ANCHORS = {
+    1: '1: dry textbook fact, arbitrary number, or list recall. Nobody would care.',
+    2: '2: correct but flat. Feels like an exam.',
+    3: '3: fine and fair, but forgettable.',
+    4: '4: a good party question. People can reason toward it and the reveal satisfies.',
+    5: '5: people would talk about it after the game.',
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const form = $('form');
+  let ratings = {};
+  let index = 0;
+  let db = null;
+  let saving = false;
+  let loaded = false;
+
+  function ratedCount() { return ITEMS.filter((it) => ratings[it.item]).length; }
+
+  function renderProgress() {
+    const n = ratedCount();
+    $('count').textContent = `${n} of ${ITEMS.length} rated`;
+    $('bar').style.width = `${(n / ITEMS.length) * 100}%`;
+    const grid = $('grid');
+    grid.replaceChildren(...ITEMS.map((it, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = it.item;
+      b.className = (ratings[it.item] ? 'rated' : '') + (i === index ? ' current' : '');
+      b.setAttribute('aria-label', `${it.item}${ratings[it.item] ? ', rated' : ''}`);
+      b.addEventListener('click', () => go(i));
+      return b;
+    }));
+  }
+
+  function setRadio(name, value) {
+    form.querySelectorAll(`input[name="${name}"]`).forEach((el) => { el.checked = String(el.value) === String(value ?? ''); });
+  }
+  function getRadio(name) { const el = form.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; }
+
+  function syncRules() {
+    const blocked = getRadio('correct') === 'n' || getRadio('one_answer') === 'n';
+    const keep = $('v-keep');
+    keep.disabled = blocked;
+    if (blocked && keep.checked) keep.checked = false;
+    $('verdictNote').textContent = blocked ? 'Keep is off because the question failed a pass/fail check.' : '';
+    const fun = getRadio('fun');
+    $('funAnchor').textContent = fun ? FUN_ANCHORS[fun] : '1 is dry and nobody cares; 5 is people talk about it afterwards.';
+    const complete = FIELDS.every((f) => getRadio(f));
+    $('saveBtn').disabled = !complete || saving || !db;
+  }
+
+  function renderItem() {
+    const it = ITEMS[index];
+    const saved = ratings[it.item];
+    $('itemId').textContent = it.item;
+    $('theme').textContent = it.theme;
+    $('stated').textContent = `Labelled ${it.difficulty}`;
+    $('doneChip').hidden = !saved;
+    $('question').textContent = it.question;
+    $('answer').textContent = it.answer;
+    $('alsoAccept').textContent = it.alsoAccept.length ? `Also accepted: ${it.alsoAccept.join('; ')}` : '';
+    $('explanation').textContent = it.explanation;
+    const src = $('source');
+    src.textContent = it.source.replace(/^https?:\/\//, '');
+    src.href = it.source;
+    const revealed = Boolean(saved);
+    $('answerBox').hidden = !revealed;
+    $('revealBtn').hidden = revealed;
+    FIELDS.forEach((f) => setRadio(f, saved ? saved[f] : ''));
+    $('why').value = saved ? saved.why || '' : '';
+    $('prevBtn').disabled = index === 0;
+    $('status').textContent = '';
+    $('status').className = 'status';
+    $('saveBtn').textContent = saved ? 'Update and next' : 'Save and next';
+    syncRules();
+    renderProgress();
+  }
+
+  function go(i) {
+    index = Math.max(0, Math.min(ITEMS.length - 1, i));
+    renderItem();
+    $('question').scrollIntoView({ block: 'nearest' });
+  }
+
+  function nextUnrated(from) {
+    for (let step = 1; step <= ITEMS.length; step++) {
+      const i = (from + step) % ITEMS.length;
+      if (!ratings[ITEMS[i].item]) return i;
+    }
+    return -1;
+  }
+
+  $('revealBtn').addEventListener('click', () => { $('answerBox').hidden = false; $('revealBtn').hidden = true; });
+  $('prevBtn').addEventListener('click', () => go(index - 1));
+  form.addEventListener('change', syncRules);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!db || saving) return;
+    const it = ITEMS[index];
+    const body = {};
+    FIELDS.forEach((f) => { body[f] = getRadio(f); });
+    body.why = $('why').value.trim();
+    body.savedAt = new Date().toISOString();
+    saving = true;
+    syncRules();
+    $('status').textContent = 'Saving…';
+    $('status').className = 'status';
+    try {
+      await db.doc(`ratings/${it.item}`).set(body);
+      ratings = { ...ratings, [it.item]: body };
+      saving = false;
+      const next = nextUnrated(index);
+      if (next === -1) {
+        renderItem();
+        $('status').textContent = 'Saved. All questions are rated. You can close this page.';
+      } else {
+        go(next);
+        $('status').textContent = `Saved ${it.item}.`;
+      }
+    } catch (error) {
+      saving = false;
+      syncRules();
+      $('status').className = 'status err';
+      $('status').textContent = error && error.code === 'invalid_argument'
+        ? 'Only the owner of this page can save ratings.'
+        : 'That rating didn’t save. Check your connection and press Save again.';
+    }
+  });
+
+  renderItem();
+
+  (async () => {
+    db = await (window.claude?.use?.('db') ?? Promise.resolve(null));
+    const notice = $('notice');
+    if (!db) {
+      notice.className = 'notice warn';
+      notice.textContent = 'Ratings can’t be saved in this view. Open this page on claude.ai while signed in.';
+      syncRules();
+      return;
+    }
+    syncRules();
+    const timer = setTimeout(() => {
+      if (!loaded) notice.textContent = 'Still waiting for your saved ratings. New ratings will save once the connection returns.';
+    }, 10000);
+    db.collection('ratings').onSnapshot((snap) => {
+      const next = {};
+      snap.docs.forEach((d) => { if (d.exists) next[d.id] = d.data(); });
+      ratings = next;
+      if (!snap.metadata.fromCache && !loaded) {
+        loaded = true;
+        clearTimeout(timer);
+        const start = ratings[ITEMS[index].item] ? nextUnrated(index) : index;
+        if (start !== -1 && start !== index) index = start;
+        renderItem();
+      } else {
+        renderProgress();
+        $('doneChip').hidden = !ratings[ITEMS[index].item];
+      }
+      const n = ratedCount();
+      notice.className = 'notice';
+      notice.textContent = n === ITEMS.length
+        ? 'All questions are rated. Tell Claude in the chat when you are done.'
+        : `Each rating saves as you go, so you can stop and come back. ${ITEMS.length - n} left.`;
+    }, () => {
+      clearTimeout(timer);
+      notice.className = 'notice warn';
+      notice.textContent = 'Saved ratings couldn’t be loaded. Reload the page to try again.';
+    });
+  })();
+</script>

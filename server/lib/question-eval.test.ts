@@ -1,8 +1,20 @@
 import { readFileSync } from 'fs';
 import { describe, expect, it } from 'vitest';
 
+import { JUDGE_CALIBRATION_V2 } from './trivia-style-guide';
+
 import {
   RATING_COLUMNS,
+  ROUND_1_ARMS,
+  buildEvidenceVerdictPrompt,
+  parseEvidenceQueries,
+  parseEvidenceVerdict,
+  parseFactsCsv,
+  scoreFactCheckers,
+  selectPassages,
+  type ArmSpec,
+  type FactTruth,
+  type GateDecision,
   SpendLimitError,
   SpendTracker,
   buildBlindSheet,
@@ -264,8 +276,12 @@ describe('judge response parsing', () => {
 });
 
 describe('fixture config', () => {
-  it('references anchors that exist', () => {
-    const config = JSON.parse(readFileSync('test/fixtures/question-eval/config.json', 'utf8'));
+  it.each(['config.json', 'round-2.json'])('%s references anchors and arms that exist', (file) => {
+    const config = JSON.parse(readFileSync(`test/fixtures/question-eval/${file}`, 'utf8'));
+    expect(config.arms.length).toBeGreaterThan(0);
+    expect(new Set(config.arms.map((a: { id: string }) => a.id)).size).toBe(config.arms.length);
+    for (const arm of config.arms)
+      expect(['guardian', 'guardian-wikipedia']).toContain(arm.generator);
     const library = JSON.parse(readFileSync(config.libraryAnchors.source, 'utf8')) as Array<{
       id: string;
     }>;
@@ -329,8 +345,12 @@ describe('stand-in run', () => {
       };
     const generated = await runGeneration(
       THEMES,
+      ROUND_1_ARMS,
       3,
-      { generateArmA: fakeArm('A'), generateArmB: fakeArm('B'), now: () => clock },
+      {
+        generate: (spec, theme, count) => fakeArm(spec.id as 'A' | 'B')(theme, count),
+        now: () => clock,
+      },
       tracker
     );
     const anchors: Candidate[] = [
@@ -387,7 +407,7 @@ describe('stand-in run', () => {
       return { questions: [], droppedByGate: null };
     };
     await expect(
-      runGeneration(THEMES, 2, { generateArmA: spend, generateArmB: spend, now: () => 0 }, tracker)
+      runGeneration(THEMES, ROUND_1_ARMS, 2, { generate: spend, now: () => 0 }, tracker)
     ).rejects.toThrow(SpendLimitError);
   });
 
@@ -472,8 +492,9 @@ describe('stand-in run', () => {
       };
     const retried = await runGeneration(
       THEMES,
+      ROUND_1_ARMS,
       3,
-      { generateArmA: arm('A'), generateArmB: arm('B'), now: () => 0 },
+      { generate: (spec, theme, count) => arm(spec.id as 'A' | 'B')(theme, count), now: () => 0 },
       tracker,
       (a, themeId) => a === 'B' && themeId === 'raves'
     );
@@ -503,5 +524,190 @@ describe('stand-in run', () => {
     const parsed = parseRatingsCsv(toCsv([header, first]), sheet.key);
     expect(parsed.ratings.size).toBe(0);
     expect(parsed.errors[0]).toMatch(/correct must be y, n or u; .*fun must be 1-5/);
+  });
+});
+
+describe('evidence check', () => {
+  const q = makeQuestion('Which Hawaiian volcano is the largest active shield volcano on Earth?', {
+    answer: 'Mauna Loa',
+  });
+  const article = [
+    'Mauna Loa is one of five volcanoes that form the Island of Hawaii. It is the largest active volcano on Earth by volume and area.',
+    'Kilauea is a smaller, very active shield volcano on the southeastern part of the island, often confused by visitors.',
+    'The climate of the region is tropical, with trade winds bringing rain to the eastern slopes of the island most of the year.',
+  ].join('\n');
+
+  it('keeps passages that mention the answer and drops unrelated ones', () => {
+    const passages = selectPassages(article, q, 1_000);
+    expect(passages).toContain('Mauna Loa is one of five volcanoes');
+    expect(passages).not.toContain('trade winds');
+    expect(selectPassages(article, q, 130)).toBe(article.split('\n')[0]);
+  });
+
+  it('passes only when the supporting quote is really in the passages', () => {
+    const passages = selectPassages(article, q, 1_000);
+    const supported = parseEvidenceVerdict(
+      JSON.stringify({
+        verdict: 'supported',
+        quote: 'It is the largest active volcano on Earth by volume and area.',
+        url: 'https://en.wikipedia.org/wiki/Mauna_Loa',
+      }),
+      passages
+    );
+    expect(supported).toMatchObject({ quoteVerified: true, decision: 'pass' });
+
+    const invented = parseEvidenceVerdict(
+      JSON.stringify({
+        verdict: 'supported',
+        quote: 'Mauna Loa is the tallest mountain in Canada.',
+      }),
+      passages
+    );
+    expect(invented).toMatchObject({ quoteVerified: false, decision: 'hold' });
+  });
+
+  it('rejects only with a verified contradicting quote, and tolerates curly quotes and spacing', () => {
+    const passages = "Its name means 'Long Mountain'   in Hawaiian.";
+    const contradicted = parseEvidenceVerdict(
+      JSON.stringify({
+        verdict: 'contradicted',
+        quote: 'Its name means \u2018Long Mountain\u2019 in Hawaiian.',
+      }),
+      passages
+    );
+    expect(contradicted.decision).toBe('fail');
+    expect(
+      parseEvidenceVerdict(JSON.stringify({ verdict: 'contradicted', quote: '' }), passages)
+        .decision
+    ).toBe('hold');
+    expect(parseEvidenceVerdict('not json', passages).decision).toBe('hold');
+    expect(parseEvidenceVerdict(JSON.stringify({ verdict: 'maybe' }), passages).verdict).toBe(
+      'not_found'
+    );
+  });
+
+  it('caps and cleans search queries', () => {
+    expect(
+      parseEvidenceQueries(JSON.stringify({ queries: [' Mauna Loa ', '', 'Kilauea', 'extra'] }))
+    ).toEqual(['Mauna Loa', 'Kilauea']);
+    expect(parseEvidenceQueries('oops')).toEqual([]);
+  });
+
+  it('tells the verdict model to judge from the passages and quote exactly', () => {
+    const prompt = buildEvidenceVerdictPrompt('Volcanoes', q, []);
+    expect(prompt).toContain('ONLY against the Wikipedia passages');
+    expect(prompt).toContain('(no passages were found)');
+    expect(prompt).toContain('copied exactly');
+  });
+});
+
+describe('fact check scoring', () => {
+  it('reads facts.csv and scores each checker against the truth labels', () => {
+    const { truth, errors } = parseFactsCsv(
+      'item,truth,note\nQ1,correct,\nQ2,incorrect,hallucinated\nQ3,unverifiable,\nQ4,maybe,\n'
+    );
+    expect(errors).toEqual(['Q4: truth must be correct, incorrect or unverifiable']);
+    expect(truth.size).toBe(3);
+    const decisions = new Map<string, GateDecision>([
+      ['Q1', 'hold'],
+      ['Q2', 'pass'],
+      ['Q3', 'fail'],
+    ]);
+    const [score] = scoreFactCheckers(truth as Map<string, FactTruth>, [{ name: 'x', decisions }]);
+    expect(score).toMatchObject({
+      scored: 2,
+      incorrect: 1,
+      incorrectPassed: 1,
+      correct: 1,
+      correctHeld: 1,
+    });
+  });
+});
+
+describe('round 2 shape', () => {
+  it('appends the owner calibration only for judge v2', () => {
+    const items = [{ item: 'Q1', theme: 'Volcanoes', question: makeQuestion('What erupts?') }];
+    expect(buildJudgePrompt(items)).not.toContain('Calibration from the game owner');
+    expect(buildJudgePrompt(items, JUDGE_CALIBRATION_V2)).toContain(
+      'Calibration from the game owner'
+    );
+  });
+
+  it('reports any set of arms, with no library anchors, and a fact-check table', async () => {
+    const arms: ArmSpec[] = [
+      { id: 'A', label: 'A: Guardian as is', generator: 'guardian' },
+      { id: 'A2', label: 'A2: Guardian + style guide v2', generator: 'guardian', styleGuide: 'v2' },
+    ];
+    const tracker = new SpendTracker(5);
+    const generated = await runGeneration(
+      THEMES,
+      arms,
+      2,
+      {
+        generate: async (spec, theme, count) => ({
+          questions: Array.from({ length: count }, (_, i) => ({
+            question: makeQuestion(`${spec.id} ${theme.id} ${i}`),
+            guardian: {
+              verdict: 'pass',
+              coherence: 'pass',
+              obviousness: 'pass',
+              confidence: 90,
+              highFindings: 0,
+              repaired: false,
+            },
+          })),
+          droppedByGate: null,
+        }),
+        now: () => 0,
+      },
+      tracker
+    );
+    const candidatesFile: CandidatesFile = {
+      schemaVersion: 'question-eval-v1',
+      runId: 'round-2-test',
+      createdAt: '2026-11-22T00:00:00.000Z',
+      generationModel: 'gpt-5.4-mini',
+      questionsPerThemePerArm: 2,
+      arms,
+      themes: THEMES,
+      candidates: generated.candidates,
+      stats: generated.stats,
+      grounding: {},
+    };
+    const sheet = buildBlindSheet(candidatesFile.candidates, 3);
+    const [header, ...rows] = parseCsv(sheet.csv);
+    const col = (name: string) => header.indexOf(name);
+    for (const row of rows) {
+      const isA2 = sheet.key[row[col('item')]].group === 'A2';
+      Object.assign(row, {
+        [col('correct')]: 'y',
+        [col('one_answer')]: 'y',
+        [col('fun')]: isA2 ? '4' : '2',
+        [col('difficulty')]: 'M',
+        [col('fits')]: 'y',
+        [col('verdict')]: isA2 ? 'keep' : 'fix',
+      });
+    }
+    const ratings = parseRatingsCsv(toCsv([header, ...rows]), sheet.key);
+    const firstItem = Object.keys(sheet.key).sort()[0];
+    const report = computeReport({
+      candidatesFile,
+      key: sheet.key,
+      ratings,
+      facts: new Map<string, FactTruth>([[firstItem, 'incorrect']]),
+      evidence: new Map<string, GateDecision>([[firstItem, 'fail']]),
+    });
+    expect(report.groups.map((g) => g.group)).toEqual(['A', 'A2']);
+    expect(report.groups.find((g) => g.group === 'A2')!.keep).toBe(4);
+    expect(report.arms.map((a) => a.arm)).toEqual(['A', 'A2']);
+    const evidence = report.factChecks!.find((f) => f.checker.startsWith('Evidence'))!;
+    const guardian = report.factChecks!.find((f) => f.checker.startsWith('Guardian'))!;
+    expect(evidence).toMatchObject({ incorrect: 1, incorrectFailed: 1 });
+    expect(guardian).toMatchObject({ incorrect: 1, incorrectPassed: 1 });
+    const markdown = renderReportMarkdown(report);
+    expect(markdown).toContain('A2: Guardian + style guide v2');
+    expect(markdown).toContain('| Theme | A kept | A fun | A2 kept | A2 fun |');
+    expect(markdown).toContain('Correctness checks against hand-verified facts');
+    expect(markdown).not.toContain('Library anchors');
   });
 });

@@ -3,6 +3,18 @@
   "questionsPerThemePerArm": 4,
   "generationModel": "gpt-5.4-mini",
   "judgeModel": "gpt-6.1-sol",
+  "arms": [
+    {
+      "id": "A",
+      "label": "A: Guardian as is",
+      "generator": "guardian"
+    },
+    {
+      "id": "B",
+      "label": "B: Guardian + Wikipedia passages",
+      "generator": "guardian-wikipedia"
+    }
+  ],
   "themes": [
     {
       "id": "volcanoes",
