@@ -5,6 +5,7 @@
  *   npm run eval:questions -- generate [--max-usd 3]    # generate every arm + blind review sheet
  *   npm run eval:questions -- judge [--rubric v1|v2]    # LLM judge over the same blind sheet
  *   npm run eval:questions -- verify                    # Wikipedia evidence check per item
+ *   npm run eval:questions -- repeats                   # repeats across simulated games
  *   npm run eval:questions -- rating-page               # owner rating page HTML for the run
  *   npm run eval:questions -- import-ratings --from <dir>  # rating page export -> ratings.csv
  *   npm run eval:questions -- score                     # ratings (+ judge, facts) -> report.md
@@ -27,7 +28,11 @@ import OpenAI from 'openai';
 import { TRIVIA_AI_REQUEST_CONFIG } from '../server/lib/ai-model-config';
 import { generateQuestions } from '../server/lib/guardian';
 import { auditQuestionQuality } from '../server/lib/question-quality-audit';
-import { JUDGE_CALIBRATION_V2, WRITER_STYLE_GUIDE_V2 } from '../server/lib/trivia-style-guide';
+import {
+  JUDGE_CALIBRATION_V2,
+  JUDGE_CALIBRATION_V3,
+  WRITER_STYLE_GUIDE_V2,
+} from '../server/lib/trivia-style-guide';
 import { batchFactCheck } from '../server/lib/verifier';
 import {
   QUESTION_EVAL_SCHEMA_VERSION,
@@ -44,6 +49,13 @@ import {
   type ArmSpec,
   type EvidenceResult,
   type GateDecision,
+  type ThemeBrief,
+  buildRepeatCheckPrompt,
+  buildThemeBriefPrompt,
+  filterRepeatedAnswers,
+  parseRepeatCheck,
+  parseThemeBrief,
+  themeBriefGuidance,
   SpendLimitError,
   SpendTracker,
   WIKIPEDIA_USER_AGENT,
@@ -92,6 +104,8 @@ interface EvalConfig {
   judgeModel: string;
   /** Strong model for the evidence check's verdict; defaults to judgeModel. */
   verifyModel?: string;
+  /** Simulated games per theme and arm (default 1). Only game 1 is rated by the owner. */
+  gamesPerTheme?: number;
   /** Arms for this round; round 1 configs omit it (A and B). */
   arms?: ArmSpec[];
   themes: EvalTheme[];
@@ -250,6 +264,50 @@ async function generateGuardian(
     return normalized ? [{ question: normalized, guardian: guardianVerdictOf(q.aiAnalysis) }] : [];
   });
   return { questions, droppedByGate: null };
+}
+
+/** Theme briefs are made once per theme and shared by every game of the themed arm. */
+const themeBriefs = new Map<string, ThemeBrief>();
+
+async function themeBriefFor(openai: OpenAI, theme: EvalTheme): Promise<ThemeBrief> {
+  const cached = themeBriefs.get(theme.id);
+  if (cached) return cached;
+  const response = await openai.chat.completions.create({
+    ...TRIVIA_AI_REQUEST_CONFIG,
+    messages: [{ role: 'user', content: buildThemeBriefPrompt(theme.theme) }],
+    response_format: { type: 'json_object' },
+    max_completion_tokens: 800,
+  });
+  const brief = parseThemeBrief(response.choices[0]?.message?.content ?? '', theme.theme);
+  themeBriefs.set(theme.id, brief);
+  return brief;
+}
+
+/**
+ * The themed arm: a theme brief (breadth check, widening narrow themes, focus subtopics), then
+ * Guardian with the brief and this theme's earlier questions as history, then a deterministic
+ * filter that drops any question reusing an earlier answer.
+ */
+async function generateThemed(
+  openai: OpenAI,
+  theme: EvalTheme,
+  count: number,
+  history: EvalQuestion[]
+): Promise<ArmOutput> {
+  const brief = await themeBriefFor(openai, theme);
+  const generated = await generateQuestions(
+    brief.generationTheme,
+    count,
+    theme.pillar,
+    history.map((q) => ({ question: q.question, answer: q.answer })),
+    { styleGuide: themeBriefGuidance(brief) }
+  );
+  const questions = generated.flatMap((q) => {
+    const normalized = normalizeGeneratedQuestion(q, theme.pillar);
+    return normalized ? [{ question: normalized, guardian: guardianVerdictOf(q.aiAnalysis) }] : [];
+  });
+  const { kept, dropped } = filterRepeatedAnswers(questions, history);
+  return { questions: kept, droppedByGate: dropped };
 }
 
 function toAuditable(id: string, q: EvalQuestion) {
@@ -431,9 +489,13 @@ async function commandGenerate(
     );
   }
 
-  console.log(`Themes: ${config.themes.length} | questions per theme per arm: ${count}`);
+  const plannedGames = config.gamesPerTheme ?? 1;
+  const perGame = config.themes.length * count * arms.length;
   console.log(
-    `Requested: ${config.themes.length * count * arms.length} generated + ${anchors.length} anchors`
+    `Themes: ${config.themes.length} | questions per theme per arm per game: ${count} | games: ${plannedGames}`
+  );
+  console.log(
+    `Requested: ${perGame * plannedGames} generated (${perGame} rated from game 1) + ${anchors.length} anchors`
   );
   console.log(`Arms: ${arms.map((a) => a.label).join(' | ')}`);
   console.log(`Generation model: ${config.generationModel} | spend cap: $${maxUsd.toFixed(2)}`);
@@ -447,11 +509,14 @@ async function commandGenerate(
   installSpendTracking(tracker);
   const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, maxRetries: 1 });
   const groundedArm = createArmB(openai);
+  const games = config.gamesPerTheme ?? 1;
   const deps = {
-    generate: (spec: ArmSpec, theme: EvalTheme, n: number) =>
+    generate: (spec: ArmSpec, theme: EvalTheme, n: number, history: EvalQuestion[]) =>
       spec.generator === 'guardian-wikipedia'
         ? groundedArm(theme, n)
-        : generateGuardian(spec, theme, n),
+        : spec.generator === 'guardian-themed'
+          ? generateThemed(openai, theme, n, history)
+          : generateGuardian(spec, theme, n),
     now: Date.now,
     log: (m: string) => console.log(m),
   };
@@ -476,11 +541,14 @@ async function commandGenerate(
       previous.questionsPerThemePerArm,
       deps,
       tracker,
-      (arm, themeId) => failed.some((f) => f.arm === arm && f.themeId === themeId)
+      {
+        only: (arm, themeId) => failed.some((f) => f.arm === arm && f.themeId === themeId),
+        games: previous.gamesPerTheme ?? 1,
+      }
     );
     const merged = mergeRetriedGeneration(previous, retried);
     // Same seed as the original run, so the sheet is reproducible from the run ID.
-    const sheet = buildBlindSheet(merged.candidates, seedFromString(merged.runId));
+    const sheet = buildBlindSheet(ratedCandidates(merged.candidates), seedFromString(merged.runId));
     await writePrivate(path.join(runDir, 'candidates.json'), JSON.stringify(merged, null, 2));
     await writePrivate(path.join(runDir, 'key.json'), JSON.stringify(sheet.key, null, 2));
     await writePrivate(path.join(runDir, 'review-sheet.csv'), sheet.csv);
@@ -501,7 +569,7 @@ async function commandGenerate(
 
   let generated: Awaited<ReturnType<typeof runGeneration>>;
   try {
-    generated = await runGeneration(config.themes, arms, count, deps, tracker);
+    generated = await runGeneration(config.themes, arms, count, deps, tracker, { games });
   } catch (error) {
     if (error instanceof SpendLimitError) console.error(error.message);
     throw error;
@@ -513,13 +581,15 @@ async function commandGenerate(
     createdAt: new Date().toISOString(),
     generationModel: config.generationModel,
     questionsPerThemePerArm: count,
+    ...(games > 1 ? { gamesPerTheme: games } : {}),
+    ...(themeBriefs.size > 0 ? { themeBriefs: Object.fromEntries(themeBriefs) } : {}),
     arms,
     themes: config.themes,
     candidates: [...generated.candidates, ...anchors],
     stats: generated.stats,
     grounding: generated.grounding,
   };
-  const sheet = buildBlindSheet(candidatesFile.candidates, seedFromString(runId));
+  const sheet = buildBlindSheet(ratedCandidates(candidatesFile.candidates), seedFromString(runId));
   await writePrivate(path.join(runDir, 'candidates.json'), JSON.stringify(candidatesFile, null, 2));
   await writePrivate(path.join(runDir, 'key.json'), JSON.stringify(sheet.key, null, 2));
   await writePrivate(path.join(runDir, 'review-sheet.csv'), sheet.csv);
@@ -538,8 +608,10 @@ async function commandJudge(config: EvalConfig, flags: Map<string, string | true
   const model = flagString(flags, 'model') ?? config.judgeModel;
   const maxUsd = Number(flagString(flags, 'max-usd') ?? '2');
   const rubric = flagString(flags, 'rubric') ?? 'v1';
-  if (rubric !== 'v1' && rubric !== 'v2') throw new Error('--rubric must be v1 or v2');
-  const calibration = rubric === 'v2' ? JUDGE_CALIBRATION_V2 : undefined;
+  if (rubric !== 'v1' && rubric !== 'v2' && rubric !== 'v3')
+    throw new Error('--rubric must be v1, v2 or v3');
+  const calibration =
+    rubric === 'v3' ? JUDGE_CALIBRATION_V3 : rubric === 'v2' ? JUDGE_CALIBRATION_V2 : undefined;
   const outFile = rubric === 'v1' ? 'judge.json' : `judge-${rubric}.json`;
   requirePrice(model);
   const candidatesFile = JSON.parse(
@@ -689,12 +761,137 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
     ].join('\n');
   }
   await writePrivate(path.join(runDir, 'report.json'), JSON.stringify(report, null, 2));
+  const repeatsPath = path.join(runDir, 'repeats.json');
+  if (existsSync(repeatsPath)) {
+    const data = JSON.parse(await readFile(repeatsPath, 'utf8')) as {
+      results: Array<{
+        arm: string;
+        themeId: string;
+        game: number;
+        later: number;
+        repeats: unknown[];
+      }>;
+    };
+    const filtered = candidatesFile.stats.filter((st) => (st.game ?? 1) > 1);
+    const rows = armsOf(candidatesFile).map((spec) => {
+      const mine = data.results.filter((r) => r.arm === spec.id);
+      const later = mine.reduce((sum, r) => sum + r.later, 0);
+      const repeats = mine.reduce((sum, r) => sum + r.repeats.length, 0);
+      const dropped = filtered
+        .filter((st) => st.arm === spec.id)
+        .reduce<number | null>(
+          (sum, st) => (st.droppedByGate === null ? sum : (sum ?? 0) + st.droppedByGate),
+          null
+        );
+      const rate = later > 0 ? `${Math.round((repeats / later) * 100)}%` : 'n/a';
+      return `| ${spec.label} | ${later} | ${repeats} (${rate}) | ${dropped ?? 'not filtered'} |`;
+    });
+    markdown += [
+      '',
+      '## Repeats in later games',
+      '',
+      'Each theme was generated for several simulated games. A repeat is a later-game question that tests the same fact as an earlier game for the same theme and arm, as judged by the strong model. Only game 1 was on the owner sheet.',
+      '',
+      '| Arm | Later-game questions | Repeats of an earlier game | Dropped by the same-answer filter |',
+      '|---|---|---|---|',
+      ...rows,
+      '',
+    ].join('\n');
+  }
   await writePrivate(path.join(runDir, 'report.md'), markdown);
   console.log(
     `Rated ${ratings.ratings.size}/${Object.keys(key).length}; ${ratings.errors.length} sheet problems.`
   );
   for (const error of [...ratings.errors, ...(facts?.errors ?? [])]) console.log(`  - ${error}`);
   console.log(`Report: ${path.join(runDir, 'report.md')}`);
+}
+
+/** Only game 1 (and the anchors) go on the owner's blind sheet. */
+function ratedCandidates(candidates: Candidate[]): Candidate[] {
+  return candidates.filter((c) => (c.game ?? 1) === 1);
+}
+
+/**
+ * Repeat check across simulated games: for each arm, theme and later game, a strong model lists
+ * the questions that repeat a fact from an earlier game. Writes repeats.json.
+ */
+async function commandRepeats(
+  config: EvalConfig,
+  flags: Map<string, string | true>
+): Promise<void> {
+  const runDir = await resolveRunDir(flags);
+  const model = flagString(flags, 'model') ?? config.judgeModel;
+  const maxUsd = Number(flagString(flags, 'max-usd') ?? '1');
+  requirePrice(model);
+  const file = JSON.parse(
+    await readFile(path.join(runDir, 'candidates.json'), 'utf8')
+  ) as CandidatesFile;
+  const games = file.gamesPerTheme ?? 1;
+  if (games < 2)
+    throw new Error('This run has one game per theme, so there is nothing to compare.');
+  const jobs: Array<{ arm: string; themeId: string; theme: string; game: number }> = [];
+  for (const spec of armsOf(file))
+    for (const theme of file.themes)
+      for (let game = 2; game <= games; game++)
+        jobs.push({ arm: spec.id, themeId: theme.id, theme: theme.theme, game });
+  console.log(
+    `Repeat check: ${jobs.length} comparisons with ${model} | spend cap: $${maxUsd.toFixed(2)}`
+  );
+  if (flags.get('dry-run')) {
+    console.log('Dry run: no requests made.');
+    return;
+  }
+  requireKeyVariable();
+  const tracker = new SpendTracker(maxUsd);
+  installSpendTracking(tracker);
+  const openai = new OpenAI({ apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY, maxRetries: 1 });
+  const results: Array<{
+    arm: string;
+    themeId: string;
+    game: number;
+    later: number;
+    repeats: Array<{ later: string; earlier: string; why: string }>;
+  }> = [];
+  for (const job of jobs) {
+    const mine = file.candidates.filter((c) => c.group === job.arm && c.themeId === job.themeId);
+    const earlier = mine.filter((c) => (c.game ?? 1) < job.game);
+    const later = mine.filter((c) => (c.game ?? 1) === job.game);
+    if (later.length === 0 || earlier.length === 0) {
+      results.push({ ...job, later: later.length, repeats: [] });
+      continue;
+    }
+    const response = await openai.responses.create({
+      model,
+      reasoning: { effort: 'low' },
+      input: buildRepeatCheckPrompt(job.theme, earlier, later),
+      text: { format: { type: 'json_object' } },
+      max_output_tokens: 2_000,
+    });
+    const repeats = parseRepeatCheck(
+      response.output_text ?? '',
+      earlier.map((c) => c.id),
+      later.map((c) => c.id)
+    );
+    results.push({
+      arm: job.arm,
+      themeId: job.themeId,
+      game: job.game,
+      later: later.length,
+      repeats,
+    });
+    console.log(
+      `  ${job.arm} ${job.themeId} game ${job.game}: ${repeats.length}/${later.length} repeats`
+    );
+  }
+  await writePrivate(
+    path.join(runDir, 'repeats.json'),
+    JSON.stringify(
+      { model, createdAt: new Date().toISOString(), costUsd: tracker.totalUsd, results },
+      null,
+      2
+    )
+  );
+  console.log(`Repeat check done | $${tracker.totalUsd.toFixed(4)}`);
 }
 
 /** Title of an English Wikipedia article URL, or null for any other URL. */
@@ -916,12 +1113,13 @@ async function main(): Promise<void> {
   if (command === 'generate') await commandGenerate(config, flags);
   else if (command === 'judge') await commandJudge(config, flags);
   else if (command === 'verify') await commandVerify(config, flags);
+  else if (command === 'repeats') await commandRepeats(config, flags);
   else if (command === 'rating-page') await commandRatingPage(flags);
   else if (command === 'import-ratings') await commandImportRatings(flags);
   else if (command === 'score') await commandScore(flags);
   else {
     console.log(
-      'Usage: npm run eval:questions -- <generate|judge|verify|rating-page|import-ratings|score> [--config <file>] [--run <dir>] [--dry-run] [--max-usd <n>]'
+      'Usage: npm run eval:questions -- <generate|judge|verify|repeats|rating-page|import-ratings|score> [--config <file>] [--run <dir>] [--dry-run] [--max-usd <n>]'
     );
     process.exitCode = 1;
   }

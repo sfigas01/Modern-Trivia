@@ -37,3 +37,19 @@ export const JUDGE_CALIBRATION_V2 = `Calibration from the game owner's own ratin
 - Clues that let a player reason toward the answer raise fun. Nostalgia for this audience raises fun.
 - A question that refers to "the article" or a source the players have not seen is "drop".
 - Recent-event questions must match the theme's time window; an invented or misattributed viral moment is incorrect.`;
+
+/**
+ * The owner's audience decision (2026-11-22, CONTENT_STRATEGY.md v2.1 section 1): Canadian
+ * groups with about 20% Canadian content, and the US content test.
+ */
+export const AUDIENCE_RULE_V3 = `Audience and fit rule (this replaces the "fits" definition above):
+- Players are Canadian adults aged 18-50 in mixed groups. They know global and American pop culture well.
+- fits = "y" when this audience would know or enjoy it. US film, TV, music, celebrities, sports stars, brands, internet culture and US events that mattered worldwide all fit.
+- fits = "n" for US school or civic knowledge that you would only know from growing up in the US: US history beyond world-famous moments, US geography (states, capitals, rivers), US politics and government.
+- A question does not need a Canadian angle to fit. Canadian content is welcome but never required. Forcing Canada into a question that does not need it lowers fun.
+- For a player-chosen theme, fit also means it is on that theme.`;
+
+/** Judge v3 = the round 1 calibration plus the audience rule. */
+export const JUDGE_CALIBRATION_V3 = `${JUDGE_CALIBRATION_V2}
+
+${AUDIENCE_RULE_V3}`;

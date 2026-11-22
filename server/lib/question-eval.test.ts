@@ -1,12 +1,19 @@
 import { readFileSync } from 'fs';
 import { describe, expect, it } from 'vitest';
 
-import { JUDGE_CALIBRATION_V2 } from './trivia-style-guide';
+import { JUDGE_CALIBRATION_V2, JUDGE_CALIBRATION_V3 } from './trivia-style-guide';
 
 import {
   RATING_COLUMNS,
   ROUND_1_ARMS,
   buildEvidenceVerdictPrompt,
+  buildRepeatCheckPrompt,
+  buildThemeBriefPrompt,
+  filterRepeatedAnswers,
+  normalizeAnswer,
+  parseRepeatCheck,
+  parseThemeBrief,
+  themeBriefGuidance,
   parseEvidenceQueries,
   parseEvidenceVerdict,
   parseFactsCsv,
@@ -276,31 +283,34 @@ describe('judge response parsing', () => {
 });
 
 describe('fixture config', () => {
-  it.each(['config.json', 'round-2.json'])('%s references anchors and arms that exist', (file) => {
-    const config = JSON.parse(readFileSync(`test/fixtures/question-eval/${file}`, 'utf8'));
-    expect(config.arms.length).toBeGreaterThan(0);
-    expect(new Set(config.arms.map((a: { id: string }) => a.id)).size).toBe(config.arms.length);
-    for (const arm of config.arms)
-      expect(['guardian', 'guardian-wikipedia']).toContain(arm.generator);
-    const library = JSON.parse(readFileSync(config.libraryAnchors.source, 'utf8')) as Array<{
-      id: string;
-    }>;
-    const cases = JSON.parse(readFileSync(config.plantedBad.source, 'utf8')) as Array<{
-      id: string;
-      expects: string[];
-    }>;
-    for (const id of config.libraryAnchors.ids)
-      expect(
-        library.some((q) => q.id === id),
-        id
-      ).toBe(true);
-    for (const id of config.plantedBad.ids) {
-      const found = cases.find((c) => c.id === id);
-      expect(found, id).toBeDefined();
-      expect(found!.expects.length, `${id} should be a known-bad case`).toBeGreaterThan(0);
+  it.each(['config.json', 'round-2.json', 'round-3.json'])(
+    '%s references anchors and arms that exist',
+    (file) => {
+      const config = JSON.parse(readFileSync(`test/fixtures/question-eval/${file}`, 'utf8'));
+      expect(config.arms.length).toBeGreaterThan(0);
+      expect(new Set(config.arms.map((a: { id: string }) => a.id)).size).toBe(config.arms.length);
+      for (const arm of config.arms)
+        expect(['guardian', 'guardian-wikipedia', 'guardian-themed']).toContain(arm.generator);
+      const library = JSON.parse(readFileSync(config.libraryAnchors.source, 'utf8')) as Array<{
+        id: string;
+      }>;
+      const cases = JSON.parse(readFileSync(config.plantedBad.source, 'utf8')) as Array<{
+        id: string;
+        expects: string[];
+      }>;
+      for (const id of config.libraryAnchors.ids)
+        expect(
+          library.some((q) => q.id === id),
+          id
+        ).toBe(true);
+      for (const id of config.plantedBad.ids) {
+        const found = cases.find((c) => c.id === id);
+        expect(found, id).toBeDefined();
+        expect(found!.expects.length, `${id} should be a known-bad case`).toBeGreaterThan(0);
+      }
+      expect(new Set(config.themes.map((t: EvalTheme) => t.id)).size).toBe(config.themes.length);
     }
-    expect(new Set(config.themes.map((t: EvalTheme) => t.id)).size).toBe(config.themes.length);
-  });
+  );
 });
 
 /**
@@ -496,7 +506,7 @@ describe('stand-in run', () => {
       3,
       { generate: (spec, theme, count) => arm(spec.id as 'A' | 'B')(theme, count), now: () => 0 },
       tracker,
-      (a, themeId) => a === 'B' && themeId === 'raves'
+      { only: (a, themeId) => a === 'B' && themeId === 'raves' }
     );
     expect(calls).toEqual(['B:raves']);
     const oldCost = candidatesFile.stats.find(
@@ -709,5 +719,146 @@ describe('round 2 shape', () => {
     expect(markdown).toContain('| Theme | A kept | A fun | A2 kept | A2 fun |');
     expect(markdown).toContain('Correctness checks against hand-verified facts');
     expect(markdown).not.toContain('Library anchors');
+  });
+});
+
+describe('round 3: theme brief', () => {
+  it('widens only narrow themes and keeps broad ones exactly as the host asked', () => {
+    const narrow = parseThemeBrief(
+      JSON.stringify({
+        breadth: 'narrow',
+        academic_risk: false,
+        generation_theme: '90s rave and dance music, with a Toronto twist',
+        focus: ['Chicago house', 'Daft Punk', ''],
+        avoid: ['venue trivia'],
+        note: 'too narrow',
+      }),
+      'The 1990s Toronto rave scene'
+    );
+    expect(narrow).toMatchObject({
+      breadth: 'narrow',
+      generationTheme: '90s rave and dance music, with a Toronto twist',
+      focus: ['Chicago house', 'Daft Punk'],
+    });
+    const broad = parseThemeBrief(
+      JSON.stringify({
+        breadth: 'broad',
+        academic_risk: true,
+        generation_theme: 'Astronomy and physics',
+      }),
+      'Space'
+    );
+    expect(broad).toMatchObject({ breadth: 'broad', academicRisk: true, generationTheme: 'Space' });
+    expect(parseThemeBrief('not json', 'Hockey')).toMatchObject({
+      breadth: 'medium',
+      generationTheme: 'Hockey',
+    });
+  });
+
+  it('writes guidance that names the widening, the focus list, academic risk and the audience rule', () => {
+    const guidance = themeBriefGuidance({
+      theme: 'The 1990s Toronto rave scene',
+      breadth: 'narrow',
+      academicRisk: true,
+      generationTheme: '90s rave and dance music',
+      focus: ['Daft Punk'],
+      avoid: ['venue trivia'],
+      note: '',
+    });
+    expect(guidance).toContain('too narrow');
+    expect(guidance).toContain('Daft Punk');
+    expect(guidance).toContain('not definitions or mechanisms');
+    expect(guidance).toContain('Do not ask US school knowledge');
+    expect(buildThemeBriefPrompt('Space')).toContain('"Space"');
+  });
+});
+
+describe('round 3: repeats', () => {
+  it('normalizes answers for comparison', () => {
+    expect(normalizeAnswer('The Rosetta Stone')).toBe('rosetta stone');
+    expect(normalizeAnswer('Québec')).toBe('quebec');
+  });
+
+  it('drops questions that reuse an earlier answer or repeat within the batch', () => {
+    const history = [makeQuestion('Which stone?', { answer: 'Rosetta Stone' })];
+    const batch = [
+      {
+        question: makeQuestion('Which artifact unlocked hieroglyphs?', {
+          answer: 'The Rosetta Stone',
+        }),
+      },
+      {
+        question: makeQuestion('Who was the boy king?', {
+          answer: 'Tutankhamun',
+          acceptableAnswers: ['King Tut'],
+        }),
+      },
+      { question: makeQuestion('Whose tomb was found in 1922?', { answer: 'King Tut' }) },
+      { question: makeQuestion('Which queen allied with Rome?', { answer: 'Cleopatra' }) },
+    ];
+    const { kept, dropped } = filterRepeatedAnswers(batch, history);
+    expect(kept.map((k) => k.question.answer)).toEqual(['Tutankhamun', 'Cleopatra']);
+    expect(dropped).toBe(2);
+  });
+
+  it('parses repeat pairs and ignores unknown or duplicate ids', () => {
+    const raw = JSON.stringify({
+      repeats: [
+        { later: 'L1', earlier: 'E1', why: 'same fact' },
+        { later: 'L1', earlier: 'E2' },
+        { later: 'LX', earlier: 'E1' },
+        { later: 'L2', earlier: 'EX' },
+      ],
+    });
+    expect(parseRepeatCheck(raw, ['E1', 'E2'], ['L1', 'L2'])).toEqual([
+      { later: 'L1', earlier: 'E1', why: 'same fact' },
+    ]);
+    expect(parseRepeatCheck('nope', ['E1'], ['L1'])).toEqual([]);
+    const prompt = buildRepeatCheckPrompt(
+      'Hockey',
+      [{ id: 'E1', question: makeQuestion('Q1') }],
+      [{ id: 'L1', question: makeQuestion('Q2') }]
+    );
+    expect(prompt).toContain('"E1"');
+    expect(prompt).toContain('"L1"');
+  });
+
+  it('passes each game the earlier games as history and labels later games', async () => {
+    const seen: number[] = [];
+    const arms: ArmSpec[] = [{ id: 'T', label: 'T: themed', generator: 'guardian-themed' }];
+    const tracker = new SpendTracker(5);
+    const result = await runGeneration(
+      [THEMES[0]],
+      arms,
+      2,
+      {
+        generate: async (_spec, theme, count, history) => {
+          seen.push(history.length);
+          return {
+            questions: Array.from({ length: count }, (_, i) => ({
+              question: makeQuestion(`${theme.id} h${history.length} ${i}`),
+              guardian: null,
+            })),
+            droppedByGate: 0,
+          };
+        },
+        now: () => 0,
+      },
+      tracker,
+      { games: 3 }
+    );
+    expect(seen).toEqual([0, 2, 4]);
+    expect(result.candidates.map((c) => c.game)).toEqual([1, 1, 2, 2, 3, 3]);
+    expect(result.candidates[0].id).toBe('T-volcanoes-1');
+    expect(result.candidates[2].id).toBe('T-volcanoes-g2-1');
+    expect(result.stats.map((s) => s.game)).toEqual([1, 2, 3]);
+  });
+
+  it('judge v3 carries the US content test and keeps the v2 calibration', () => {
+    const items = [{ item: 'Q1', theme: 'Hockey', question: makeQuestion('Who?') }];
+    const prompt = buildJudgePrompt(items, JUDGE_CALIBRATION_V3);
+    expect(prompt).toContain('Calibration from the game owner');
+    expect(prompt).toContain('US school or civic knowledge');
+    expect(JUDGE_CALIBRATION_V3.startsWith(JUDGE_CALIBRATION_V2)).toBe(true);
   });
 });

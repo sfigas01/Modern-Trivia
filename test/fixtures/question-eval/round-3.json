@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "question-eval-config-v1",
+  "note": "Round 3 (STE-304): does a theme brief plus history-aware repeat filtering handle real player themes (broad, narrow, academic, time-sensitive) better than Guardian as is? Themes chosen with the owner. Each theme is generated for 3 simulated games; only game 1 goes on the owner's sheet, later games measure repeats.",
+  "questionsPerThemePerArm": 2,
+  "gamesPerTheme": 3,
+  "generationModel": "gpt-5.4-mini",
+  "judgeModel": "gpt-6.1-sol",
+  "verifyModel": "gpt-6.1-sol",
+  "arms": [
+    { "id": "A", "label": "A: Guardian as is", "generator": "guardian" },
+    {
+      "id": "T",
+      "label": "T: Guardian + theme brief + repeat filter",
+      "generator": "guardian-themed"
+    }
+  ],
+  "themes": [
+    {
+      "id": "90s-cartoons",
+      "theme": "90s cartoons",
+      "pillar": "TimeCapsule",
+      "kind": "standard",
+      "note": "Medium breadth, nostalgia. Risk: obscure episode details."
+    },
+    {
+      "id": "hockey",
+      "theme": "Hockey",
+      "pillar": "GlobalEh",
+      "kind": "canadian",
+      "note": "Broad, the core Canadian theme. Risk: dry stats and records."
+    },
+    {
+      "id": "harry-potter",
+      "theme": "Harry Potter",
+      "pillar": "TimeCapsule",
+      "kind": "niche",
+      "note": "Narrow fan theme, very popular. Risk: superfan plot details."
+    },
+    {
+      "id": "taylor-swift",
+      "theme": "Taylor Swift",
+      "pillar": "FreshPrints",
+      "kind": "niche",
+      "note": "Narrow, recent and heavily discussed. Risk: hallucinated recent facts, date window."
+    },
+    {
+      "id": "space",
+      "theme": "Space",
+      "pillar": "GlobalEh",
+      "kind": "standard",
+      "note": "Broad but academic. Risk: textbook physics (the volcano problem)."
+    },
+    {
+      "id": "food-around-the-world",
+      "theme": "Food around the world",
+      "pillar": "GreatOutdoors",
+      "kind": "standard",
+      "note": "Broad and easy. Acts as a control."
+    },
+    {
+      "id": "movies-2026",
+      "theme": "Movies of 2026",
+      "pillar": "FreshPrints",
+      "kind": "fresh",
+      "note": "Time-sensitive. Risk: facts after the model's knowledge, invented releases."
+    },
+    {
+      "id": "canadian-road-trip",
+      "theme": "Canadian road trip",
+      "pillar": "GreatOutdoors",
+      "kind": "canadian",
+      "note": "Landmarks, towns and roadside attractions. Risk: regional obscurity."
+    }
+  ],
+  "libraryAnchors": {
+    "source": "server/seed-data.json",
+    "note": "None: earlier rounds measured the library bar.",
+    "ids": []
+  },
+  "plantedBad": {
+    "source": "test/fixtures/benchmark/cases.json",
+    "note": "Known false questions, kept to re-confirm the correctness check. Truth label 'incorrect'.",
+    "ids": ["factual-error-canberra", "coherence-wrong-decade", "coherence-immigrant-song"]
+  }
+}

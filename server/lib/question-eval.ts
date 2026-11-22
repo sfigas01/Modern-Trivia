@@ -31,8 +31,12 @@ export type Verdict = 'keep' | 'fix' | 'drop';
 export interface ArmSpec {
   id: EvalArm;
   label: string;
-  /** "guardian": generateQuestions() as is. "guardian-wikipedia": grounded generation + Guardian QA. */
-  generator: 'guardian' | 'guardian-wikipedia';
+  /**
+   * "guardian": generateQuestions() as is. "guardian-wikipedia": grounded generation + Guardian QA.
+   * "guardian-themed": theme brief first, then Guardian with the brief and earlier games'
+   * questions as history, then a same-answer filter.
+   */
+  generator: 'guardian' | 'guardian-wikipedia' | 'guardian-themed';
   /** Optional style guide passed to Guardian (see trivia-style-guide.ts). */
   styleGuide?: 'v2';
 }
@@ -98,11 +102,15 @@ export interface Candidate {
   theme: string;
   question: EvalQuestion;
   guardian: GuardianVerdict | null;
+  /** Simulated game number when a run generates several games per theme (absent means 1). */
+  game?: number;
 }
 
 export interface ArmRunStats {
   arm: EvalArm;
   themeId: string;
+  /** Simulated game number (absent means 1). */
+  game?: number;
   requested: number;
   delivered: number;
   /** Questions generated but removed by the QA gate or schema validation (arm B only; arm A hides it). */
@@ -126,6 +134,10 @@ export interface CandidatesFile {
   createdAt: string;
   generationModel: string;
   questionsPerThemePerArm: number;
+  /** Simulated games per theme and arm; only game 1 goes on the owner's sheet. Absent means 1. */
+  gamesPerTheme?: number;
+  /** Theme briefs used by the themed arm, keyed by theme id. */
+  themeBriefs?: Record<string, ThemeBrief>;
   /** Absent in round 1 files (see ROUND_1_ARMS). */
   arms?: ArmSpec[];
   themes: EvalTheme[];
@@ -220,14 +232,31 @@ export interface ArmOutput {
 }
 
 export interface GenerationDeps {
-  generate(arm: ArmSpec, theme: EvalTheme, count: number): Promise<ArmOutput>;
+  /**
+   * Generates one game's questions for an arm and theme. `history` holds the questions this arm
+   * already produced for the theme in earlier simulated games (empty for game 1); an arm may
+   * ignore it, as "guardian as is" does.
+   */
+  generate(
+    arm: ArmSpec,
+    theme: EvalTheme,
+    count: number,
+    history: EvalQuestion[]
+  ): Promise<ArmOutput>;
   now(): number;
   log?(message: string): void;
 }
 
+export interface RunGenerationOptions {
+  /** Retry only these arm/theme pairs (used by --retry-failed). */
+  only?: (arm: EvalArm, themeId: string) => boolean;
+  /** Simulated games per theme and arm (default 1). */
+  games?: number;
+}
+
 /**
- * Runs every arm for every theme, one at a time. A failure in one arm/theme is recorded and the
- * run continues; hitting the spend cap stops everything.
+ * Runs every arm for every theme, one at a time, for one or more simulated games. A failure in
+ * one arm/theme/game is recorded and the run continues; hitting the spend cap stops everything.
  */
 export async function runGeneration(
   themes: EvalTheme[],
@@ -235,57 +264,68 @@ export async function runGeneration(
   count: number,
   deps: GenerationDeps,
   tracker: SpendTracker,
-  /** Optional filter, used to retry only the arm/theme pairs that failed in an earlier run. */
-  only?: (arm: EvalArm, themeId: string) => boolean
+  options: RunGenerationOptions = {}
 ): Promise<Pick<CandidatesFile, 'candidates' | 'stats' | 'grounding'>> {
   const candidates: Candidate[] = [];
   const stats: ArmRunStats[] = [];
   const grounding: Record<string, GroundingArticle[]> = {};
+  const games = Math.max(1, Math.floor(options.games ?? 1));
 
   for (const theme of themes) {
     for (const spec of arms) {
       const arm = spec.id;
-      if (only && !only(arm, theme.id)) continue;
-      const before = tracker.snapshot();
-      const startedAt = deps.now();
-      let output: ArmOutput | null = null;
-      let error: string | null = null;
-      try {
-        output = await deps.generate(spec, theme, count);
-      } catch (caught) {
-        if (caught instanceof SpendLimitError) throw caught;
-        error = caught instanceof Error ? caught.message : String(caught);
-      }
-      const after = tracker.snapshot();
-      const delivered = output?.questions.length ?? 0;
-      stats.push({
-        arm,
-        themeId: theme.id,
-        requested: count,
-        delivered,
-        droppedByGate: output?.droppedByGate ?? null,
-        error,
-        latencyMs: deps.now() - startedAt,
-        costUsd: after.usd - before.usd,
-        inputTokens: after.inputTokens - before.inputTokens,
-        outputTokens: after.outputTokens - before.outputTokens,
-      });
-      if (output?.grounding) grounding[theme.id] = output.grounding;
-      output?.questions.forEach((item, index) => {
-        candidates.push({
-          id: `${arm}-${theme.id}-${index + 1}`,
-          group: arm,
+      if (options.only && !options.only(arm, theme.id)) continue;
+      for (let game = 1; game <= games; game++) {
+        const history = candidates
+          .filter((c) => c.group === arm && c.themeId === theme.id)
+          .map((c) => c.question);
+        const before = tracker.snapshot();
+        const startedAt = deps.now();
+        let output: ArmOutput | null = null;
+        let error: string | null = null;
+        try {
+          output = await deps.generate(spec, theme, count, history);
+        } catch (caught) {
+          if (caught instanceof SpendLimitError) throw caught;
+          error = caught instanceof Error ? caught.message : String(caught);
+        }
+        const after = tracker.snapshot();
+        const delivered = output?.questions.length ?? 0;
+        stats.push({
+          arm,
           themeId: theme.id,
-          theme: theme.theme,
-          question: item.question,
-          guardian: item.guardian,
+          ...(games > 1 ? { game } : {}),
+          requested: count,
+          delivered,
+          droppedByGate: output?.droppedByGate ?? null,
+          error,
+          latencyMs: deps.now() - startedAt,
+          costUsd: after.usd - before.usd,
+          inputTokens: after.inputTokens - before.inputTokens,
+          outputTokens: after.outputTokens - before.outputTokens,
         });
-      });
-      deps.log?.(
-        `${spec.label} | ${theme.theme}: ${delivered}/${count}` +
-          (error ? ` (error: ${error})` : '') +
-          ` | $${(after.usd - before.usd).toFixed(4)}`
-      );
+        if (output?.grounding) grounding[theme.id] = output.grounding;
+        output?.questions.forEach((item, index) => {
+          candidates.push({
+            // Game 1 keeps the round 1/2 id format so older runs and tests read the same.
+            id:
+              game === 1
+                ? `${arm}-${theme.id}-${index + 1}`
+                : `${arm}-${theme.id}-g${game}-${index + 1}`,
+            group: arm,
+            themeId: theme.id,
+            theme: theme.theme,
+            question: item.question,
+            guardian: item.guardian,
+            ...(games > 1 ? { game } : {}),
+          });
+        });
+        deps.log?.(
+          `${spec.label} | ${theme.theme}${games > 1 ? ` | game ${game}` : ''}: ${delivered}/${count}` +
+            (error ? ` (error: ${error})` : '') +
+            ` | $${(after.usd - before.usd).toFixed(4)}`
+        );
+      }
     }
   }
   return { candidates, stats, grounding };
@@ -324,6 +364,193 @@ export function mergeRetriedGeneration(
     stats,
     grounding: { ...previous.grounding, ...retried.grounding },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Theme brief (round 3: handling narrow and academic player themes)
+// ---------------------------------------------------------------------------
+
+export type ThemeBreadth = 'broad' | 'medium' | 'narrow';
+
+export interface ThemeBrief {
+  theme: string;
+  breadth: ThemeBreadth;
+  academicRisk: boolean;
+  /** The theme to generate from: the host's theme, widened only when it is narrow. */
+  generationTheme: string;
+  /** Well-known subtopics to spread questions across. */
+  focus: string[];
+  /** Question types to avoid for this theme. */
+  avoid: string[];
+  note: string;
+}
+
+export function buildThemeBriefPrompt(theme: string): string {
+  return `A host of a party trivia game asked for a round on this theme: "${theme}".
+Players are Canadian adults aged 18-50 in mixed groups. They know global and American pop culture, but not US school knowledge (US history, geography or politics).
+
+Plan the round before any questions are written:
+- breadth: how many well-known, verifiable and fun facts exist for this exact theme? "broad" (well over 50), "medium" (about 15-50) or "narrow" (fewer than 15, such as a single local scene, one small venue or hyper-local slang).
+- academic_risk: true if the theme tends to produce textbook questions (definitions, mechanisms, classifications), as science and history themes often do.
+- generation_theme: the theme to write questions from. Keep the host's theme unless it is narrow. If it is narrow, widen it to the closest bigger theme that keeps the host's intent, for example "The 1990s Toronto rave scene" -> "90s rave and dance music, with a Toronto twist".
+- focus: 6-10 distinct, well-known subtopics within generation_theme that this audience would enjoy: famous people, events, places, moments, works and characters. Spread them so questions do not all land on the same few facts.
+- avoid: 2-5 kinds of question to avoid for this theme (for an academic theme: textbook definitions and mechanisms; for a fan theme: minor plot details only superfans know).
+- note: one short sentence explaining the plan.
+
+Return only JSON:
+{ "breadth": "broad" | "medium" | "narrow", "academic_risk": true | false, "generation_theme": "...", "focus": ["..."], "avoid": ["..."], "note": "..." }`;
+}
+
+/** Parses the brief; anything unusable falls back to the host's theme unchanged. */
+export function parseThemeBrief(raw: string, theme: string): ThemeBrief {
+  const fallback: ThemeBrief = {
+    theme,
+    breadth: 'medium',
+    academicRisk: false,
+    generationTheme: theme,
+    focus: [],
+    avoid: [],
+    note: 'theme brief unavailable; using the theme as given',
+  };
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(
+      raw
+        .trim()
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+    );
+  } catch {
+    return fallback;
+  }
+  const strings = (value: unknown, max: number) =>
+    Array.isArray(value)
+      ? value
+          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+          .map((v) => v.trim().slice(0, 120))
+          .slice(0, max)
+      : [];
+  const breadth = ['broad', 'medium', 'narrow'].includes(String(parsed.breadth))
+    ? (parsed.breadth as ThemeBreadth)
+    : 'medium';
+  const widened =
+    typeof parsed.generation_theme === 'string' && parsed.generation_theme.trim()
+      ? parsed.generation_theme.trim().slice(0, 120)
+      : theme;
+  return {
+    theme,
+    breadth,
+    academicRisk: parsed.academic_risk === true,
+    // Only a narrow theme may be widened; otherwise keep exactly what the host asked for.
+    generationTheme: breadth === 'narrow' ? widened : theme,
+    focus: strings(parsed.focus, 10),
+    avoid: strings(parsed.avoid, 5),
+    note: typeof parsed.note === 'string' ? parsed.note.slice(0, 300) : '',
+  };
+}
+
+/** Guidance text for Guardian's optional style guide input. */
+export function themeBriefGuidance(brief: ThemeBrief): string {
+  const lines = [
+    `Theme brief for this round (follow it):`,
+    brief.generationTheme !== brief.theme
+      ? `- The host asked for "${brief.theme}", which is too narrow for a full round. Write about "${brief.generationTheme}" while keeping the host's intent.`
+      : `- Stay on the host's theme: "${brief.theme}".`,
+  ];
+  if (brief.focus.length > 0)
+    lines.push(
+      `- Spread the questions across different subtopics from this list: ${brief.focus.join('; ')}.`
+    );
+  if (brief.academicRisk)
+    lines.push(
+      '- This theme drifts academic. Ask about famous events, places, people and moments, not definitions or mechanisms.'
+    );
+  if (brief.avoid.length > 0) lines.push(`- Avoid: ${brief.avoid.join('; ')}.`);
+  lines.push(
+    '- Audience: Canadian adults who know global and American pop culture. Do not ask US school knowledge (US history, geography or politics).'
+  );
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Repeats across games
+// ---------------------------------------------------------------------------
+
+export function normalizeAnswer(answer: string): string {
+  return answer
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/^(the|a|an)\s+/, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function answerKeys(q: EvalQuestion): string[] {
+  return [q.answer, ...q.acceptableAnswers].map(normalizeAnswer).filter((k) => k.length > 0);
+}
+
+/**
+ * Deterministic repeat filter: drops a new question whose answer (or an accepted alternative)
+ * matches an answer already used for this theme, or one earlier in the same batch.
+ */
+export function filterRepeatedAnswers<T extends { question: EvalQuestion }>(
+  batch: T[],
+  history: EvalQuestion[]
+): { kept: T[]; dropped: number } {
+  const seen = new Set(history.flatMap(answerKeys));
+  const kept: T[] = [];
+  for (const item of batch) {
+    const keys = answerKeys(item.question);
+    if (keys.some((k) => seen.has(k))) continue;
+    keys.forEach((k) => seen.add(k));
+    kept.push(item);
+  }
+  return { kept, dropped: batch.length - kept.length };
+}
+
+/** Asks a strong model which later-game questions repeat a fact from an earlier game. */
+export function buildRepeatCheckPrompt(
+  theme: string,
+  earlier: Array<{ id: string; question: EvalQuestion }>,
+  later: Array<{ id: string; question: EvalQuestion }>
+): string {
+  const view = (list: typeof earlier) =>
+    list.map(({ id, question }) => ({ id, question: question.question, answer: question.answer }));
+  return `These trivia questions were written for the same theme ("${theme}") in different games. A player who played the earlier game would feel a later question is a repeat if it tests the same fact, even with different wording or a different angle on the same answer.
+
+Earlier game(s):
+${JSON.stringify(view(earlier), null, 2)}
+
+Later game:
+${JSON.stringify(view(later), null, 2)}
+
+List every later question that repeats a fact from an earlier one. Return only JSON:
+{ "repeats": [ { "later": "<later id>", "earlier": "<earlier id>", "why": "one short phrase" } ] }`;
+}
+
+export function parseRepeatCheck(
+  raw: string,
+  earlierIds: string[],
+  laterIds: string[]
+): Array<{ later: string; earlier: string; why: string }> {
+  try {
+    const parsed = JSON.parse(raw.trim()) as { repeats?: unknown };
+    if (!Array.isArray(parsed.repeats)) return [];
+    const earlier = new Set(earlierIds);
+    const seenLater = new Set<string>();
+    const out: Array<{ later: string; earlier: string; why: string }> = [];
+    for (const r of parsed.repeats as Array<Record<string, unknown>>) {
+      const l = String(r?.later ?? '');
+      const e = String(r?.earlier ?? '');
+      if (!laterIds.includes(l) || !earlier.has(e) || seenLater.has(l)) continue;
+      seenLater.add(l);
+      out.push({ later: l, earlier: e, why: typeof r.why === 'string' ? r.why.slice(0, 200) : '' });
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1329,7 +1556,7 @@ export function computeReport(input: {
   });
 
   const arms: ArmOperations[] = armSpecs.map(({ id: arm }) => {
-    const stats = candidatesFile.stats.filter((s) => s.arm === arm);
+    const stats = candidatesFile.stats.filter((s) => s.arm === arm && (s.game ?? 1) === 1);
     const kept = groups.find((g) => g.group === arm)!.keep;
     const costUsd = stats.reduce((sum, s) => sum + s.costUsd, 0);
     const gateCounts = stats.map((s) => s.droppedByGate);
