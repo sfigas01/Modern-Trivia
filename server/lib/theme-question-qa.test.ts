@@ -39,6 +39,7 @@ function context(overrides: Partial<ThemeQuestionQaContext> = {}): ThemeQuestion
   return {
     ...request,
     question: structuredClone(question),
+    editorial: { hint: 'Think of a planet named for a Roman god.', predictedCorrectRate: 86 },
     evidenceAttemptId: ids.attempt,
     evidenceReviewId: ids.review,
     evidenceFingerprint: 'a'.repeat(64),
@@ -99,6 +100,16 @@ describe('runThemeQuestionQa', () => {
     });
     expect(deps.loadContext).toHaveBeenCalledTimes(2);
     expect(deps.loadCorpus).toHaveBeenCalledTimes(2);
+    expect(deps.checkQuality).toHaveBeenCalledWith([
+      expect.objectContaining({
+        aiAnalysis: {
+          themeEditorial: {
+            hint: 'Think of a planet named for a Roman god.',
+            predictedCorrectRate: 86,
+          },
+        },
+      }),
+    ]);
     expect(deps.detectDuplicates).toHaveBeenCalledWith(
       expect.any(Array),
       expect.objectContaining({ cache: null, scopeIds: new Set([ids.candidate]) })

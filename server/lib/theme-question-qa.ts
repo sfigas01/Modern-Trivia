@@ -31,6 +31,13 @@ const sourceSchema = z
 const contextSchema = requestSchema
   .extend({
     question: questionContentSnapshotSchema,
+    editorial: z
+      .object({
+        hint: z.string().trim().min(1).max(2_000),
+        predictedCorrectRate: z.number().int().min(0).max(100),
+      })
+      .strict()
+      .optional(),
     evidenceAttemptId: z.string().uuid(),
     evidenceReviewId: z.string().uuid(),
     evidenceFingerprint: sha256Schema,
@@ -54,12 +61,7 @@ const corpusSchema = z
 
 export type ThemeQuestionQaRequest = z.infer<typeof requestSchema>;
 export type ThemeQuestionQaStage =
-  | 'input'
-  | 'evidence'
-  | 'static'
-  | 'quality'
-  | 'semantic'
-  | 'recheck';
+  'input' | 'evidence' | 'static' | 'quality' | 'semantic' | 'recheck';
 export type ThemeQuestionQaReason =
   | 'passed'
   | 'invalid_context'
@@ -147,7 +149,7 @@ function asQuestion(context: ThemeQuestionQaContext, at: Date): Question {
     sourceName: context.source.name,
     status: 'pending',
     origin: 'player_ai',
-    aiAnalysis: null,
+    aiAnalysis: context.editorial ? { themeEditorial: context.editorial } : null,
     createdAt: new Date(at),
     updatedAt: new Date(at),
   };

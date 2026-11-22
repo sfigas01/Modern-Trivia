@@ -4,6 +4,7 @@ import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
 
 import { factScopeSchema, type FactScope } from '@shared/models/theme-evidence';
+import { themeQuestionCandidateOutputSchema } from '@shared/models/theme-question-generation';
 
 import {
   ThemeFactDerivationError,
@@ -77,6 +78,7 @@ const proposedSchema = z
     supportedAliases: z.array(z.string().trim().min(1).max(1_000)).max(50),
     timeSensitive: z.boolean(),
     citations: z.array(citationSchema).min(1).max(12),
+    questionPackage: themeQuestionCandidateOutputSchema.optional(),
   })
   .strict();
 

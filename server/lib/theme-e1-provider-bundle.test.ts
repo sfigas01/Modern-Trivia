@@ -36,7 +36,7 @@ function transports(
 
 describe('E1 OpenAI provider bundle', () => {
   it('freezes the approved models, reasoning, ceilings and conservative Standard prices', () => {
-    expect(THEME_E1_POLICY_SNAPSHOT.bundleVersion).toBe('theme-e1-openai-2026-11-15-v3');
+    expect(THEME_E1_POLICY_SNAPSHOT.bundleVersion).toBe('theme-e1-openai-2026-11-21-v4');
     expect(THEME_E1_PRICING).toMatchObject({
       version: 'openai-standard-2026-11-08-v1',
       models: {
@@ -149,6 +149,66 @@ describe('E1 OpenAI provider bundle', () => {
 
     expect(result).toMatchObject({
       value: { status: 'proposed', canonicalAnswer: 'Sicily' },
+      outcome: { status: 'succeeded' },
+    });
+  });
+
+  it('requires proposal slots to generate the fact and finished Q&A together', async () => {
+    const proposed = {
+      status: 'proposed',
+      statement: 'Mount Etna is on the island of Sicily.',
+      scope: {
+        entity: 'Mount Etna',
+        relation: 'location',
+        time: null,
+        geography: 'Sicily, Italy',
+        competitionOrDomain: 'volcanology',
+        qualifiers: [],
+        asOf: null,
+      },
+      canonicalAnswer: 'Sicily',
+      supportedAliases: [],
+      timeSensitive: false,
+      citations: [
+        {
+          passageId: '11111111-1111-4111-8111-111111111111',
+          passageContentHash: 'a'.repeat(64),
+          supportKind: 'supports',
+        },
+      ],
+    };
+    const missingPackage = transports({ result: proposed });
+    await expect(
+      createThemeE1Providers(missingPackage.value).slotProposer.invoke({} as never)
+    ).resolves.toMatchObject({
+      outcome: { status: 'failed', failureCode: 'invalid_output_contract_mismatch' },
+    });
+    expect(JSON.stringify(missingPackage.responses.mock.calls[0][0].text.format.schema)).toMatch(
+      /"required":\[[^\]]*"questionPackage"/
+    );
+
+    const complete = transports({
+      result: {
+        ...proposed,
+        questionPackage: {
+          status: 'candidate',
+          question: 'Which Italian island is home to Mount Etna?',
+          answer: 'Sicily',
+          acceptedAlternatives: [],
+          hint: 'It is the largest island in the Mediterranean Sea.',
+          difficulty: 'Easy',
+          predictedCorrectRate: 82,
+          explanation: 'Mount Etna is on Sicily, an island of Italy.',
+        },
+      },
+    });
+    await expect(
+      createThemeE1Providers(complete.value).slotProposer.invoke({} as never)
+    ).resolves.toMatchObject({
+      value: {
+        status: 'proposed',
+        questionPackage: { answer: 'Sicily', difficulty: 'Easy' },
+      },
       outcome: { status: 'succeeded' },
     });
   });

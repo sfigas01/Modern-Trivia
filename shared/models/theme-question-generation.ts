@@ -42,6 +42,7 @@ export const themeQuestionGenerationRequestSchema = z
     factContentHash: hashSchema,
     factReviewAttemptId: uuidSchema,
     factReviewOutputHash: hashSchema,
+    targetDifficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
     repairOf: z
       .object({
         parentCandidateId: uuidSchema,
@@ -91,23 +92,26 @@ export const themeQuestionWriterInputSchema = z
       )
       .min(1)
       .max(12),
+    targetDifficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
   })
   .strict();
 export type ThemeQuestionWriterInput = z.infer<typeof themeQuestionWriterInputSchema>;
 
+export const themeQuestionCandidateOutputSchema = z
+  .object({
+    status: z.literal('candidate'),
+    question: z.string().trim().min(1).max(4_000),
+    answer: z.string().trim().min(1).max(1_000),
+    acceptedAlternatives: z.array(z.string().trim().min(1).max(1_000)).max(50),
+    hint: z.string().trim().min(1).max(2_000),
+    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+    predictedCorrectRate: z.number().int().min(0).max(100),
+    explanation: z.string().trim().min(1).max(8_000),
+  })
+  .strict();
+
 export const themeQuestionWriterOutputSchema = z.discriminatedUnion('status', [
-  z
-    .object({
-      status: z.literal('candidate'),
-      question: z.string().trim().min(1).max(4_000),
-      answer: z.string().trim().min(1).max(1_000),
-      acceptedAlternatives: z.array(z.string().trim().min(1).max(1_000)).max(50),
-      hint: z.string().trim().min(1).max(2_000),
-      difficulty: z.enum(['Easy', 'Medium', 'Hard']),
-      predictedCorrectRate: z.number().int().min(0).max(100),
-      explanation: z.string().trim().min(1).max(8_000),
-    })
-    .strict(),
+  themeQuestionCandidateOutputSchema,
   z
     .object({
       status: z.literal('declined'),

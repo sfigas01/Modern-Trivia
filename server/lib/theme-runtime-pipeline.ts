@@ -68,7 +68,12 @@ export type ThemeProposalSlotProviderInput = Readonly<{
     totalSlots: number;
     maximumSlotsPerSource: number;
   }>;
-  slot: Readonly<{ key: string; ordinal: number; sourceKey: string }>;
+  slot: Readonly<{
+    key: string;
+    ordinal: number;
+    sourceKey: string;
+    targetDifficulty?: 'Easy' | 'Medium' | 'Hard';
+  }>;
   source: Readonly<{ key: string; url: string; title: string; language: string }>;
   passages: readonly ThemeFactProposalPassage[];
 }>;
@@ -474,7 +479,12 @@ export function createThemeRuntimePipeline(
               maximumSlotsPerSource:
                 options.proposalSlots.plan.proposalSlotPolicy.maximumSlotsPerSource,
             },
-            slot: { key: slot.key, ordinal: slot.ordinal, sourceKey: slot.sourceKey },
+            slot: {
+              key: slot.key,
+              ordinal: slot.ordinal,
+              sourceKey: slot.sourceKey,
+              targetDifficulty: slot.targetDifficulty,
+            },
             source: {
               key: item.sourceKey,
               url: item.requestedUrl,
@@ -530,6 +540,7 @@ export function createThemeRuntimePipeline(
         supportedAliases: persisted.supportedAliases,
         timeSensitive: persisted.timeSensitive,
         citations: persisted.citations,
+        questionPackage: persisted.questionPackage,
       };
     }
     if (!canonicalFactKey || expectedLatestFactRevision === undefined)
@@ -614,6 +625,9 @@ export function createThemeRuntimePipeline(
   ): Promise<ThemeQuestionGenerationRequest | null> {
     const derived = await fact(job, item);
     if (!derived) return null;
+    const targetDifficulty = options.proposalSlots?.plan.proposalSlots.find(
+      (slot) => slot.key === item.key
+    )?.targetDifficulty;
     return {
       ...derived,
       jobId: job.id,
@@ -621,6 +635,7 @@ export function createThemeRuntimePipeline(
       attemptId: id(job, item, 'generate'),
       candidateId: id(job, item, 'candidate'),
       questionRevisionId: id(job, item, 'question-revision'),
+      targetDifficulty,
     };
   }
   async function binding(candidate: ThemeGeneratedCandidate) {
@@ -718,7 +733,46 @@ export function createThemeRuntimePipeline(
         Awaited<ReturnType<typeof repos.questionGeneration.generate>>
       >(
         (callback) => repositoriesFor(job, item).questionGeneration.generate(request, callback),
-        (input) => dispatch(job, item, 'generate', 'generate', providers.writer, input, 1)
+        async (input) => {
+          if (options.proposalSlots) {
+            const stored = await repos.proposalSlots.loadOutcome({
+              jobId: job.id,
+              slotKey: item.key,
+            });
+            if (!stored || stored.status !== 'proposed' || stored.outcome.status !== 'proposed')
+              throw new ThemePreparationWorkerError('source_ineligible', false);
+            if (stored.outcome.questionPackage) {
+              const questionPackage = structuredClone(stored.outcome.questionPackage);
+              return dispatch(
+                job,
+                item,
+                'generate',
+                'generate',
+                {
+                  provider: 'internal',
+                  model: 'persisted-fact-and-question-package-v1',
+                  requestIdentity: {
+                    contractVersion: 'persisted-fact-and-question-package-v1',
+                  },
+                  reservedCostMicros: 1,
+                  fingerprintInput: (value) => value,
+                  invoke: async () => ({
+                    value: questionPackage,
+                    outcome: {
+                      status: 'succeeded' as const,
+                      actualCostMicros: 0,
+                      inputTokens: 0,
+                      outputTokens: 0,
+                    },
+                  }),
+                },
+                input,
+                1
+              );
+            }
+          }
+          return dispatch(job, item, 'generate', 'generate', providers.writer, input, 1);
+        }
       );
       if (result.status !== 'persisted')
         throw new ThemePreparationWorkerError('source_ineligible', false);

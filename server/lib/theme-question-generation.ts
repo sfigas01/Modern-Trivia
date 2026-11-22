@@ -195,7 +195,8 @@ export function projectThemeQuestionWriterOutput(
   if (
     parsedOutput.data.answer !== input.fact.canonicalAnswer ||
     !alternativesValid ||
-    (!allowPresentationRepair && parsedOutput.data.difficulty !== policy.difficulty)
+    (!allowPresentationRepair &&
+      parsedOutput.data.difficulty !== (input.targetDifficulty ?? policy.difficulty))
   )
     return { status: 'invalid_output' };
   const projected = questionContentSnapshotSchema.safeParse({
@@ -286,7 +287,7 @@ async function lockRepairParent(
     parsedParent.data.answer !== writerInput.fact.canonicalAnswer ||
     !eq(parsedParent.data.acceptableAnswers, writerInput.fact.supportedAliases) ||
     parsedParent.data.category !== policy.category ||
-    parsedParent.data.difficulty !== policy.difficulty ||
+    parsedParent.data.difficulty !== (writerInput.targetDifficulty ?? policy.difficulty) ||
     parsedParent.data.pillar !== policy.pillar ||
     !eq(parsedParent.data.tags, policy.tags) ||
     parsedParent.data.themeSlug !== themeSlug
@@ -788,6 +789,7 @@ export async function loadGenerationContext(
       supportedAliases: factSnapshot.supportedAliases,
     },
     evidence: writerEvidence,
+    targetDifficulty: request.targetDifficulty ?? config.generationPolicy.difficulty,
   });
   if (!writerInputParsed.success) throw new ThemeQuestionGenerationError('ineligible');
 

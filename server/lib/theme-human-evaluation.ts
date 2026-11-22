@@ -10,6 +10,7 @@ const rowSchema = z
     jobId: uuid,
     slotKey: z.string().min(1),
     slotOrdinal: z.number().int().positive(),
+    targetDifficulty: z.enum(['Easy', 'Medium', 'Hard']).nullable(),
     proposalStatus: z.string().nullable(),
     proposal: z.unknown().nullable(),
     canonicalFactKey: z.string().nullable(),
@@ -101,7 +102,10 @@ export function createPostgresThemeHumanEvaluationRepository(pool: Pick<Pool, 'c
           throw new Error('One or more human-evaluation jobs do not exist');
         const result = await client.query<Record<string, unknown>>(
           `SELECT slot.job_id AS "jobId", slot.slot_key AS "slotKey",
-                  slot.slot_ordinal AS "slotOrdinal", proposal.status AS "proposalStatus",
+                  slot.slot_ordinal AS "slotOrdinal",
+                  job.plan_json->'proposalSlots'->(slot.slot_ordinal-1)->>'targetDifficulty'
+                    AS "targetDifficulty",
+                  proposal.status AS "proposalStatus",
                   proposal.outcome_snapshot AS proposal,
                   proposal.canonical_fact_key AS "canonicalFactKey",
                   CASE WHEN revision.id IS NULL THEN NULL ELSE jsonb_build_object(

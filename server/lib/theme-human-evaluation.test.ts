@@ -9,6 +9,7 @@ const base: ThemeHumanEvaluationRow = {
   jobId: '11111111-1111-4111-8111-111111111111',
   slotKey: 'proposal:001',
   slotOrdinal: 1,
+  targetDifficulty: 'Easy',
   proposalStatus: 'proposed',
   proposal: { status: 'proposed' },
   canonicalFactKey: `fact-scope-v1:${'a'.repeat(64)}`,

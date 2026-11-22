@@ -57,9 +57,9 @@ Source policy:
 - Stable biographical, historical, scientific, geographic, sports-history and
   entertainment facts may use an eligible Wikipedia passage.
 - Current standings, active officeholders, records described as current,
-  superlatives, disputed claims and other time-sensitive facts require an
-  eligible first-party or specialist source in addition to Wikipedia. If that
-  source is unavailable, withhold the candidate.
+  superlatives, disputed claims and other time-sensitive facts are withheld from
+  themed generation. Wikipedia is the only proof source for this pipeline; it
+  does not broaden to a second website to rescue an unsuitable claim.
 - Search snippets, model memory and agreement between two model calls are not
   evidence.
 - Unsupported or poorly sourced themes consume only the bounded pinned candidate
@@ -67,9 +67,9 @@ Source policy:
   at Start is never itself an error, and the runtime does not silently broaden
   the theme or weaken factual review.
 
-The preview source registry should begin with English Wikipedia plus only the
-small number of first-party domains needed by the frozen evaluation themes.
-Adding a domain requires a new immutable source-policy version.
+The themed preview source registry uses English Wikipedia only. Adding another
+origin would be a product-policy change requiring owner approval and a new
+immutable source-policy version; it is not part of this content strategy.
 
 Wikipedia layout compatibility is covered by extractor regression fixtures. Page-level
 Vector feature-state classes such as `vector-toc-available` must not hide the article;
@@ -92,8 +92,7 @@ Initial candidate configuration:
 
 | Operation                    | Starting model           | Effort | Reason                                             |
 | ---------------------------- | ------------------------ | ------ | -------------------------------------------------- |
-| Fact proposal                | `gpt-6-luna`             | low    | Narrow extraction from retrieved passages          |
-| Question writing             | `gpt-6-luna`             | low    | Structured, evidence-bound drafting                |
+| Fact and Q&A generation      | `gpt-6-luna`             | low    | One evidence-bound content decision                |
 | Eligible repair              | `gpt-6-luna`             | low    | One constrained wording or explanation edit        |
 | Independent fact review      | `gpt-6.1-sol`            | medium | Critical scope, qualifier and contradiction review |
 | Question evidence review     | `gpt-6.1-sol`            | medium | Critical answer, alias and explanation review      |
@@ -124,8 +123,8 @@ version requiring regression evaluation.
 
 ## Complete spend accounting
 
-The existing budget gateway already wraps fact proposal, fact review, question
-writing, evidence review and repair. S12B must also route these nested operations
+The existing budget gateway already wraps combined fact/Q&A generation, fact
+review, evidence review and repair. S12B must also route these nested operations
 through the same gateway before live mode is allowed:
 
 - coherence and obviousness QA;
@@ -157,17 +156,16 @@ timeless facts.
 
 | Candidate work                        |                 Token ceiling | Reserved estimate |
 | ------------------------------------- | ----------------------------: | ----------------: |
-| Luna fact proposal                    |    6,000 input + 1,000 output |           $0.0013 |
+| Luna fact and Q&A generation          |    6,000 input + 1,000 output |           $0.0013 |
 | Sol fact review                       |    6,000 input + 1,200 output |           $0.0270 |
-| Luna question writing                 |      4,000 input + 800 output |           $0.0009 |
 | Sol evidence review                   |    6,000 input + 1,200 output |           $0.0270 |
 | Sol quality review                    |      4,000 input + 800 output |           $0.0180 |
 | Embedding screen                      |            up to 10,000 input |           $0.0002 |
 | Up to four Sol semantic adjudications | each 1,500 input + 400 output |           $0.0310 |
 
-Reserve **$0.12 per candidate before repair** after rounding the $0.10535
+Reserve **$0.12 per candidate before repair** after rounding the $0.10445
 envelope upward. A repaired candidate repeats the evidence and QA gates; reserve
-**$0.20 for the full one-repair path** after rounding the $0.18245 envelope
+**$0.20 for the full one-repair path** after rounding the $0.18155 envelope
 upward. These are safety ceilings, not expected prices.
 Implementation must derive the actual micro-dollar values from versioned pricing
 configuration and reject a request whose configured token limits exceed its
@@ -488,18 +486,24 @@ with a root object containing a nested discriminated result branch, so OpenAI
 and the application enforce the same contract. The earlier bundle remains an
 immutable calibration artifact and must not be reused for a new plan.
 
-Version `theme-e1-openai-2026-11-15-v3` is the owner-evaluation bundle. It keeps
-the existing provenance and fail-closed gates, but changes their editorial
-instructions and writer contract:
+Version `theme-e1-openai-2026-11-21-v4` aligns the owner-evaluation bundle with
+the Fable review and the separately maintained Content Strategy. It keeps the
+existing provenance and fail-closed gates, but changes the content flow:
 
-- the proposer prefers stable, general-audience facts that can become fair
-  medium-difficulty trivia and declines obscure or contentious material;
+- one Luna call selects a stable, recognizable fact and writes the finished Q&A
+  package together; the later generation stage durably persists that package and
+  consumes a candidate slot without making a second model-writing call;
 - for stable themed trivia, one approved Wikipedia origin satisfies the source
   policy. The fact reviewer uses `approved_single_source` and must not flag a
   claim solely because a second independent website is absent;
-- the writer returns the complete Q&A package: exact canonical answer, accepted
-  alternatives, hint, difficulty, predicted correct rate and explanation, or a
-  concrete decline reason;
+- every gameplay plan pins a repeating Easy, Medium, Medium, Hard pattern. Easy
+  targets 75-95% correct, Medium 45-75%, and Hard 20-45%; clue and hint strength,
+  not obscure facts, create the difficulty;
+- the Q&A package contains the exact canonical answer, accepted alternatives,
+  hint, difficulty, predicted correct rate and a short supported explanation;
+- the general trivia review receives the generated hint and predicted rate and
+  returns explicit defect codes, its own predicted rate, a 1-5 fun score, and an
+  approve/rewrite/reject recommendation;
 - the post-write evidence review remains the factual gate, while static and
   model quality review remain the player-quality gate. Neither gate can approve
   the other's failure.
@@ -509,16 +513,15 @@ answer-uniqueness screen; it is not a substitute for reviewing the written Q&A.
 This avoids a database rewrite while still ensuring that every playable item is
 fact-checked after its final wording exists.
 
-The active E1 bundle uses Luna
-with low reasoning for fact proposal, question writing and the single eligible
-repair; Sol with medium reasoning for independent fact review, question evidence
-review and coherence/obviousness QA; Sol with low reasoning for at most four
+The active E1 bundle uses Luna with low reasoning for combined fact and Q&A
+generation and the single eligible repair; Sol with medium reasoning for the
+fact/evidence checks and general-trivia QA; Sol with low reasoning for at most four
 semantic adjudications; and `text-embedding-3-small` with 512 dimensions for the
 candidate screen. Every operation has its own versioned prompt, strict JSON
-schema, token ceiling, 30-second timeout and zero-retry policy. Proposer,
-writer and repair responses use the branch-exact `result` envelope; a proposed
-fact cannot satisfy the provider schema with missing or nullable required fact
-fields.
+schema, token ceiling, 30-second timeout and zero-retry policy. Generator and
+repair responses use the branch-exact `result` envelope; a live proposal cannot
+satisfy the provider schema without both its fact fields and its finished Q&A
+package.
 The stored runtime plan must use that exact bundle version as its `planVersion`
 and must match the active budget-policy fingerprint; older or mismatched plans
 fail before the credential callback is reached.
@@ -597,11 +600,12 @@ local path. Unlike routine operational reports, this deliberately includes
 answers. Do not paste it into Linear, GitHub, deploy logs, public gameplay or a
 shared artifact.
 
-For every proposal slot it shows the actual Q&A (or proposal/writer decline),
-canonical fact, exact Wikipedia passages and URLs, fact-review dimensions,
-post-write evidence-review dimensions, player-quality decision and reason,
-static findings, any bounded rewrite, approval state, and a machine
-recommendation. The owner records one of `approve`, `repair`, `reject`, or
+For every proposal slot it shows the planned difficulty, actual Q&A (or proposal
+decline), canonical fact, exact Wikipedia passages and URLs, fact-review
+dimensions, post-write evidence-review dimensions and rejection reasons,
+player-quality decision, reviewer predicted rate and fun score, static findings,
+any bounded rewrite, approval state, and a machine recommendation. The owner
+records one of `approve`, `repair`, `reject`, or
 `investigate` plus notes. Those judgments become prompt/policy changes and
 regression fixtures after explicit review; they do not automatically train or
 update a model.

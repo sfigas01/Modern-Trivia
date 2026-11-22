@@ -123,6 +123,10 @@ export type ThemeQuestionQaContext = Readonly<{
   questionRevisionId: string;
   questionContentHash: string;
   question: z.infer<typeof questionContentSnapshotSchema>;
+  editorial?: Readonly<{
+    hint: string;
+    predictedCorrectRate: number;
+  }>;
   evidenceAttemptId: string;
   evidenceReviewId: string;
   evidenceFingerprint: string;
@@ -251,6 +255,7 @@ type Context = {
   manifest: Record<string, unknown>;
   fingerprint: string;
   supportIds: string[];
+  editorial?: { hint: string; predictedCorrectRate: number };
 };
 
 async function loadContext(
@@ -263,6 +268,7 @@ async function loadContext(
 ): Promise<Context> {
   const result = await db.query(
     `SELECT g.*, o.status AS generation_status, o.question_content_hash AS outcome_question_hash,
+       o.writer_output,
        c.status AS candidate_status, c.revision AS candidate_revision, c.content_hash AS candidate_hash,
        c.content AS candidate_content, c.fact_id AS candidate_fact_id, c.fact_revision_id AS candidate_fact_revision_id,
        c.parent_candidate_id AS candidate_parent_candidate_id,
@@ -308,6 +314,16 @@ async function loadContext(
     createdAt: iso(g.revision_created_at),
   });
   if (!question.success) throw new ThemeQuestionEvidenceReviewError('ineligible');
+  const writerOutput = g.writer_output as Record<string, unknown> | null;
+  const editorial =
+    writerOutput?.status === 'candidate' &&
+    typeof writerOutput.hint === 'string' &&
+    Number.isInteger(writerOutput.predictedCorrectRate)
+      ? {
+          hint: writerOutput.hint,
+          predictedCorrectRate: Number(writerOutput.predictedCorrectRate),
+        }
+      : undefined;
   const snapshot = g.policy_snapshot as Record<string, unknown>;
   if (
     !snapshot ||
@@ -361,6 +377,8 @@ async function loadContext(
     factContentHash: String(g.fact_content_hash),
     factReviewAttemptId: String(g.fact_review_attempt_id),
     factReviewOutputHash: String(g.fact_review_output_hash),
+    targetDifficulty: (g.input_manifest as { request?: { targetDifficulty?: unknown } } | null)
+      ?.request?.targetDifficulty,
     repairOf,
   });
   if (!parsedGenerationRequest.success) throw new ThemeQuestionEvidenceReviewError('ineligible');
@@ -590,6 +608,7 @@ async function loadContext(
     manifest,
     fingerprint: hash(manifest),
     supportIds,
+    editorial,
     graph: {
       liveQuestion: {
         revisionId: question.data.id,
@@ -865,6 +884,7 @@ export function createPostgresThemeQuestionEvidenceReviewRepository(
         questionRevisionId: parsed.data.questionRevisionId,
         questionContentHash: parsed.data.questionContentHash,
         question: structuredClone(current.question.content),
+        editorial: current.editorial ? structuredClone(current.editorial) : undefined,
         evidenceAttemptId: decision.attemptId,
         evidenceReviewId: decision.reviewId,
         evidenceFingerprint: decision.fingerprint,

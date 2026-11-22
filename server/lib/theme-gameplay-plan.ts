@@ -18,7 +18,7 @@ import {
   normalizeWikipediaTheme,
 } from './theme-wikipedia-discovery';
 
-export const THEME_GAMEPLAY_PLAN_VERSION = 'theme-gameplay-openai-2026-11-15-v1' as const;
+export const THEME_GAMEPLAY_PLAN_VERSION = 'theme-gameplay-openai-2026-11-21-v2' as const;
 export const THEME_GAMEPLAY_DISCOVERY_POLICY = createWikipediaDiscoveryPolicy({
   discoveryPolicyVersion: 'theme-gameplay-wikipedia-discovery-2026-11-15-v1',
   sourcePolicyVersion: THEME_E1_SOURCE_POLICY_VERSION,
@@ -76,7 +76,11 @@ export function assertThemeGameplayPlanPolicy(input: unknown): ThemeLiveRuntimeP
     !same(plan.claimEvidencePolicy, THEME_E1_CLAIM_EVIDENCE_POLICY) ||
     plan.proposalSlots.length !== plan.proposalSlotPolicy.totalSlots ||
     plan.proposalSlots.some(
-      (slot) => !slot.role || !slot.topic || normalizeWikipediaTheme(slot.topic) !== slot.topic
+      (slot) =>
+        !slot.role ||
+        !slot.topic ||
+        !slot.targetDifficulty ||
+        normalizeWikipediaTheme(slot.topic) !== slot.topic
     )
   )
     throw new TypeError('theme_gameplay_plan_policy_mismatch');
