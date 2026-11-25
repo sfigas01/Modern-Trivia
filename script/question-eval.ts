@@ -54,6 +54,7 @@ import {
   buildThemeBriefPrompt,
   filterRepeatedAnswers,
   parseRepeatCheck,
+  summarizeRepeats,
   parseThemeBrief,
   themeBriefGuidance,
   SpendLimitError,
@@ -147,9 +148,21 @@ function flagString(flags: Map<string, string | true>, name: string): string | u
  */
 function installSpendTracking(tracker: SpendTracker): void {
   const originalFetch = globalThis.fetch;
+  // Guardian and the verifier honour AI_INTEGRATIONS_OPENAI_BASE_URL, so count that endpoint too.
+  const trackedPrefixes = ['https://api.openai.com/'];
+  const customBase = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL?.trim();
+  if (customBase) {
+    try {
+      trackedPrefixes.push(new URL(customBase).origin + '/');
+    } catch {
+      throw new Error(
+        'AI_INTEGRATIONS_OPENAI_BASE_URL is not a valid URL, so spend cannot be tracked.'
+      );
+    }
+  }
   globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    if (!url.startsWith('https://api.openai.com/')) return originalFetch(input, init);
+    if (!trackedPrefixes.some((p) => url.startsWith(p))) return originalFetch(input, init);
     tracker.assertWithinLimit();
     let model = 'unknown';
     try {
@@ -770,13 +783,14 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
         game: number;
         later: number;
         repeats: unknown[];
+        failed?: boolean;
       }>;
     };
     const filtered = candidatesFile.stats.filter((st) => (st.game ?? 1) > 1);
     const rows = armsOf(candidatesFile).map((spec) => {
-      const mine = data.results.filter((r) => r.arm === spec.id);
-      const later = mine.reduce((sum, r) => sum + r.later, 0);
-      const repeats = mine.reduce((sum, r) => sum + r.repeats.length, 0);
+      const { later, repeats, failed } = summarizeRepeats(
+        data.results.filter((r) => r.arm === spec.id)
+      );
       const dropped = filtered
         .filter((st) => st.arm === spec.id)
         .reduce<number | null>(
@@ -784,7 +798,7 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
           null
         );
       const rate = later > 0 ? `${Math.round((repeats / later) * 100)}%` : 'n/a';
-      return `| ${spec.label} | ${later} | ${repeats} (${rate}) | ${dropped ?? 'not filtered'} |`;
+      return `| ${spec.label} | ${later} | ${repeats} (${rate}) | ${failed} | ${dropped ?? 'not filtered'} |`;
     });
     markdown += [
       '',
@@ -792,8 +806,8 @@ async function commandScore(flags: Map<string, string | true>): Promise<void> {
       '',
       'Each theme was generated for several simulated games. A repeat is a later-game question that tests the same fact as an earlier game for the same theme and arm, as judged by the strong model. Only game 1 was on the owner sheet.',
       '',
-      '| Arm | Later-game questions | Repeats of an earlier game | Dropped by the same-answer filter |',
-      '|---|---|---|---|',
+      '| Arm | Later-game questions checked | Repeats of an earlier game | Failed checks (excluded) | Dropped by the same-answer filter |',
+      '|---|---|---|---|---|',
       ...rows,
       '',
     ].join('\n');
@@ -851,36 +865,49 @@ async function commandRepeats(
     game: number;
     later: number;
     repeats: Array<{ later: string; earlier: string; why: string }>;
+    /** True when the check gave no valid answer after one retry; excluded from the rate. */
+    failed?: boolean;
   }> = [];
   for (const job of jobs) {
     const mine = file.candidates.filter((c) => c.group === job.arm && c.themeId === job.themeId);
     const earlier = mine.filter((c) => (c.game ?? 1) < job.game);
     const later = mine.filter((c) => (c.game ?? 1) === job.game);
     if (later.length === 0 || earlier.length === 0) {
-      results.push({ ...job, later: later.length, repeats: [] });
+      results.push({
+        arm: job.arm,
+        themeId: job.themeId,
+        game: job.game,
+        later: later.length,
+        repeats: [],
+      });
       continue;
     }
-    const response = await openai.responses.create({
-      model,
-      reasoning: { effort: 'low' },
-      input: buildRepeatCheckPrompt(job.theme, earlier, later),
-      text: { format: { type: 'json_object' } },
-      max_output_tokens: 2_000,
-    });
-    const repeats = parseRepeatCheck(
-      response.output_text ?? '',
-      earlier.map((c) => c.id),
-      later.map((c) => c.id)
-    );
+    let repeats: Array<{ later: string; earlier: string; why: string }> | null = null;
+    for (let attempt = 0; attempt < 2 && repeats === null; attempt++) {
+      const response = await openai.responses.create({
+        model,
+        reasoning: { effort: 'low' },
+        input: buildRepeatCheckPrompt(job.theme, earlier, later),
+        text: { format: { type: 'json_object' } },
+        max_output_tokens: 4_000,
+      });
+      repeats = parseRepeatCheck(
+        response.output_text ?? '',
+        earlier.map((c) => c.id),
+        later.map((c) => c.id)
+      );
+    }
     results.push({
       arm: job.arm,
       themeId: job.themeId,
       game: job.game,
       later: later.length,
-      repeats,
+      repeats: repeats ?? [],
+      ...(repeats === null ? { failed: true } : {}),
     });
     console.log(
-      `  ${job.arm} ${job.themeId} game ${job.game}: ${repeats.length}/${later.length} repeats`
+      `  ${job.arm} ${job.themeId} game ${job.game}: ` +
+        (repeats === null ? 'check failed (excluded)' : `${repeats.length}/${later.length} repeats`)
     );
   }
   await writePrivate(

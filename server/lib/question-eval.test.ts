@@ -12,6 +12,7 @@ import {
   filterRepeatedAnswers,
   normalizeAnswer,
   parseRepeatCheck,
+  summarizeRepeats,
   parseThemeBrief,
   themeBriefGuidance,
   parseEvidenceQueries,
@@ -813,7 +814,17 @@ describe('round 3: repeats', () => {
     expect(parseRepeatCheck(raw, ['E1', 'E2'], ['L1', 'L2'])).toEqual([
       { later: 'L1', earlier: 'E1', why: 'same fact' },
     ]);
-    expect(parseRepeatCheck('nope', ['E1'], ['L1'])).toEqual([]);
+    // A failed check is null, never an empty "no repeats" list.
+    expect(parseRepeatCheck('nope', ['E1'], ['L1'])).toBeNull();
+    expect(parseRepeatCheck(JSON.stringify({ other: [] }), ['E1'], ['L1'])).toBeNull();
+    expect(parseRepeatCheck(JSON.stringify({ repeats: [] }), ['E1'], ['L1'])).toEqual([]);
+    expect(
+      summarizeRepeats([
+        { later: 2, repeats: [1] },
+        { later: 2, repeats: [], failed: true },
+        { later: 3, repeats: [] },
+      ])
+    ).toEqual({ later: 5, repeats: 1, failed: 1 });
     const prompt = buildRepeatCheckPrompt(
       'Hockey',
       [{ id: 'E1', question: makeQuestion('Q1') }],

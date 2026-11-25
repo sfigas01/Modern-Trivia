@@ -529,14 +529,19 @@ List every later question that repeats a fact from an earlier one. Return only J
 { "repeats": [ { "later": "<later id>", "earlier": "<earlier id>", "why": "one short phrase" } ] }`;
 }
 
+/**
+ * Parses the repeat check. Returns null when the response is not valid JSON with a `repeats`
+ * array, so a failed check is never mistaken for "no repeats"; an empty array means the model
+ * answered and found none.
+ */
 export function parseRepeatCheck(
   raw: string,
   earlierIds: string[],
   laterIds: string[]
-): Array<{ later: string; earlier: string; why: string }> {
+): Array<{ later: string; earlier: string; why: string }> | null {
   try {
     const parsed = JSON.parse(raw.trim()) as { repeats?: unknown };
-    if (!Array.isArray(parsed.repeats)) return [];
+    if (!Array.isArray(parsed.repeats)) return null;
     const earlier = new Set(earlierIds);
     const seenLater = new Set<string>();
     const out: Array<{ later: string; earlier: string; why: string }> = [];
@@ -549,8 +554,23 @@ export function parseRepeatCheck(
     }
     return out;
   } catch {
-    return [];
+    return null;
   }
+}
+
+/**
+ * Sums repeat-check results for one arm. Failed comparisons are counted separately and left
+ * out of the denominator, so they cannot make an arm look repeat-free.
+ */
+export function summarizeRepeats(
+  results: Array<{ later: number; repeats: unknown[]; failed?: boolean }>
+): { later: number; repeats: number; failed: number } {
+  const scored = results.filter((r) => !r.failed);
+  return {
+    later: scored.reduce((sum, r) => sum + r.later, 0),
+    repeats: scored.reduce((sum, r) => sum + r.repeats.length, 0),
+    failed: results.length - scored.length,
+  };
 }
 
 // ---------------------------------------------------------------------------
