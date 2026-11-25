@@ -254,6 +254,79 @@ describe('generateQuestions — obviousness guardrail (STE-247)', () => {
   });
 });
 
+describe('generateQuestions — optional style guide (STE-304)', () => {
+  const STYLE_GUIDE = 'STYLE GUIDE MARKER: answers are 1-5 words.';
+
+  function mockOneQuestionThatNeedsRepair() {
+    mockCreate
+      .mockResolvedValueOnce(coveragePlanResponse([{ subtopic: 'Volcanoes', angle: 'what' }]))
+      .mockResolvedValueOnce(
+        generationResponse([
+          { id: 'q1', question: 'What is a shield volcano?', answer: 'A volcano' },
+        ])
+      )
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                id: 'q1-repaired',
+                category: 'Science & Nature',
+                difficulty: 'Medium',
+                question: 'Which Hawaiian volcano is the largest active shield volcano?',
+                answer: 'Mauna Loa',
+                acceptableAnswers: [],
+                explanation: 'Mauna Loa is a shield volcano.',
+                pillar: 'GlobalEh',
+                tags: ['Global', 'GlobalEh', 'Science & Nature'],
+                sourceUrl: 'https://example.com/source',
+                sourceName: 'Example Source',
+                status: 'pending',
+              }),
+            },
+          },
+        ],
+      });
+    mockBatchFactCheck
+      .mockResolvedValueOnce({
+        totalChecked: 1,
+        results: [
+          {
+            questionId: 'q1',
+            verdict: 'fail',
+            coherence: 'fail',
+            obviousness: 'pass',
+            confidence: 80,
+            reason: 'Answer is too vague.',
+          },
+        ],
+      })
+      .mockResolvedValueOnce(passingFactCheck(['q1-repaired']));
+  }
+
+  it('leaves the generation and repair prompts unchanged when no style guide is passed', async () => {
+    mockOneQuestionThatNeedsRepair();
+    await generateQuestions('Volcanoes', 1, 'GlobalEh', []);
+    const generationPrompt = mockCreate.mock.calls[1][0].messages[1].content as string;
+    const repairPrompt = mockCreate.mock.calls[2][0].messages[1].content as string;
+    expect(generationPrompt).not.toContain('STYLE GUIDE MARKER');
+    expect(repairPrompt).not.toContain('STYLE GUIDE MARKER');
+    expect(generationPrompt.endsWith('\n')).toBe(true);
+  });
+
+  it('appends the style guide to both the generation and the repair prompt', async () => {
+    mockOneQuestionThatNeedsRepair();
+    const result = await generateQuestions('Volcanoes', 1, 'GlobalEh', [], {
+      styleGuide: STYLE_GUIDE,
+    });
+    expect(result).toHaveLength(1);
+    const generationPrompt = mockCreate.mock.calls[1][0].messages[1].content as string;
+    const repairPrompt = mockCreate.mock.calls[2][0].messages[1].content as string;
+    expect(generationPrompt).toContain(STYLE_GUIDE);
+    expect(repairPrompt).toContain(STYLE_GUIDE);
+  });
+});
+
 describe('computeStrategyQuotas', () => {
   it('matches the CONTENT_STRATEGY.md 30/30/25/15 split for an empty pool', () => {
     const quotas = computeStrategyQuotas({}, 20);

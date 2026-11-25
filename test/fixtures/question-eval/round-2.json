@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "question-eval-config-v1",
+  "note": "Round 2 (STE-304): does the style guide written from round 1 notes fix the playability problems, and which correctness check catches wrong answers? Same themes as round 1 so results are comparable.",
+  "questionsPerThemePerArm": 3,
+  "generationModel": "gpt-5.4-mini",
+  "judgeModel": "gpt-6.1-sol",
+  "verifyModel": "gpt-6.1-sol",
+  "arms": [
+    { "id": "A", "label": "A: Guardian as is", "generator": "guardian" },
+    {
+      "id": "A2",
+      "label": "A2: Guardian + style guide v2",
+      "generator": "guardian",
+      "styleGuide": "v2"
+    }
+  ],
+  "themes": [
+    {
+      "id": "volcanoes",
+      "theme": "Volcanoes",
+      "pillar": "GlobalEh",
+      "kind": "standard",
+      "note": "Stable, well-sourced general knowledge."
+    },
+    {
+      "id": "ancient-egypt",
+      "theme": "Ancient Egypt",
+      "pillar": "GlobalEh",
+      "kind": "standard",
+      "note": "Round 1: too academic was the main complaint."
+    },
+    {
+      "id": "canadian-pop-90s-00s",
+      "theme": "Canadian pop culture of the 1990s and 2000s",
+      "pillar": "TimeCapsule",
+      "kind": "canadian",
+      "note": "Round 1: alternative valid answers and explanation-style answers."
+    },
+    {
+      "id": "canadian-food-slang",
+      "theme": "Canadian food and slang",
+      "pillar": "GreatOutdoors",
+      "kind": "canadian",
+      "note": "Round 1: wording and too-niche slang."
+    },
+    {
+      "id": "toronto-raves-90s",
+      "theme": "The 1990s Toronto rave scene",
+      "pillar": "TimeCapsule",
+      "kind": "niche",
+      "note": "Round 1: a false premise the owner kept. Hallucination stress test."
+    },
+    {
+      "id": "pop-culture-past-year",
+      "theme": "Pop culture and viral moments from the past year",
+      "pillar": "FreshPrints",
+      "kind": "fresh",
+      "note": "Round 1: a hallucinated viral moment and an out-of-window date."
+    }
+  ],
+  "libraryAnchors": {
+    "source": "server/seed-data.json",
+    "note": "None this round: round 1 already measured the library bar.",
+    "ids": []
+  },
+  "plantedBad": {
+    "source": "test/fixtures/benchmark/cases.json",
+    "note": "Known factually wrong questions, kept to test the correctness checks. Their truth label is 'incorrect'.",
+    "ids": ["factual-error-canberra", "coherence-wrong-decade", "coherence-immigrant-song"]
+  }
+}
